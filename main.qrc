@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icons" >
+        <file alias="trayicon" >images/pen.png</file>
+        <file alias="new" >images/new.png</file>
+        <file alias="exit" >images/exit.png</file>
+    </qresource>
+</RCC>
