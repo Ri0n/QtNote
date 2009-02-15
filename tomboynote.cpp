@@ -104,10 +104,9 @@ void TomboyNote::onCloseNote(int result)
 
 	QFile file(sFile);
 	file.open(QIODevice::WriteOnly);
-	file.write(dom.toString().toUtf8());
+	file.write(dom.toString(-1).toUtf8());
 	qDebug()<<sUid<<"\n"<<sFile;
 	file.close();
-	//qDebug(dom.toString().toAscii().data());
 }
 
 QString TomboyNote::nodeText(QDomNode node)
