@@ -1,5 +1,6 @@
 #include "tomboynote.h"
 #include <QIcon>
+#include <QtDebug>
 
 TomboyNote::TomboyNote(QWidget *parent)
 		: dlg(0), mainWin(parent)
@@ -31,47 +32,30 @@ bool TomboyNote::fromFile(QString fn)
 		file.close();
 		return false;
 	}
+	setFile(fn);
 	file.close();
 
-	QDomNode child = dom.documentElement().firstChild();
-	while (!child.isNull()) {
-		QString nodeName = child.nodeName();
-		if (nodeName == "title") {
-			sTitle = nodeText(child);
-		} else if (nodeName == "text") {
-			sText = nodeText(child);
-		} else {
+	QDomElement root = dom.documentElement();
+	sTitle = nodeText(root.namedItem("title"));
+	sText = nodeText(root.namedItem("text"));
+	dtLastChange = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+	//dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
+	dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
+	iCursor = nodeText(root.namedItem("create-date")).toInt();
+	iWidth = nodeText(root.namedItem("width")).toInt();
+	iHeight = nodeText(root.namedItem("height")).toInt();
 
-/*			case "title":
-				sTitle = child.firstChild().nodeValue();
-				break;
-			case "text":
-				sText = child.firstChild().nodeValue();
-				break;
-			case "last-change-date":
-				break;
-			case "last-metadata-change-date":
-				break;
-			case "create-date":
-				break;
-			case "cursor-position":
-				break;
-			case "width":
-				break;
-			case "height":
-				break;
-			case "x":
-				break;
-			case "y":
-				break;
-			case "tags":
-				break;
-			case "open-on-startup":
-				break;*/
-		}
-		child = child.nextSibling();
-	}
 	return true;
+}
+
+void TomboyNote::setFile(QString fn)
+{
+	sFile = fn;
+	int pos = fn.lastIndexOf('/');
+	if (pos != -1) {
+		fn = fn.mid(pos+1);
+	}
+	sUid = fn.section('.', 0, 0);
 }
 
 void TomboyNote::showDialog()
@@ -96,9 +80,37 @@ QString TomboyNote::title()
 void TomboyNote::onCloseNote(int result)
 {
 	sText = dlg->text();
+	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
+	QDomDocument dom;
+	QDomElement note = dom.createElement("note"), node, node2;
+	QDomText text;
+	dom.appendChild(note);
+	note.setAttribute("version", "0.3");
+	note.setAttribute("xmlns:link", "http://beatniksoftware.com/tomboy/link");
+	note.setAttribute("xmlns:size", "http://beatniksoftware.com/tomboy/size");
+	note.setAttribute("xmlns", "http://beatniksoftware.com/tomboy");
+	node = dom.createElement("title");
+	note.appendChild(node);
+	text = dom.createTextNode(sTitle);
+	node.appendChild(text);
+	node = dom.createElement("text");
+	note.appendChild(node);
+	node.setAttribute("xml:space", "preserve");
+	node2 = dom.createElement("note-content");
+	node2.setAttribute("version", "0.1");
+	text = dom.createTextNode(sText);
+	node2.appendChild(text);
+	node.appendChild(node2);
+
+	QFile file(sFile);
+	file.open(QIODevice::WriteOnly);
+	file.write(dom.toString().toUtf8());
+	qDebug()<<sUid<<"\n"<<sFile;
+	file.close();
+	//qDebug(dom.toString().toAscii().data());
 }
 
-QString TomboyNote::nodeText(QDomNode &node)
+QString TomboyNote::nodeText(QDomNode node)
 {
 	QString ret;
 	QDomNode child = node.firstChild();

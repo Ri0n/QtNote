@@ -3,6 +3,7 @@
 #include <QFileInfoList>
 #include <QtGui/QApplication>
 #include <QDesktopServices>
+#include <QUuid>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -72,5 +73,8 @@ void Widget::createNewNote()
 {
 	TomboyNote *note = new TomboyNote();
 	notes.prepend(note);
+	QString uid = QUuid::createUuid ().toString();
+	uid = uid.mid(1, uid.length()-2);
+	note->setFile(QDir::home().path()+"/.tomboy/"+uid+".note");
 	note->showDialog();
 }
