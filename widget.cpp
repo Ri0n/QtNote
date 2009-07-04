@@ -50,10 +50,10 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	}
 	QList<QAction *> actions;
 	actions.append(actNew);
-	actions.append(new QAction(tray));
+	actions.append(new QAction(this));
 	actions[1]->setSeparator(true);
 	foreach (TomboyNote *note, notes) {
-		actions.append(new QAction(note->title(), tray));
+		actions.append(new QAction(note->title(), this));
 	}
 	const QPoint menuPos = tray->geometry().bottomLeft();
 	QAction *act = QMenu::exec(actions, tray->geometry().bottomLeft()
