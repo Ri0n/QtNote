@@ -4,10 +4,10 @@
 TARGET = qtnote
 TEMPLATE = app
 SOURCES += main.cpp \
-    widget.cpp \
+	mainwidget.cpp \
     tomboynote.cpp \
     notedialog.cpp
-HEADERS += widget.h \
+HEADERS += mainwidget.h \
     tomboynote.h \
     notedialog.h
 RESOURCES += main.qrc
