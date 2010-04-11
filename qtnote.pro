@@ -13,3 +13,8 @@ HEADERS += mainwidget.h \
 RESOURCES += main.qrc
 QT += xml
 FORMS += notedialog.ui
+
+unix {
+	target.path = $$PREFIX/bin
+	INSTALLS += target
+}
