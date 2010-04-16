@@ -15,6 +15,6 @@ QT += xml
 FORMS += notedialog.ui
 
 unix {
-	target.path = $$PREFIX/bin
+	target.path = $$PREFIX/usr/bin
 	INSTALLS += target
 }
