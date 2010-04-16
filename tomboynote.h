@@ -7,14 +7,14 @@
 #include <QPointer>
 #include <QDateTime>
 #include "notedialog.h"
+#include "note.h"
 
-class TomboyNote : public QObject
+class TomboyNote : public Note
 {
 	Q_OBJECT
 	Q_DISABLE_COPY(TomboyNote)
 private:
 	QPointer<NoteDialog> dlg;
-	QWidget *mainWin;
 
 	QString sFile;
 	QString sUid;
@@ -32,8 +32,11 @@ public:
 	~TomboyNote();
 	bool fromFile(QString);
 	void setFile(QString fn);
-	void showDialog();
-	QString title();
+	QString title() const;
+	QString uid() const;
+	QString text() const;
+	QDateTime modifyTime() const;
+	void toTrash();
 
 	QString nodeText(QDomNode node);
 

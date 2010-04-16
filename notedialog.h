@@ -21,6 +21,10 @@ protected:
 
 private:
     Ui::NoteDialog *m_ui;
+
+
+private slots:
+	void trashClicked();
 };
 
 #endif // NOTEDIALOG_H

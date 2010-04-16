@@ -3,13 +3,13 @@
 #include <QtDebug>
 
 TomboyNote::TomboyNote(QWidget *parent)
-		: dlg(0), mainWin(parent)
+		: Note(parent)
 {
 	sTitle = "(no name)";
 }
 
 TomboyNote::TomboyNote(QString file, QWidget *parent)
-		: dlg(0), mainWin(parent)
+		: Note(parent)
 {
 	fromFile(file);
 }
@@ -58,27 +58,38 @@ void TomboyNote::setFile(QString fn)
 	sUid = fn.section('.', 0, 0);
 }
 
-void TomboyNote::showDialog()
-{
-	if (!dlg) {
-		dlg = new NoteDialog(mainWin);
-		dlg->setText(sText);
-		dlg->setWindowIcon(QIcon(":/icons/pen"));
-		dlg->setWindowTitle(sTitle);
-		dlg->show();
-		connect(dlg, SIGNAL(finished(int)), this, SLOT(onCloseNote(int)));
-	}
-	dlg->raise();
-	dlg->activateWindow();
-}
-
-QString TomboyNote::title()
+QString TomboyNote::title() const
 {
 	return sTitle;
 }
 
+QString TomboyNote::uid() const
+{
+	return sUid;
+}
+
+QDateTime TomboyNote::modifyTime() const
+{
+	return dtLastChange;
+}
+
+QString TomboyNote::text() const
+{
+	return sText;
+}
+
+void TomboyNote::toTrash()
+{
+	QFile f(sFile);
+	f.remove();
+	//emit
+}
+
 void TomboyNote::onCloseNote(int result)
 {
+	if (result == QDialog::Rejected) {
+		return;
+	}
 	sText = dlg->text();
 	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
 	QDomDocument dom;

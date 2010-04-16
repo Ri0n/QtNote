@@ -1,5 +1,6 @@
 #include "notedialog.h"
 #include "ui_notedialog.h"
+#include "note.h"
 
 NoteDialog::NoteDialog(QWidget *parent) :
 	QDialog(parent),
@@ -7,6 +8,10 @@ NoteDialog::NoteDialog(QWidget *parent) :
 {
     m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
+	m_ui->trashBtn->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
+	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
+
+	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 }
 
 NoteDialog::~NoteDialog()
@@ -25,6 +30,11 @@ void NoteDialog::changeEvent(QEvent *e)
     }
 }
 
+void NoteDialog::trashClicked()
+{
+	((Note *)parent())->toTrash();
+	reject();
+}
 
 void NoteDialog::setText(QString text)
 {
