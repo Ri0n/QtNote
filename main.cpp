@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	while (storages.count()) {
 		NoteStorage *storage = storages.takeFirst();
 		if (storage->isAccessible()) {
-			NoteManager::instance()->registerStorage(storage);
+			NoteManager::instance()->registerStorage(storage, true);
 		} else {
 			delete storage;
 		}

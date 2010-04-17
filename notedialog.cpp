@@ -2,9 +2,12 @@
 #include "ui_notedialog.h"
 #include "note.h"
 
-NoteDialog::NoteDialog(QWidget *parent) :
+NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
 	QDialog(parent),
-    m_ui(new Ui::NoteDialog)
+	m_ui(new Ui::NoteDialog),
+	storageId_(storageId),
+	noteId_(noteId),
+	trashRequested_(false)
 {
     m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
@@ -30,10 +33,21 @@ void NoteDialog::changeEvent(QEvent *e)
     }
 }
 
+void NoteDialog::done(int r)
+{
+	qDebug("saving: %d", r);
+	if (trashRequested_) {
+		emit trashRequested(storageId_, noteId_);
+	} else {
+		emit saveRequested(storageId_, noteId_, text());
+	}
+	QDialog::done(r);
+}
+
 void NoteDialog::trashClicked()
 {
-	((Note *)parent())->toTrash();
-	reject();
+	trashRequested_ = true;
+	close();
 }
 
 void NoteDialog::setText(QString text)
@@ -44,4 +58,10 @@ void NoteDialog::setText(QString text)
 QString NoteDialog::text()
 {
 	return m_ui->noteEdit->toPlainText();
+}
+
+bool NoteDialog::checkOwnership(const QString &storageId,
+								const QString &noteId) const
+{
+	return storageId == storageId_ && noteId == noteId_;
 }

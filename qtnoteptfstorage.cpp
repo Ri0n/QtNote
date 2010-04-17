@@ -27,7 +27,23 @@ QList<NoteListItem> QtNotePTFStorage::noteList() const
 	return QList<NoteListItem>();
 }
 
-Note* QtNotePTFStorage::load(const QString &id) const
+Note* QtNotePTFStorage::get(const QString &id)
 {
+	Q_UNUSED(id);
 	return 0;
+}
+
+void QtNotePTFStorage::createNote(const QString &text)
+{
+
+}
+
+void QtNotePTFStorage::saveNote(const QString &noteId, const QString &text)
+{
+
+}
+
+void QtNotePTFStorage::deleteNote(const QString &noteId)
+{
+
 }

@@ -3,20 +3,27 @@
 
 NoteManager::NoteManager(QObject *parent)
 	: QObject(parent)
+	, defaultStorage_(0)
 {
 
 }
 
 
-void NoteManager::registerStorage(NoteStorage *storage)
+void NoteManager::registerStorage(NoteStorage *storage, bool isDefault)
 {
 	storages_.append(storage);
+	if (isDefault) {
+		defaultStorage_ = storage;
+	}
 }
 
 bool NoteManager::loadAll()
 {
 	if (storages_.count() == 0) {
 		return false;
+	}
+	if (!defaultStorage_) {
+		defaultStorage_ = storages_[0];
 	}
 	return true;
 }
@@ -30,12 +37,11 @@ QList<NoteListItem> NoteManager::noteList() const
 	return ret;
 }
 
-Note* NoteManager::loadNote(const QString &storageId, const QString &noteId)
+Note* NoteManager::getNote(const QString &storageId, const QString &noteId)
 {
-	foreach (NoteStorage *storage, storages_) {
-		if (storage->systemName() == storageId) {
-			return storage->load(noteId);
-		}
+	NoteStorage *s = storage(storageId);
+	if (s) {
+		return s->get(noteId);
 	}
 	return 0;
 }
@@ -43,6 +49,21 @@ Note* NoteManager::loadNote(const QString &storageId, const QString &noteId)
 const QList<NoteStorage *> NoteManager::storages() const
 {
 	return storages_;
+}
+
+NoteStorage * NoteManager::storage(const QString &storageId) const
+{
+	foreach (NoteStorage *storage, storages_) {
+		if (storage->systemName() == storageId) {
+			return storage;
+		}
+	}
+	return 0;
+}
+
+NoteStorage *NoteManager::defaultStorage() const
+{
+	return defaultStorage_;
 }
 
 NoteManager *NoteManager::instance()

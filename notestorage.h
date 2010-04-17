@@ -27,7 +27,10 @@ public:
 	virtual const QString systemName() const = 0;
 	virtual bool isAccessible() const = 0;
 	virtual QList<NoteListItem> noteList() const = 0;
-	virtual Note* load(const QString &id) const = 0;
+	virtual Note* get(const QString &id) = 0;
+	virtual void createNote(const QString &text) = 0;
+	virtual void saveNote(const QString &noteId, const QString &text) = 0;
+	virtual void deleteNote(const QString &text) = 0;
 };
 
 #endif // NOTESTORAGE_H

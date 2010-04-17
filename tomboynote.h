@@ -14,8 +14,6 @@ class TomboyNote : public Note
 	Q_OBJECT
 	Q_DISABLE_COPY(TomboyNote)
 private:
-	QPointer<NoteDialog> dlg;
-
 	QString sFile;
 	QString sUid;
 	QString sTitle;
@@ -27,21 +25,20 @@ private:
 	int iHeight;
 
 public:
-	TomboyNote(QWidget *parent = 0);
+	TomboyNote(QObject *parent = 0);
 	TomboyNote(QString, QWidget *parent = 0);
 	~TomboyNote();
 	bool fromFile(QString);
 	void setFile(QString fn);
+	void saveToFile(const QString &fileName);
 	QString title() const;
 	QString uid() const;
 	QString text() const;
+	void setText(const QString &text);
 	QDateTime modifyTime() const;
 	void toTrash();
 
 	QString nodeText(QDomNode node);
-
-public slots:
-	void onCloseNote(int);
 };
 
 #endif // TOMBOYNOTE_H

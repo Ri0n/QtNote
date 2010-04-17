@@ -1,9 +1,6 @@
 #include "mainwidget.h"
-//#include <QDir>
-//#include <QFileInfoList>
+
 #include <QtGui/QApplication>
-//#include <QDesktopServices>
-//#include <QUuid>
 #include "notemanager.h"
 
 Widget::Widget(QWidget *parent)
@@ -23,13 +20,10 @@ Widget::Widget(QWidget *parent)
 	tray->show();
 	tray->setContextMenu(contextMenu);
 
-	foreach (NoteStorage *storage, NoteManager::instance()->storages()) {
-		noteDialogs[storage->systemName()] = QMap<QString, NoteDialog *>();
-	}
-
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
-	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
+	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
 }
 
 Widget::~Widget()
@@ -43,22 +37,39 @@ void Widget::exitQtNote()
 
 void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 {
-	Note *note = NoteManager::instance()->loadNote(storageId, noteId);
-	NoteDialog *dlg;
-	if (note) {
-		dlg = noteDialogs[storageId].value(noteId);
-		if (!dlg) {
-			dlg = noteDialogs[storageId][noteId] = new NoteDialog(this);
-
-			dlg->setText(note->text());
-			dlg->setWindowIcon(QIcon(":/icons/pen"));
-			dlg->setWindowTitle(note->title());
-			dlg->show();
-			connect(dlg, SIGNAL(finished(int)), this, SLOT(onCloseNote(int)));
+	Note *note = 0;
+	NoteDialog *dlg = 0;
+	if (!noteId.isEmpty()) {
+		note = NoteManager::instance()->getNote(storageId, noteId);
+		if (!note) {
+			qWarning("faield to load note: %s", qPrintable(noteId));
+			return;
 		}
-		noteDialogs[storageId][noteId]->raise();
-		noteDialogs[storageId][noteId]->activateWindow();
+		// check if dialog for given storage and id is already opened
+		foreach (NoteDialog *d, findChildren<NoteDialog *>("noteDlg")) {
+			if (d->checkOwnership(storageId, noteId)) {
+				dlg = d;
+				break;
+			}
+		}
 	}
+
+	if (!dlg) {
+		dlg = new NoteDialog(this, storageId, noteId);
+		dlg->setObjectName("noteDlg");
+		dlg->setWindowIcon(QIcon(":/icons/pen"));
+		connect(dlg, SIGNAL(saveRequested(QString,QString,QString)),
+				SLOT(onSaveNote(QString,QString,QString)));
+		connect(dlg, SIGNAL(trashRequested(QString,QString)),
+				SLOT(onDeleteNote(QString,QString)));
+	}
+	if (note) {
+		dlg->setText(note->text());
+		dlg->setWindowTitle(note->title());
+	}
+	dlg->show();
+	dlg->raise();
+	dlg->activateWindow();
 }
 
 void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
@@ -66,13 +77,6 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	if (reason != QSystemTrayIcon::Trigger) {
 		return;
 	}
-//	if (notes.isEmpty()) {
-//		QFileInfoList files = QDir(QDir::home().path()+"/.tomboy").entryInfoList(QStringList("*.note"),
-//				  QDir::Files | QDir::NoDotAndDotDot);
-//		foreach (QFileInfo fi, files) {
-//			notes.append(new TomboyNote(fi.canonicalFilePath()));
-//		}
-//	}
 	QMenu menu(this);
 	menu.addAction(actNew);
 	menu.addSeparator();
@@ -90,10 +94,21 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 
 void Widget::createNewNote()
 {
-//	TomboyNote *note = new TomboyNote();
-//	notes.prepend(note);
-//	QString uid = QUuid::createUuid ().toString();
-//	uid = uid.mid(1, uid.length()-2);
-//	note->setFile(QDir::home().path()+"/.tomboy/"+uid+".note");
-//	note->showDialog();
+	showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
+}
+
+void Widget::onSaveNote(const QString &storageId, const QString &noteId,
+						const QString &text)
+{
+	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	if (noteId.isEmpty()) {
+		storage->createNote(text);
+	}
+	storage->saveNote(noteId, text);
+}
+
+void Widget::onDeleteNote(const QString &storageId, const QString &noteId)
+{
+	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	storage->deleteNote(noteId);
 }

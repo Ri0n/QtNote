@@ -2,7 +2,7 @@
 #include <QIcon>
 #include <QtDebug>
 
-TomboyNote::TomboyNote(QWidget *parent)
+TomboyNote::TomboyNote(QObject *parent)
 		: Note(parent)
 {
 	sTitle = "(no name)";
@@ -16,9 +16,7 @@ TomboyNote::TomboyNote(QString file, QWidget *parent)
 
 TomboyNote::~TomboyNote()
 {
-	if (dlg) {
-		delete dlg;
-	}
+
 }
 
 
@@ -78,6 +76,12 @@ QString TomboyNote::text() const
 	return sText;
 }
 
+void TomboyNote::setText(const QString &text)
+{
+	sText = text;
+	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
+}
+
 void TomboyNote::toTrash()
 {
 	QFile f(sFile);
@@ -85,13 +89,8 @@ void TomboyNote::toTrash()
 	//emit
 }
 
-void TomboyNote::onCloseNote(int result)
+void TomboyNote::saveToFile(const QString &fileName)
 {
-	if (result == QDialog::Rejected) {
-		return;
-	}
-	sText = dlg->text();
-	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
 	QDomDocument dom;
 	QDomElement note = dom.createElement("note"), node, node2;
 	QDomText text;
@@ -113,6 +112,7 @@ void TomboyNote::onCloseNote(int result)
 	node2.appendChild(text);
 	node.appendChild(node2);
 
+	setFile(fileName);;
 	QFile file(sFile);
 	file.open(QIODevice::WriteOnly);
 	file.write(dom.toString(-1).toUtf8());
