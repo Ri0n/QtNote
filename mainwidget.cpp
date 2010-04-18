@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QtGui/QApplication>
 #include "notemanager.h"
+#include "notedialog.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)

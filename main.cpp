@@ -23,7 +23,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMessageBox>
 #include "mainwidget.h"
 #include "notemanager.h"
+#ifdef TOMBOY
 #include "tomboystorage.h"
+#endif
 #include "qtnoteptfstorage.h"
 
 int main(int argc, char *argv[])
@@ -42,7 +44,9 @@ int main(int argc, char *argv[])
 	QApplication::setQuitOnLastWindowClosed(false);
 
 	QList<NoteStorage*> storages;
+#ifdef TOMBOY
 	storages.append(new TomboyStorage(&a));
+#endif
 	storages.append(new QtNotePTFStorage(&a));
 
 	while (storages.count()) {

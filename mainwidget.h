@@ -27,8 +27,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QAction>
 #include <QMenu>
 
-#include "tomboynote.h"
-
 class Widget : public QWidget
 {
     Q_OBJECT

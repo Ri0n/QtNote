@@ -56,15 +56,16 @@ Note* QtNotePTFStorage::get(const QString &id)
 
 void QtNotePTFStorage::createNote(const QString &text)
 {
-
+	Q_UNUSED(text)
 }
 
 void QtNotePTFStorage::saveNote(const QString &noteId, const QString &text)
 {
-
+	Q_UNUSED(noteId)
+	Q_UNUSED(text)
 }
 
 void QtNotePTFStorage::deleteNote(const QString &noteId)
 {
-
+	Q_UNUSED(noteId)
 }

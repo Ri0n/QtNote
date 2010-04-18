@@ -22,12 +22,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef TOMBOYNOTE_H
 #define TOMBOYNOTE_H
 
-#include <QObject>
 #include <QFile>
 #include <QDomDocument>
 #include <QPointer>
 #include <QDateTime>
-#include "notedialog.h"
 #include "note.h"
 
 class TomboyNote : public Note

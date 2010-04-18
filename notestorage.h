@@ -22,7 +22,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTESTORAGE_H
 #define NOTESTORAGE_H
 
-#include <QObject>
 #include <QDateTime>
 #include "note.h"
 
