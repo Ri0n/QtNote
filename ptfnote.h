@@ -29,31 +29,22 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class PTFNote : public Note
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(PTFNote)
-private:
-	QString sFile;
-	QString sUid;
-	QString sTitle;
-	QString sText;
-	QDateTime dtLastChange;
-	QDateTime dtCreate;
-	int iCursor;
-	int iWidth;
-	int iHeight;
-
 public:
-	PTFNote(QObject *parent = 0);
+	PTFNote();
+	PTFNote(const PTFNote &other);
 	~PTFNote();
 	bool fromFile(QString);
 	void setFile(QString fn);
 	void saveToFile(const QString &fileName);
 	QString title() const;
-	QString uid() const;
 	QString text() const;
 	void setText(const QString &text);
 	QDateTime modifyTime() const;
 	void toTrash();
+
+private:
+	class Private;
+	QSharedDataPointer<Private> d;
 };
 
 #endif // TOMBOYNOTE_H

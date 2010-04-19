@@ -24,11 +24,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 
-class Note : public QObject
+class Note
 {
-	Q_OBJECT
 public:
-	Note(QObject *parent);
+	Note();
 
 	virtual void toTrash() = 0;
 	virtual QString text() const = 0;

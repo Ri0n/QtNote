@@ -53,10 +53,10 @@ QList<NoteListItem> PTFStorage::noteList()
 	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.note"),
 			  QDir::Files | QDir::NoDotAndDotDot);
 	foreach (QFileInfo fi, files) {
-		PTFNote note(this);
+		PTFNote note;
 		if (note.fromFile(fi.canonicalFilePath())) {
 			//qDebug("loading: %s from file %s", qPrintable(note.uid()), qPrintable(fi.canonicalFilePath()));
-			ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
+			//ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
 		}
 	}
 	return ret;

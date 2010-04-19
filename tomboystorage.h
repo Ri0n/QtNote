@@ -25,6 +25,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMap>
 #include "notestorage.h"
 
+#include "tomboynote.h"
+
 class TomboyStorage : public NoteStorage
 {
 	Q_OBJECT
@@ -35,6 +37,7 @@ public:
 	const QString systemName() const;
 	QList<NoteListItem> noteList();
 	Note* get(const QString &id);
+	//TomboyNote get2(const QString &id);
 	void createNote(const QString &text);
 	void saveNote(const QString &noteId, const QString &text);
 	void deleteNote(const QString &text);

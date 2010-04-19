@@ -23,10 +23,32 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QIcon>
 #include <QtDebug>
 
-TomboyNote::TomboyNote(QObject *parent)
-		: Note(parent)
+class TomboyNote::Private : public QSharedData
 {
-	sTitle = "(no name)";
+public:
+	QString sFile;
+	QString sUid;
+	QString sTitle;
+	QString sText;
+	QDateTime dtLastChange;
+	QDateTime dtCreate;
+	int iCursor;
+	int iWidth;
+	int iHeight;
+};
+
+
+TomboyNote::TomboyNote()
+		: Note()
+{
+	d = new Private;
+	d->sTitle = "(no name)";
+}
+
+TomboyNote::TomboyNote(const TomboyNote &other)
+	: d (other.d)
+{
+
 }
 
 TomboyNote::~TomboyNote()
@@ -49,14 +71,14 @@ bool TomboyNote::fromFile(QString fn)
 	file.close();
 
 	QDomElement root = dom.documentElement();
-	sTitle = nodeText(root.namedItem("title"));
-	sText = nodeText(root.namedItem("text"));
-	dtLastChange = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
-	//dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
-	dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
-	iCursor = nodeText(root.namedItem("create-date")).toInt();
-	iWidth = nodeText(root.namedItem("width")).toInt();
-	iHeight = nodeText(root.namedItem("height")).toInt();
+	d->sTitle = nodeText(root.namedItem("title"));
+	d->sText = nodeText(root.namedItem("text"));
+	d->dtLastChange = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+	//d->dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
+	d->dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
+	d->iCursor = nodeText(root.namedItem("create-date")).toInt();
+	d->iWidth = nodeText(root.namedItem("width")).toInt();
+	d->iHeight = nodeText(root.namedItem("height")).toInt();
 
 	return true;
 }
@@ -64,44 +86,44 @@ bool TomboyNote::fromFile(QString fn)
 void TomboyNote::setFile(QString fn)
 {
 	//qDebug("setf file: %s", qPrintable(fn));
-	sFile = fn;
+	d->sFile = fn;
 	int pos = fn.lastIndexOf('/');
 	if (pos != -1) {
 		fn = fn.mid(pos+1);
 	}
-	sUid = fn.section('.', 0, 0);
+	d->sUid = fn.section('.', 0, 0);
 	//qDebug("uid: %s", qPrintable(sUid));
 }
 
 QString TomboyNote::title() const
 {
-	return sTitle;
+	return d->sTitle;
 }
 
 QString TomboyNote::uid() const
 {
-	return sUid;
+	return d->sUid;
 }
 
 QDateTime TomboyNote::modifyTime() const
 {
-	return dtLastChange;
+	return d->dtLastChange;
 }
 
 QString TomboyNote::text() const
 {
-	return sText;
+	return d->sText;
 }
 
 void TomboyNote::setText(const QString &text)
 {
-	sText = text;
-	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
+	d->sText = text;
+	d->sTitle = d->sText.section('\n', 0, 0); //FIXME crossplatform?
 }
 
 void TomboyNote::toTrash()
 {
-	QFile f(sFile);
+	QFile f(d->sFile);
 	f.remove();
 	//emit
 }
@@ -118,19 +140,19 @@ void TomboyNote::saveToFile(const QString &fileName)
 	note.setAttribute("xmlns", "http://beatniksoftware.com/tomboy");
 	node = dom.createElement("title");
 	note.appendChild(node);
-	text = dom.createTextNode(sTitle);
+	text = dom.createTextNode(d->sTitle);
 	node.appendChild(text);
 	node = dom.createElement("text");
 	note.appendChild(node);
 	node.setAttribute("xml:space", "preserve");
 	node2 = dom.createElement("note-content");
 	node2.setAttribute("version", "0.1");
-	text = dom.createTextNode(sText);
+	text = dom.createTextNode(d->sText);
 	node2.appendChild(text);
 	node.appendChild(node2);
 
 	setFile(fileName);;
-	QFile file(sFile);
+	QFile file(d->sFile);
 	file.open(QIODevice::WriteOnly);
 	file.write(dom.toString(-1).toUtf8());
 	//qDebug()<<sUid<<"\n"<<sFile;

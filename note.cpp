@@ -21,8 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "note.h"
 
-Note::Note(QObject *parent)
-	: QObject(parent)
+Note::Note()
 {
 
 }

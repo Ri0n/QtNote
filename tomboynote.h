@@ -30,21 +30,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class TomboyNote : public Note
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(TomboyNote)
-private:
-	QString sFile;
-	QString sUid;
-	QString sTitle;
-	QString sText;
-	QDateTime dtLastChange;
-	QDateTime dtCreate;
-	int iCursor;
-	int iWidth;
-	int iHeight;
-
 public:
-	TomboyNote(QObject *parent = 0);
+	TomboyNote();
+	TomboyNote(const TomboyNote &other);
 	~TomboyNote();
 	bool fromFile(QString);
 	void setFile(QString fn);
@@ -57,6 +45,10 @@ public:
 	void toTrash();
 
 	QString nodeText(QDomNode node);
+
+private:
+	class Private;
+	QSharedDataPointer<Private> d;
 };
 
 #endif // TOMBOYNOTE_H
