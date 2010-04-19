@@ -19,24 +19,41 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef QTNOTEPTFSTORAGE_H
-#define QTNOTEPTFSTORAGE_H
+#ifndef PTFNOTE_H
+#define PTFNOTE_H
 
-#include "notestorage.h"
+#include <QFile>
+#include <QPointer>
+#include <QDateTime>
+#include "note.h"
 
-class QtNotePTFStorage : public NoteStorage
+class PTFNote : public Note
 {
 	Q_OBJECT
-	Q_DISABLE_COPY(QtNotePTFStorage)
+	Q_DISABLE_COPY(PTFNote)
+private:
+	QString sFile;
+	QString sUid;
+	QString sTitle;
+	QString sText;
+	QDateTime dtLastChange;
+	QDateTime dtCreate;
+	int iCursor;
+	int iWidth;
+	int iHeight;
+
 public:
-	QtNotePTFStorage(QObject *parent);
-	bool isAccessible() const;
-	const QString systemName() const;
-	QList<NoteListItem> noteList();
-	Note* get(const QString &id);
-	void createNote(const QString &text);
-	void saveNote(const QString &noteId, const QString &text);
-	void deleteNote(const QString &noteId);
+	PTFNote(QObject *parent = 0);
+	~PTFNote();
+	bool fromFile(QString);
+	void setFile(QString fn);
+	void saveToFile(const QString &fileName);
+	QString title() const;
+	QString uid() const;
+	QString text() const;
+	void setText(const QString &text);
+	QDateTime modifyTime() const;
+	void toTrash();
 };
 
-#endif // QTNOTEPTFSTORAGE_H
+#endif // TOMBOYNOTE_H

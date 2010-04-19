@@ -29,13 +29,15 @@ SOURCES += main.cpp \
     note.cpp \
     notemanager.cpp \
     notestorage.cpp \
-    qtnoteptfstorage.cpp
+	ptfstorage.cpp \
+	ptfnote.cpp
 HEADERS += mainwidget.h \
     notedialog.h \
     note.h \
     notemanager.h \
     notestorage.h \
-    qtnoteptfstorage.h
+	ptfstorage.h \
+	ptfnote.h
 RESOURCES += main.qrc
 QT += xml
 FORMS += notedialog.ui
