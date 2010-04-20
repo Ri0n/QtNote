@@ -46,15 +46,15 @@ int main(int argc, char *argv[])
 	QCoreApplication::setApplicationName("QtNote");
 
 	QList<NoteStorage*> storages;
+	storages.append(new PTFStorage(&a));
 #ifdef TOMBOY
 	storages.append(new TomboyStorage(&a));
 #endif
-	storages.append(new PTFStorage(&a));
 
 	while (storages.count()) {
 		NoteStorage *storage = storages.takeFirst();
 		if (storage->isAccessible()) {
-			NoteManager::instance()->registerStorage(storage, true);
+			NoteManager::instance()->registerStorage(storage, true); //will set last storage default
 		} else {
 			delete storage;
 		}

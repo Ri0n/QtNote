@@ -79,7 +79,7 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 	if (!dlg) {
 		dlg = new NoteDialog(this, storageId, noteId);
 		dlg->setObjectName("noteDlg");
-		dlg->setWindowIcon(QIcon(":/icons/pen"));
+		dlg->setWindowIcon(QIcon(":/icons/trayicon"));
 		connect(dlg, SIGNAL(saveRequested(QString,QString,QString)),
 				SLOT(onSaveNote(QString,QString,QString)));
 		connect(dlg, SIGNAL(trashRequested(QString,QString)),
