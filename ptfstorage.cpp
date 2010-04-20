@@ -50,7 +50,7 @@ const QString PTFStorage::systemName() const
 QList<NoteListItem> PTFStorage::noteList()
 {
 	QList<NoteListItem> ret;
-	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.note"),
+	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.txt"),
 			  QDir::Files | QDir::NoDotAndDotDot);
 	foreach (QFileInfo fi, files) {
 		PTFNote note;
