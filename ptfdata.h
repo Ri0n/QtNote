@@ -19,44 +19,33 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "note.h"
+#ifndef PTFDATA_H
+#define PTFDATA_H
+
+#include <QFile>
+#include <QPointer>
+#include <QDateTime>
 #include "notedata.h"
-#include <QString>
 
-
-Note::Note()
+class PTFData : public NoteData
 {
+public:
+	PTFData();
+	bool fromFile(QString);
+	void setFile(QString fn);
+	void saveToFile(const QString &fileName);
+	QString title() const;
+	QString text() const;
+	void setText(const QString &text);
+	QDateTime modifyTime() const;
+	void toTrash();
 
-}
+private:
+	QString sFileName;
+	QString sTitle;
+	QString sText;
+	QDateTime dtLastChange;
+	QDateTime dtCreate;
+};
 
-
-Note::Note(NoteData *data)
-{
-	d = data;
-}
-
-Note::Note(const Note &other)
-	: d (other.d)
-{
-
-}
-
-bool Note::isNull()
-{
-	return !d;
-}
-
-void Note::toTrash()
-{
-	d->toTrash();
-}
-
-QString Note::text() const
-{
-	return d->text();
-}
-
-QString Note::title() const
-{
-	return d->title();
-}
+#endif // PTFDATA_H

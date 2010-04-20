@@ -21,7 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "tomboystorage.h"
 
-#include "tomboynote.h"
+#include "tomboydata.h"
 #include <QDir>
 #include <QUuid>
 #include <QCoreApplication>
@@ -74,7 +74,7 @@ QList<NoteListItem> TomboyStorage::noteList()
 	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.note"),
 			  QDir::Files | QDir::NoDotAndDotDot);
 	foreach (QFileInfo fi, files) {
-		TomboyNote note;
+		TomboyData note;
 		if (note.fromFile(fi.canonicalFilePath())) {
 			//qDebug("loading: %s from file %s", qPrintable(note.uid()), qPrintable(fi.canonicalFilePath()));
 			ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
@@ -83,26 +83,16 @@ QList<NoteListItem> TomboyStorage::noteList()
 	return ret;
 }
 
-Note* TomboyStorage::get(const QString &id)
+Note TomboyStorage::get(const QString &id)
 {
 	QString fileName = QDir(notesDir).absoluteFilePath(
 			QString("%1.note").arg(id) );
 	//qDebug("loading: %s:%s\nfilename: %s", qPrintable(systemName()),
 	//	   qPrintable(id), qPrintable(fileName));
-	TomboyNote *note = new TomboyNote;
-	if (note->fromFile(fileName)) {
-		notes[id] = note;
-		return note;
-	}
-	delete note;
-	return 0;
+	TomboyData *noteData = new TomboyData;
+	noteData->fromFile(fileName);
+	return Note(noteData);
 }
-
-//TomboyNote TomboyStorage::get2(const QString &id)
-//{
-//	TomboyNote note;
-//	return note;
-//}
 
 void TomboyStorage::createNote(const QString &text)
 {
@@ -112,7 +102,7 @@ void TomboyStorage::createNote(const QString &text)
 
 void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
-	TomboyNote *note = new TomboyNote;
+	TomboyData *note = new TomboyData;
 	note->setText(text);
 	note->saveToFile( QDir(notesDir).absoluteFilePath(
 			QString("%1.note").arg(noteId)) );

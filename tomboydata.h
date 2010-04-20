@@ -19,44 +19,41 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "note.h"
+#ifndef TOMBOYDATA_H
+#define TOMBOYDATA_H
+
+#include <QFile>
+#include <QDomDocument>
+#include <QPointer>
+#include <QDateTime>
 #include "notedata.h"
-#include <QString>
 
-
-Note::Note()
+class TomboyData : public NoteData
 {
+public:
+	TomboyData();
+	bool fromFile(QString);
+	void setFile(QString fn);
+	void saveToFile(const QString &fileName);
+	QString title() const;
+	QString uid() const;
+	QString text() const;
+	void setText(const QString &text);
+	QDateTime modifyTime() const;
+	void toTrash();
 
-}
+	QString nodeText(QDomNode node);
 
+private:
+	QString sFile;
+	QString sUid;
+	QString sTitle;
+	QString sText;
+	QDateTime dtLastChange;
+	QDateTime dtCreate;
+	int iCursor;
+	int iWidth;
+	int iHeight;
+};
 
-Note::Note(NoteData *data)
-{
-	d = data;
-}
-
-Note::Note(const Note &other)
-	: d (other.d)
-{
-
-}
-
-bool Note::isNull()
-{
-	return !d;
-}
-
-void Note::toTrash()
-{
-	d->toTrash();
-}
-
-QString Note::text() const
-{
-	return d->text();
-}
-
-QString Note::title() const
-{
-	return d->title();
-}
+#endif // TOMBOYDATA_H

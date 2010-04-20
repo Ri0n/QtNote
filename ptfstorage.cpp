@@ -22,7 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "ptfstorage.h"
 #include <QDesktopServices>
 #include <QDir>
-#include "ptfnote.h"
+#include "ptfdata.h"
 
 PTFStorage::PTFStorage(QObject *parent)
 	: NoteStorage(parent)
@@ -53,7 +53,7 @@ QList<NoteListItem> PTFStorage::noteList()
 	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.txt"),
 			  QDir::Files | QDir::NoDotAndDotDot);
 	foreach (QFileInfo fi, files) {
-		PTFNote note;
+		PTFData note;
 		if (note.fromFile(fi.canonicalFilePath())) {
 			//qDebug("loading: %s from file %s", qPrintable(note.uid()), qPrintable(fi.canonicalFilePath()));
 			//ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
@@ -62,10 +62,10 @@ QList<NoteListItem> PTFStorage::noteList()
 	return ret;
 }
 
-Note* PTFStorage::get(const QString &id)
+Note PTFStorage::get(const QString &id)
 {
 	Q_UNUSED(id);
-	return 0;
+	return Note();
 }
 
 void PTFStorage::createNote(const QString &text)

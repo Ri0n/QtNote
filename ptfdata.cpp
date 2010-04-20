@@ -19,40 +19,17 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "ptfnote.h"
+#include "ptfdata.h"
 #include <QIcon>
 #include <QtDebug>
 
-class PTFNote::Private : public QSharedData
+PTFData::PTFData()
+		: NoteData()
 {
-public:
-	QString fileName;
-	QString title;
-	QString text;
-	QDateTime dtLastChange;
-	QDateTime dtCreate;
-};
-
-PTFNote::PTFNote()
-		: Note()
-{
-	d = new Private;
-	d->title = "(no name)";
+	sTitle = "(no name)";
 }
 
-PTFNote::PTFNote(const PTFNote &other)
-	: d (other.d)
-{
-
-}
-
-PTFNote::~PTFNote()
-{
-
-}
-
-
-bool PTFNote::fromFile(QString fn)
+bool PTFData::fromFile(QString fn)
 {
 	QFile file(fn);
 	if (!file.open(QIODevice::ReadOnly))
@@ -63,40 +40,40 @@ bool PTFNote::fromFile(QString fn)
 	return true;
 }
 
-void PTFNote::setFile(QString fn)
+void PTFData::setFile(QString fn)
 {
 	Q_UNUSED(fn)
 }
 
-QString PTFNote::title() const
+QString PTFData::title() const
 {
-	return d->title;
+	return sTitle;
 }
 
-QDateTime PTFNote::modifyTime() const
+QDateTime PTFData::modifyTime() const
 {
-	return d->dtLastChange;
+	return dtLastChange;
 }
 
-QString PTFNote::text() const
+QString PTFData::text() const
 {
-	return d->text;
+	return sText;
 }
 
-void PTFNote::setText(const QString &text)
+void PTFData::setText(const QString &text)
 {
-	d->text = text;
-	d->title = d->text.section('\n', 0, 0); //FIXME crossplatform?
+	sText = text;
+	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
 }
 
-void PTFNote::toTrash()
+void PTFData::toTrash()
 {
-	QFile f(d->fileName);
+	QFile f(sFileName);
 	f.remove();
 	//emit
 }
 
-void PTFNote::saveToFile(const QString &fileName)
+void PTFData::saveToFile(const QString &fileName)
 {
 	Q_UNUSED(fileName)
 }

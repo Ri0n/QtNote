@@ -58,7 +58,7 @@ QList<NoteListItem> NoteManager::noteList() const
 	return ret;
 }
 
-Note* NoteManager::getNote(const QString &storageId, const QString &noteId)
+Note NoteManager::getNote(const QString &storageId, const QString &noteId)
 {
 	NoteStorage *s = storage(storageId);
 	if (s) {

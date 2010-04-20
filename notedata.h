@@ -19,32 +19,18 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef PTFNOTE_H
-#define PTFNOTE_H
+#ifndef NOTEDATA_H
+#define NOTEDATA_H
 
-#include <QFile>
-#include <QPointer>
-#include <QDateTime>
-#include "note.h"
+#include <QSharedData>
 
-class PTFNote : public Note
+class NoteData : public QSharedData
 {
 public:
-	PTFNote();
-	PTFNote(const PTFNote &other);
-	~PTFNote();
-	bool fromFile(QString);
-	void setFile(QString fn);
-	void saveToFile(const QString &fileName);
-	QString title() const;
-	QString text() const;
-	void setText(const QString &text);
-	QDateTime modifyTime() const;
-	void toTrash();
-
-private:
-	class Private;
-	QSharedDataPointer<Private> d;
+    NoteData();
+	virtual void toTrash() = 0;
+	virtual QString text() const = 0;
+	virtual QString title() const = 0;
 };
 
-#endif // TOMBOYNOTE_H
+#endif // NOTEDATA_H

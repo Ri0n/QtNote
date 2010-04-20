@@ -19,36 +19,8 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef TOMBOYNOTE_H
-#define TOMBOYNOTE_H
+#include "notedata.h"
 
-#include <QFile>
-#include <QDomDocument>
-#include <QPointer>
-#include <QDateTime>
-#include "note.h"
-
-class TomboyNote : public Note
+NoteData::NoteData()
 {
-public:
-	TomboyNote();
-	TomboyNote(const TomboyNote &other);
-	~TomboyNote();
-	bool fromFile(QString);
-	void setFile(QString fn);
-	void saveToFile(const QString &fileName);
-	QString title() const;
-	QString uid() const;
-	QString text() const;
-	void setText(const QString &text);
-	QDateTime modifyTime() const;
-	void toTrash();
-
-	QString nodeText(QDomNode node);
-
-private:
-	class Private;
-	QSharedDataPointer<Private> d;
-};
-
-#endif // TOMBOYNOTE_H
+}

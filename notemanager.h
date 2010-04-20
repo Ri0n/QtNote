@@ -33,7 +33,7 @@ public:
 	void registerStorage(NoteStorage *storage, bool isDefault = false);
 	bool loadAll();
 	QList<NoteListItem> noteList() const;
-	Note* getNote(const QString &storageId, const QString &noteId);
+	Note getNote(const QString &storageId, const QString &noteId);
 	const QList<NoteStorage *> storages() const;
 	NoteStorage * storage(const QString &storageId) const;
 	NoteStorage *defaultStorage() const;

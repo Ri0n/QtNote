@@ -59,12 +59,12 @@ void Widget::exitQtNote()
 
 void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 {
-	Note *note = 0;
+	Note note;
 	NoteDialog *dlg = 0;
 	if (!noteId.isEmpty()) {
 		note = NoteManager::instance()->getNote(storageId, noteId);
-		if (!note) {
-			qWarning("faield to load note: %s", qPrintable(noteId));
+		if (note.isNull()) {
+			qWarning("failed to load note: %s", qPrintable(noteId));
 			return;
 		}
 		// check if dialog for given storage and id is already opened
@@ -85,9 +85,9 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 		connect(dlg, SIGNAL(trashRequested(QString,QString)),
 				SLOT(onDeleteNote(QString,QString)));
 	}
-	if (note) {
-		dlg->setText(note->text());
-		dlg->setWindowTitle(note->title());
+	if (!note.isNull()) {
+		dlg->setText(note.text());
+		dlg->setWindowTitle(note.title());
 	}
 	dlg->show();
 	dlg->raise();
@@ -126,7 +126,7 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 	if (noteId.isEmpty()) {
 		storage->createNote(text);
 	} else {
-		if (NoteManager::instance()->getNote(storageId, noteId)->text() != text) {
+		if (NoteManager::instance()->getNote(storageId, noteId).text() != text) {
 			storage->saveNote(noteId, text);
 		}
 	}
