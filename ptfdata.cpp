@@ -34,7 +34,7 @@ bool PTFData::fromFile(QString fn)
 	QFile file(fn);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		return false;
-	setText(file.readAll());
+	setText(QString::fromUtf8(file.readAll()));
 	setFile(fn);
 	file.close();
 
