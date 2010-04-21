@@ -22,6 +22,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "mainwidget.h"
 
 #include <QtGui/QApplication>
+#include <QDesktopWidget>
+#include <QDebug>
 #include "notemanager.h"
 #include "notedialog.h"
 
@@ -107,7 +109,25 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 		menu.addAction(notes[i].title)->setData(i);;
 	}
 	const QPoint menuPos = tray->geometry().bottomLeft();
-	QAction *act = menu.exec(tray->geometry().bottomLeft(), actNew);
+	menu.activateWindow();
+	QRect dr = QApplication::desktop()->geometry();
+	QRect ir = tray->geometry();
+	QRect mr = menu.geometry();
+	mr.setSize(menu.sizeHint());
+	if (ir.left() < dr.width()/2) {
+		if (ir.top() < dr.height()/2) {
+			mr.moveTopLeft(ir.bottomLeft());
+		} else {
+			mr.moveBottomLeft(ir.topLeft());
+		}
+	} else {
+		if (ir.top() < dr.height()/2) {
+			mr.moveTopRight(ir.bottomRight());
+		} else {
+			mr.moveBottomRight(ir.topRight());
+		}
+	}
+	QAction *act = menu.exec(mr.topLeft());
 	if (act && act != actNew) {
 		NoteListItem &note = notes[act->data().toInt()];
 		showNoteDialog(note.storageId, note.id);
