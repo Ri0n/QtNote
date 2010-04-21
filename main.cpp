@@ -46,10 +46,10 @@ int main(int argc, char *argv[])
 	QCoreApplication::setApplicationName("QtNote");
 
 	QList<NoteStorage*> storages;
-	storages.append(new PTFStorage(&a));
 #ifdef TOMBOY
 	storages.append(new TomboyStorage(&a));
 #endif
+	storages.append(new PTFStorage(&a));
 
 	while (storages.count()) {
 		NoteStorage *storage = storages.takeFirst();

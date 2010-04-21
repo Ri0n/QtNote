@@ -33,7 +33,7 @@ public:
 	bool isAccessible() const;
 	const QString systemName() const;
 	QList<NoteListItem> noteList();
-	Note get(const QString &id);
+	Note get(const QString &noteId);
 	void createNote(const QString &text);
 	void saveNote(const QString &noteId, const QString &text);
 	void deleteNote(const QString &noteId);

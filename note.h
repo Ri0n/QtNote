@@ -22,17 +22,17 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTE_H
 #define NOTE_H
 
-#include <QSharedDataPointer>
+#include <QSharedPointer>
 
 
-class NoteData;
+//class NoteData;
+#include "notedata.h"
 
 class Note
 {
 public:
 	Note();
 	Note(NoteData *data);
-	Note(const Note &other);
 
 	bool isNull();
 	void toTrash();
@@ -40,7 +40,7 @@ public:
 	QString title() const;
 
 private:
-	NoteData *d;
+	QSharedPointer<NoteData> d;
 };
 
 #endif // NOTE_H

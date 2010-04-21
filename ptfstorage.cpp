@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "ptfstorage.h"
 #include <QDesktopServices>
 #include <QDir>
+#include <QUuid>
 #include "ptfdata.h"
 
 PTFStorage::PTFStorage(QObject *parent)
@@ -56,30 +57,37 @@ QList<NoteListItem> PTFStorage::noteList()
 		PTFData note;
 		if (note.fromFile(fi.canonicalFilePath())) {
 			//qDebug("loading: %s from file %s", qPrintable(note.uid()), qPrintable(fi.canonicalFilePath()));
-			//ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
+			ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
 		}
 	}
 	return ret;
 }
 
-Note PTFStorage::get(const QString &id)
+Note PTFStorage::get(const QString &noteId)
 {
-	Q_UNUSED(id);
-	return Note();
+	QString fileName = QDir(notesDir).absoluteFilePath(
+			QString("%1.txt").arg(noteId) );
+	PTFData *noteData = new PTFData;
+	noteData->fromFile(fileName);
+	return Note(noteData);
 }
 
 void PTFStorage::createNote(const QString &text)
 {
-	Q_UNUSED(text)
+	QString uid = QUuid::createUuid ().toString();
+	saveNote(uid.mid(1, uid.length()-2), text);
 }
 
 void PTFStorage::saveNote(const QString &noteId, const QString &text)
 {
-	Q_UNUSED(noteId)
-	Q_UNUSED(text)
+	PTFData note;
+	note.setText(text);
+	note.saveToFile( QDir(notesDir).absoluteFilePath(
+			QString("%1.txt").arg(noteId)) );
 }
 
 void PTFStorage::deleteNote(const QString &noteId)
 {
-	Q_UNUSED(noteId)
+	QFile::remove( QDir(notesDir).absoluteFilePath(
+			QString("%1.txt").arg(noteId)) );
 }

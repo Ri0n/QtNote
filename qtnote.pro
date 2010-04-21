@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     notestorage.cpp \
     ptfstorage.cpp \
     ptfdata.cpp \
-    notedata.cpp
+    notedata.cpp \
+    filenotedata.cpp
 HEADERS += mainwidget.h \
     notedialog.h \
     note.h \
@@ -33,7 +34,8 @@ HEADERS += mainwidget.h \
     notestorage.h \
     ptfstorage.h \
     ptfdata.h \
-    notedata.h
+    notedata.h \
+    filenotedata.h
 RESOURCES += main.qrc
 QT += xml
 FORMS += notedialog.ui

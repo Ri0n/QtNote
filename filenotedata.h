@@ -19,25 +19,26 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef NOTEDATA_H
-#define NOTEDATA_H
+#ifndef FILENOTEDATA_H
+#define FILENOTEDATA_H
 
-#include <QSharedData>
-#include <QString>
+#include "notedata.h"
+#include <QDateTime>
 
-class NoteData : public QSharedData
+class FileNoteData : public NoteData
 {
 public:
-	NoteData();
-	virtual void toTrash() = 0;
-	virtual QString text() const;
-	virtual QString title() const;
-	virtual void setText(const QString &text);
+    FileNoteData();
+	QString uid() const;
+	void setFile(QString fn);
+	QDateTime modifyTime() const;
+	void toTrash();
 
 protected:
-	QString sTitle;
-	QString sText;
-
+	QString sUid;
+	QString sFileName;
+	QDateTime dtLastChange;
+	QDateTime dtCreate;
 };
 
-#endif // NOTEDATA_H
+#endif // FILENOTEDATA_H

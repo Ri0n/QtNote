@@ -45,8 +45,8 @@ TomboyStorage::TomboyStorage(QObject *parent)
 	tomboyDirs<<(dataLocation + "/Tomboy")
 	tomboyDirs<<(QDir::homePath() + "/.config/tomboy/")
 #elif defined(Q_OS_WIN)
-	tomboyDirs<<(dataLocation + "\\Tomboy\\notes")
-	tomboyDirs<<(dataLocation + "\\tomboy")
+	tomboyDirs<<(dataLocation + "/Tomboy/notes")
+	tomboyDirs<<(dataLocation + "/tomboy")
 #endif
 	foreach (notesDir, tomboyDirs) {
 		if (QDir(notesDir).isReadable()) {
@@ -87,8 +87,6 @@ Note TomboyStorage::get(const QString &id)
 {
 	QString fileName = QDir(notesDir).absoluteFilePath(
 			QString("%1.note").arg(id) );
-	//qDebug("loading: %s:%s\nfilename: %s", qPrintable(systemName()),
-	//	   qPrintable(id), qPrintable(fileName));
 	TomboyData *noteData = new TomboyData;
 	noteData->fromFile(fileName);
 	return Note(noteData);
@@ -102,15 +100,14 @@ void TomboyStorage::createNote(const QString &text)
 
 void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
-	TomboyData *note = new TomboyData;
-	note->setText(text);
-	note->saveToFile( QDir(notesDir).absoluteFilePath(
+	TomboyData note;
+	note.setText(text);
+	note.saveToFile( QDir(notesDir).absoluteFilePath(
 			QString("%1.note").arg(noteId)) );
 }
 
 void TomboyStorage::deleteNote(const QString &noteId)
 {
-	//qDebug("delete note: %s:%s", qPrintable(systemName()), qPrintable(noteId));
 	QFile::remove( QDir(notesDir).absoluteFilePath(
 			QString("%1.note").arg(noteId)) );
 }

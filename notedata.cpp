@@ -22,5 +22,24 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedata.h"
 
 NoteData::NoteData()
+	: QSharedData()
 {
+	sTitle = "(no name)";
 }
+
+QString NoteData::title() const
+{
+	return sTitle;
+}
+
+QString NoteData::text() const
+{
+	return sText;
+}
+
+void NoteData::setText(const QString &text)
+{
+	sText = text;
+	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
+}
+

@@ -29,7 +29,6 @@ NoteManager::NoteManager(QObject *parent)
 
 }
 
-
 void NoteManager::registerStorage(NoteStorage *storage, bool isDefault)
 {
 	storages_.append(storage);

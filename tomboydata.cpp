@@ -24,9 +24,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtDebug>
 
 TomboyData::TomboyData()
-		: NoteData()
+		: FileNoteData()
 {
-	sTitle = "(no name)";
+
 }
 
 bool TomboyData::fromFile(QString fn)
@@ -55,52 +55,7 @@ bool TomboyData::fromFile(QString fn)
 	return true;
 }
 
-void TomboyData::setFile(QString fn)
-{
-	//qDebug("setf file: %s", qPrintable(fn));
-	sFile = fn;
-	int pos = fn.lastIndexOf('/');
-	if (pos != -1) {
-		fn = fn.mid(pos+1);
-	}
-	sUid = fn.section('.', 0, 0);
-	//qDebug("uid: %s", qPrintable(sUid));
-}
-
-QString TomboyData::title() const
-{
-	return sTitle;
-}
-
-QString TomboyData::uid() const
-{
-	return sUid;
-}
-
-QDateTime TomboyData::modifyTime() const
-{
-	return dtLastChange;
-}
-
-QString TomboyData::text() const
-{
-	return sText;
-}
-
-void TomboyData::setText(const QString &text)
-{
-	sText = text;
-	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
-}
-
-void TomboyData::toTrash()
-{
-	QFile f(sFile);
-	f.remove();
-	//emit
-}
-
-void TomboyData::saveToFile(const QString &fileName)
+bool TomboyData::saveToFile(const QString &fileName)
 {
 	QDomDocument dom;
 	QDomElement note = dom.createElement("note"), node, node2;
@@ -124,11 +79,14 @@ void TomboyData::saveToFile(const QString &fileName)
 	node.appendChild(node2);
 
 	setFile(fileName);;
-	QFile file(sFile);
-	file.open(QIODevice::WriteOnly);
+	QFile file(sFileName);
+	if (!file.open(QIODevice::WriteOnly)) {
+		return false;
+	}
 	file.write(dom.toString(-1).toUtf8());
 	//qDebug()<<sUid<<"\n"<<sFile;
 	file.close();
+	return true;
 }
 
 QString TomboyData::nodeText(QDomNode node)

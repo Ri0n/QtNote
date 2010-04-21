@@ -19,25 +19,38 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef NOTEDATA_H
-#define NOTEDATA_H
+#include "filenotedata.h"
+#include <QFile>
 
-#include <QSharedData>
-#include <QString>
-
-class NoteData : public QSharedData
+FileNoteData::FileNoteData()
+	: NoteData()
 {
-public:
-	NoteData();
-	virtual void toTrash() = 0;
-	virtual QString text() const;
-	virtual QString title() const;
-	virtual void setText(const QString &text);
 
-protected:
-	QString sTitle;
-	QString sText;
+}
 
-};
+QString FileNoteData::uid() const
+{
+	return sUid;
+}
 
-#endif // NOTEDATA_H
+void FileNoteData::setFile(QString fn)
+{
+	sFileName = fn;
+	int pos = fn.lastIndexOf('/');
+	if (pos != -1) {
+		fn = fn.mid(pos+1);
+	}
+	sUid = fn.section('.', 0, 0);
+}
+
+QDateTime FileNoteData::modifyTime() const
+{
+	return dtLastChange;
+}
+
+
+void FileNoteData::toTrash()
+{
+	QFile f(sFileName);
+	f.remove();
+}

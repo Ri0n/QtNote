@@ -29,16 +29,9 @@ Note::Note()
 
 }
 
-
 Note::Note(NoteData *data)
 {
-	d = data;
-}
-
-Note::Note(const Note &other)
-	: d (other.d)
-{
-
+	d = QSharedPointer<NoteData>(data);
 }
 
 bool Note::isNull()

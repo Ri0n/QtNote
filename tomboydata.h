@@ -26,31 +26,17 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDomDocument>
 #include <QPointer>
 #include <QDateTime>
-#include "notedata.h"
+#include "filenotedata.h"
 
-class TomboyData : public NoteData
+class TomboyData : public FileNoteData
 {
 public:
 	TomboyData();
 	bool fromFile(QString);
-	void setFile(QString fn);
-	void saveToFile(const QString &fileName);
-	QString title() const;
-	QString uid() const;
-	QString text() const;
-	void setText(const QString &text);
-	QDateTime modifyTime() const;
-	void toTrash();
-
+	bool saveToFile(const QString &fileName);
 	QString nodeText(QDomNode node);
 
-private:
-	QString sFile;
-	QString sUid;
-	QString sTitle;
-	QString sText;
-	QDateTime dtLastChange;
-	QDateTime dtCreate;
+protected:
 	int iCursor;
 	int iWidth;
 	int iHeight;

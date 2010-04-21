@@ -24,56 +24,30 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtDebug>
 
 PTFData::PTFData()
-		: NoteData()
+		: FileNoteData()
 {
-	sTitle = "(no name)";
+
 }
 
 bool PTFData::fromFile(QString fn)
 {
 	QFile file(fn);
-	if (!file.open(QIODevice::ReadOnly))
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		return false;
+	setText(file.readAll());
 	setFile(fn);
 	file.close();
 
 	return true;
 }
 
-void PTFData::setFile(QString fn)
+bool PTFData::saveToFile(const QString &fileName)
 {
-	Q_UNUSED(fn)
-}
-
-QString PTFData::title() const
-{
-	return sTitle;
-}
-
-QDateTime PTFData::modifyTime() const
-{
-	return dtLastChange;
-}
-
-QString PTFData::text() const
-{
-	return sText;
-}
-
-void PTFData::setText(const QString &text)
-{
-	sText = text;
-	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
-}
-
-void PTFData::toTrash()
-{
-	QFile f(sFileName);
-	f.remove();
-	//emit
-}
-
-void PTFData::saveToFile(const QString &fileName)
-{
-	Q_UNUSED(fileName)
+	QFile file(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		return false;
+	file.write(sText.toUtf8());
+	setFile(fileName);
+	file.close();
+	return true;
 }
