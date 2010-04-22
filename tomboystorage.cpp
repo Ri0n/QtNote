@@ -42,11 +42,11 @@ TomboyStorage::TomboyStorage(QObject *parent)
 	tomboyDirs<<((dataLocation.endsWith("/data")?dataLocation.left(dataLocation.length()-5) : dataLocation)+"/tomboy");
 	tomboyDirs<<(QDir::home().path()+"/.tomboy");
 #elif defined(Q_OS_MAC)
-	tomboyDirs<<(dataLocation + "/Tomboy")
-	tomboyDirs<<(QDir::homePath() + "/.config/tomboy/")
+	tomboyDirs<<(dataLocation + "/Tomboy");
+	tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
 #elif defined(Q_OS_WIN)
-	tomboyDirs<<(dataLocation + "/Tomboy/notes")
-	tomboyDirs<<(dataLocation + "/tomboy")
+	tomboyDirs<<(dataLocation + "/Tomboy/notes");
+	tomboyDirs<<(dataLocation + "/tomboy");
 #endif
 	foreach (notesDir, tomboyDirs) {
 		if (QDir(notesDir).isReadable()) {
