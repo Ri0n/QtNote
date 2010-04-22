@@ -17,6 +17,7 @@
 # -------------------------------------------------
 TARGET = qtnote
 TEMPLATE = app
+CONFIG += tomboy # force tomboy
 SOURCES += main.cpp \
     mainwidget.cpp \
     notedialog.cpp \
@@ -26,7 +27,8 @@ SOURCES += main.cpp \
     ptfstorage.cpp \
     ptfdata.cpp \
     notedata.cpp \
-    filenotedata.cpp
+    filenotedata.cpp \
+    aboutdlg.cpp
 HEADERS += mainwidget.h \
     notedialog.h \
     note.h \
@@ -35,16 +37,20 @@ HEADERS += mainwidget.h \
     ptfstorage.h \
     ptfdata.h \
     notedata.h \
-    filenotedata.h
-RESOURCES += main.qrc
-QT += xml
-FORMS += notedialog.ui
-unix { 
-    target.path = $$PREFIX/usr/bin
-    INSTALLS += target
+    filenotedata.h \
+    aboutdlg.h
+tomboy { 
     SOURCES += tomboystorage.cpp \
         tomboydata.cpp
     HEADERS += tomboystorage.h \
         tomboydata.h
     DEFINES += TOMBOY
+}
+RESOURCES += main.qrc
+QT += xml
+FORMS += notedialog.ui \
+    aboutdlg.ui
+unix { 
+    target.path = $$PREFIX/usr/bin
+    INSTALLS += target
 }

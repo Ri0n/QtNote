@@ -54,6 +54,7 @@ QList<NoteListItem> NoteManager::noteList() const
 	foreach (NoteStorage *storage, storages_) {
 		ret += storage->noteList();
 	}
+	qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
 	return ret;
 }
 

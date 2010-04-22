@@ -21,7 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "ptfdata.h"
 #include <QIcon>
-#include <QtDebug>
+#include <QFileInfo>
 
 PTFData::PTFData()
 		: FileNoteData()
@@ -37,6 +37,9 @@ bool PTFData::fromFile(QString fn)
 	setText(QString::fromUtf8(file.readAll()));
 	setFile(fn);
 	file.close();
+	QFileInfo fi(fn);
+	dtCreate = fi.created();
+	dtLastChange = fi.lastModified();
 
 	return true;
 }

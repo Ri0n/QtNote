@@ -21,6 +21,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "notestorage.h"
 
+bool noteListItemModifyComparer(const NoteListItem &a,
+								const NoteListItem &b) {
+	return a.lastModify > b.lastModify; //backward order
+}
+
 NoteStorage::NoteStorage(QObject *parent)
 	: QObject(parent)
 {

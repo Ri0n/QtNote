@@ -26,15 +26,18 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDebug>
 #include "notemanager.h"
 #include "notedialog.h"
+#include "aboutdlg.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
 	actQuit = new QAction(QIcon(":/icons/exit"), "&Quit", this);
 	actNew = new QAction(QIcon(":/icons/new"), "&New", this);
+	actAbout = new QAction(QIcon(":/icons/trayicon"), "&About", this);
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);
+	contextMenu->addAction(actAbout);
 	contextMenu->addSeparator();
 	contextMenu->addAction(actQuit);
 
@@ -46,6 +49,7 @@ Widget::Widget(QWidget *parent)
 
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
+	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
 }
@@ -57,6 +61,13 @@ Widget::~Widget()
 void Widget::exitQtNote()
 {
 	QApplication::quit();
+}
+
+void Widget::showAbout()
+{
+	AboutDlg *d = new AboutDlg(this);
+	d->setAttribute(Qt::WA_DeleteOnClose);
+	d->show();
 }
 
 void Widget::showNoteDialog(const QString &storageId, const QString &noteId)

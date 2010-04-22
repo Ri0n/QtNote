@@ -39,6 +39,9 @@ struct NoteListItem
 	QDateTime lastModify;
 };
 
+bool noteListItemModifyComparer(const NoteListItem &a,
+								const NoteListItem &b);
+
 class NoteStorage : public QObject
 {
 	Q_OBJECT

@@ -39,7 +39,7 @@ QString NoteData::text() const
 
 void NoteData::setText(const QString &text)
 {
-	sText = text;
-	sTitle = sText.section('\n', 0, 0); //FIXME crossplatform?
+	sText = text.trimmed();
+	sTitle = sText.section('\n', 0, 0).trimmed();
 }
 
