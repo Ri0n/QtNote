@@ -23,7 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QtGui/QApplication>
 #include <QDesktopWidget>
-#include <QDebug>
+#include <QStyle>
 #include "notemanager.h"
 #include "notedialog.h"
 #include "aboutdlg.h"
@@ -117,7 +117,7 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	menu.addSeparator();
 	QList<NoteListItem> notes = NoteManager::instance()->noteList();
 	for (int i=0; i<notes.count(); i++) {
-		menu.addAction(notes[i].title)->setData(i);;
+		menu.addAction(menu.style()->standardIcon(QStyle::SP_MessageBoxInformation), notes[i].title)->setData(i);
 	}
 	const QPoint menuPos = tray->geometry().bottomLeft();
 	menu.activateWindow();
