@@ -26,6 +26,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QUuid>
 #include <QCoreApplication>
 #include <QDesktopServices>
+#ifdef Q_OS_WIN
+#include <QSettings>
+#endif
 
 TomboyStorage::TomboyStorage(QObject *parent)
 	: NoteStorage(parent)
@@ -45,6 +48,8 @@ TomboyStorage::TomboyStorage(QObject *parent)
 	tomboyDirs<<(dataLocation + "/Tomboy");
 	tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
 #elif defined(Q_OS_WIN)
+	QSettings ini(QSettings::IniFormat, QSettings::UserScope, "", "");
+	dataLocation = QFileInfo(ini.fileName()).absolutePath();
 	tomboyDirs<<(dataLocation + "/Tomboy/notes");
 	tomboyDirs<<(dataLocation + "/tomboy");
 #endif
