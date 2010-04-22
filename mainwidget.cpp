@@ -31,9 +31,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
-	actQuit = new QAction(QIcon(":/icons/exit"), "&Quit", this);
-	actNew = new QAction(QIcon(":/icons/new"), "&New", this);
-	actAbout = new QAction(QIcon(":/icons/trayicon"), "&About", this);
+	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
+	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
+	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);

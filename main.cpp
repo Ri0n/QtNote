@@ -21,6 +21,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QtGui/QApplication>
 #include <QMessageBox>
+#include <QLocale>
+#include <QTranslator>
+#include <QFileInfo>
 #include "mainwidget.h"
 #include "notemanager.h"
 #ifdef TOMBOY
@@ -35,8 +38,16 @@ int main(int argc, char *argv[])
 
 	Q_INIT_RESOURCE(main);
 
+	QString locale = QLocale::system().name();
+
+	QTranslator translator;
+	if (!translator.load(QString("langs/qtnote_") + locale)) {
+		qDebug("failed to load translation");
+	}
+	a.installTranslator(&translator);
+
 	if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-		QMessageBox::critical(0, QObject::tr("QNote"),
+		QMessageBox::critical(0, "QtNote",
 							  QObject::tr("I couldn't detect any system tray "
 										   "on this system."));
 		return 1;

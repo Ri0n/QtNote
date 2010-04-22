@@ -51,6 +51,9 @@ QT += xml
 FORMS += notedialog.ui \
     aboutdlg.ui
 unix { 
-    target.path = $$PREFIX/usr/bin
+	target.path = $$PREFIX/bin
     INSTALLS += target
 }
+
+TRANSLATIONS = langs/qtnote_ru.ts
+CODECFORTR = UTF-8
