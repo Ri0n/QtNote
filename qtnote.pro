@@ -50,10 +50,17 @@ RESOURCES += main.qrc
 QT += xml
 FORMS += notedialog.ui \
     aboutdlg.ui
-unix { 
+unix {
 	target.path = $$PREFIX/bin
     INSTALLS += target
+	TRANSLATIONS_DIR = $$PREFIX/share/qtnote
+	DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
 }
 
 TRANSLATIONS = langs/qtnote_ru.ts
-CODECFORTR = UTF-8
+
+CTRANSLATIONS = langs/qtnote_ru.qm
+DISTFILES += $$CTRANSLATIONS
+for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
+translations.path = $$TRANSLATIONS_DIR
+INSTALLS += translations

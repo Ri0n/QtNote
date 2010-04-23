@@ -42,7 +42,10 @@ int main(int argc, char *argv[])
 
 	QTranslator translator;
 	if (!translator.load(QString("langs/qtnote_") + locale)) {
-		qDebug("failed to load translation");
+#ifdef Q_OS_UNIX
+		if (!translator.load(QString(TRANSLATIONS_DIR) + QString("/qtnote_") + locale))
+#endif
+			qDebug("failed to load translation");
 	}
 	a.installTranslator(&translator);
 

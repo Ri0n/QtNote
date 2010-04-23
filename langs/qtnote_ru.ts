@@ -1,25 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.0" language="ru_RU">
+<defaultcodec>UTF-8</defaultcodec>
 <context>
     <name>AboutDlg</name>
     <message>
-        <location filename="../aboutdlg.ui" line="20"/>
+        <location filename="../aboutdlg.ui" line="14"/>
         <source>About QtNote</source>
         <translation>О QtNote</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="61"/>
+        <location filename="../aboutdlg.ui" line="58"/>
         <source>Simpe and usable note taking application</source>
         <translation>Простые и удобные заметки</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="89"/>
+        <location filename="../aboutdlg.ui" line="86"/>
         <source>License: GPL-3</source>
         <translation>Лицензия: GPL-3</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="101"/>
+        <location filename="../aboutdlg.ui" line="98"/>
         <source>Author: Il&apos;inykh Sergey</source>
         <translation>Автор: Ильиных Сергей</translation>
     </message>
@@ -35,7 +36,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../main.cpp" line="40"/>
+        <location filename="../main.cpp" line="51"/>
         <source>I couldn&apos;t detect any system tray on this system.</source>
         <translation>Системный трей не обнаружен</translation>
     </message>
