@@ -154,6 +154,10 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 						const QString &text)
 {
 	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	if (!noteId.isEmpty() && text.isEmpty()) { // delete empty note
+		storage->deleteNote(noteId);
+		return;
+	}
 	if (noteId.isEmpty()) {
 		storage->createNote(text);
 	} else {

@@ -60,7 +60,7 @@ void NoteDialog::done(int r)
 	if (trashRequested_) {
 		emit trashRequested(storageId_, noteId_);
 	} else {
-		emit saveRequested(storageId_, noteId_, text());
+		emit saveRequested(storageId_, noteId_, text().trimmed());
 	}
 	QDialog::done(r);
 }
