@@ -67,3 +67,5 @@ unix {
     translations.path = $$TRANSLATIONS_DIR
     INSTALLS += translations
 }
+
+RC_FILE = win/qtnote.rc
