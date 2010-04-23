@@ -53,15 +53,16 @@ FORMS += notedialog.ui \
 TRANSLATIONS = langs/qtnote_ru.ts
 
 unix {
-	target.path = $$PREFIX/bin
+    target.path = $$PREFIX/bin
     INSTALLS += target
-
-	# translations
-	TRANSLATIONS_DIR = $$PREFIX/share/qtnote
-	DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
-	CTRANSLATIONS = langs/qtnote_ru.qm
-	DISTFILES += $$CTRANSLATIONS
-	for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
-	translations.path = $$TRANSLATIONS_DIR
-	INSTALLS += translations
+    
+    # translations
+    TRANSLATIONS_DIR = $$PREFIX/share/qtnote
+    DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
+    #CTRANSLATIONS = langs/qtnote_ru.qm
+    #DISTFILES += $$CTRANSLATIONS
+    #for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
+    translations.files = "langs/qtnote_ru.qm"
+    translations.path = $$TRANSLATIONS_DIR
+    INSTALLS += translations
 }
