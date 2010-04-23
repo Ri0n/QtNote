@@ -15,6 +15,7 @@
 # Contacts:
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
+
 TARGET = qtnote
 TEMPLATE = app
 CONFIG += tomboy # force tomboy

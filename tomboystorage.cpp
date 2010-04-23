@@ -55,7 +55,7 @@ TomboyStorage::TomboyStorage(QObject *parent)
 #endif
 	foreach (notesDir, tomboyDirs) {
 		if (QDir(notesDir).isReadable()) {
-			qDebug("found tomboy dir: %s", qPrintable(notesDir));
+			//qDebug("found tomboy dir: %s", qPrintable(notesDir));
 			break;
 		}
 	}
