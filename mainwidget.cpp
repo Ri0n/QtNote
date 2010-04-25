@@ -41,6 +41,7 @@ Widget::Widget(QWidget *parent)
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);
+	contextMenu->addSeparator();
 	contextMenu->addAction(actOptions);
 	contextMenu->addAction(actAbout);
 	contextMenu->addSeparator();
@@ -122,15 +123,22 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 
 void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
+	if (reason == QSystemTrayIcon::MiddleClick) {
+		createNewNote();
+		return;
+	}
 	if (reason != QSystemTrayIcon::Trigger) {
 		return;
 	}
 	QMenu menu(this);
 	menu.addAction(actNew);
 	menu.addSeparator();
-	QList<NoteListItem> notes = NoteManager::instance()->noteList();
+	QSettings s;
+	QList<NoteListItem> notes = NoteManager::instance()->noteList(
+								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
-		menu.addAction(menu.style()->standardIcon(QStyle::SP_MessageBoxInformation), notes[i].title)->setData(i);
+		menu.addAction(menu.style()->standardIcon(
+				QStyle::SP_MessageBoxInformation), notes[i].title)->setData(i);
 	}
 	const QPoint menuPos = tray->geometry().bottomLeft();
 	menu.activateWindow();
@@ -176,7 +184,8 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 	if (noteId.isEmpty()) {
 		storage->createNote(text);
 	} else {
-		if (NoteManager::instance()->getNote(storageId, noteId).text() != text) {
+		if (NoteManager::instance()->getNote(storageId, noteId).text() != text)
+		{
 			storage->saveNote(noteId, text);
 		}
 	}

@@ -41,14 +41,19 @@
         <translation>QtNote Настройки</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="27"/>
+        <location filename="../optionsdlg.ui" line="24"/>
         <source>Storage Priority</source>
         <translation>Приоритет хранилищ</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="46"/>
+        <location filename="../optionsdlg.ui" line="43"/>
         <source>Delete notes with confirmation</source>
         <translation>Удалять заметки с подтверждением</translation>
+    </message>
+    <message>
+        <location filename="../optionsdlg.ui" line="52"/>
+        <source>Amount of notes to show in the tray menu</source>
+        <translation>Количество заметок в меню трея</translation>
     </message>
 </context>
 <context>
@@ -62,12 +67,12 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../main.cpp" line="62"/>
+        <location filename="../main.cpp" line="70"/>
         <source>I couldn&apos;t detect any system tray on this system.</source>
         <translation>Системный трей не обнаружен</translation>
     </message>
     <message>
-        <location filename="../main.cpp" line="92"/>
+        <location filename="../main.cpp" line="100"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -103,12 +108,12 @@
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="190"/>
+        <location filename="../mainwidget.cpp" line="199"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="191"/>
+        <location filename="../mainwidget.cpp" line="200"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>

@@ -82,6 +82,7 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 	ui->priorityView->setModel(priorityModel);
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
+	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
 }
 
 OptionsDlg::~OptionsDlg()
@@ -108,5 +109,6 @@ void OptionsDlg::accept()
 	QSettings s;
 	s.setValue("storage.priority", storageCodes);
 	s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
+	s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
 	QDialog::accept();
 }

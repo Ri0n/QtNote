@@ -50,14 +50,15 @@ bool NoteManager::loadAll()
 	return true;
 }
 
-QList<NoteListItem> NoteManager::noteList() const
+QList<NoteListItem> NoteManager::noteList(int count) const
 {
 	QList<NoteListItem> ret;
-	foreach (StorageItem si, storages_) {
-		ret += si.storage->noteList();
+	foreach (StorageItem si, prioritizedStorages()) {
+		QList<NoteListItem> items = si.storage->noteList();
+		qSort(items.begin(), items.end(), noteListItemModifyComparer);
+		ret += items;
 	}
-	qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
-	return ret;
+	return ret.mid(0, count);
 }
 
 Note NoteManager::getNote(const QString &storageId, const QString &noteId)

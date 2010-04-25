@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTranslator>
 #include <QFileInfo>
 #include <QSettings>
+#include <QLibraryInfo>
 #include "mainwidget.h"
 #include "notemanager.h"
 #ifdef TOMBOY
@@ -49,12 +50,19 @@ int main(int argc, char *argv[])
 	QTranslator translator;
 	if (!translator.load(QString("langs/qtnote_") + locale)) {
 #ifdef Q_OS_UNIX
-		if (!translator.load(QString(TRANSLATIONS_DIR) + QString("/qtnote_") +
-							 locale))
+		if (!translator.load(QString(TRANSLATIONS_DIR) + "/qtnote_" + locale))
 #endif
 			qDebug("failed to load translation");
 	}
 	a.installTranslator(&translator);
+	QTranslator qtTranslator;
+#ifdef Q_OS_UNIX
+	if (!qtTranslator.load(QLibraryInfo::location(QLibraryInfo::TranslationsPath)
+		+ "/qt_" + locale))
+#endif
+		qtTranslator.load(QString("langs/qt_") + locale);
+	a.installTranslator(&qtTranslator);
+
 
 	// detecting system tray
 	if (!QSystemTrayIcon::isSystemTrayAvailable()) {

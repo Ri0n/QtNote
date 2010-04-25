@@ -49,7 +49,7 @@ public:
 	static NoteManager *instance();
 	void registerStorage(NoteStorage *storage, int priority = 0);
 	bool loadAll();
-	QList<NoteListItem> noteList() const;
+	QList<NoteListItem> noteList(int count = -1) const;
 	Note getNote(const QString &storageId, const QString &noteId);
 	const QMap<QString, StorageItem> storages() const;
 	const QList<StorageItem> prioritizedStorages() const;
