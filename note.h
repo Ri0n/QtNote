@@ -38,6 +38,7 @@ public:
 	void toTrash();
 	QString text() const;
 	QString title() const;
+	NoteData* data() const;
 
 private:
 	QSharedPointer<NoteData> d;

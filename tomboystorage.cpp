@@ -23,7 +23,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "tomboydata.h"
 #include <QDir>
-#include <QUuid>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #ifdef Q_OS_WIN
@@ -31,8 +30,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #endif
 
 TomboyStorage::TomboyStorage(QObject *parent)
-	: NoteStorage(parent)
+	: FileStorage(parent)
 {
+	fileExt = "note";
 	QStringList tomboyDirs;
 	QString orgName = QCoreApplication::organizationName();
 	QString appName = QCoreApplication::applicationName();
@@ -80,14 +80,18 @@ const QString TomboyStorage::titleName() const
 
 QList<NoteListItem> TomboyStorage::noteList()
 {
-	QList<NoteListItem> ret;
-	QFileInfoList files = QDir(notesDir).entryInfoList(QStringList("*.note"),
-			  QDir::Files | QDir::NoDotAndDotDot);
-	foreach (QFileInfo fi, files) {
-		TomboyData note;
-		if (note.fromFile(fi.canonicalFilePath())) {
-			//qDebug("loading: %s from file %s", qPrintable(note.uid()), qPrintable(fi.canonicalFilePath()));
-			ret.append(NoteListItem(note.uid(), systemName(), note.title(), note.modifyTime()));
+	QList<NoteListItem> ret = cache.values();
+	if (ret.count() == 0) {
+		QFileInfoList files = QDir(notesDir).entryInfoList(QStringList(QString("*.")
+									+ fileExt), QDir::Files | QDir::NoDotAndDotDot);
+		foreach (QFileInfo fi, files) {
+			TomboyData note;
+			if (note.fromFile(fi.canonicalFilePath())) {
+				NoteListItem li(note.uid(), systemName(), note.title(),
+								note.modifyTime());
+				ret.append(li);
+				cache.insert(note.uid(), li);
+			}
 		}
 	}
 	return ret;
@@ -96,28 +100,19 @@ QList<NoteListItem> TomboyStorage::noteList()
 Note TomboyStorage::get(const QString &id)
 {
 	QString fileName = QDir(notesDir).absoluteFilePath(
-			QString("%1.note").arg(id) );
+			QString("%1.%2").arg(id).arg(fileExt) );
 	TomboyData *noteData = new TomboyData;
 	noteData->fromFile(fileName);
 	return Note(noteData);
-}
-
-void TomboyStorage::createNote(const QString &text)
-{
-	QString uid = QUuid::createUuid ().toString();
-	saveNote(uid.mid(1, uid.length()-2), text);
 }
 
 void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
 	TomboyData note;
 	note.setText(text);
-	note.saveToFile( QDir(notesDir).absoluteFilePath(
-			QString("%1.note").arg(noteId)) );
-}
-
-void TomboyStorage::deleteNote(const QString &noteId)
-{
-	QFile::remove( QDir(notesDir).absoluteFilePath(
-			QString("%1.note").arg(noteId)) );
+	if (note.saveToFile( QDir(notesDir).absoluteFilePath(
+			QString("%1.%2").arg(noteId).arg(fileExt)) )) {
+		cache.insert(note.uid(), NoteListItem(note.uid(), systemName(),
+											  note.title(), note.modifyTime()));
+	}
 }

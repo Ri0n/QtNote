@@ -29,7 +29,8 @@ SOURCES += main.cpp \
     notedata.cpp \
     filenotedata.cpp \
     aboutdlg.cpp \
-    optionsdlg.cpp
+    optionsdlg.cpp \
+    filestorage.cpp
 HEADERS += mainwidget.h \
     notedialog.h \
     note.h \
@@ -40,7 +41,8 @@ HEADERS += mainwidget.h \
     notedata.h \
     filenotedata.h \
     aboutdlg.h \
-    optionsdlg.h
+    optionsdlg.h \
+    filestorage.h
 tomboy { 
     SOURCES += tomboystorage.cpp \
         tomboydata.cpp

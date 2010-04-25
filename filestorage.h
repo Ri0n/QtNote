@@ -19,26 +19,23 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef TOMBOYSTORAGE_H
-#define TOMBOYSTORAGE_H
+#ifndef FILESTORAGE_H
+#define FILESTORAGE_H
 
-#include <QMap>
-#include "filestorage.h"
+#include "notestorage.h"
+#include <QHash>
 
-#include "tomboydata.h"
-
-class TomboyStorage : public FileStorage
+class FileStorage : public NoteStorage
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(TomboyStorage)
 public:
-	TomboyStorage(QObject *parent);
-	bool isAccessible() const;
-	const QString systemName() const;
-	const QString titleName() const;
-	QList<NoteListItem> noteList();
-	Note get(const QString &id);
-	void saveNote(const QString &noteId, const QString &text);
+	FileStorage(QObject *parent);
+	void createNote(const QString &text);
+	void deleteNote(const QString &noteId);
+
+protected:
+	QString fileExt;
+	QHash<QString, NoteListItem> cache;
+	QString notesDir;
 };
 
-#endif // TOMBOYSTORAGE_H
+#endif // FILESTORAGE_H

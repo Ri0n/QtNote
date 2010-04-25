@@ -19,26 +19,27 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef TOMBOYSTORAGE_H
-#define TOMBOYSTORAGE_H
-
-#include <QMap>
 #include "filestorage.h"
+#include <QUuid>
+#include <QFile>
+#include <QDir>
 
-#include "tomboydata.h"
-
-class TomboyStorage : public FileStorage
+FileStorage::FileStorage(QObject *parent)
+	: NoteStorage(parent)
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(TomboyStorage)
-public:
-	TomboyStorage(QObject *parent);
-	bool isAccessible() const;
-	const QString systemName() const;
-	const QString titleName() const;
-	QList<NoteListItem> noteList();
-	Note get(const QString &id);
-	void saveNote(const QString &noteId, const QString &text);
-};
 
-#endif // TOMBOYSTORAGE_H
+}
+
+void FileStorage::createNote(const QString &text)
+{
+	QString uid = QUuid::createUuid ().toString();
+	saveNote(uid.mid(1, uid.length()-2), text);
+}
+
+void FileStorage::deleteNote(const QString &noteId)
+{
+	if (QFile::remove( QDir(notesDir).absoluteFilePath(
+			QString("%1.%2").arg(noteId).arg(fileExt)) )) {
+		cache.remove(noteId);
+	}
+}

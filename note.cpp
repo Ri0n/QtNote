@@ -53,3 +53,8 @@ QString Note::title() const
 {
 	return d->title();
 }
+
+NoteData* Note::data() const
+{
+	return d.data();
+}

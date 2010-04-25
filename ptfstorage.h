@@ -22,9 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef PTFSTORAGE_H
 #define PTFSTORAGE_H
 
-#include "notestorage.h"
+#include "filestorage.h"
 
-class PTFStorage : public NoteStorage
+class PTFStorage : public FileStorage
 {
 	Q_OBJECT
 	Q_DISABLE_COPY(PTFStorage)
@@ -35,12 +35,7 @@ public:
 	const QString titleName() const;
 	QList<NoteListItem> noteList();
 	Note get(const QString &noteId);
-	void createNote(const QString &text);
 	void saveNote(const QString &noteId, const QString &text);
-	void deleteNote(const QString &noteId);
-
-private:
-	QString notesDir;
 };
 
 #endif // PTFSTORAGE_H
