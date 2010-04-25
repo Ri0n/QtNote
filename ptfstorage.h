@@ -32,6 +32,7 @@ public:
 	PTFStorage(QObject *parent);
 	bool isAccessible() const;
 	const QString systemName() const;
+	const QString titleName() const;
 	QList<NoteListItem> noteList();
 	Note get(const QString &noteId);
 	void createNote(const QString &text);

@@ -15,7 +15,6 @@
 # Contacts:
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
-
 TARGET = qtnote
 TEMPLATE = app
 CONFIG += tomboy # force tomboy
@@ -29,7 +28,8 @@ SOURCES += main.cpp \
     ptfdata.cpp \
     notedata.cpp \
     filenotedata.cpp \
-    aboutdlg.cpp
+    aboutdlg.cpp \
+    optionsdlg.cpp
 HEADERS += mainwidget.h \
     notedialog.h \
     note.h \
@@ -39,7 +39,8 @@ HEADERS += mainwidget.h \
     ptfdata.h \
     notedata.h \
     filenotedata.h \
-    aboutdlg.h
+    aboutdlg.h \
+    optionsdlg.h
 tomboy { 
     SOURCES += tomboystorage.cpp \
         tomboydata.cpp
@@ -50,22 +51,22 @@ tomboy {
 RESOURCES += main.qrc
 QT += xml
 FORMS += notedialog.ui \
-    aboutdlg.ui
+    aboutdlg.ui \
+    optionsdlg.ui
 TRANSLATIONS = langs/qtnote_ru.ts
-
-unix {
+unix { 
     target.path = $$PREFIX/bin
     INSTALLS += target
     
     # translations
     TRANSLATIONS_DIR = $$PREFIX/share/qtnote
     DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
-    #CTRANSLATIONS = langs/qtnote_ru.qm
-    #DISTFILES += $$CTRANSLATIONS
-    #for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
+    
+    # CTRANSLATIONS = langs/qtnote_ru.qm
+    # DISTFILES += $$CTRANSLATIONS
+    # for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
     translations.files = "langs/qtnote_ru.qm"
     translations.path = $$TRANSLATIONS_DIR
     INSTALLS += translations
 }
-
 RC_FILE = win/qtnote.rc

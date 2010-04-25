@@ -73,6 +73,11 @@ const QString TomboyStorage::systemName() const
 	return "tomboy";
 }
 
+const QString TomboyStorage::titleName() const
+{
+	return tr("Tomboy Storage");
+}
+
 QList<NoteListItem> TomboyStorage::noteList()
 {
 	QList<NoteListItem> ret;

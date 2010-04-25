@@ -23,26 +23,47 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTEMANAGER_H
 
 #include <QObject>
+#include <QMap>
 #include "notestorage.h"
+
+struct StorageItem {
+	StorageItem()
+		: storage(0)
+	{
+
+	}
+	StorageItem(NoteStorage *storage_, int priority_)
+		: storage(storage_)
+		, priority(priority_)
+	{
+
+	}
+	NoteStorage *storage;
+	int priority;
+};
 
 class NoteManager : public QObject
 {
 	Q_OBJECT
 public:
 	static NoteManager *instance();
-	void registerStorage(NoteStorage *storage, bool isDefault = false);
+	void registerStorage(NoteStorage *storage, int priority = 0);
 	bool loadAll();
 	QList<NoteListItem> noteList() const;
 	Note getNote(const QString &storageId, const QString &noteId);
-	const QList<NoteStorage *> storages() const;
+	const QMap<QString, StorageItem> storages() const;
+	const QList<StorageItem> prioritizedStorages() const;
 	NoteStorage * storage(const QString &storageId) const;
-	NoteStorage *defaultStorage() const;
+	NoteStorage *defaultStorage();
+	//QStringList storageCodes() const;
+	void updatePriorities(const QStringList &storageCodes);
 
 private:
 	NoteManager(QObject *parent);
+	static bool prioritySorter(const StorageItem &a, const StorageItem &b);
 
 	static NoteManager *instance_;
-	QList<NoteStorage *>storages_;
+	QMap<QString, StorageItem>storages_;
 	NoteStorage *defaultStorage_;
 };
 

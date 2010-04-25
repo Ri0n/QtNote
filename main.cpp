@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QLocale>
 #include <QTranslator>
 #include <QFileInfo>
+#include <QSettings>
 #include "mainwidget.h"
 #include "notemanager.h"
 #ifdef TOMBOY
@@ -38,28 +39,40 @@ int main(int argc, char *argv[])
 
 	Q_INIT_RESOURCE(main);
 
-	QString locale = QLocale::system().name();
+	QCoreApplication::setOrganizationName("R-Soft");
+	QCoreApplication::setApplicationName("QtNote");
 
+	QApplication::setQuitOnLastWindowClosed(false);
+
+	// loading localization
+	QString locale = QLocale::system().name();
 	QTranslator translator;
 	if (!translator.load(QString("langs/qtnote_") + locale)) {
 #ifdef Q_OS_UNIX
-		if (!translator.load(QString(TRANSLATIONS_DIR) + QString("/qtnote_") + locale))
+		if (!translator.load(QString(TRANSLATIONS_DIR) + QString("/qtnote_") +
+							 locale))
 #endif
 			qDebug("failed to load translation");
 	}
 	a.installTranslator(&translator);
 
+	// detecting system tray
 	if (!QSystemTrayIcon::isSystemTrayAvailable()) {
 		QMessageBox::critical(0, "QtNote",
 							  QObject::tr("I couldn't detect any system tray "
 										   "on this system."));
 		return 1;
 	}
-	QApplication::setQuitOnLastWindowClosed(false);
 
-	QCoreApplication::setApplicationName("QtNote");
-
+	// itialzation of notes storages
 	QList<NoteStorage*> storages;
+	QStringList priorities = QSettings().value("storage.priority")
+							 .toStringList();
+	QStringList prioritiesR;
+	while (priorities.count()) {
+		prioritiesR.append(priorities.takeLast());
+	}
+
 #ifdef TOMBOY
 	storages.append(new TomboyStorage(&a));
 #endif
@@ -68,13 +81,16 @@ int main(int argc, char *argv[])
 	while (storages.count()) {
 		NoteStorage *storage = storages.takeFirst();
 		if (storage->isAccessible()) {
-			NoteManager::instance()->registerStorage(storage, true); //will set last storage default
+			int priority = prioritiesR.indexOf(storage->systemName());
+			NoteManager::instance()->registerStorage(storage,
+													 priority >= 0? priority:0);
 		} else {
 			delete storage;
 		}
 	}
 	if (!NoteManager::instance()->loadAll()) {
-		qWarning("no one of note storages reported success. can't continue..");
+		QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
+							  "storages is accessible. can't continue.."));
 		return 1;
 	}
 

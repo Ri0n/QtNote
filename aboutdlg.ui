@@ -128,17 +128,17 @@
  <connections>
   <connection>
    <sender>buttonBox</sender>
-   <signal>clicked(QAbstractButton*)</signal>
+   <signal>accepted()</signal>
    <receiver>AboutDlg</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>274</x>
-     <y>161</y>
+     <x>221</x>
+     <y>170</y>
     </hint>
     <hint type="destinationlabel">
-     <x>115</x>
-     <y>4</y>
+     <x>252</x>
+     <y>186</y>
     </hint>
    </hints>
   </connection>

@@ -34,29 +34,83 @@
     </message>
 </context>
 <context>
+    <name>OptionsDlg</name>
+    <message>
+        <location filename="../optionsdlg.ui" line="14"/>
+        <source>QtNote Options</source>
+        <translation>QtNote Настройки</translation>
+    </message>
+    <message>
+        <location filename="../optionsdlg.ui" line="27"/>
+        <source>Storage Priority</source>
+        <translation>Приоритет хранилищ</translation>
+    </message>
+    <message>
+        <location filename="../optionsdlg.ui" line="46"/>
+        <source>Delete notes with confirmation</source>
+        <translation>Удалять заметки с подтверждением</translation>
+    </message>
+</context>
+<context>
+    <name>PTFStorage</name>
+    <message>
+        <location filename="../ptfstorage.cpp" line="53"/>
+        <source>Plain Text Storage</source>
+        <translation>Хранилище текстовых файлов</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
-        <location filename="../main.cpp" line="51"/>
+        <location filename="../main.cpp" line="62"/>
         <source>I couldn&apos;t detect any system tray on this system.</source>
         <translation>Системный трей не обнаружен</translation>
+    </message>
+    <message>
+        <location filename="../main.cpp" line="92"/>
+        <source>no one of note storages is accessible. can&apos;t continue..</source>
+        <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
+    </message>
+</context>
+<context>
+    <name>TomboyStorage</name>
+    <message>
+        <location filename="../tomboystorage.cpp" line="78"/>
+        <source>Tomboy Storage</source>
+        <translation>Хранилище Tomboy</translation>
     </message>
 </context>
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../mainwidget.cpp" line="34"/>
+        <location filename="../mainwidget.cpp" line="37"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="35"/>
+        <location filename="../mainwidget.cpp" line="38"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="36"/>
+        <location filename="../mainwidget.cpp" line="39"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
+    </message>
+    <message>
+        <location filename="../mainwidget.cpp" line="40"/>
+        <source>&amp;Options</source>
+        <translation>Н&amp;астройки</translation>
+    </message>
+    <message>
+        <location filename="../mainwidget.cpp" line="190"/>
+        <source>Deletion confirmation</source>
+        <translation>Подтверждение удаления</translation>
+    </message>
+    <message>
+        <location filename="../mainwidget.cpp" line="191"/>
+        <source>Are you sure want to delete this note?</source>
+        <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
 </context>
 </TS>

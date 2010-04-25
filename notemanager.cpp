@@ -21,6 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "notemanager.h"
 #include <QApplication>
+#include <QStringList>
 
 NoteManager::NoteManager(QObject *parent)
 	: QObject(parent)
@@ -29,21 +30,22 @@ NoteManager::NoteManager(QObject *parent)
 
 }
 
-void NoteManager::registerStorage(NoteStorage *storage, bool isDefault)
+void NoteManager::registerStorage(NoteStorage *storage, int priority)
 {
-	storages_.append(storage);
-	if (isDefault) {
+	//qDebug("%s:%d", qPrintable(storage->systemName()), priority);
+	static int maxPriority = -1;
+	storages_.insert(storage->systemName(), StorageItem(storage, priority));
+	if (priority > maxPriority) {
 		defaultStorage_ = storage;
+		maxPriority = priority;
 	}
 }
 
 bool NoteManager::loadAll()
 {
+	// mostly stubbed method for future use.
 	if (storages_.count() == 0) {
 		return false;
-	}
-	if (!defaultStorage_) {
-		defaultStorage_ = storages_[0];
 	}
 	return true;
 }
@@ -51,8 +53,8 @@ bool NoteManager::loadAll()
 QList<NoteListItem> NoteManager::noteList() const
 {
 	QList<NoteListItem> ret;
-	foreach (NoteStorage *storage, storages_) {
-		ret += storage->noteList();
+	foreach (StorageItem si, storages_) {
+		ret += si.storage->noteList();
 	}
 	qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
 	return ret;
@@ -67,24 +69,54 @@ Note NoteManager::getNote(const QString &storageId, const QString &noteId)
 	return 0;
 }
 
-const QList<NoteStorage *> NoteManager::storages() const
+const QMap<QString, StorageItem> NoteManager::storages() const
 {
 	return storages_;
 }
 
-NoteStorage * NoteManager::storage(const QString &storageId) const
+bool NoteManager::prioritySorter(const StorageItem &a, const StorageItem &b)
 {
-	foreach (NoteStorage *storage, storages_) {
-		if (storage->systemName() == storageId) {
-			return storage;
-		}
-	}
-	return 0;
+	return a.priority > b.priority;
 }
 
-NoteStorage *NoteManager::defaultStorage() const
+const QList<StorageItem> NoteManager::prioritizedStorages() const
 {
+	QList<StorageItem> items = NoteManager::instance()->storages().values();
+	qSort(items.begin(), items.end(), prioritySorter);
+	return items;
+}
+
+NoteStorage * NoteManager::storage(const QString &storageId) const
+{
+	// returns 0 if doesn't exists (see default contstructor StorageItem)
+	return storages_.value(storageId).storage;
+}
+
+NoteStorage *NoteManager::defaultStorage()
+{
+	if (!defaultStorage_) {
+		defaultStorage_ = prioritizedStorages()[0].storage;
+	}
+	//qDebug("default storage: %s", qPrintable(defaultStorage_->systemName()));
 	return defaultStorage_;
+}
+
+//QStringList NoteManager::storageCodes() const
+//{
+//	return storages_.keys();
+//}
+
+void NoteManager::updatePriorities(const QStringList &storageCodes)
+{
+	defaultStorage_ = 0;
+	for (int i=0, c=storageCodes.count(); i<c; i++) {
+		QString code = storageCodes[c-i-1];
+		if (storages_.contains(code)) {
+			storages_[code].priority = i;
+			//qDebug("changed to: %s:%d", qPrintable(storages_[code].storage->systemName()), i);
+			defaultStorage_ = storages_[code].storage;
+		}
+	}
 }
 
 NoteManager *NoteManager::instance()

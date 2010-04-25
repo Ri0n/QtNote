@@ -19,32 +19,31 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef TOMBOYSTORAGE_H
-#define TOMBOYSTORAGE_H
+#ifndef OPTIONSDLG_H
+#define OPTIONSDLG_H
 
-#include <QMap>
-#include "notestorage.h"
+#include <QDialog>
 
-#include "tomboydata.h"
+namespace Ui {
+    class OptionsDlg;
+}
 
-class TomboyStorage : public NoteStorage
-{
-	Q_OBJECT
-	Q_DISABLE_COPY(TomboyStorage)
+class OptionsDlg : public QDialog {
+    Q_OBJECT
 public:
-	TomboyStorage(QObject *parent);
-	bool isAccessible() const;
-	const QString systemName() const;
-	const QString titleName() const;
-	QList<NoteListItem> noteList();
-	Note get(const QString &id);
-	void createNote(const QString &text);
-	void saveNote(const QString &noteId, const QString &text);
-	void deleteNote(const QString &text);
+    OptionsDlg(QWidget *parent = 0);
+    ~OptionsDlg();
+
+protected:
+    void changeEvent(QEvent *e);
 
 private:
-	QString notesDir;
-	QMap<QString, Note*> notes;
+    Ui::OptionsDlg *ui;
+	class PriorityModel;
+	PriorityModel *priorityModel;
+
+public slots:
+	void accept();
 };
 
-#endif // TOMBOYSTORAGE_H
+#endif // OPTIONSDLG_H

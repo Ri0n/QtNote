@@ -49,6 +49,7 @@ class NoteStorage : public QObject
 public:
 	NoteStorage(QObject *parent);
 	virtual const QString systemName() const = 0;
+	virtual const QString titleName() const = 0;
 	virtual bool isAccessible() const = 0;
 	virtual QList<NoteListItem> noteList() = 0;
 	virtual Note get(const QString &id) = 0;

@@ -32,7 +32,6 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 {
     m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
-	m_ui->trashBtn->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
 	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
 
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));

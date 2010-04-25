@@ -24,9 +24,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtGui/QApplication>
 #include <QDesktopWidget>
 #include <QStyle>
+#include <QSettings>
+#include <QMessageBox>
 #include "notemanager.h"
 #include "notedialog.h"
 #include "aboutdlg.h"
+#include "optionsdlg.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -34,9 +37,11 @@ Widget::Widget(QWidget *parent)
 	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
 	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
+	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);
+	contextMenu->addAction(actOptions);
 	contextMenu->addAction(actAbout);
 	contextMenu->addSeparator();
 	contextMenu->addAction(actQuit);
@@ -49,6 +54,7 @@ Widget::Widget(QWidget *parent)
 
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
+	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
@@ -66,6 +72,13 @@ void Widget::exitQtNote()
 void Widget::showAbout()
 {
 	AboutDlg *d = new AboutDlg(this);
+	d->setAttribute(Qt::WA_DeleteOnClose);
+	d->show();
+}
+
+void Widget::showOptions()
+{
+	OptionsDlg *d = new OptionsDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
@@ -154,8 +167,10 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 						const QString &text)
 {
 	NoteStorage *storage = NoteManager::instance()->storage(storageId);
-	if (!noteId.isEmpty() && text.isEmpty()) { // delete empty note
-		storage->deleteNote(noteId);
+	if (text.isEmpty()) { // delete empty note
+		if (!noteId.isEmpty()) {
+			storage->deleteNote(noteId);
+		}
 		return;
 	}
 	if (noteId.isEmpty()) {
@@ -169,6 +184,14 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 
 void Widget::onDeleteNote(const QString &storageId, const QString &noteId)
 {
+	QSettings s;
 	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	if (s.value("ui.ask-on-delete", true).toBool() &&
+		QMessageBox::question(this, tr("Deletion confirmation"),
+							  tr("Are you sure want to delete this note?"),
+							  QMessageBox::Yes | QMessageBox::No) !=
+		QMessageBox::Yes) {
+		return;
+	}
 	storage->deleteNote(noteId);
 }

@@ -48,6 +48,12 @@ const QString PTFStorage::systemName() const
 	return "ptf";
 }
 
+const QString PTFStorage::titleName() const
+{
+	return tr("Plain Text Storage");
+}
+
+
 QList<NoteListItem> PTFStorage::noteList()
 {
 	QList<NoteListItem> ret;
