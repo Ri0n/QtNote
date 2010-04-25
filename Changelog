@@ -1,3 +1,9 @@
-2010-04-27
+2010-04-26 QtNote-0.2.0 Release
++ Delete notes with optional confirmation
++ Added option for amount of visible notes in the tray menu
++ Added settings for storage priority
++ Added memory cache for notes w/o content
+
+2010-04-21
 + Added russian translation
 * Empty notes now will be removed automatically
