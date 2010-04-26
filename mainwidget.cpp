@@ -123,7 +123,7 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 
 void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
-	if (reason == QSystemTrayIcon::MiddleClick) {
+	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
 		createNewNote();
 		return;
 	}
