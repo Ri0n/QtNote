@@ -83,6 +83,7 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
+	resize(0, 0);
 }
 
 OptionsDlg::~OptionsDlg()
