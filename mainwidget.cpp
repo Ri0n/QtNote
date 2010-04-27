@@ -138,7 +138,7 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
 		menu.addAction(menu.style()->standardIcon(
-				QStyle::SP_MessageBoxInformation), notes[i].title)->setData(i);
+				QStyle::SP_MessageBoxInformation), notes[i].title.replace('&', "&&"))->setData(i);
 	}
 	const QPoint menuPos = tray->geometry().bottomLeft();
 	menu.activateWindow();
