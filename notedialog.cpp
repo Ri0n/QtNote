@@ -22,6 +22,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedialog.h"
 #include "ui_notedialog.h"
 #include "note.h"
+#include "QApplication"
+#include "QDesktopWidget"
 
 NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
 	QDialog(parent),
@@ -30,10 +32,15 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	noteId_(noteId),
 	trashRequested_(false)
 {
-	setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint | Qt::CustomizeWindowHint);
-    m_ui->setupUi(this);
+	setWindowFlags((windowFlags() ^ Qt::Dialog) | Qt::WindowMinimizeButtonHint | Qt::CustomizeWindowHint | Qt::Window);
+	m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
 	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
+
+	QSize avail = QApplication::desktop()->size() - sizeHint();
+	int x = avail.width() / 4 + (qrand()/(float)RAND_MAX)*avail.width() / 2;
+	int y = avail.height() / 4 + (qrand()/(float)RAND_MAX)*avail.height() / 2;
+	move(x, y);
 
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 }
