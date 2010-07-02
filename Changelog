@@ -1,3 +1,9 @@
+2010-07-02 QtNote-0.2.1 Release
+* Updated russian translation
++ Added copy to clipboard tool button
+* Fixed ampersand escaping in the notes menu
+* Various small UI improvements
+
 2010-04-26 QtNote-0.2.0 Release
 + Delete notes with optional confirmation
 + Added option for amount of visible notes in the tray menu
