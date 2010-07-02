@@ -22,8 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedialog.h"
 #include "ui_notedialog.h"
 #include "note.h"
-#include "QApplication"
-#include "QDesktopWidget"
+#include <QApplication>
+#include <QDesktopWidget>
+#include <QClipboard>
 
 NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
 	QDialog(parent),
@@ -44,6 +45,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	move(x, y);
 
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
+	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 }
 
 NoteDialog::~NoteDialog()
@@ -77,6 +79,12 @@ void NoteDialog::trashClicked()
 {
 	trashRequested_ = true;
 	close();
+}
+
+void NoteDialog::copyClicked()
+{
+	QClipboard *clipboard = QApplication::clipboard();
+	clipboard->setText(text());
 }
 
 void NoteDialog::setText(QString text)

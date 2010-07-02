@@ -52,5 +52,6 @@ bool PTFData::saveToFile(const QString &fileName)
 	file.write(sText.toUtf8());
 	setFile(fileName);
 	file.close();
+	dtLastChange = QFileInfo(file).lastModified();
 	return true;
 }

@@ -57,6 +57,7 @@ public slots:
 
 private slots:
 	void trashClicked();
+	void copyClicked();
 };
 
 #endif // NOTEDIALOG_H
