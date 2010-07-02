@@ -31,7 +31,7 @@
         <string>Copy note to clipboard</string>
        </property>
        <property name="text">
-        <string>...</string>
+        <string notr="true"/>
        </property>
        <property name="icon">
         <iconset resource="main.qrc">

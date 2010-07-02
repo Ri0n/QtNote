@@ -28,30 +28,39 @@
 <context>
     <name>NoteDialog</name>
     <message>
-        <location filename="../notedialog.ui" line="31"/>
         <source>Delete</source>
-        <translation>Удалить</translation>
+        <translation type="obsolete">Удалить</translation>
+    </message>
+    <message>
+        <location filename="../notedialog.ui" line="31"/>
+        <source>Copy note to clipboard</source>
+        <translation>Скопировать заметку в буфер обмена</translation>
+    </message>
+    <message>
+        <location filename="../notedialog.ui" line="61"/>
+        <source>Delete note</source>
+        <translation>Удалить заметку</translation>
     </message>
 </context>
 <context>
     <name>OptionsDlg</name>
     <message>
-        <location filename="../optionsdlg.ui" line="14"/>
+        <location filename="../optionsdlg.ui" line="6"/>
         <source>QtNote Options</source>
         <translation>QtNote Настройки</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="24"/>
+        <location filename="../optionsdlg.ui" line="16"/>
         <source>Storage Priority</source>
         <translation>Приоритет хранилищ</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="43"/>
+        <location filename="../optionsdlg.ui" line="35"/>
         <source>Delete notes with confirmation</source>
         <translation>Удалять заметки с подтверждением</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="52"/>
+        <location filename="../optionsdlg.ui" line="44"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation>Количество заметок в меню трея</translation>
     </message>
