@@ -15,42 +15,39 @@
 # Contacts:
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
-TARGET = qtnote
-TEMPLATE = app
-CONFIG += tomboy # force tomboy
-RESOURCES += main.qrc
-QT += xml
-
-include (src/src.pri)
-
-TRANSLATIONS = langs/qtnote_ru.ts
-unix { 
-    target.path = $$PREFIX/bin
-    INSTALLS += target
-    
-    # translations
-    TRANSLATIONS_DIR = $$PREFIX/share/qtnote
-    DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
-    
-    # CTRANSLATIONS = langs/qtnote_ru.qm
-    # DISTFILES += $$CTRANSLATIONS
-    # for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
-    translations.files = "langs/qtnote_ru.qm"
-    translations.path = $$TRANSLATIONS_DIR
-
-	# Desktop file
-	desktop.files = "qtnote.desktop"
-	desktop.path = /usr/share/applications
-
-	# Desktop pixmap
-	pixmap.files = "images/qtnote.png"
-	pixmap.path = /usr/share/pixmaps
-
-	INSTALLS += translations desktop pixmap
+SOURCES += $$PWD/main.cpp \
+    $$PWD/mainwidget.cpp \
+    $$PWD/notedialog.cpp \
+    $$PWD/note.cpp \
+    $$PWD/notemanager.cpp \
+    $$PWD/notestorage.cpp \
+    $$PWD/ptfstorage.cpp \
+    $$PWD/ptfdata.cpp \
+    $$PWD/notedata.cpp \
+    $$PWD/filenotedata.cpp \
+    $$PWD/aboutdlg.cpp \
+    $$PWD/optionsdlg.cpp \
+    $$PWD/filestorage.cpp
+HEADERS += $$PWD/mainwidget.h \
+    $$PWD/notedialog.h \
+    $$PWD/note.h \
+    $$PWD/notemanager.h \
+    $$PWD/notestorage.h \
+    $$PWD/ptfstorage.h \
+    $$PWD/ptfdata.h \
+    $$PWD/notedata.h \
+    $$PWD/filenotedata.h \
+    $$PWD/aboutdlg.h \
+    $$PWD/optionsdlg.h \
+    $$PWD/filestorage.h
+tomboy { 
+    SOURCES += $$PWD/tomboystorage.cpp \
+        $$PWD/tomboydata.cpp
+    HEADERS += $$PWD/tomboystorage.h \
+        $$PWD/tomboydata.h
+    DEFINES += TOMBOY
 }
-RC_FILE = win/qtnote.rc
+FORMS += $$PWD/notedialog.ui \
+    $$PWD/aboutdlg.ui \
+    $$PWD/optionsdlg.ui
 
-MOC_DIR = .moc
-OBJECTS_DIR = .obj
-RCC_DIR = .rcc
-UI_DIR = .ui

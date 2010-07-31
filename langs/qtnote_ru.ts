@@ -5,22 +5,22 @@
 <context>
     <name>AboutDlg</name>
     <message>
-        <location filename="../aboutdlg.ui" line="14"/>
+        <location filename="../src/aboutdlg.ui" line="14"/>
         <source>About QtNote</source>
         <translation>О QtNote</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="58"/>
+        <location filename="../src/aboutdlg.ui" line="58"/>
         <source>Simpe and usable note taking application</source>
         <translation>Простые и удобные заметки</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="86"/>
+        <location filename="../src/aboutdlg.ui" line="86"/>
         <source>License: GPL-3</source>
         <translation>Лицензия: GPL-3</translation>
     </message>
     <message>
-        <location filename="../aboutdlg.ui" line="98"/>
+        <location filename="../src/aboutdlg.ui" line="98"/>
         <source>Author: Il&apos;inykh Sergey</source>
         <translation>Автор: Ильиных Сергей</translation>
     </message>
@@ -28,16 +28,12 @@
 <context>
     <name>NoteDialog</name>
     <message>
-        <source>Delete</source>
-        <translation type="obsolete">Удалить</translation>
-    </message>
-    <message>
-        <location filename="../notedialog.ui" line="31"/>
+        <location filename="../src/notedialog.ui" line="31"/>
         <source>Copy note to clipboard</source>
         <translation>Скопировать заметку в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../notedialog.ui" line="61"/>
+        <location filename="../src/notedialog.ui" line="61"/>
         <source>Delete note</source>
         <translation>Удалить заметку</translation>
     </message>
@@ -45,22 +41,22 @@
 <context>
     <name>OptionsDlg</name>
     <message>
-        <location filename="../optionsdlg.ui" line="6"/>
+        <location filename="../src/optionsdlg.ui" line="6"/>
         <source>QtNote Options</source>
         <translation>QtNote Настройки</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="16"/>
+        <location filename="../src/optionsdlg.ui" line="16"/>
         <source>Storage Priority</source>
         <translation>Приоритет хранилищ</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="35"/>
+        <location filename="../src/optionsdlg.ui" line="35"/>
         <source>Delete notes with confirmation</source>
         <translation>Удалять заметки с подтверждением</translation>
     </message>
     <message>
-        <location filename="../optionsdlg.ui" line="44"/>
+        <location filename="../src/optionsdlg.ui" line="44"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation>Количество заметок в меню трея</translation>
     </message>
@@ -68,7 +64,7 @@
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../ptfstorage.cpp" line="53"/>
+        <location filename="../src/ptfstorage.cpp" line="53"/>
         <source>Plain Text Storage</source>
         <translation>Хранилище текстовых файлов</translation>
     </message>
@@ -76,12 +72,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../main.cpp" line="70"/>
-        <source>I couldn&apos;t detect any system tray on this system.</source>
-        <translation>Системный трей не обнаружен</translation>
-    </message>
-    <message>
-        <location filename="../main.cpp" line="100"/>
+        <location filename="../src/main.cpp" line="92"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -89,7 +80,7 @@
 <context>
     <name>TomboyStorage</name>
     <message>
-        <location filename="../tomboystorage.cpp" line="78"/>
+        <location filename="../src/tomboystorage.cpp" line="78"/>
         <source>Tomboy Storage</source>
         <translation>Хранилище Tomboy</translation>
     </message>
@@ -97,32 +88,32 @@
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../mainwidget.cpp" line="37"/>
+        <location filename="../src/mainwidget.cpp" line="37"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="38"/>
+        <location filename="../src/mainwidget.cpp" line="38"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="39"/>
+        <location filename="../src/mainwidget.cpp" line="39"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="40"/>
+        <location filename="../src/mainwidget.cpp" line="40"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="199"/>
+        <location filename="../src/mainwidget.cpp" line="199"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../mainwidget.cpp" line="200"/>
+        <location filename="../src/mainwidget.cpp" line="200"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>

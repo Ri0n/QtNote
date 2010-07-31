@@ -64,14 +64,6 @@ int main(int argc, char *argv[])
 	a.installTranslator(&qtTranslator);
 
 
-	// detecting system tray
-	if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-		QMessageBox::critical(0, "QtNote",
-							  QObject::tr("I couldn't detect any system tray "
-										   "on this system."));
-		return 1;
-	}
-
 	// itialzation of notes storages
 	QList<NoteStorage*> storages;
 	QStringList priorities = QSettings().value("storage.priority")

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=QtNote
+Comment=Note-taking Application
+Comment[ru]=Менеджер заметок
+Icon=qtnote
+Exec=qtnote
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;
