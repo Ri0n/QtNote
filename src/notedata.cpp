@@ -41,5 +41,8 @@ void NoteData::setText(const QString &text)
 {
 	sText = text.trimmed();
 	sTitle = sText.section('\n', 0, 0).trimmed();
+	if (sTitle.length() > 48) {
+		sTitle = sTitle.mid(0, 48) + "...";
+	}
 }
 
