@@ -2,76 +2,91 @@
 <ui version="4.0">
  <class>OptionsDlg</class>
  <widget class="QDialog" name="OptionsDlg">
+  <property name="geometry">
+   <rect>
+	<x>0</x>
+	<y>0</y>
+	<width>391</width>
+	<height>338</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>QtNote Options</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="main.qrc">
-    <normaloff>:/icons/options</normaloff>:/icons/options</iconset>
+   <iconset resource="../main.qrc">
+	<normaloff>:/icons/options</normaloff>:/icons/options</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>Storage Priority</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QListView" name="priorityView">
-        <property name="dragDropMode">
-         <enum>QAbstractItemView::InternalMove</enum>
-        </property>
-        <property name="movement">
-         <enum>QListView::Snap</enum>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+	<widget class="QGroupBox" name="groupBox">
+	 <property name="title">
+	  <string>Storage Priority</string>
+	 </property>
+	 <layout class="QVBoxLayout" name="verticalLayout_2">
+	  <item>
+	   <widget class="QListView" name="priorityView">
+		<property name="dragDropMode">
+		 <enum>QAbstractItemView::InternalMove</enum>
+		</property>
+		<property name="movement">
+		 <enum>QListView::Snap</enum>
+		</property>
+	   </widget>
+	  </item>
+	 </layout>
+	</widget>
    </item>
    <item>
-    <widget class="QCheckBox" name="ckAskDel">
-     <property name="text">
-      <string>Delete notes with confirmation</string>
-     </property>
-    </widget>
+	<widget class="QCheckBox" name="ckAskDel">
+	 <property name="text">
+	  <string>Delete notes with confirmation</string>
+	 </property>
+	</widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Amount of notes to show in the tray menu</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="spMenuNotesAmount"/>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
+	<widget class="QCheckBox" name="ckAutostart">
+	 <property name="text">
+	  <string>Start with system</string>
+	 </property>
+	</widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
+	<layout class="QHBoxLayout" name="horizontalLayout">
+	 <item>
+	  <widget class="QLabel" name="label">
+	   <property name="text">
+		<string>Amount of notes to show in the tray menu</string>
+	   </property>
+	  </widget>
+	 </item>
+	 <item>
+	  <widget class="QSpinBox" name="spMenuNotesAmount"/>
+	 </item>
+	 <item>
+	  <spacer name="horizontalSpacer">
+	   <property name="orientation">
+		<enum>Qt::Horizontal</enum>
+	   </property>
+	   <property name="sizeHint" stdset="0">
+		<size>
+		 <width>40</width>
+		 <height>20</height>
+		</size>
+	   </property>
+	  </spacer>
+	 </item>
+	</layout>
+   </item>
+   <item>
+	<widget class="QDialogButtonBox" name="buttonBox">
+	 <property name="orientation">
+	  <enum>Qt::Horizontal</enum>
+	 </property>
+	 <property name="standardButtons">
+	  <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+	 </property>
+	</widget>
    </item>
   </layout>
  </widget>
@@ -81,7 +96,7 @@
   <tabstop>buttonBox</tabstop>
  </tabstops>
  <resources>
-  <include location="main.qrc"/>
+  <include location="../main.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -90,14 +105,14 @@
    <receiver>OptionsDlg</receiver>
    <slot>accept()</slot>
    <hints>
-    <hint type="sourcelabel">
-     <x>257</x>
-     <y>198</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
+	<hint type="sourcelabel">
+	 <x>257</x>
+	 <y>198</y>
+	</hint>
+	<hint type="destinationlabel">
+	 <x>157</x>
+	 <y>274</y>
+	</hint>
    </hints>
   </connection>
   <connection>
@@ -106,14 +121,14 @@
    <receiver>OptionsDlg</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel">
-     <x>300</x>
-     <y>198</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
+	<hint type="sourcelabel">
+	 <x>300</x>
+	 <y>198</y>
+	</hint>
+	<hint type="destinationlabel">
+	 <x>286</x>
+	 <y>274</y>
+	</hint>
    </hints>
   </connection>
  </connections>

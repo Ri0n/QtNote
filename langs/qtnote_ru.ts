@@ -24,6 +24,11 @@
         <source>Author: Il&apos;inykh Sergey</source>
         <translation>Автор: Ильиных Сергей</translation>
     </message>
+    <message>
+        <location filename="../src/aboutdlg.ui" line="117"/>
+        <source>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>NoteDialog</name>
@@ -41,22 +46,27 @@
 <context>
     <name>OptionsDlg</name>
     <message>
-        <location filename="../src/optionsdlg.ui" line="6"/>
+        <location filename="../src/optionsdlg.ui" line="14"/>
         <source>QtNote Options</source>
         <translation>QtNote Настройки</translation>
     </message>
     <message>
-        <location filename="../src/optionsdlg.ui" line="16"/>
+        <location filename="../src/optionsdlg.ui" line="24"/>
         <source>Storage Priority</source>
         <translation>Приоритет хранилищ</translation>
     </message>
     <message>
-        <location filename="../src/optionsdlg.ui" line="35"/>
+        <location filename="../src/optionsdlg.ui" line="43"/>
         <source>Delete notes with confirmation</source>
         <translation>Удалять заметки с подтверждением</translation>
     </message>
     <message>
-        <location filename="../src/optionsdlg.ui" line="44"/>
+        <location filename="../src/optionsdlg.ui" line="50"/>
+        <source>Start with system</source>
+        <translation>Запускать вместе с системой</translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.ui" line="59"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation>Количество заметок в меню трея</translation>
     </message>

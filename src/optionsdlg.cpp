@@ -24,6 +24,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notemanager.h"
 #include <QStringListModel>
 #include <QSettings>
+#include <QFile>
+#include <QFileInfo>
+#include <QDir>
 
 
 class OptionsDlg::PriorityModel : public QStringListModel
@@ -46,7 +49,8 @@ public:
 		setStringList(orderedNames);
 	}
 
-	QStringList priorityList() const {
+	QStringList priorityList() const
+	{
 		QStringList ret;
 		foreach (const QString &title, stringList()) {
 			ret.append(titleMap.key(title));
@@ -55,7 +59,7 @@ public:
 	}
 
 	Qt::ItemFlags flags(const QModelIndex &index) const
-	 {
+	{
 		Qt::ItemFlags defaultFlags = QStringListModel::flags(index);
 		defaultFlags ^= (Qt::ItemIsDropEnabled | Qt::ItemIsEditable);
 
@@ -64,7 +68,7 @@ public:
 		} else {
 			return defaultFlags | Qt::ItemIsDropEnabled;
 		}
-	 }
+	}
 
 	Qt::DropActions supportedDropActions() const
 	{
@@ -78,6 +82,14 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
     ui(new Ui::OptionsDlg)
 {
 	ui->setupUi(this);
+#ifdef Q_OS_LINUX
+	QFile desktop(QDir::homePath() + "/.config/autostart/qtnote.desktop");
+	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll()).contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
+		ui->ckAutostart->setChecked(true);
+	}
+#else
+	ui->ckAutostart->setVisible(false);
+#endif
 	priorityModel = new PriorityModel(this);
 	ui->priorityView->setModel(priorityModel);
 	QSettings s;
@@ -111,5 +123,22 @@ void OptionsDlg::accept()
 	s.setValue("storage.priority", storageCodes);
 	s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
 	s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
+#ifdef Q_OS_LINUX
+	QDir home = QDir::home();
+	if (!home.exists(".config/autostart")) {
+		home.mkpath(".config/autostart");
+	}
+
+	QFile f(home.absolutePath() + "/.config/autostart/qtnote.desktop");
+	if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QString desktop = "[Desktop Entry]\n"
+						  "Type=Application\n"
+						  "Exec=qtnote\n"
+						  "Hidden=";
+		desktop += ui->ckAutostart->isChecked()?"false\n":"true\n";
+		f.write(qPrintable(desktop));
+		f.close();
+	}
+#endif
 	QDialog::accept();
 }
