@@ -28,6 +28,8 @@ namespace Ui {
     class NoteDialog;
 }
 
+class NoteDialog;
+
 class NoteDialog : public QDialog {
     Q_OBJECT
     Q_DISABLE_COPY(NoteDialog)
@@ -36,10 +38,11 @@ public:
     virtual ~NoteDialog();
 	void setText(QString text);
 	QString text();
-	bool checkOwnership(const QString &storageId, const QString &noteId) const;
+
+	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
 
 protected:
-    virtual void changeEvent(QEvent *e);
+	virtual void changeEvent(QEvent *e);
 
 private:
     Ui::NoteDialog *m_ui;
@@ -47,6 +50,8 @@ private:
 	QString noteId_;
 	bool trashRequested_;
 	bool modified_;
+
+	static QHash< QPair<QString,QString>, NoteDialog* > dialogs;
 
 signals:
 	void trashRequested(const QString &, const QString &);

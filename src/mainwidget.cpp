@@ -95,12 +95,7 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 			return;
 		}
 		// check if dialog for given storage and id is already opened
-		foreach (NoteDialog *d, findChildren<NoteDialog *>("noteDlg")) {
-			if (d->checkOwnership(storageId, noteId)) {
-				dlg = d;
-				break;
-			}
-		}
+		dlg = NoteDialog::findDialog(storageId, noteId);
 	}
 
 	if (!dlg) {

@@ -27,12 +27,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QClipboard>
 
 NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
-	QDialog(parent),
+	QDialog(0),
 	m_ui(new Ui::NoteDialog),
 	storageId_(storageId),
 	noteId_(noteId),
 	trashRequested_(false)
 {
+	Q_ASSERT(!NoteDialog::findDialog(storageId, noteId));
+	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId, noteId), this);
+
 	setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) |
 				   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint | Qt::Window);
 	m_ui->setupUi(this);
@@ -44,6 +47,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	int y = avail.height() / 4 + (qrand()/(float)RAND_MAX)*avail.height() / 2;
 	move(x, y);
 
+	connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 }
@@ -51,6 +55,11 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 NoteDialog::~NoteDialog()
 {
     delete m_ui;
+}
+
+NoteDialog* NoteDialog::findDialog(const QString &storageId, const QString &noteId)
+{
+	return NoteDialog::dialogs.value(QPair<QString,QString>(storageId, noteId));
 }
 
 void NoteDialog::changeEvent(QEvent *e)
@@ -97,8 +106,4 @@ QString NoteDialog::text()
 	return m_ui->noteEdit->toPlainText();
 }
 
-bool NoteDialog::checkOwnership(const QString &storageId,
-								const QString &noteId) const
-{
-	return storageId == storageId_ && noteId == noteId_;
-}
+QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;
