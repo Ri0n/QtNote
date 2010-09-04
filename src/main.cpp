@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	QTranslator translator;
 	if (!translator.load(QString("langs/qtnote_") + locale)) {
 #ifdef Q_OS_UNIX
-		if (!translator.load(QString(TRANSLATIONS_DIR) + "/qtnote_" + locale))
+		if (!translator.load(QString(TRANSLATIONSDIR) + "/qtnote_" + locale))
 #endif
 			qDebug("failed to load translation");
 	}

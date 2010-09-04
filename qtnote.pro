@@ -24,31 +24,38 @@ QT += xml
 include (src/src.pri)
 
 TRANSLATIONS = langs/qtnote_ru.ts
-unix { 
+unix {
+	isEmpty(PREFIX) {
+		PREFIX = /usr
+	}
+	DATADIR = $$PREFIX/share
+
     target.path = $$PREFIX/bin
     INSTALLS += target
     
     # translations
-    TRANSLATIONS_DIR = $$PREFIX/share/qtnote
-    DEFINES += TRANSLATIONS_DIR=\\\"$$TRANSLATIONS_DIR\\\"
+	TRANSLATIONSDIR = $$DATADIR/$$TARGET
+	DEFINES += TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\" \
+		DATADIR=\\\"$$DATADIR\\\" \
+		APPNAME=\\\"$$TARGET\\\"
     
     # CTRANSLATIONS = langs/qtnote_ru.qm
     # DISTFILES += $$CTRANSLATIONS
     # for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
-    translations.files = "langs/qtnote_ru.qm"
-    translations.path = $$TRANSLATIONS_DIR
+	translations.files = langs/$${TARGET}_ru.qm
+	translations.path = $$TRANSLATIONSDIR
 
 	# Desktop file
-	desktop.files = "qtnote.desktop"
-	desktop.path = /usr/share/applications
+	desktop.files = $${TARGET}.desktop
+	desktop.path = $$DATADIR/applications
 
 	# Desktop pixmap
-	pixmap.files = "images/qtnote.png"
-	pixmap.path = /usr/share/pixmaps
+	pixmap.files = images/$${TARGET}.png
+	pixmap.path = $$DATADIR/pixmaps
 
 	INSTALLS += translations desktop pixmap
 }
-RC_FILE = win/qtnote.rc
+RC_FILE = win/$${TARGET}.rc
 
 MOC_DIR = .moc
 OBJECTS_DIR = .obj

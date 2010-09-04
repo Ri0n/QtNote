@@ -84,9 +84,15 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 	ui->setupUi(this);
 #ifdef Q_OS_LINUX
 	QFile desktop(QDir::homePath() + "/.config/autostart/qtnote.desktop");
-	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll()).contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
+	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll())
+		.contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
 		ui->ckAutostart->setChecked(true);
 	}
+#elif defined(Q_OS_WIN)
+	QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
+				  "CurrentVersion\\Run", QSettings::NativeFormat);
+	ui->ckAutostart->setChecked(
+			reg.contains(QCoreApplication::applicationName()));
 #else
 	ui->ckAutostart->setVisible(false);
 #endif
@@ -128,17 +134,27 @@ void OptionsDlg::accept()
 	if (!home.exists(".config/autostart")) {
 		home.mkpath(".config/autostart");
 	}
+	QFile desktopFile(DATADIR "/applications/" APPNAME ".desktop");
+	if (desktopFile.open(QIODevice::ReadOnly)) {
+		QByteArray contents = desktopFile.readAll();
+		QFile f(home.absolutePath() +
+				"/.config/autostart/" APPNAME ".desktop");
 
-	QFile f(home.absolutePath() + "/.config/autostart/qtnote.desktop");
-	if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		QString desktop = "[Desktop Entry]\n"
-						  "Type=Application\n"
-						  "Exec=qtnote\n"
-						  "Hidden=";
-		desktop += ui->ckAutostart->isChecked()?"false\n":"true\n";
-		f.write(qPrintable(desktop));
-		f.close();
+		if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			f.write(contents.trimmed());
+			f.write(QString("\nHidden=%1").arg(ui->ckAutostart->isChecked()?
+											   "false\n":"true\n").toUtf8());
+		}
 	}
+#elif defined(Q_OS_WIN)
+	QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
+				  "CurrentVersion\\Run", QSettings::NativeFormat);
+	if(ui->ckAutostart->isChecked())
+		reg.setValue(QCoreApplication::applicationName(), '"' +
+					 QDir::toNativeSeparators(QCoreApplication::
+											  applicationFilePath()) + '"');
+	else
+		reg.remove(QCoreApplication::applicationName());
 #endif
 	QDialog::accept();
 }
