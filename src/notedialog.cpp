@@ -81,6 +81,7 @@ void NoteDialog::done(int r)
 	} else {
 		emit saveRequested(storageId_, noteId_, text().trimmed());
 	}
+	NoteDialog::dialogs.remove(QPair<QString,QString>(storageId_, noteId_));
 	QDialog::done(r);
 }
 
