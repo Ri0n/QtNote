@@ -106,10 +106,10 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 				SLOT(onSaveNote(QString,QString,QString)));
 		connect(dlg, SIGNAL(trashRequested(QString,QString)),
 				SLOT(onDeleteNote(QString,QString)));
-	}
-	if (!note.isNull()) {
-		dlg->setText(note.text());
-		dlg->setWindowTitle(note.title());
+		if (!note.isNull()) {
+			dlg->setText(note.text());
+			dlg->setWindowTitle(note.title());
+		}
 	}
 	dlg->show();
 	dlg->raise();
