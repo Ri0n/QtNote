@@ -28,6 +28,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 class NoteData : public QSharedData
 {
 public:
+	static const int TitleLength = 256;
+
 	NoteData();
 	virtual void toTrash() = 0;
 	virtual QString text() const;

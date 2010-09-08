@@ -39,6 +39,7 @@ public:
 	QList<NoteListItem> noteList();
 	Note get(const QString &id);
 	void saveNote(const QString &noteId, const QString &text);
+	bool isRichTextAllowed() const;
 };
 
 #endif // TOMBOYSTORAGE_H

@@ -25,6 +25,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QClipboard>
+#include <QTimer>
+#include "utils.h"
 
 NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
 	QDialog(0),
@@ -48,6 +50,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	move(x, y);
 
 	connect(parent, SIGNAL(destroyed()), SLOT(close()));
+	connect(m_ui->noteEdit, SIGNAL(textChanged()), SLOT(delayedUpdate()));
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 }
@@ -97,14 +100,51 @@ void NoteDialog::copyClicked()
 	clipboard->setText(text());
 }
 
+void NoteDialog::updateTitle()
+{
+	setWindowTitle(
+		Utils::cuttedDots(text().section('\n', 0, 0).trimmed(), 256)
+	);
+}
+
+void NoteDialog::delayedUpdate()
+{
+	if (!timerActive_) {
+		timerActive_ = true;
+		QTimer::singleShot(1000, this, SLOT(updateTitleByTimer()));
+	}
+}
+
+void NoteDialog::updateTitleByTimer()
+{
+	timerActive_ = false;
+	updateTitle();
+}
+
 void NoteDialog::setText(QString text)
 {
 	m_ui->noteEdit->setPlainText(text);
+	updateTitle();
+	QTextCursor curBak = m_ui->noteEdit->textCursor();
+	QTextCursor cur(m_ui->noteEdit->document());
+	cur.setPosition(0);
+	cur.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+	QTextCharFormat cf;
+	cf.setFontPointSize(m_ui->noteEdit->font().pointSize() * 1.5);
+	cf.setForeground(QBrush(QColor(255,0,0)));
+	cur.setCharFormat(cf);
+	m_ui->noteEdit->setTextCursor(curBak);
+
 }
 
 QString NoteDialog::text()
 {
 	return m_ui->noteEdit->toPlainText();
+}
+
+void NoteDialog::setAcceptRichText(bool state)
+{
+	m_ui->noteEdit->setAcceptRichText(state);
 }
 
 QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;

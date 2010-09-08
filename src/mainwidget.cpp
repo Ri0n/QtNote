@@ -30,6 +30,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedialog.h"
 #include "aboutdlg.h"
 #include "optionsdlg.h"
+#include "utils.h"
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -102,13 +103,18 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 		dlg = new NoteDialog(this, storageId, noteId);
 		dlg->setObjectName("noteDlg");
 		dlg->setWindowIcon(QIcon(":/icons/trayicon"));
+		dlg->setAcceptRichText(NoteManager::instance()->storage(storageId)
+							   ->isRichTextAllowed());
 		connect(dlg, SIGNAL(saveRequested(QString,QString,QString)),
 				SLOT(onSaveNote(QString,QString,QString)));
 		connect(dlg, SIGNAL(trashRequested(QString,QString)),
 				SLOT(onDeleteNote(QString,QString)));
 		if (!note.isNull()) {
-			dlg->setText(note.text());
-			dlg->setWindowTitle(note.title());
+			if (note.text().startsWith(note.title())) {
+				dlg->setText(note.text());
+			} else {
+				dlg->setText(note.title() + "\n" + note.text());
+			}
 		}
 	}
 	dlg->show();
@@ -133,9 +139,10 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
 		menu.addAction(menu.style()->standardIcon(
-				QStyle::SP_MessageBoxInformation), notes[i].title.replace('&', "&&"))->setData(i);
+			QStyle::SP_MessageBoxInformation),
+			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
+		)->setData(i);
 	}
-	const QPoint menuPos = tray->geometry().bottomLeft();
 	menu.activateWindow();
 	QRect dr = QApplication::desktop()->geometry();
 	QRect ir = tray->geometry();

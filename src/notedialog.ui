@@ -34,7 +34,7 @@
         <string notr="true"/>
        </property>
        <property name="icon">
-		<iconset resource="../main.qrc">
+        <iconset resource="../main.qrc">
          <normaloff>:/icons/copy</normaloff>:/icons/copy</iconset>
        </property>
        <property name="iconSize">
@@ -64,7 +64,7 @@
         <string notr="true"/>
        </property>
        <property name="icon">
-		<iconset resource="../main.qrc">
+        <iconset resource="../main.qrc">
          <normaloff>:/icons/trash</normaloff>:/icons/trash</iconset>
        </property>
        <property name="iconSize">

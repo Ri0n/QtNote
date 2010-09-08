@@ -38,6 +38,7 @@ public:
     virtual ~NoteDialog();
 	void setText(QString text);
 	QString text();
+	void setAcceptRichText(bool state);
 
 	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
 
@@ -49,7 +50,7 @@ private:
 	QString storageId_;
 	QString noteId_;
 	bool trashRequested_;
-	bool modified_;
+	bool timerActive_;
 
 	static QHash< QPair<QString,QString>, NoteDialog* > dialogs;
 
@@ -63,6 +64,9 @@ public slots:
 private slots:
 	void trashClicked();
 	void copyClicked();
+	void updateTitle();
+	void delayedUpdate();
+	void updateTitleByTimer();
 };
 
 #endif // NOTEDIALOG_H

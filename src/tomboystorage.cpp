@@ -116,3 +116,8 @@ void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 											  note.title(), note.modifyTime()));
 	}
 }
+
+bool TomboyStorage::isRichTextAllowed() const
+{
+	return true;
+}

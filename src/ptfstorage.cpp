@@ -92,3 +92,8 @@ void PTFStorage::saveNote(const QString &noteId, const QString & text)
 											  note.title(), note.modifyTime()));
 	}
 }
+
+bool PTFStorage::isRichTextAllowed() const
+{
+	return false;
+}
