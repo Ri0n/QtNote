@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTEDIALOG_H
 
 #include <QtGui/QDialog>
+#include <QTextCharFormat>
 
 namespace Ui {
     class NoteDialog;
@@ -47,8 +48,11 @@ protected:
 
 private:
     Ui::NoteDialog *m_ui;
+	QTextCharFormat titleCharFormat_;
+	QTextCharFormat secondLineCharFormat_;
 	QString storageId_;
 	QString noteId_;
+	QString firstLine_;
 	bool trashRequested_;
 	bool timerActive_;
 
@@ -64,9 +68,7 @@ public slots:
 private slots:
 	void trashClicked();
 	void copyClicked();
-	void updateTitle();
-	void delayedUpdate();
-	void updateTitleByTimer();
+	void contentsChange( int position, int charsRemoved, int charsAdded );
 };
 
 #endif // NOTEDIALOG_H

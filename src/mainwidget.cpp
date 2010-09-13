@@ -118,8 +118,8 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 		}
 	}
 	dlg->show();
-	dlg->raise();
 	dlg->activateWindow();
+	dlg->raise();
 }
 
 void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
