@@ -39,12 +39,13 @@ public:
 private:
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;
-	QAction *actQuit, *actNew, *actAbout, *actOptions;
+	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 
 private slots:
 	void showNoteList(QSystemTrayIcon::ActivationReason);
 	void exitQtNote();
 	void showAbout();
+	void showNoteManager();
 	void showOptions();
 	void createNewNote();
 	void onSaveNote(const QString &storageId, const QString &noteId,

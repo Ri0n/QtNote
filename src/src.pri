@@ -28,7 +28,9 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/aboutdlg.cpp \
     $$PWD/optionsdlg.cpp \
     $$PWD/filestorage.cpp \
-    src/utils.cpp
+	$$PWD/utils.cpp \
+	$$PWD/notemanagermodel.cpp \
+    src/notemanagerdlg.cpp
 HEADERS += $$PWD/mainwidget.h \
     $$PWD/notedialog.h \
     $$PWD/note.h \
@@ -41,7 +43,9 @@ HEADERS += $$PWD/mainwidget.h \
     $$PWD/aboutdlg.h \
     $$PWD/optionsdlg.h \
     $$PWD/filestorage.h \
-    src/utils.h
+	$$PWD/utils.h \
+	$$PWD/notemanagermodel.h \
+    src/notemanagerdlg.h
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
         $$PWD/tomboydata.cpp
@@ -51,4 +55,5 @@ tomboy {
 }
 FORMS += $$PWD/notedialog.ui \
     $$PWD/aboutdlg.ui \
-    $$PWD/optionsdlg.ui
+    $$PWD/optionsdlg.ui \
+    src/notemanagerdlg.ui

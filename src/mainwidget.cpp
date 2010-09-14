@@ -30,6 +30,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedialog.h"
 #include "aboutdlg.h"
 #include "optionsdlg.h"
+#include "notemanagerdlg.h"
 #include "utils.h"
 
 Widget::Widget(QWidget *parent)
@@ -39,10 +40,12 @@ Widget::Widget(QWidget *parent)
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
 	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
 	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
+	actManager = new QAction(tr("&Note Manager"), this);
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);
 	contextMenu->addSeparator();
+	contextMenu->addAction(actManager);
 	contextMenu->addAction(actOptions);
 	contextMenu->addAction(actAbout);
 	contextMenu->addSeparator();
@@ -56,6 +59,7 @@ Widget::Widget(QWidget *parent)
 
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
+	connect(actManager, SIGNAL(triggered()), this, SLOT(showNoteManager()));
 	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
@@ -74,6 +78,13 @@ void Widget::exitQtNote()
 void Widget::showAbout()
 {
 	AboutDlg *d = new AboutDlg(this);
+	d->setAttribute(Qt::WA_DeleteOnClose);
+	d->show();
+}
+
+void Widget::showNoteManager()
+{
+	NoteManagerDlg *d = new NoteManagerDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
