@@ -31,7 +31,7 @@ class NoteManagerModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
-    explicit NoteManagerModel(QObject *parent = 0);
+	explicit NoteManagerModel(QObject *parent = 0);
 	~NoteManagerModel();
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
@@ -39,14 +39,15 @@ public:
 	int columnCount( const QModelIndex & parent = QModelIndex() ) const;
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 
+	QString storageId(const QModelIndex &index) const;
+	QString noteId(const QModelIndex &index) const;
+
 signals:
 
 public slots:
 
 private:
 	QList<NMMItem*> storages;
-	//QList<NoteStorage*> storages;
-	//QHash<QString, QList<NoteListItem> > notes; // storageSystemName => Array<noteId>
 };
 
 #endif // NOTEMANAGERMODEL_H

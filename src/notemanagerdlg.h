@@ -2,6 +2,7 @@
 #define NOTEMANAGERDLG_H
 
 #include <QDialog>
+#include <QModelIndex>
 
 class NoteManagerModel;
 
@@ -19,6 +20,9 @@ public:
 
 protected:
     void changeEvent(QEvent *e);
+
+private slots:
+	void itemDoubleClicked(const QModelIndex &index);
 
 private:
     Ui::NoteManagerDlg *ui;

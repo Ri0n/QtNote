@@ -78,6 +78,16 @@ const QString TomboyStorage::titleName() const
 	return tr("Tomboy Storage");
 }
 
+QIcon TomboyStorage::storageIcon() const
+{
+	return QIcon(":/icons/tomboy");
+}
+
+QIcon TomboyStorage::noteIcon() const
+{
+	return QIcon(":/icons/tomboynote");
+}
+
 QList<NoteListItem> TomboyStorage::noteList()
 {
 	QList<NoteListItem> ret = cache.values();

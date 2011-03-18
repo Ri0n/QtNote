@@ -33,6 +33,8 @@ public:
 	bool isAccessible() const;
 	const QString systemName() const;
 	const QString titleName() const;
+	QIcon storageIcon() const;
+	QIcon noteIcon() const;
 	QList<NoteListItem> noteList();
 	Note get(const QString &noteId);
 	void saveNote(const QString &noteId, const QString &text);

@@ -6,5 +6,7 @@
         <file alias="trash">images/trash22.png</file>
         <file alias="exit">images/exit22.png</file>
         <file alias="copy">images/copy22.png</file>
+        <file alias="tomboy">images/tomboy22.png</file>
+        <file alias="tomboynote">images/tomboynote22.png</file>
     </qresource>
 </RCC>

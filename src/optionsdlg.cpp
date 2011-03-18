@@ -74,6 +74,17 @@ public:
 	{
 		return Qt::MoveAction;
 	}
+
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
+	{
+		if (index.isValid() && role == Qt::DecorationRole) {
+			QString storageId = titleMap.key(stringList()[index.row()]);
+			if (!storageId.isEmpty()) {
+				return NoteManager::instance()->storage(storageId)->storageIcon();
+			}
+		}
+		return QStringListModel::data(index, role);
+	}
 };
 
 

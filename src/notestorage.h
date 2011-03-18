@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject> // just for compatibility with qt<4.6
 #include <QDateTime>
+#include <QIcon>
 #include "note.h"
 
 struct NoteListItem
@@ -50,6 +51,8 @@ public:
 	NoteStorage(QObject *parent);
 	virtual const QString systemName() const = 0;
 	virtual const QString titleName() const = 0;
+	virtual QIcon storageIcon() const = 0;
+	virtual QIcon noteIcon() const = 0;
 	virtual bool isAccessible() const = 0;
 	virtual QList<NoteListItem> noteList() = 0;
 	virtual Note get(const QString &id) = 0;

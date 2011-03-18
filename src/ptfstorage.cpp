@@ -22,6 +22,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "ptfstorage.h"
 #include <QDesktopServices>
 #include <QDir>
+#include <QApplication>
+#include <QStyle>
 #include "ptfdata.h"
 
 PTFStorage::PTFStorage(QObject *parent)
@@ -53,6 +55,16 @@ const QString PTFStorage::titleName() const
 	return tr("Plain Text Storage");
 }
 
+QIcon PTFStorage::storageIcon() const
+{
+	return QIcon(":/icons/trayicon");
+}
+
+QIcon PTFStorage::noteIcon() const
+{
+	return QApplication::style()->standardIcon(
+				QStyle::SP_MessageBoxInformation);
+}
 
 QList<NoteListItem> PTFStorage::noteList()
 {

@@ -1,6 +1,7 @@
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
 #include "notemanagermodel.h"
+#include "mainwidget.h"
 
 NoteManagerDlg::NoteManagerDlg(QWidget *parent) :
     QDialog(parent),
@@ -9,6 +10,7 @@ NoteManagerDlg::NoteManagerDlg(QWidget *parent) :
     ui->setupUi(this);
 	model = new NoteManagerModel(this);
 	ui->notesTree->setModel(model);
+	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
 }
 
 NoteManagerDlg::~NoteManagerDlg()
@@ -26,4 +28,12 @@ void NoteManagerDlg::changeEvent(QEvent *e)
     default:
         break;
     }
+}
+
+void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
+{
+	QString noteId = model->noteId(index);
+	if (!noteId.isEmpty()) {
+		((Widget*)parent())->showNoteDialog(model->storageId(index), noteId);
+	}
 }

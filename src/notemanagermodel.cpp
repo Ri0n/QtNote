@@ -58,6 +58,14 @@ public:
 		qDeleteAll(children);
 	}
 
+	QIcon icon()
+	{
+		if (type == Storage) {
+			return NoteManager::instance()->storage(id)->storageIcon();
+		}
+		return NoteManager::instance()->storage(parent->id)->noteIcon();
+	}
+
 	NMMItem *parent;
 	Type type;
 	QList<NMMItem *> children;
@@ -139,9 +147,36 @@ QVariant NoteManagerModel::data( const QModelIndex & index, int role ) const
 {
 	if (index.isValid()) {
 		NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
-		if (role == Qt::DisplayRole) {
-			return item->title;
+		switch (role) {
+			case Qt::DisplayRole:
+				return item->title;
+			case Qt::DecorationRole:
+				return item->icon();
 		}
 	}
 	return QVariant();
+}
+
+QString NoteManagerModel::storageId(const QModelIndex &index) const
+{
+	if (index.isValid()) {
+		NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
+		if (item->type == NMMItem::Storage) {
+			return item->id;
+		} else {
+			return item->parent->id;
+		}
+	}
+	return QString();
+}
+
+QString NoteManagerModel::noteId(const QModelIndex &index) const
+{
+	if (index.isValid()) {
+		NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
+		if (item->type == NMMItem::Note) {
+			return item->id;
+		}
+	}
+	return QString();
 }
