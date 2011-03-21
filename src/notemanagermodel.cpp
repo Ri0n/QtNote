@@ -83,13 +83,49 @@ NoteManagerModel::NoteManagerModel(QObject *parent)
 {
 	foreach (const StorageItem &s, NoteManager::instance()->storages()) {
 		storages.append(new NMMItem(s));
+		setStorageSignalHandlers(s.storage);
 	}
+	connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), SLOT(storageAdded(StorageItem)));
+	connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), SLOT(storageRemoved(StorageItem)));
 }
 
 NoteManagerModel::~NoteManagerModel()
 {
 	qDeleteAll(storages);
 }
+
+void NoteManagerModel::setStorageSignalHandlers(NoteStorage *s)
+{
+	connect(s, SIGNAL(noteAdded(NoteListItem)), SLOT(noteAdded(NoteListItem)));
+	connect(s, SIGNAL(noteModified(NoteListItem)), SLOT(noteModified(NoteListItem)));
+	connect(s, SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
+}
+
+void NoteManagerModel::storageAdded(const StorageItem &)
+{
+
+}
+
+void NoteManagerModel::storageRemoved(const StorageItem &)
+{
+
+}
+
+void NoteManagerModel::noteAdded(const NoteListItem &)
+{
+
+}
+
+void NoteManagerModel::noteModified(const NoteListItem &)
+{
+
+}
+
+void NoteManagerModel::noteRemoved(const NoteListItem &)
+{
+
+}
+
 
 QModelIndex NoteManagerModel::index( int row, int column,
 									 const QModelIndex & parent ) const

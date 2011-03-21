@@ -100,8 +100,8 @@ void PTFStorage::saveNote(const QString &noteId, const QString & text)
 	note.setText(text);
 	if (note.saveToFile( QDir(notesDir).absoluteFilePath(
 			QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-		cache.insert(note.uid(), NoteListItem(note.uid(), systemName(),
-											  note.title(), note.modifyTime()));
+		NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
+		putToCache(item);
 	}
 }
 

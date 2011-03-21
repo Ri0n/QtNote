@@ -8,5 +8,6 @@
         <file alias="copy">images/copy22.png</file>
         <file alias="tomboy">images/tomboy22.png</file>
         <file alias="tomboynote">images/tomboynote22.png</file>
+        <file alias="manager">images/manager22.png</file>
     </qresource>
 </RCC>

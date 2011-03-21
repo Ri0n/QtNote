@@ -40,7 +40,7 @@ Widget::Widget(QWidget *parent)
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
 	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
 	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
-	actManager = new QAction(tr("&Note Manager"), this);
+	actManager = new QAction(QIcon(":/icons/manager"), tr("&Note Manager"), this);
 
 	contextMenu = new QMenu(this);
 	contextMenu->addAction(actNew);
@@ -85,6 +85,7 @@ void Widget::showAbout()
 void Widget::showNoteManager()
 {
 	NoteManagerDlg *d = new NoteManagerDlg(this);
+	d->setWindowIcon(QIcon(":/icons/manager"));
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }

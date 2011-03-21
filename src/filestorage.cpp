@@ -38,8 +38,24 @@ void FileStorage::createNote(const QString &text)
 
 void FileStorage::deleteNote(const QString &noteId)
 {
-	if (QFile::remove( QDir(notesDir).absoluteFilePath(
-			QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-		cache.remove(noteId);
+	QHash<QString, NoteListItem>::const_iterator r = cache.find(noteId);
+	if (r != cache.end()) {
+		if (QFile::remove( QDir(notesDir).absoluteFilePath(
+				QString("%1.%2").arg(noteId).arg(fileExt)) )) {
+			NoteListItem item = r.value();
+			cache.remove(r.key());
+			emit noteRemoved(item);
+		}
+	}
+}
+
+void FileStorage::putToCache(const NoteListItem &note)
+{
+	bool isModify = cache.contains(note.id);
+	cache.insert(note.id, note);
+	if (isModify) {
+		emit noteModified(note);
+	} else {
+		emit noteAdded(note);
 	}
 }

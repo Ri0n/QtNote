@@ -60,6 +60,11 @@ public:
 	virtual void saveNote(const QString &noteId, const QString &text) = 0;
 	virtual void deleteNote(const QString &text) = 0;
 	virtual bool isRichTextAllowed() const = 0;
+
+signals:
+	void noteAdded(const NoteListItem &);
+	void noteModified(const NoteListItem &);
+	void noteRemoved(const NoteListItem &);
 };
 
 #endif // NOTESTORAGE_H

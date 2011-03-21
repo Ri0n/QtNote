@@ -26,6 +26,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class NoteStorage;
 class NMMItem;
+class StorageItem;
+class NoteListItem;
 
 class NoteManagerModel : public QAbstractItemModel
 {
@@ -33,6 +35,8 @@ class NoteManagerModel : public QAbstractItemModel
 public:
 	explicit NoteManagerModel(QObject *parent = 0);
 	~NoteManagerModel();
+	void setStorageSignalHandlers(NoteStorage *s);
+
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
@@ -45,6 +49,13 @@ public:
 signals:
 
 public slots:
+
+private slots:
+	void storageAdded(const StorageItem &);
+	void storageRemoved(const StorageItem &);
+	void noteAdded(const NoteListItem &);
+	void noteModified(const NoteListItem &);
+	void noteRemoved(const NoteListItem &);
 
 private:
 	QList<NMMItem*> storages;

@@ -34,11 +34,13 @@ void NoteManager::registerStorage(NoteStorage *storage, int priority)
 {
 	//qDebug("%s:%d", qPrintable(storage->systemName()), priority);
 	static int maxPriority = -1;
-	storages_.insert(storage->systemName(), StorageItem(storage, priority));
+	StorageItem item(storage, priority);
+	storages_.insert(storage->systemName(), item);
 	if (priority > maxPriority) {
 		defaultStorage_ = storage;
 		maxPriority = priority;
 	}
+	emit storageAdded(item);
 }
 
 bool NoteManager::loadAll()

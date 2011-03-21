@@ -58,6 +58,10 @@ public:
 	//QStringList storageCodes() const;
 	void updatePriorities(const QStringList &storageCodes);
 
+signals:
+	void storageAdded(StorageItem);
+	void storageRemoved(StorageItem);
+
 private:
 	NoteManager(QObject *parent);
 	static bool prioritySorter(const StorageItem &a, const StorageItem &b);

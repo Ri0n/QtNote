@@ -31,6 +31,7 @@ public:
 	FileStorage(QObject *parent);
 	void createNote(const QString &text);
 	void deleteNote(const QString &noteId);
+	virtual void putToCache(const NoteListItem &note);
 
 protected:
 	QString fileExt;
