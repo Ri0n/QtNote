@@ -42,6 +42,7 @@ public:
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
 	int columnCount( const QModelIndex & parent = QModelIndex() ) const;
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
+	bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
 
 	QString storageId(const QModelIndex &index) const;
 	QString noteId(const QModelIndex &index) const;
@@ -56,6 +57,9 @@ private slots:
 	void noteAdded(const NoteListItem &);
 	void noteModified(const NoteListItem &);
 	void noteRemoved(const NoteListItem &);
+
+private:
+	QModelIndex storageIndex(const QString &) const;
 
 private:
 	QList<NMMItem*> storages;

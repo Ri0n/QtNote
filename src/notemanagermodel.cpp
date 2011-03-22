@@ -101,6 +101,18 @@ void NoteManagerModel::setStorageSignalHandlers(NoteStorage *s)
 	connect(s, SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
 }
 
+QModelIndex NoteManagerModel::storageIndex(const QString &storageId) const
+{
+	int i = 0;
+	foreach (NMMItem *item, storages) {
+		if (item->id == storageId) {
+			break;
+		}
+		i++;
+	}
+	return index(i, 0, QModelIndex());
+}
+
 void NoteManagerModel::storageAdded(const StorageItem &)
 {
 
@@ -111,9 +123,16 @@ void NoteManagerModel::storageRemoved(const StorageItem &)
 
 }
 
-void NoteManagerModel::noteAdded(const NoteListItem &)
+void NoteManagerModel::noteAdded(const NoteListItem &item)
 {
-
+	QModelIndex parentIndex = storageIndex(item.storageId);
+	if (parentIndex.isValid()) {
+		NMMItem *storage = static_cast<NMMItem*>(parentIndex.internalPointer());
+		int len = rowCount(parentIndex);
+		beginInsertRows(parentIndex, len, len);
+		storage->children.append(new NMMItem(item, storage));
+		endInsertRows();
+	}
 }
 
 void NoteManagerModel::noteModified(const NoteListItem &)
@@ -121,9 +140,20 @@ void NoteManagerModel::noteModified(const NoteListItem &)
 
 }
 
-void NoteManagerModel::noteRemoved(const NoteListItem &)
+void NoteManagerModel::noteRemoved(const NoteListItem &item)
 {
-
+	QModelIndex parentIndex = storageIndex(item.storageId);
+	if (parentIndex.isValid()) {
+		NMMItem *storage = static_cast<NMMItem*>(parentIndex.internalPointer());
+		int i = 0;
+		foreach (NMMItem *c, storage->children) {
+			if (c->id == item.id) {
+				removeRow(i, parentIndex);
+				break;
+			}
+			i++;
+		}
+	}
 }
 
 
@@ -191,6 +221,30 @@ QVariant NoteManagerModel::data( const QModelIndex & index, int role ) const
 		}
 	}
 	return QVariant();
+}
+
+bool NoteManagerModel::removeRows(int row, int count, const QModelIndex &parent)
+{
+	QList<NMMItem*> *source;
+	if (parent.isValid()) { // note
+		NMMItem *storageItem = static_cast<NMMItem *>(parent.internalPointer());
+		source = &storageItem->children;
+	} else { //storage
+		source = &storages;
+	}
+	if (row < source->count() && count > 0) {
+		beginRemoveRows(parent, row, row + count - 1);
+		count = (row + count) > source->count() ? source->count() - row : count;
+
+		for (int i = 0; i < count; i++) {
+			delete source->takeAt(row);
+		}
+
+		endRemoveRows();
+		return true;
+	}
+
+	return false;
 }
 
 QString NoteManagerModel::storageId(const QModelIndex &index) const
