@@ -33,6 +33,11 @@ class NoteManagerModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
+	enum DataRole {
+		StorageId = Qt::UserRole + 1,
+		NoteId
+	};
+
 	explicit NoteManagerModel(QObject *parent = 0);
 	~NoteManagerModel();
 	void setStorageSignalHandlers(NoteStorage *s);
@@ -43,9 +48,6 @@ public:
 	int columnCount( const QModelIndex & parent = QModelIndex() ) const;
 	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
-
-	QString storageId(const QModelIndex &index) const;
-	QString noteId(const QModelIndex &index) const;
 
 signals:
 
@@ -60,6 +62,7 @@ private slots:
 
 private:
 	QModelIndex storageIndex(const QString &) const;
+	QModelIndex noteIndex(const QString &, const QString &) const;
 
 private:
 	QList<NMMItem*> storages;

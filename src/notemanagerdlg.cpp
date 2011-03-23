@@ -32,8 +32,8 @@ void NoteManagerDlg::changeEvent(QEvent *e)
 
 void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 {
-	QString noteId = model->noteId(index);
+	QString noteId = model->data(index, NoteManagerModel::NoteId).toString();
 	if (!noteId.isEmpty()) {
-		((Widget*)parent())->showNoteDialog(model->storageId(index), noteId);
+		((Widget*)parent())->showNoteDialog(model->data(index, NoteManagerModel::StorageId).toString(), noteId);
 	}
 }

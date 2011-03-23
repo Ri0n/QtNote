@@ -113,6 +113,22 @@ QModelIndex NoteManagerModel::storageIndex(const QString &storageId) const
 	return index(i, 0, QModelIndex());
 }
 
+QModelIndex NoteManagerModel::noteIndex(const QString &storageId, const QString &noteId) const
+{
+	QModelIndex storage = storageIndex(storageId);
+	if (storage.isValid()) {
+		NMMItem *storageItem = static_cast<NMMItem*>(storage.internalPointer());
+		int i = 0;
+		foreach (NMMItem *c, storageItem->children) {
+			if (c->id == noteId) {
+				return index(i, 0, storage);
+			}
+			i++;
+		}
+	}
+	return QModelIndex();
+}
+
 void NoteManagerModel::storageAdded(const StorageItem &)
 {
 
@@ -135,24 +151,21 @@ void NoteManagerModel::noteAdded(const NoteListItem &item)
 	}
 }
 
-void NoteManagerModel::noteModified(const NoteListItem &)
+void NoteManagerModel::noteModified(const NoteListItem &note)
 {
-
+	QModelIndex index = noteIndex(note.storageId, note.id);
+	if (index.isValid()) {
+		NMMItem *noteItem = static_cast<NMMItem*>(index.internalPointer());
+		noteItem->title = note.title;
+		emit dataChanged(index, index);
+	}
 }
 
 void NoteManagerModel::noteRemoved(const NoteListItem &item)
 {
-	QModelIndex parentIndex = storageIndex(item.storageId);
-	if (parentIndex.isValid()) {
-		NMMItem *storage = static_cast<NMMItem*>(parentIndex.internalPointer());
-		int i = 0;
-		foreach (NMMItem *c, storage->children) {
-			if (c->id == item.id) {
-				removeRow(i, parentIndex);
-				break;
-			}
-			i++;
-		}
+	QModelIndex index = noteIndex(item.storageId, item.id);
+	if (index.isValid()) {
+		removeRow(index.row(), index.parent());
 	}
 }
 
@@ -218,6 +231,16 @@ QVariant NoteManagerModel::data( const QModelIndex & index, int role ) const
 				return item->title;
 			case Qt::DecorationRole:
 				return item->icon();
+			case StorageId:
+				if (item->type == NMMItem::Storage) {
+					return item->id;
+				}
+				return item->parent->id;
+			case NoteId:
+				if (item->type == NMMItem::Storage) {
+					return "";
+				}
+				return item->id;
 		}
 	}
 	return QVariant();
@@ -245,28 +268,4 @@ bool NoteManagerModel::removeRows(int row, int count, const QModelIndex &parent)
 	}
 
 	return false;
-}
-
-QString NoteManagerModel::storageId(const QModelIndex &index) const
-{
-	if (index.isValid()) {
-		NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
-		if (item->type == NMMItem::Storage) {
-			return item->id;
-		} else {
-			return item->parent->id;
-		}
-	}
-	return QString();
-}
-
-QString NoteManagerModel::noteId(const QModelIndex &index) const
-{
-	if (index.isValid()) {
-		NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
-		if (item->type == NMMItem::Note) {
-			return item->id;
-		}
-	}
-	return QString();
 }
