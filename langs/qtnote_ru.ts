@@ -42,6 +42,32 @@
         <source>Delete note</source>
         <translation>Удалить заметку</translation>
     </message>
+    <message>
+        <location filename="../src/notedialog.cpp" line="194"/>
+        <source>[Empty Note]</source>
+        <translation>[Пустая Заметка]</translation>
+    </message>
+</context>
+<context>
+    <name>NoteManagerDlg</name>
+    <message>
+        <location filename="../src/notemanagerdlg.ui" line="14"/>
+        <source>Note Manager</source>
+        <translation>Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../src/notemanagerdlg.ui" line="55"/>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+</context>
+<context>
+    <name>NoteManagerView</name>
+    <message>
+        <location filename="../src/notemanagerview.cpp" line="18"/>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDlg</name>
@@ -74,7 +100,7 @@
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="53"/>
+        <location filename="../src/ptfstorage.cpp" line="55"/>
         <source>Plain Text Storage</source>
         <translation>Хранилище текстовых файлов</translation>
     </message>
@@ -98,32 +124,37 @@
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../src/mainwidget.cpp" line="37"/>
+        <location filename="../src/mainwidget.cpp" line="39"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="38"/>
+        <location filename="../src/mainwidget.cpp" line="40"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="39"/>
+        <location filename="../src/mainwidget.cpp" line="41"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="40"/>
+        <location filename="../src/mainwidget.cpp" line="42"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="199"/>
+        <location filename="../src/mainwidget.cpp" line="43"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwidget.cpp" line="213"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="200"/>
+        <location filename="../src/mainwidget.cpp" line="214"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
