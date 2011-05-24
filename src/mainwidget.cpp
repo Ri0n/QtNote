@@ -117,10 +117,8 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 		dlg->setWindowIcon(QIcon(":/icons/trayicon"));
 		dlg->setAcceptRichText(NoteManager::instance()->storage(storageId)
 							   ->isRichTextAllowed());
-		connect(dlg, SIGNAL(saveRequested(QString,QString,QString)),
-				SLOT(onSaveNote(QString,QString,QString)));
-		connect(dlg, SIGNAL(trashRequested(QString,QString)),
-				SLOT(onDeleteNote(QString,QString)));
+		connect(dlg, SIGNAL(save()), SLOT(onSaveNote()));
+		connect(dlg, SIGNAL(trash()), SLOT(onDeleteNote()));
 		if (!note.isNull()) {
 			if (note.text().startsWith(note.title())) {
 				dlg->setText(note.text());
@@ -185,10 +183,13 @@ void Widget::createNewNote()
 	showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
 }
 
-void Widget::onSaveNote(const QString &storageId, const QString &noteId,
-						const QString &text)
+void Widget::onSaveNote()
 {
-	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	NoteDialog *dlg = static_cast<NoteDialog *>(sender());
+	QString storageId = dlg->storageId();
+	QString noteId = dlg->noteId();
+	QString text = dlg->text();
+	NoteStorage *storage = NoteManager::instance()->storage(dlg->storageId());
 	if (text.isEmpty()) { // delete empty note
 		if (!noteId.isEmpty()) {
 			storage->deleteNote(noteId);
@@ -205,10 +206,11 @@ void Widget::onSaveNote(const QString &storageId, const QString &noteId,
 	}
 }
 
-void Widget::onDeleteNote(const QString &storageId, const QString &noteId)
+void Widget::onDeleteNote()
 {
+	NoteDialog *dlg = static_cast<NoteDialog *>(sender());
 	QSettings s;
-	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	NoteStorage *storage = NoteManager::instance()->storage(dlg->storageId());
 	if (s.value("ui.ask-on-delete", true).toBool() &&
 		QMessageBox::question(this, tr("Deletion confirmation"),
 							  tr("Are you sure want to delete this note?"),
@@ -216,5 +218,5 @@ void Widget::onDeleteNote(const QString &storageId, const QString &noteId)
 		QMessageBox::Yes) {
 		return;
 	}
-	storage->deleteNote(noteId);
+	storage->deleteNote(dlg->noteId());
 }

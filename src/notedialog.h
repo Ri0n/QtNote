@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QtGui/QDialog>
 #include <QTextCharFormat>
+#include <QTimer>
 
 namespace Ui {
     class NoteDialog;
@@ -40,6 +41,8 @@ public:
 	void setText(QString text);
 	QString text();
 	void setAcceptRichText(bool state);
+	inline QString storageId() const { return storageId_; }
+	inline QString noteId() const { return noteId_; }
 
 	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
 
@@ -53,19 +56,21 @@ private:
 	QString storageId_;
 	QString noteId_;
 	QString firstLine_;
+	QTimer autosaveTimer_;
 	bool trashRequested_;
-	bool timerActive_;
+	bool changed_;
 
 	static QHash< QPair<QString,QString>, NoteDialog* > dialogs;
 
 signals:
-	void trashRequested(const QString &, const QString &);
-	void saveRequested(const QString &, const QString &, const QString &);
+	void trash();
+	void save();
 
 public slots:
 	void done(int r);
 
 private slots:
+	void autosave();
 	void trashClicked();
 	void copyClicked();
 	void contentsChange( int position, int charsRemoved, int charsAdded );

@@ -94,7 +94,7 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 {
 	ui->setupUi(this);
 #ifdef Q_OS_LINUX
-	QFile desktop(QDir::homePath() + "/.config/autostart/qtnote.desktop");
+	QFile desktop(QDir::homePath() + "/.config/autostart/" APPNAME ".desktop");
 	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll())
 		.contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
 		ui->ckAutostart->setChecked(true);

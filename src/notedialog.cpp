@@ -54,6 +54,8 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	titleCharFormat_.setForeground(QBrush(QColor(255,0,0)));
 	secondLineCharFormat_ = m_ui->noteEdit->currentCharFormat();
 
+	autosaveTimer_.setInterval(30000);
+	connect(&autosaveTimer_, SIGNAL(timeout()), SIGNAL(save()));
 	connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(m_ui->noteEdit->document(), SIGNAL(contentsChange(int,int,int)),
 			SLOT(contentsChange(int,int,int)));
@@ -61,6 +63,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 
 	m_ui->noteEdit->setText(""); // to force update event
+	autosaveTimer_.start();
 }
 
 NoteDialog::~NoteDialog()
@@ -88,12 +91,21 @@ void NoteDialog::done(int r)
 {
 	//qDebug("saving: %d", r);
 	if (trashRequested_) {
-		emit trashRequested(storageId_, noteId_);
+		emit trash();
 	} else {
-		emit saveRequested(storageId_, noteId_, text().trimmed());
+		changed_ = false;
+		emit save();
 	}
 	NoteDialog::dialogs.remove(QPair<QString,QString>(storageId_, noteId_));
 	QDialog::done(r);
+}
+
+void NoteDialog::autosave()
+{
+	if (!text().isEmpty() && changed_) {
+		changed_ = false;
+		emit save();
+	}
 }
 
 void NoteDialog::trashClicked()
@@ -111,6 +123,7 @@ void NoteDialog::copyClicked()
 void NoteDialog::contentsChange(int position, int charsRemoved, int charsAdded)
 {
 	Q_UNUSED(charsRemoved)
+	changed_ = true;
 	// first lets try remove space at the begining of line
 	// do this immediately to hide visual effects
 	QTextDocument *doc = m_ui->noteEdit->document();
@@ -205,7 +218,7 @@ void NoteDialog::setText(QString text)
 
 QString NoteDialog::text()
 {
-	return m_ui->noteEdit->toPlainText();
+	return m_ui->noteEdit->toPlainText().trimmed();
 }
 
 void NoteDialog::setAcceptRichText(bool state)

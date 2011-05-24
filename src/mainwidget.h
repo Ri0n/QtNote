@@ -48,9 +48,8 @@ private slots:
 	void showNoteManager();
 	void showOptions();
 	void createNewNote();
-	void onSaveNote(const QString &storageId, const QString &noteId,
-					const QString &text);
-	void onDeleteNote(const QString &storageId, const QString &noteId);
+	void onSaveNote();
+	void onDeleteNote();
 };
 
 #endif // WIDGET_H
