@@ -189,7 +189,7 @@ void Widget::onSaveNote()
 	QString storageId = dlg->storageId();
 	QString noteId = dlg->noteId();
 	QString text = dlg->text();
-	NoteStorage *storage = NoteManager::instance()->storage(dlg->storageId());
+	NoteStorage *storage = NoteManager::instance()->storage(storageId);
 	if (text.isEmpty()) { // delete empty note
 		if (!noteId.isEmpty()) {
 			storage->deleteNote(noteId);
@@ -197,7 +197,8 @@ void Widget::onSaveNote()
 		return;
 	}
 	if (noteId.isEmpty()) {
-		storage->createNote(text);
+		noteId = storage->createNote(text);
+		dlg->setNoteId(noteId);
 	} else {
 		if (NoteManager::instance()->getNote(storageId, noteId).text() != text)
 		{

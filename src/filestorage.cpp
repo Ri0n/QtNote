@@ -30,10 +30,12 @@ FileStorage::FileStorage(QObject *parent)
 
 }
 
-void FileStorage::createNote(const QString &text)
+QString FileStorage::createNote(const QString &text)
 {
-	QString uid = QUuid::createUuid ().toString();
-	saveNote(uid.mid(1, uid.length()-2), text);
+	QString uid = QUuid::createUuid().toString();
+	uid = uid.mid(1, uid.length()-2);
+	saveNote(uid, text);
+	return uid;
 }
 
 void FileStorage::deleteNote(const QString &noteId)

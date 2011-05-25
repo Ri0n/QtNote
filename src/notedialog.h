@@ -43,6 +43,7 @@ public:
 	void setAcceptRichText(bool state);
 	inline QString storageId() const { return storageId_; }
 	inline QString noteId() const { return noteId_; }
+	void setNoteId(const QString &noteId);
 
 	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
 

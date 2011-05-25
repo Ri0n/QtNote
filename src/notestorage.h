@@ -56,7 +56,7 @@ public:
 	virtual bool isAccessible() const = 0;
 	virtual QList<NoteListItem> noteList() = 0;
 	virtual Note get(const QString &id) = 0;
-	virtual void createNote(const QString &text) = 0;
+	virtual QString createNote(const QString &text) = 0;
 	virtual void saveNote(const QString &noteId, const QString &text) = 0;
 	virtual void deleteNote(const QString &noteId) = 0;
 	virtual bool isRichTextAllowed() const = 0;

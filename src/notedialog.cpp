@@ -54,8 +54,8 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	titleCharFormat_.setForeground(QBrush(QColor(255,0,0)));
 	secondLineCharFormat_ = m_ui->noteEdit->currentCharFormat();
 
-	autosaveTimer_.setInterval(30000);
-	connect(&autosaveTimer_, SIGNAL(timeout()), SIGNAL(save()));
+	autosaveTimer_.setInterval(10000);
+	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
 	connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(m_ui->noteEdit->document(), SIGNAL(contentsChange(int,int,int)),
 			SLOT(contentsChange(int,int,int)));
@@ -224,6 +224,13 @@ QString NoteDialog::text()
 void NoteDialog::setAcceptRichText(bool state)
 {
 	m_ui->noteEdit->setAcceptRichText(state);
+}
+
+void NoteDialog::setNoteId(const QString &noteId)
+{
+	NoteDialog::dialogs.remove(NoteDialog::dialogs.key(this));
+	noteId_ = noteId;
+	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId_, noteId_), this);
 }
 
 QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;
