@@ -63,11 +63,11 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 
 	m_ui->noteEdit->setText(""); // to force update event
-	autosaveTimer_.start();
 }
 
 NoteDialog::~NoteDialog()
 {
+	autosaveTimer_.stop();
     delete m_ui;
 }
 
@@ -105,6 +105,8 @@ void NoteDialog::autosave()
 	if (!text().isEmpty() && changed_) {
 		changed_ = false;
 		emit save();
+	} else {
+		autosaveTimer_.stop(); // stop until next text change
 	}
 }
 
@@ -124,6 +126,9 @@ void NoteDialog::contentsChange(int position, int charsRemoved, int charsAdded)
 {
 	Q_UNUSED(charsRemoved)
 	changed_ = true;
+	if (!autosaveTimer_.isActive()) {
+		autosaveTimer_.start();
+	}
 	// first lets try remove space at the begining of line
 	// do this immediately to hide visual effects
 	QTextDocument *doc = m_ui->noteEdit->document();
@@ -214,6 +219,8 @@ void NoteDialog::contentsChange(int position, int charsRemoved, int charsAdded)
 void NoteDialog::setText(QString text)
 {
 	m_ui->noteEdit->setPlainText(text);
+	changed_ = false; // mark as unchanged since its not user input.
+	autosaveTimer_.stop(); // timer not required atm
 }
 
 QString NoteDialog::text()
