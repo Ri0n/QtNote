@@ -57,6 +57,7 @@ public:
 	NoteStorage *defaultStorage();
 	//QStringList storageCodes() const;
 	void updatePriorities(const QStringList &storageCodes);
+	//int notesAmount(const QString &storage = QString()) const;
 
 signals:
 	void storageAdded(StorageItem);

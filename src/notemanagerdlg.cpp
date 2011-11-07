@@ -10,6 +10,11 @@ NoteManagerDlg::NoteManagerDlg(QWidget *parent) :
     ui->setupUi(this);
 	model = new NoteManagerModel(this);
 	ui->notesTree->setModel(model);
+	int sumCount = 0;
+	for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
+		sumCount += model->rowCount(model->index(i, 0));
+	}
+	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
 }
 

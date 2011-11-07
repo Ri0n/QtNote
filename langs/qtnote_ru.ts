@@ -43,7 +43,7 @@
         <translation>Удалить заметку</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="194"/>
+        <location filename="../src/notedialog.cpp" line="212"/>
         <source>[Empty Note]</source>
         <translation>[Пустая Заметка]</translation>
     </message>
@@ -51,14 +51,23 @@
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <location filename="../src/notemanagerdlg.ui" line="14"/>
-        <source>Note Manager</source>
-        <translation>Менеджер Заметок</translation>
-    </message>
-    <message>
-        <location filename="../src/notemanagerdlg.ui" line="55"/>
+        <location filename="../src/notemanagerdlg.ui" line="52"/>
         <source>Close</source>
         <translation>Закрыть</translation>
+    </message>
+    <message>
+        <location filename="../src/notemanagerdlg.cpp" line="13"/>
+        <source>Note Manager (%1)</source>
+        <translation>Менеджер заметок (%1)</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/notemanagerdlg.cpp" line="14"/>
+        <source>%n notes</source>
+        <translation>
+            <numerusform>%n заметка</numerusform>
+            <numerusform>%n заметки</numerusform>
+            <numerusform>%n заметок</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -149,12 +158,12 @@
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="213"/>
+        <location filename="../src/mainwidget.cpp" line="216"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="214"/>
+        <location filename="../src/mainwidget.cpp" line="217"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>

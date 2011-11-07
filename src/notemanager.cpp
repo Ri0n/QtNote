@@ -122,6 +122,19 @@ void NoteManager::updatePriorities(const QStringList &storageCodes)
 	}
 }
 
+/*int NoteManager::notesAmount(const QString &storage = QString()) const
+{
+	int result = 0;
+	if (storage.isEmpty()) {
+		foreach (const StorageItem &s, storages()) {
+			result += s.storage->notesAmount();
+		}
+	} else if (storages().contains(storage)) {
+		result += storages().value(storage).storage->notesAmount();
+	}
+	return result;
+}*/
+
 NoteManager *NoteManager::instance()
 {
 	if (!NoteManager::instance_) {
