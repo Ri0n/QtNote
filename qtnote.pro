@@ -23,7 +23,7 @@ QT += xml
 
 include (src/src.pri)
 
-TRANSLATIONS = langs/qtnote_ru.ts
+TRANSLATIONS += langs/qtnote_en.ts langs/qtnote_ru.ts
 unix {
 	isEmpty(PREFIX) {
 		PREFIX = /usr
@@ -39,11 +39,10 @@ unix {
 		DATADIR=\\\"$$DATADIR\\\" \
 		APPNAME=\\\"$$TARGET\\\"
     
-    # CTRANSLATIONS = langs/qtnote_ru.qm
-    # DISTFILES += $$CTRANSLATIONS
-    # for(t, CTRANSLATIONS):translations.files += "langs/$${t}"
-	translations.files = langs/$${TARGET}_ru.qm
+	LANGS = en ru
+	for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
 	translations.path = $$TRANSLATIONSDIR
+	DISTFILES += $$translations
 
 	# Desktop file
 	desktop.files = $${TARGET}.desktop
