@@ -61,3 +61,5 @@ FORMS += $$PWD/notedialog.ui \
     src/notemanagerdlg.ui
 
 INCLUDEPATH += $$PWD
+
+include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)

@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QtGui/QApplication>
+#include <QtSingleApplication>
 #include <QMessageBox>
 #include <QLocale>
 #include <QTranslator>
@@ -35,8 +36,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-
+	QtSingleApplication a(argc, argv);
+	if (a.sendMessage("Wake up!")) { // stupid copy&paste
+		return 0;
+	}
 
 	Q_INIT_RESOURCE(main);
 
