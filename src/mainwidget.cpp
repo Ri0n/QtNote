@@ -212,7 +212,7 @@ void Widget::onDeleteNote()
 	NoteDialog *dlg = static_cast<NoteDialog *>(sender());
 	QSettings s;
 	NoteStorage *storage = NoteManager::instance()->storage(dlg->storageId());
-	if (s.value("ui.ask-on-delete", true).toBool() &&
+	if (!dlg->text().isEmpty() && s.value("ui.ask-on-delete", true).toBool() &&
 		QMessageBox::question(this, tr("Deletion confirmation"),
 							  tr("Are you sure want to delete this note?"),
 							  QMessageBox::Yes | QMessageBox::No) !=
