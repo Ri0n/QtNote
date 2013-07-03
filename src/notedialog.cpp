@@ -57,8 +57,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	autosaveTimer_.setInterval(10000);
 	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
 	connect(parent, SIGNAL(destroyed()), SLOT(close()));
-	connect(m_ui->noteEdit->document(), SIGNAL(contentsChange(int,int,int)),
-			SLOT(contentsChange(int,int,int)));
+	connect(m_ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 
@@ -122,98 +121,24 @@ void NoteDialog::copyClicked()
 	clipboard->setText(text());
 }
 
-void NoteDialog::contentsChange(int position, int charsRemoved, int charsAdded)
+void NoteDialog::textChanged()
 {
-	Q_UNUSED(charsRemoved)
 	changed_ = true;
 	if (!autosaveTimer_.isActive()) {
 		autosaveTimer_.start();
 	}
-	// first lets try remove space at the begining of line
-	// do this immediately to hide visual effects
 	QTextDocument *doc = m_ui->noteEdit->document();
-	QTextCursor curBak = m_ui->noteEdit->textCursor();
-	QTextCursor cur(doc);
-
-	cur.setPosition(0);
-	// half of workaround for bug http://bugreports.qt.nokia.com/browse/QTBUG-3495
-	if (doc->characterAt(position + charsAdded) == '\0') {
-		charsAdded--;
-	}
-
-	int n = 0;
-	while (n < doc->characterCount() - 1 && doc->characterAt(n).isSpace()) {
-		n++;
-	}
-	if (n) {
-		//qDebug("removing empty symbols %d from %d", n, doc->characterCount());
-		curBak.setPosition(0);
-		cur.setPosition(n, QTextCursor::KeepAnchor);
-		cur.deleteChar();
-		if (n > position) { // something was removed from start of text
-			if (n > position + charsAdded) {
-				charsAdded = 0;
-			} else {
-				charsAdded -= (n - position);
-			}
-			position = 0;
-		} else {
-			position -= n;
-		}
-	}
-
 	QTextBlock firstBlock = doc->begin();
-	cur.setPosition(firstBlock.length() - 1, QTextCursor::KeepAnchor);
-	cur.setCharFormat(titleCharFormat_);
-	if (charsAdded > 0 && firstBlock.contains(position)) {
-		cur.setPosition(position);
-		cur.setPosition(position + charsAdded, QTextCursor::KeepAnchor);
-		QString addText = cur.selectedText();
-		//int pos = addText.indexOf(QChar::Separator_Paragraph); // doesn't work for unknown reason
-		int pos = 0;
-		for (int l=addText.size();
-			pos<l && addText[pos].category() != QChar::Separator_Paragraph;
-			pos++);
-		if (pos < addText.size()) {
-			QTextBlock b = firstBlock.next();
-			if (b.isValid()) {
-				int firstIndex = firstBlock.begin().fragment().charFormatIndex();
-				int currentIndex = firstIndex;
-				int lastPos = b.position();
-				// computing length of text after first line with the same format as title format
-				while (b.isValid() && currentIndex == firstIndex) {
-					QTextBlock::iterator it;
-					for (it = b.begin(); !(it.atEnd()); ++it) {
-						QTextFragment fr = it.fragment();
-						if (fr.isValid()) {
-							currentIndex = fr.charFormatIndex();
-							if (currentIndex == firstIndex) {
-								lastPos = fr.position() + fr.length();
-							} else {
-								break;
-							}
-						}
-					}
-					b = b.next();
-				}
-				// setting format to second line format or some default
-				cur.setPosition(position + pos);
-				cur.setPosition(lastPos, QTextCursor::KeepAnchor);
-				cur.setCharFormat(secondLineCharFormat_);
-				curBak.setCharFormat(secondLineCharFormat_);
-			}
-		}
-	}
+
 	QString firstLine = firstBlock.text();
 	if (firstLine != firstLine_ || firstLine.isEmpty()) {
 		firstLine_ = firstLine;
 		setWindowTitle(
 			Utils::cuttedDots(firstLine.isEmpty() ?
-							  tr("[Empty Note]") :
+							  tr("[No Title]") :
 							  text().section('\n', 0, 0).trimmed(), 256)
 		);
 	}
-	m_ui->noteEdit->setTextCursor(curBak);
 }
 
 void NoteDialog::setText(QString text)

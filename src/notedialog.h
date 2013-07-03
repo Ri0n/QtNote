@@ -74,7 +74,7 @@ private slots:
 	void autosave();
 	void trashClicked();
 	void copyClicked();
-	void contentsChange( int position, int charsRemoved, int charsAdded );
+	void textChanged();
 };
 
 #endif // NOTEDIALOG_H

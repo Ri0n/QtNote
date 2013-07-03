@@ -6,27 +6,27 @@
     <message>
         <location filename="../src/aboutdlg.ui" line="14"/>
         <source>About QtNote</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="58"/>
         <source>Simpe and usable note taking application</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="86"/>
         <source>License: GPL-3</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="98"/>
         <source>Author: Il&apos;inykh Sergey</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="117"/>
         <source>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -34,17 +34,17 @@
     <message>
         <location filename="../src/notedialog.ui" line="31"/>
         <source>Copy note to clipboard</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="61"/>
         <source>Delete note</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="212"/>
-        <source>[Empty Note]</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/notedialog.cpp" line="138"/>
+        <source>[No Title]</source>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -52,12 +52,12 @@
     <message>
         <location filename="../src/notemanagerdlg.ui" line="52"/>
         <source>Close</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/notemanagerdlg.cpp" line="17"/>
         <source>Note Manager (%1)</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message numerus="yes">
         <location filename="../src/notemanagerdlg.cpp" line="17"/>
@@ -73,7 +73,7 @@
     <message>
         <location filename="../src/notemanagerview.cpp" line="18"/>
         <source>Delete</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -81,27 +81,27 @@
     <message>
         <location filename="../src/optionsdlg.ui" line="14"/>
         <source>QtNote Options</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/optionsdlg.ui" line="24"/>
         <source>Storage Priority</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/optionsdlg.ui" line="43"/>
         <source>Delete notes with confirmation</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/optionsdlg.ui" line="50"/>
         <source>Start with system</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/optionsdlg.ui" line="59"/>
         <source>Amount of notes to show in the tray menu</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -109,15 +109,15 @@
     <message>
         <location filename="../src/ptfstorage.cpp" line="55"/>
         <source>Plain Text Storage</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="92"/>
+        <location filename="../src/main.cpp" line="95"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -125,7 +125,7 @@
     <message>
         <location filename="../src/tomboystorage.cpp" line="78"/>
         <source>Tomboy Storage</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -133,37 +133,37 @@
     <message>
         <location filename="../src/mainwidget.cpp" line="39"/>
         <source>&amp;Quit</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="40"/>
         <source>&amp;New</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="41"/>
         <source>&amp;About</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="42"/>
         <source>&amp;Options</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="43"/>
         <source>&amp;Note Manager</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="216"/>
         <source>Deletion confirmation</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/mainwidget.cpp" line="217"/>
         <source>Are you sure want to delete this note?</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 </TS>

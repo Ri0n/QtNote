@@ -43,9 +43,9 @@
         <translation>Удалить заметку</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="212"/>
-        <source>[Empty Note]</source>
-        <translation>[Пустая Заметка]</translation>
+        <location filename="../src/notedialog.cpp" line="138"/>
+        <source>[No Title]</source>
+        <translation>[Нет заголовка]</translation>
     </message>
 </context>
 <context>
@@ -117,7 +117,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="92"/>
+        <location filename="../src/main.cpp" line="95"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
