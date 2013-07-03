@@ -31,6 +31,7 @@ public:
 	static const int TitleLength = 256;
 
 	NoteData();
+	virtual ~NoteData() {}
 	virtual void toTrash() = 0;
 	virtual QString text() const;
 	virtual QString title() const;
