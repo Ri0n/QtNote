@@ -39,7 +39,7 @@ unix {
 		DATADIR=\\\"$$DATADIR\\\" \
 		APPNAME=\\\"$$TARGET\\\"
     
-	LANGS = en ru
+        LANGS = en fr ru vi
 	for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
 	translations.path = $$TRANSLATIONSDIR
 	DISTFILES += $$translations

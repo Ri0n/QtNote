@@ -10,24 +10,38 @@
         <translation>О QtNote</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="58"/>
+        <location filename="../src/aboutdlg.ui" line="49"/>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/aboutdlg.ui" line="63"/>
         <source>Simpe and usable note taking application</source>
         <translation>Простые и удобные заметки</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="86"/>
+        <location filename="../src/aboutdlg.ui" line="75"/>
         <source>License: GPL-3</source>
         <translation>Лицензия: GPL-3</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="98"/>
+        <location filename="../src/aboutdlg.ui" line="87"/>
         <source>Author: Il&apos;inykh Sergey</source>
         <translation>Автор: Ильиных Сергей</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="117"/>
-        <source>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</source>
-        <translation></translation>
+        <location filename="../src/aboutdlg.ui" line="120"/>
+        <source>Translations</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/aboutdlg.ui" line="126"/>
+        <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans&apos;; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Russian:&lt;br /&gt;Il&apos;inykh Sergey (rion4ik@gmail.com)&lt;br /&gt;&lt;br /&gt;French:&lt;br /&gt;&lt;br /&gt;Vietnamese:&lt;br /&gt;Phan Anh&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
