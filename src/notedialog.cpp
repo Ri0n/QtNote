@@ -40,7 +40,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId, noteId), this);
 
 	setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) |
-				   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint | Qt::Window);
+				   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
 	m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
 	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
