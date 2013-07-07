@@ -22,7 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef WIDGET_H
 #define WIDGET_H
 
-#include <QtGui/QWidget>
+#include <QWidget>
 #include <QSystemTrayIcon>
 #include <QAction>
 #include <QMenu>
@@ -41,6 +41,7 @@ private:
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 
+	void parseAppArguments(const QStringList &args);
 private slots:
 	void showNoteList(QSystemTrayIcon::ActivationReason);
 	void exitQtNote();
@@ -50,6 +51,7 @@ private slots:
 	void createNewNote();
 	void onSaveNote();
 	void onDeleteNote();
+	void appMessageReceived(const QByteArray &msg);
 };
 
 #endif // WIDGET_H

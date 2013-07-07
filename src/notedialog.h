@@ -22,7 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEDIALOG_H
 #define NOTEDIALOG_H
 
-#include <QtGui/QDialog>
+#include <QDialog>
 #include <QTextCharFormat>
 #include <QTimer>
 

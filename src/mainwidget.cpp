@@ -21,11 +21,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "mainwidget.h"
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QDesktopWidget>
 #include <QStyle>
 #include <QSettings>
 #include <QMessageBox>
+#include <QtSingleApplication>
+#include <QDebug>
+
 #include "notemanager.h"
 #include "notedialog.h"
 #include "aboutdlg.h"
@@ -57,6 +60,7 @@ Widget::Widget(QWidget *parent)
 	tray->show();
 	tray->setContextMenu(contextMenu);
 
+	connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), SLOT(appMessageReceived(const QByteArray &)));
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
 	connect(actManager, SIGNAL(triggered()), this, SLOT(showNoteManager()));
@@ -64,15 +68,30 @@ Widget::Widget(QWidget *parent)
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
+
+	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }
 
 Widget::~Widget()
 {
 }
 
+void Widget::parseAppArguments(const QStringList &args)
+{
+
+}
+
 void Widget::exitQtNote()
 {
 	QApplication::quit();
+}
+
+void Widget::appMessageReceived(const QByteArray &msg)
+{
+	QDataStream stream(msg);
+	QStringList params;
+	stream >> params;
+	parseAppArguments(params);
 }
 
 void Widget::showAbout()

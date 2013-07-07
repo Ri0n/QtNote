@@ -39,8 +39,13 @@ TomboyStorage::TomboyStorage(QObject *parent)
 	QCoreApplication::setOrganizationName("");
 	QCoreApplication::setApplicationName("");
 
+#if QT_VERSION >= 0x050000
+	QString dataLocation = QDir::cleanPath(
+				QStandardPaths::writableLocation(QStandardPaths::DataLocation) );
+#else
 	QString dataLocation = QDir::cleanPath(
 			QDesktopServices::storageLocation(QDesktopServices::DataLocation) );
+#endif
 #ifdef Q_OS_UNIX
 	tomboyDirs<<((dataLocation.endsWith("/data")?dataLocation.left(dataLocation.length()-5) : dataLocation)+"/tomboy");
 	tomboyDirs<<(QDir::home().path()+"/.tomboy");

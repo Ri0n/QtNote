@@ -1,6 +1,7 @@
 #include <QDropEvent>
 #include <QUrl>
 #include <QTextCursor>
+#include <QMimeData>
 
 #include "notedialogedit.h"
 

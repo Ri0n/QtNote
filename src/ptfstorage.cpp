@@ -30,8 +30,13 @@ PTFStorage::PTFStorage(QObject *parent)
 	: FileStorage(parent)
 {
 	fileExt = "txt";
+#if QT_VERSION >= 0x050000
+	notesDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
+			.absoluteFilePath(systemName());
+#else
 	notesDir = QDir(QDesktopServices::storageLocation(
 		QDesktopServices::DataLocation)).absoluteFilePath(systemName());
+#endif
 	QDir d(notesDir);
 	if (!d.exists()) {
 		if (!QDir::root().mkpath(notesDir)) {

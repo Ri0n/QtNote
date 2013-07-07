@@ -19,7 +19,7 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QtSingleApplication>
 #include <QMessageBox>
 #include <QLocale>
@@ -27,6 +27,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFileInfo>
 #include <QSettings>
 #include <QLibraryInfo>
+#include <QDataStream>
+#include <QBuffer>
+
 #include "mainwidget.h"
 #include "notemanager.h"
 #ifdef TOMBOY
@@ -37,7 +40,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 int main(int argc, char *argv[])
 {
 	QtSingleApplication a(argc, argv);
-	if (a.sendMessage("Wake up!")) { // stupid copy&paste
+	if (a.isRunning()) {
+		QStringList args = a.arguments();
+		if (args.size() > 1) {
+			args.pop_front();
+			QByteArray buffer;
+			QDataStream stream(&buffer, QIODevice::ReadWrite);
+			stream << args;
+			a.sendMessage(dynamic_cast<QBuffer*>(stream.device())->data());
+		}
 		return 0;
 	}
 
