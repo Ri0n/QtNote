@@ -94,10 +94,17 @@
     </layout>
    </item>
    <item>
-    <widget class="QTextEdit" name="noteEdit"/>
+    <widget class="NoteDialogEdit" name="noteEdit"/>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>NoteDialogEdit</class>
+   <extends>QTextEdit</extends>
+   <header>notedialogedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../main.qrc"/>
  </resources>

@@ -28,10 +28,11 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/aboutdlg.cpp \
     $$PWD/optionsdlg.cpp \
     $$PWD/filestorage.cpp \
-	$$PWD/utils.cpp \
-	$$PWD/notemanagermodel.cpp \
-	$$PWD/notemanagerdlg.cpp \
-	$$PWD/notemanagerview.cpp
+    $$PWD/utils.cpp \
+    $$PWD/notemanagermodel.cpp \
+    $$PWD/notemanagerdlg.cpp \
+    $$PWD/notemanagerview.cpp \
+    $$PWD/notedialogedit.cpp
 HEADERS += $$PWD/mainwidget.h \
     $$PWD/notedialog.h \
     $$PWD/note.h \
@@ -44,10 +45,11 @@ HEADERS += $$PWD/mainwidget.h \
     $$PWD/aboutdlg.h \
     $$PWD/optionsdlg.h \
     $$PWD/filestorage.h \
-	$$PWD/utils.h \
-	$$PWD/notemanagermodel.h \
-	$$PWD/notemanagerdlg.h \
-	$$PWD/notemanagerview.h
+    $$PWD/utils.h \
+    $$PWD/notemanagermodel.h \
+    $$PWD/notemanagerdlg.h \
+    $$PWD/notemanagerview.h \
+    $$PWD/notedialogedit.h
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
         $$PWD/tomboydata.cpp
