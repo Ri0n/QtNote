@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS language="fr" version="2.0">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.0" language="fr">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -7,24 +9,43 @@
         <translation>À propos de QtNote</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="58"/>
+        <location filename="../src/aboutdlg.ui" line="49"/>
+        <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/aboutdlg.ui" line="63"/>
         <source>Simpe and usable note taking application</source>
         <translation>Application de prise de note simple et efficace</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="86"/>
+        <location filename="../src/aboutdlg.ui" line="75"/>
         <source>License: GPL-3</source>
         <translation>Licence : GPL-3</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="98"/>
+        <location filename="../src/aboutdlg.ui" line="87"/>
         <source>Author: Il&apos;inykh Sergey</source>
         <translation>Auteur : Il&apos;inykh Sergey</translation>
     </message>
     <message>
-        <location filename="../src/aboutdlg.ui" line="117"/>
+        <location filename="../src/aboutdlg.ui" line="120"/>
+        <source>Translations</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/aboutdlg.ui" line="132"/>
+        <source>Russian:
+  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
+
+Vietnamese:
+  Phan Anh
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</source>
-        <translation>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</translation>
+        <translation type="obsolete">www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</translation>
     </message>
 </context>
 <context>
@@ -42,7 +63,7 @@
     <message>
         <location filename="../src/notedialog.cpp" line="138"/>
         <source>[No Title]</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -60,7 +81,10 @@
     <message numerus="yes">
         <location filename="../src/notemanagerdlg.cpp" line="17"/>
         <source>%n notes</source>
-        <translation><numerusform>%n note</numerusform><numerusform>%n notes</numerusform></translation>
+        <translation>
+            <numerusform>%n note</numerusform>
+            <numerusform>%n notes</numerusform>
+        </translation>
     </message>
 </context>
 <context>

@@ -23,36 +23,41 @@ QT += xml
 
 include (src/src.pri)
 
-TRANSLATIONS += langs/qtnote_en.ts langs/qtnote_ru.ts
+TRANSLATIONS += \
+    langs/qtnote_en.ts \
+    langs/qtnote_fr.ts \
+    langs/qtnote_ru.ts \
+    langs/qtnote_vi.ts
+
 unix {
-	isEmpty(PREFIX) {
-		PREFIX = /usr
-	}
-	DATADIR = $$PREFIX/share
+    isEmpty(PREFIX) {
+            PREFIX = /usr
+    }
+    DATADIR = $$PREFIX/share
 
     target.path = $$PREFIX/bin
     INSTALLS += target
     
     # translations
-	TRANSLATIONSDIR = $$DATADIR/$$TARGET
-	DEFINES += TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\" \
-		DATADIR=\\\"$$DATADIR\\\" \
-		APPNAME=\\\"$$TARGET\\\"
-    
-        LANGS = en fr ru vi
-	for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
-	translations.path = $$TRANSLATIONSDIR
-	DISTFILES += $$translations
+    TRANSLATIONSDIR = $$DATADIR/$$TARGET
+    DEFINES += TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\" \
+            DATADIR=\\\"$$DATADIR\\\" \
+            APPNAME=\\\"$$TARGET\\\"
 
-	# Desktop file
-	desktop.files = $${TARGET}.desktop
-	desktop.path = $$DATADIR/applications
+    LANGS = en fr ru vi
+    for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
+    translations.path = $$TRANSLATIONSDIR
+    DISTFILES += $$translations
 
-	# Desktop pixmap
-	pixmap.files = images/$${TARGET}.png
-	pixmap.path = $$DATADIR/pixmaps
+    # Desktop file
+    desktop.files = $${TARGET}.desktop
+    desktop.path = $$DATADIR/applications
 
-	INSTALLS += translations desktop pixmap
+    # Desktop pixmap
+    pixmap.files = images/$${TARGET}.png
+    pixmap.path = $$DATADIR/pixmaps
+
+    INSTALLS += translations desktop pixmap
 }
 RC_FILE = win/$${TARGET}.rc
 
