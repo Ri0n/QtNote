@@ -41,19 +41,12 @@
 Vietnamese:
   Phan Anh
 </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans&apos;; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Russian:&lt;br /&gt;Il&apos;inykh Sergey (rion4ik@gmail.com)&lt;br /&gt;&lt;br /&gt;French:&lt;br /&gt;&lt;br /&gt;Vietnamese:&lt;br /&gt;Phan Anh&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="obsolete">&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans&apos;; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Russian:&lt;br /&gt;Il&apos;inykh Sergey (rion4ik@gmail.com)&lt;br /&gt;&lt;br /&gt;French:&lt;br /&gt;&lt;br /&gt;Vietnamese:&lt;br /&gt;Phan Anh&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation>Russian:
+  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
+
+Việt Nam Quê Hương Tôi:
+  Phan Anh
+</translation>
     </message>
 </context>
 <context>
@@ -133,7 +126,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="55"/>
+        <location filename="../src/ptfstorage.cpp" line="60"/>
         <source>Plain Text Storage</source>
         <translation>Lưu trữ văn bản thông thường</translation>
     </message>
@@ -141,7 +134,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="95"/>
+        <location filename="../src/main.cpp" line="116"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>không thể truy cập bất kỳ ghi chú nào. không thể tiếp tục...</translation>
     </message>
@@ -149,7 +142,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>TomboyStorage</name>
     <message>
-        <location filename="../src/tomboystorage.cpp" line="78"/>
+        <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation>Lưu trữ Tomboy</translation>
     </message>
@@ -157,37 +150,37 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../src/mainwidget.cpp" line="39"/>
+        <location filename="../src/mainwidget.cpp" line="43"/>
         <source>&amp;Quit</source>
         <translation>&amp;Thoát</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="40"/>
+        <location filename="../src/mainwidget.cpp" line="44"/>
         <source>&amp;New</source>
         <translation>&amp;Tạo mới</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="41"/>
+        <location filename="../src/mainwidget.cpp" line="45"/>
         <source>&amp;About</source>
         <translation>&amp;Thông tin</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="42"/>
+        <location filename="../src/mainwidget.cpp" line="46"/>
         <source>&amp;Options</source>
         <translation>T&amp;ùy chọn</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="43"/>
+        <location filename="../src/mainwidget.cpp" line="47"/>
         <source>&amp;Note Manager</source>
         <translation>Q&amp;uản lý ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="216"/>
+        <location filename="../src/mainwidget.cpp" line="272"/>
         <source>Deletion confirmation</source>
         <translation>Xác nhận xóa</translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="217"/>
+        <location filename="../src/mainwidget.cpp" line="273"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Bạn có muốn xóa ghi chú này hay không?</translation>
     </message>

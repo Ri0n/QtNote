@@ -122,7 +122,7 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="55"/>
+        <location filename="../src/ptfstorage.cpp" line="60"/>
         <source>Plain Text Storage</source>
         <translation></translation>
     </message>
@@ -130,7 +130,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="95"/>
+        <location filename="../src/main.cpp" line="116"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation></translation>
     </message>
@@ -138,7 +138,7 @@ Vietnamese:
 <context>
     <name>TomboyStorage</name>
     <message>
-        <location filename="../src/tomboystorage.cpp" line="78"/>
+        <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation></translation>
     </message>
@@ -146,37 +146,37 @@ Vietnamese:
 <context>
     <name>Widget</name>
     <message>
-        <location filename="../src/mainwidget.cpp" line="39"/>
+        <location filename="../src/mainwidget.cpp" line="43"/>
         <source>&amp;Quit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="40"/>
+        <location filename="../src/mainwidget.cpp" line="44"/>
         <source>&amp;New</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="41"/>
+        <location filename="../src/mainwidget.cpp" line="45"/>
         <source>&amp;About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="42"/>
+        <location filename="../src/mainwidget.cpp" line="46"/>
         <source>&amp;Options</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="43"/>
+        <location filename="../src/mainwidget.cpp" line="47"/>
         <source>&amp;Note Manager</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="216"/>
+        <location filename="../src/mainwidget.cpp" line="272"/>
         <source>Deletion confirmation</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/mainwidget.cpp" line="217"/>
+        <location filename="../src/mainwidget.cpp" line="273"/>
         <source>Are you sure want to delete this note?</source>
         <translation></translation>
     </message>
