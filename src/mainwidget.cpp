@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMessageBox>
 #include <QtSingleApplication>
 #include <QDebug>
+#include <QProcess>
 
 #include "notemanager.h"
 #include "notedialog.h"
@@ -78,7 +79,27 @@ Widget::~Widget()
 
 void Widget::parseAppArguments(const QStringList &args)
 {
+	if (args.isEmpty()) {
+		return;
+	}
+	int i = 0;
+	while (i < args.size()) {
+		if (args.at(i) == QLatin1String("-n")) {
+			if (i < args.size() + 1 && args.at(i + 1)[0] != '-') {
+				i++;
+				if (args.at(i) == QLatin1String("selection")) {
+					createNewNoteFromSelection();
+				}
+			} else {
+				createNewNote();
+			}
+		}
+		i++;
+	}
 
+	for (int i = 0; i < args.size(); i++) {
+
+	}
 }
 
 void Widget::exitQtNote()
@@ -116,7 +137,7 @@ void Widget::showOptions()
 	d->show();
 }
 
-void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
+void Widget::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
 {
 	Note note;
 	NoteDialog *dlg = 0;
@@ -144,6 +165,8 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId)
 			} else {
 				dlg->setText(note.title() + "\n" + note.text());
 			}
+		} else if (contents.size()) {
+			dlg->setText(contents);
 		}
 	}
 	dlg->show();
@@ -200,6 +223,20 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 void Widget::createNewNote()
 {
 	showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
+}
+
+void Widget::createNewNoteFromSelection()
+{
+#ifdef Q_OS_UNIX
+	QProcess p(this);
+	p.start("xsel");
+	if (p.waitForFinished()) {
+		QString contents = QString::fromLocal8Bit(p.readAll());
+		if (contents.size()) {
+			showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);
+		}
+	}
+#endif
 }
 
 void Widget::onSaveNote()

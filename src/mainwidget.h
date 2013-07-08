@@ -34,7 +34,7 @@ class Widget : public QWidget
 public:
     Widget(QWidget *parent = 0);
     ~Widget();
-	void showNoteDialog(const QString &storageId, const QString &noteId = "");
+	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 
 private:
 	QSystemTrayIcon *tray;
@@ -49,6 +49,7 @@ private slots:
 	void showNoteManager();
 	void showOptions();
 	void createNewNote();
+	void createNewNoteFromSelection();
 	void onSaveNote();
 	void onDeleteNote();
 	void appMessageReceived(const QByteArray &msg);

@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QLibraryInfo>
 #include <QDataStream>
 #include <QBuffer>
+#include <iostream>
 
 #include "mainwidget.h"
 #include "notemanager.h"
@@ -39,6 +40,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 int main(int argc, char *argv[])
 {
+	for (int i = 1; i < argc; i++) {
+		QLatin1String v(argv[i]);
+		if (v == "-h" || v == "--help") {
+			std::cout << "QtNote - note taking application\n\n"
+					  << " -n [type] - Create new note from 'type'. 'selection' type is the only supported.\n\n";
+			return 0;
+		}
+	}
+
 	QtSingleApplication a(argc, argv);
 	if (a.isRunning()) {
 		QStringList args = a.arguments();
