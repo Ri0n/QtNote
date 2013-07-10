@@ -30,9 +30,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOMINMAX
 #define WINVER _WIN32_WINNT_WIN2K
 #include <Windows.h>
-#ifndef CSIDL_APPDATA
-#define CSIDL_APPDATA 0x001a // <username>\Application Data
-#endif // CSIDL_APPDATA
+#include <ShlObj.h>
 #endif // Q_OS_WIN
 
 #include "ptfstorage.h"
@@ -46,11 +44,11 @@ PTFStorage::PTFStorage(QObject *parent)
     wchar_t path[260]; // MAX_PATH
     QSettings s;
     typedef HRESULT (*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
-    SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve("Shell32", "SHGetFolderPathW");
+    SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
     if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
         notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
-                "/" + s.organizationName() + "/" + s.applicationName() +
-                "/" + systemName();
+                QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName() +
+                QLatin1Char('/') + systemName();
     } else {
 #endif
 #if QT_VERSION >= 0x050000
