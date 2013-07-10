@@ -60,6 +60,7 @@ public:
 	virtual void saveNote(const QString &noteId, const QString &text) = 0;
 	virtual void deleteNote(const QString &noteId) = 0;
 	virtual bool isRichTextAllowed() const = 0;
+	virtual QWidget* settingsWidget() const { return 0; }
 
 signals:
 	void noteAdded(const NoteListItem &);

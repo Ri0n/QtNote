@@ -60,7 +60,8 @@ tomboy {
 FORMS += $$PWD/notedialog.ui \
     $$PWD/aboutdlg.ui \
     $$PWD/optionsdlg.ui \
-    src/notemanagerdlg.ui
+    src/notemanagerdlg.ui \
+    src/ptfstoragesettings.ui
 
 INCLUDEPATH += $$PWD
 

@@ -23,10 +23,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDir>
 #include <QApplication>
 #include <QStyle>
+#include <QSettings>
 
 #ifdef Q_OS_WIN
 #include <QLibrary>
-#include <QSettings>
 #define NOMINMAX
 #define WINVER _WIN32_WINNT_WIN2K
 #include <Windows.h>
@@ -40,28 +40,31 @@ PTFStorage::PTFStorage(QObject *parent)
 	: FileStorage(parent)
 {
 	fileExt = "txt";
-#ifdef Q_OS_WIN
-	wchar_t path[MAX_PATH];
 	QSettings s;
-	typedef HRESULT (WINAPI*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
-	SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
-	if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
-		notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
-				QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName() +
-				QLatin1Char('/') + systemName();
-	} else {
+	notesDir = s.value("storage.ptf.path").toString();
+	if (notesDir.isEmpty()) {
+#ifdef Q_OS_WIN
+		wchar_t path[MAX_PATH];
+		typedef HRESULT (WINAPI*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
+		SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
+		if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
+			notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
+					QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName() +
+					QLatin1Char('/') + systemName();
+		} else {
 #endif
 #if QT_VERSION >= 0x050000
-	notesDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
-			.absoluteFilePath(systemName());
+		notesDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
+				.absoluteFilePath(systemName());
 #else
-	notesDir = QDir(QDesktopServices::storageLocation(
-		QDesktopServices::DataLocation)).absoluteFilePath(systemName());
+		notesDir = QDir(QDesktopServices::storageLocation(
+			QDesktopServices::DataLocation)).absoluteFilePath(systemName());
 #endif
 #ifdef Q_OS_WIN
-	}
+		}
 #endif
-    QDir d(notesDir);
+	}
+	QDir d(notesDir);
 	if (!d.exists()) {
 		if (!QDir::root().mkpath(notesDir)) {
 			qWarning("can't create storage dir: %s", qPrintable(notesDir));
@@ -137,4 +140,9 @@ void PTFStorage::saveNote(const QString &noteId, const QString & text)
 bool PTFStorage::isRichTextAllowed() const
 {
 	return false;
+}
+
+QWidget *PTFStorage::settingsWidget() const
+{
+
 }
