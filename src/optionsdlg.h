@@ -44,6 +44,8 @@ private:
 
 public slots:
 	void accept();
+private slots:
+	void storage_doubleClicked(const QModelIndex &index);
 };
 
 #endif // OPTIONSDLG_H

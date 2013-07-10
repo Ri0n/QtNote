@@ -35,6 +35,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "ptfstorage.h"
 #include "ptfdata.h"
+#include "ptfstoragesettingswidget.h"
 
 PTFStorage::PTFStorage(QObject *parent)
 	: FileStorage(parent)
@@ -144,5 +145,13 @@ bool PTFStorage::isRichTextAllowed() const
 
 QWidget *PTFStorage::settingsWidget() const
 {
+	PTFStorageSettingsWidget *w = new PTFStorageSettingsWidget(notesDir);
+	connect(w, SIGNAL(apply()), SLOT(settingsApplied()));
+	return w;
+}
 
+void PTFStorage::settingsApplied()
+{
+	PTFStorageSettingsWidget *w = reinterpret_cast<PTFStorageSettingsWidget *>(sender());
+	notesDir = w->path();
 }

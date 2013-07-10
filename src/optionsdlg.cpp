@@ -58,6 +58,11 @@ public:
 		return ret;
 	}
 
+	QString storageId(const QModelIndex &index) const
+	{
+		return titleMap.keys()[index.row()];
+	}
+
 	Qt::ItemFlags flags(const QModelIndex &index) const
 	{
 		Qt::ItemFlags defaultFlags = QStringListModel::flags(index);
@@ -113,6 +118,8 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
 	resize(0, 0);
+
+	connect(ui->priorityView, SIGNAL(doubleClicked(QModelIndex)), SLOT(storage_doubleClicked(const QModelIndex &)));
 }
 
 OptionsDlg::~OptionsDlg()
@@ -168,4 +175,21 @@ void OptionsDlg::accept()
 		reg.remove(QCoreApplication::applicationName());
 #endif
 	QDialog::accept();
+}
+
+void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
+{
+	QString storageId = priorityModel->storageId(index);
+	if (storageId.isEmpty()) {
+		return;
+	}
+	QWidget *w = NoteManager::instance()->storage(storageId)->settingsWidget();
+	QDialog *dlg = new QDialog(this);
+	QVBoxLayout *vl = new QVBoxLayout;
+	QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok
+												 | QDialogButtonBox::Cancel);
+	vl->addWidget(w);
+	vl->addWidget(dbb);
+	dlg->setLayout(vl);
+	dlg->show();
 }

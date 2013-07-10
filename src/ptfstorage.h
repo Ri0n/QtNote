@@ -40,6 +40,8 @@ public:
 	void saveNote(const QString &noteId, const QString &text);
 	bool isRichTextAllowed() const;
 	QWidget* settingsWidget() const;
+private slots:
+	void settingsApplied();
 };
 
 #endif // PTFSTORAGE_H
