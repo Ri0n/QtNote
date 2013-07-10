@@ -27,6 +27,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QClipboard>
 #include <QTimer>
 #include <QTextFragment>
+#include <QPrinter>
+
 #include "utils.h"
 
 NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
@@ -163,6 +165,15 @@ void NoteDialog::setNoteId(const QString &noteId)
 	NoteDialog::dialogs.remove(NoteDialog::dialogs.key(this));
 	noteId_ = noteId;
 	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId_, noteId_), this);
+}
+
+
+void NoteDialog::on_printBtn_clicked()
+{
+	QPrinter printer;
+	if (!text().isEmpty()) {
+		m_ui->noteEdit->print(&printer);
+	}
 }
 
 QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;

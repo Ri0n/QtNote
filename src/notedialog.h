@@ -75,6 +75,7 @@ private slots:
 	void trashClicked();
 	void copyClicked();
 	void textChanged();
+	void on_printBtn_clicked();
 };
 
 #endif // NOTEDIALOG_H
