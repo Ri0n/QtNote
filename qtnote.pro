@@ -20,6 +20,9 @@ TEMPLATE = app
 CONFIG += tomboy # force tomboy
 RESOURCES += main.qrc
 QT += xml
+greaterThan(QT_MAJOR_VERSION, 4) {
+    QT *= printsupport
+}
 
 include (src/src.pri)
 
