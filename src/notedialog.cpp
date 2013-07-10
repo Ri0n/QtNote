@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTimer>
 #include <QTextFragment>
 #include <QPrinter>
+#include <QSettings>
 
 #include "utils.h"
 
@@ -64,6 +65,13 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
 
 	m_ui->noteEdit->setText(""); // to force update event
+	if (!noteId.isEmpty()) {
+		QRect rect = QSettings().value(QString("geometry.%1.%2")
+				  .arg(storageId_, noteId_)).toRect();
+		if (!rect.isEmpty()) {
+			setGeometry(rect);
+		}
+	}
 }
 
 NoteDialog::~NoteDialog()
@@ -96,6 +104,11 @@ void NoteDialog::done(int r)
 	} else {
 		changed_ = false;
 		emit save();
+		if (!noteId_.isEmpty()) {
+			QSettings s;
+			s.setValue(QString("geometry.%1.%2")
+				   .arg(storageId_, noteId_), geometry());
+		}
 	}
 	NoteDialog::dialogs.remove(QPair<QString,QString>(storageId_, noteId_));
 	QDialog::done(r);
