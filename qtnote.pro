@@ -19,6 +19,7 @@ TARGET = qtnote
 TEMPLATE = app
 CONFIG += tomboy # force tomboy
 RESOURCES += main.qrc
+VERSION = 0.2.3
 QT += xml
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= printsupport
