@@ -43,6 +43,9 @@
          <height>16</height>
         </size>
        </property>
+       <property name="shortcut">
+        <string>Ctrl+Shift+C</string>
+       </property>
        <property name="autoRaise">
         <bool>true</bool>
        </property>
@@ -50,12 +53,18 @@
      </item>
      <item>
       <widget class="QToolButton" name="printBtn">
+       <property name="toolTip">
+        <string>Print Note</string>
+       </property>
        <property name="text">
         <string notr="true"/>
        </property>
        <property name="icon">
         <iconset resource="../main.qrc">
          <normaloff>:/icons/print</normaloff>:/icons/print</iconset>
+       </property>
+       <property name="shortcut">
+        <string>Ctrl+P</string>
        </property>
        <property name="autoRaise">
         <bool>true</bool>
@@ -102,6 +111,9 @@
          <width>16</width>
          <height>16</height>
         </size>
+       </property>
+       <property name="shortcut">
+        <string>Ctrl+D</string>
        </property>
        <property name="autoRaise">
         <bool>true</bool>

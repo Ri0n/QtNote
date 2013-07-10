@@ -56,12 +56,32 @@ Vietnamese:
         <translation>Copier la note vers le presse-papier</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="61"/>
+        <location filename="../src/notedialog.ui" line="47"/>
+        <source>Ctrl+Shift+C</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.ui" line="57"/>
+        <source>Print Note</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.ui" line="67"/>
+        <source>Ctrl+P</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.ui" line="100"/>
         <source>Delete note</source>
         <translation>Supprimer la note</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="138"/>
+        <location filename="../src/notedialog.ui" line="116"/>
+        <source>Ctrl+D</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.cpp" line="153"/>
         <source>[No Title]</source>
         <translation type="unfinished"></translation>
     </message>
@@ -126,7 +146,7 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="60"/>
+        <location filename="../src/ptfstorage.cpp" line="84"/>
         <source>Plain Text Storage</source>
         <translation>Stockage plein texte</translation>
     </message>
