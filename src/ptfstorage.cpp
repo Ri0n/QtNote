@@ -41,7 +41,7 @@ PTFStorage::PTFStorage(QObject *parent)
 {
 	fileExt = "txt";
 #ifdef Q_OS_WIN
-    wchar_t path[260]; // MAX_PATH
+    wchar_t path[MAX_PATH];
     QSettings s;
     typedef HRESULT (*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
     SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
