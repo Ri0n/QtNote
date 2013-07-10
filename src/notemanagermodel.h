@@ -26,8 +26,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class NoteStorage;
 class NMMItem;
-class StorageItem;
-class NoteListItem;
+struct StorageItem;
+struct NoteListItem;
 
 class NoteManagerModel : public QAbstractItemModel
 {

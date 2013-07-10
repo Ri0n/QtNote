@@ -19,17 +19,40 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "ptfstorage.h"
 #include <QDesktopServices>
 #include <QDir>
 #include <QApplication>
 #include <QStyle>
+
+#ifdef Q_OS_WIN
+#include <QLibrary>
+#include <QSettings>
+#define NOMINMAX
+#define WINVER _WIN32_WINNT_WIN2K
+#include <Windows.h>
+#ifndef CSIDL_APPDATA
+#define CSIDL_APPDATA 0x001a // <username>\Application Data
+#endif // CSIDL_APPDATA
+#endif // Q_OS_WIN
+
+#include "ptfstorage.h"
 #include "ptfdata.h"
 
 PTFStorage::PTFStorage(QObject *parent)
 	: FileStorage(parent)
 {
 	fileExt = "txt";
+#ifdef Q_OS_WIN
+    wchar_t path[260]; // MAX_PATH
+    QSettings s;
+    typedef HRESULT (*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
+    SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve("Shell32", "SHGetFolderPathW");
+    if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
+        notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
+                "/" + s.organizationName() + "/" + s.applicationName() +
+                "/" + systemName();
+    } else {
+#endif
 #if QT_VERSION >= 0x050000
 	notesDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
 			.absoluteFilePath(systemName());
@@ -37,7 +60,10 @@ PTFStorage::PTFStorage(QObject *parent)
 	notesDir = QDir(QDesktopServices::storageLocation(
 		QDesktopServices::DataLocation)).absoluteFilePath(systemName());
 #endif
-	QDir d(notesDir);
+#ifdef Q_OS_WIN
+    }
+#endif
+    QDir d(notesDir);
 	if (!d.exists()) {
 		if (!QDir::root().mkpath(notesDir)) {
 			qWarning("can't create storage dir: %s", qPrintable(notesDir));
