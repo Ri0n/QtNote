@@ -41,15 +41,15 @@ PTFStorage::PTFStorage(QObject *parent)
 {
 	fileExt = "txt";
 #ifdef Q_OS_WIN
-    wchar_t path[MAX_PATH];
-    QSettings s;
-    typedef HRESULT (*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
-    SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
-    if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
-        notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
-                QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName() +
-                QLatin1Char('/') + systemName();
-    } else {
+	wchar_t path[MAX_PATH];
+	QSettings s;
+	typedef HRESULT (WINAPI*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
+	SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
+	if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
+		notesDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
+				QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName() +
+				QLatin1Char('/') + systemName();
+	} else {
 #endif
 #if QT_VERSION >= 0x050000
 	notesDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
@@ -59,7 +59,7 @@ PTFStorage::PTFStorage(QObject *parent)
 		QDesktopServices::DataLocation)).absoluteFilePath(systemName());
 #endif
 #ifdef Q_OS_WIN
-    }
+	}
 #endif
     QDir d(notesDir);
 	if (!d.exists()) {
