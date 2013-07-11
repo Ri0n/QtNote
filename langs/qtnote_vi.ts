@@ -59,17 +59,17 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/notedialog.ui" line="47"/>
         <source>Ctrl+Shift+C</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+Shift+C</translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="57"/>
         <source>Print Note</source>
-        <translation type="unfinished"></translation>
+        <translation>In ghi chú</translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="67"/>
         <source>Ctrl+P</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+P</translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="100"/>
@@ -79,7 +79,7 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/notedialog.ui" line="116"/>
         <source>Ctrl+D</source>
-        <translation type="unfinished"></translation>
+        <translation>Ctrl+D</translation>
     </message>
     <message>
         <location filename="../src/notedialog.cpp" line="153"/>
@@ -156,17 +156,17 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/ptfstoragesettingswidget.ui" line="17"/>
         <source>Storage path</source>
-        <translation type="unfinished"></translation>
+        <translation>Đường dẫn lưu trữ</translation>
     </message>
     <message>
         <location filename="../src/ptfstoragesettingswidget.ui" line="27"/>
         <source>Browse</source>
-        <translation type="unfinished"></translation>
+        <translation>Duyệt tìm</translation>
     </message>
     <message>
         <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
         <source>Choose storage directory</source>
-        <translation type="unfinished"></translation>
+        <translation>Chọn thư mục lưu trữ</translation>
     </message>
 </context>
 <context>
