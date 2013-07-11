@@ -65,6 +65,11 @@ PTFStorage::PTFStorage(QObject *parent)
 		}
 #endif
 	}
+	initNotesDir();
+}
+
+void PTFStorage::initNotesDir()
+{
 	QDir d(notesDir);
 	if (!d.exists()) {
 		if (!QDir::root().mkpath(notesDir)) {
@@ -154,4 +159,6 @@ void PTFStorage::settingsApplied()
 {
 	PTFStorageSettingsWidget *w = reinterpret_cast<PTFStorageSettingsWidget *>(sender());
 	notesDir = w->path();
+	initNotesDir();
+	emit invalidated();
 }

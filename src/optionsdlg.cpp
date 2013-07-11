@@ -188,8 +188,12 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
 	QVBoxLayout *vl = new QVBoxLayout;
 	QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok
 												 | QDialogButtonBox::Cancel);
+	connect(dbb, SIGNAL(accepted()), w, SIGNAL(apply()));
+	connect(dbb, SIGNAL(accepted()), dlg, SLOT(accept()));
+	connect(dbb, SIGNAL(rejected()), dlg, SLOT(reject()));
 	vl->addWidget(w);
 	vl->addWidget(dbb);
 	dlg->setLayout(vl);
+	dlg->setAttribute(Qt::WA_DeleteOnClose);
 	dlg->show();
 }

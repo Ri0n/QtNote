@@ -1,3 +1,5 @@
+#include <QFileDialog>
+
 #include "ptfstoragesettingswidget.h"
 #include "ui_ptfstoragesettingswidget.h"
 
@@ -7,6 +9,7 @@ PTFStorageSettingsWidget::PTFStorageSettingsWidget(const QString &path, QWidget 
 {
 	ui->setupUi(this);
 	ui->lePath->setText(path);
+	ui->lePath->setCursorPosition(0);
 }
 
 PTFStorageSettingsWidget::~PTFStorageSettingsWidget()
@@ -17,4 +20,12 @@ PTFStorageSettingsWidget::~PTFStorageSettingsWidget()
 QString PTFStorageSettingsWidget::path() const
 {
 	return ui->lePath->text();
+}
+
+void PTFStorageSettingsWidget::on_btnBrowse_clicked()
+{
+	QString dir = QFileDialog::getExistingDirectory(this, tr("Choose storage directory"), ui->lePath->text());
+	if (!dir.isEmpty()) {
+		ui->lePath->setText(dir);
+	}
 }

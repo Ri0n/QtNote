@@ -60,6 +60,7 @@ private slots:
 	void noteModified(const NoteListItem &);
 	void noteRemoved(const NoteListItem &);
 
+	void storageInvalidated();
 private:
 	QModelIndex storageIndex(const QString &) const;
 	QModelIndex noteIndex(const QString &, const QString &) const;

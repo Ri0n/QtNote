@@ -19,6 +19,9 @@ public:
 signals:
 	void apply();
 	
+private slots:
+	void on_btnBrowse_clicked();
+
 private:
 	Ui::PTFStorageSettingsWidget *ui;
 };

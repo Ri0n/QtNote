@@ -99,6 +99,7 @@ void NoteManagerModel::setStorageSignalHandlers(NoteStorage *s)
 	connect(s, SIGNAL(noteAdded(NoteListItem)), SLOT(noteAdded(NoteListItem)));
 	connect(s, SIGNAL(noteModified(NoteListItem)), SLOT(noteModified(NoteListItem)));
 	connect(s, SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
+	connect(s, SIGNAL(invalidated()), SLOT(storageInvalidated()));
 }
 
 QModelIndex NoteManagerModel::storageIndex(const QString &storageId) const
@@ -137,6 +138,13 @@ void NoteManagerModel::storageAdded(const StorageItem &)
 void NoteManagerModel::storageRemoved(const StorageItem &)
 {
 
+}
+
+void NoteManagerModel::storageInvalidated()
+{
+	/* just a hack. actually we should remove all items of this storage */
+	beginResetModel();
+	endResetModel();
 }
 
 void NoteManagerModel::noteAdded(const NoteListItem &item)

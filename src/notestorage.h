@@ -66,6 +66,7 @@ signals:
 	void noteAdded(const NoteListItem &);
 	void noteModified(const NoteListItem &);
 	void noteRemoved(const NoteListItem &);
+	void invalidated();
 };
 
 #endif // NOTESTORAGE_H

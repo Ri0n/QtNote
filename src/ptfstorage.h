@@ -28,6 +28,7 @@ class PTFStorage : public FileStorage
 {
 	Q_OBJECT
 	Q_DISABLE_COPY(PTFStorage)
+	void initNotesDir();
 public:
 	PTFStorage(QObject *parent);
 	bool isAccessible() const;
