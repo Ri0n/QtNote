@@ -43,10 +43,6 @@ Vietnamese:
 </source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <source>www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</source>
-        <translation type="obsolete">www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</translation>
-    </message>
 </context>
 <context>
     <name>NoteDialog</name>
@@ -146,9 +142,27 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="84"/>
+        <location filename="../src/ptfstorage.cpp" line="93"/>
         <source>Plain Text Storage</source>
         <translation>Stockage plein texte</translation>
+    </message>
+</context>
+<context>
+    <name>PTFStorageSettingsWidget</name>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="17"/>
+        <source>Storage path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="27"/>
+        <source>Browse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
+        <source>Choose storage directory</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

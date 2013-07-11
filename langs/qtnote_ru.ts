@@ -148,9 +148,27 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="84"/>
+        <location filename="../src/ptfstorage.cpp" line="93"/>
         <source>Plain Text Storage</source>
         <translation>Хранилище текстовых файлов</translation>
+    </message>
+</context>
+<context>
+    <name>PTFStorageSettingsWidget</name>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="17"/>
+        <source>Storage path</source>
+        <translation>Путь к хранилищу</translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="27"/>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
+        <source>Choose storage directory</source>
+        <translation>Выберите каталог хранилища</translation>
     </message>
 </context>
 <context>

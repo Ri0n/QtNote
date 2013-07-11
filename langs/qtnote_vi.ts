@@ -146,9 +146,27 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="84"/>
+        <location filename="../src/ptfstorage.cpp" line="93"/>
         <source>Plain Text Storage</source>
         <translation>Lưu trữ văn bản thông thường</translation>
+    </message>
+</context>
+<context>
+    <name>PTFStorageSettingsWidget</name>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="17"/>
+        <source>Storage path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.ui" line="27"/>
+        <source>Browse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
+        <source>Choose storage directory</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
