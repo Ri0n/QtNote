@@ -195,7 +195,9 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
 		)->setData(i);
 	}
+	menu.show();
 	menu.activateWindow();
+	menu.raise();
 	QRect dr = QApplication::desktop()->geometry();
 	QRect ir = tray->geometry();
 	QRect mr = menu.geometry();
