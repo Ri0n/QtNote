@@ -28,6 +28,8 @@ namespace Ui {
     class OptionsDlg;
 }
 
+class QModelIndex;
+
 class OptionsDlg : public QDialog {
     Q_OBJECT
 public:
