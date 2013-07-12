@@ -1,0 +1,16 @@
+Source: qtnote
+Section: text
+Priority: optional
+Maintainer: Sergey Il'inykh <rion4ik@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), cdbs, qt4-qmake, libqt4-dev
+Standards-Version: 3.9.3
+Homepage: http://ri0n.github.io/QtNote
+Vcs-Git: git://github.com/Ri0n/qtnote
+Vcs-Browser: https://github.com/Ri0n/qtnote
+
+Package: qtnote
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Note-taking application written with Qt in mind.
+ It's mostly Tomboy clone but with less features. So it's app
+ which lives in your system tray and allows you to make notes quickly

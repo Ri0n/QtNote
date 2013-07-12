@@ -37,7 +37,8 @@ unix {
     isEmpty(PREFIX) {
             PREFIX = /usr
     }
-    DATADIR = $$PREFIX/share
+    isEmpty(DATADIR):DATADIR = $$PREFIX/share
+    isEmpty(MANDIR):MANDIR = $$DATADIR/man/man1
 
     target.path = $$PREFIX/bin
     INSTALLS += target
@@ -61,7 +62,11 @@ unix {
     pixmap.files = images/$${TARGET}.png
     pixmap.path = $$DATADIR/pixmaps
 
-    INSTALLS += translations desktop pixmap
+    # Man page
+    man.files = docs/qtnote.1
+    man.path = $$MANDIR
+
+    INSTALLS += translations desktop pixmap man
 }
 RC_FILE = win/$${TARGET}.rc
 
