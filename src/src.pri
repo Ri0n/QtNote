@@ -33,7 +33,8 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/notemanagerdlg.cpp \
     $$PWD/notemanagerview.cpp \
     $$PWD/notedialogedit.cpp \
-    src/ptfstoragesettingswidget.cpp
+	$$PWD/ptfstoragesettingswidget.cpp
+
 HEADERS += $$PWD/mainwidget.h \
     $$PWD/notedialog.h \
     $$PWD/note.h \
@@ -51,7 +52,8 @@ HEADERS += $$PWD/mainwidget.h \
     $$PWD/notemanagerdlg.h \
     $$PWD/notemanagerview.h \
     $$PWD/notedialogedit.h \
-    src/ptfstoragesettingswidget.h
+	$$PWD/ptfstoragesettingswidget.h
+
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
         $$PWD/tomboydata.cpp
@@ -59,11 +61,14 @@ tomboy {
         $$PWD/tomboydata.h
     DEFINES += TOMBOY
 }
+
 FORMS += $$PWD/notedialog.ui \
     $$PWD/aboutdlg.ui \
     $$PWD/optionsdlg.ui \
-    src/notemanagerdlg.ui \
-    src/ptfstoragesettingswidget.ui
+	$$PWD/notemanagerdlg.ui \
+	$$PWD/ptfstoragesettingswidget.ui
+
+PRECOMPILED_HEADER = $$PWD/config.h
 
 INCLUDEPATH += $$PWD
 

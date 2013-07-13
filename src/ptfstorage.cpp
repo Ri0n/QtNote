@@ -27,9 +27,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #ifdef Q_OS_WIN
 #include <QLibrary>
-#define NOMINMAX
-#define WINVER _WIN32_WINNT_WIN2K
-#include <Windows.h>
 #include <ShlObj.h>
 #endif // Q_OS_WIN
 
@@ -159,6 +156,7 @@ void PTFStorage::settingsApplied()
 {
 	PTFStorageSettingsWidget *w = reinterpret_cast<PTFStorageSettingsWidget *>(sender());
 	notesDir = w->path();
+	QSettings().setValue(QLatin1String("storage.ptf.path"), notesDir);
 	initNotesDir();
 	emit invalidated();
 }

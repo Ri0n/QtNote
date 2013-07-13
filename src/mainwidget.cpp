@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtSingleApplication>
 #include <QDebug>
 #include <QProcess>
+#include <QClipboard>
 
 #include "notemanager.h"
 #include "notedialog.h"
@@ -229,16 +230,61 @@ void Widget::createNewNote()
 
 void Widget::createNewNoteFromSelection()
 {
+	QString contents;
 #ifdef Q_OS_UNIX
 	QProcess p(this);
 	p.start("xsel");
 	if (p.waitForFinished()) {
-		QString contents = QString::fromLocal8Bit(p.readAll());
-		if (contents.size()) {
-			showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);
-		}
+		contents = QString::fromLocal8Bit(p.readAll());
 	}
 #endif
+#ifdef Q_OS_WIN
+	int n = 0;
+	QVector<INPUT> input(10);
+	memset(input.data(), 0, input.size()*sizeof(INPUT));
+
+	if (GetAsyncKeyState(VK_MENU) & (1 < 15)) {
+		input[n].ki.dwFlags = KEYEVENTF_KEYUP;
+		input[n].ki.wVk = VK_MENU;
+		input[n++].ki.wScan = MapVirtualKey( VK_MENU, MAPVK_VK_TO_VSC );
+	}
+	if (GetAsyncKeyState(VK_SHIFT) & (1 < 15)) {
+		input[n].ki.dwFlags = KEYEVENTF_KEYUP;
+		input[n].ki.wVk = VK_SHIFT;
+		input[n++].ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
+	}
+	input[n].ki.wVk = VK_CONTROL;
+	input[n].ki.dwFlags = 0;
+	input[n++].ki.wScan = MapVirtualKey( VK_CONTROL, MAPVK_VK_TO_VSC );
+
+	input[n].ki.wVk = 0x43; // Virtual key code for 'c'
+	input[n].ki.dwFlags = 0;
+	input[n++].ki.wScan = MapVirtualKey( 0x56, MAPVK_VK_TO_VSC );
+
+	input[n].ki.dwFlags = KEYEVENTF_KEYUP;
+	input[n].ki.wVk = input[0].ki.wVk;
+	input[n++].ki.wScan = input[0].ki.wScan;
+
+	input[n].ki.dwFlags = KEYEVENTF_KEYUP;
+	input[n].ki.wVk = input[1].ki.wVk;
+	input[n++].ki.wScan = input[1].ki.wScan;
+
+	bool sent = true;
+	for (int i = 0; i < n; i++) {
+		input[i].type = INPUT_KEYBOARD;
+		if(!SendInput(1, (LPINPUT)&(input[i]), sizeof(INPUT) ) ) {
+			sent = false;
+			break;
+		}
+		Sleep(30);
+	}
+	if (sent) {
+		contents = QApplication::clipboard()->text();
+	}
+#endif
+	if (contents.size()) {
+		showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);
+	}
 }
 
 void Widget::onSaveNote()
