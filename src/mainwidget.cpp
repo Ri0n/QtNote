@@ -97,10 +97,6 @@ void Widget::parseAppArguments(const QStringList &args)
 		}
 		i++;
 	}
-
-	for (int i = 0; i < args.size(); i++) {
-
-	}
 }
 
 void Widget::exitQtNote()
