@@ -274,6 +274,20 @@ void Widget::createNewNoteFromSelection()
 		contents = QApplication::clipboard()->text();
 	}
 #endif
+#ifdef Q_OS_MAC
+	// copied from http://stackoverflow.com/questions/9758053/programming-with-qt-creator-and-cocoa-copying-the-selected-text-from-the-curre
+	CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateCombinedSessionState);
+	CGEventRef saveCommandDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, YES);
+	CGEventSetFlags(saveCommandDown, kCGEventFlagMaskCommand);
+	CGEventRef saveCommandUp = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, NO);
+
+	CGEventPost(kCGAnnotatedSessionEventTap, saveCommandDown);
+	CGEventPost(kCGAnnotatedSessionEventTap, saveCommandUp);
+
+	CFRelease(saveCommandUp);
+	CFRelease(saveCommandDown);
+	CFRelease(source);
+#endif
 	if (contents.size()) {
 		showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);
 	}
