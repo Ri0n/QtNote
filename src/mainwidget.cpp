@@ -228,11 +228,7 @@ void Widget::createNewNoteFromSelection()
 {
 	QString contents;
 #ifdef Q_OS_UNIX
-	QProcess p(this);
-	p.start("xsel");
-	if (p.waitForFinished()) {
-		contents = QString::fromLocal8Bit(p.readAll());
-	}
+	contents = QApplication::clipboard()->text(QClipboard::Selection);
 #endif
 #ifdef Q_OS_WIN
 	int n = 0;
