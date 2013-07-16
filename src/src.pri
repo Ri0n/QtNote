@@ -16,7 +16,6 @@
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
 SOURCES += $$PWD/main.cpp \
-    $$PWD/mainwidget.cpp \
     $$PWD/notedialog.cpp \
     $$PWD/note.cpp \
     $$PWD/notemanager.cpp \
@@ -33,10 +32,10 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/notemanagerdlg.cpp \
     $$PWD/notemanagerview.cpp \
     $$PWD/notedialogedit.cpp \
-	$$PWD/ptfstoragesettingswidget.cpp
+    $$PWD/ptfstoragesettingswidget.cpp \
+    $$PWD/qtnote.cpp
 
-HEADERS += $$PWD/mainwidget.h \
-    $$PWD/notedialog.h \
+HEADERS += $$PWD/notedialog.h \
     $$PWD/note.h \
     $$PWD/notemanager.h \
     $$PWD/notestorage.h \
@@ -52,7 +51,8 @@ HEADERS += $$PWD/mainwidget.h \
     $$PWD/notemanagerdlg.h \
     $$PWD/notemanagerview.h \
     $$PWD/notedialogedit.h \
-	$$PWD/ptfstoragesettingswidget.h
+    $$PWD/ptfstoragesettingswidget.h \
+    $$PWD/qtnote.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \

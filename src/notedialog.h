@@ -36,7 +36,7 @@ class NoteDialog : public QDialog {
     Q_OBJECT
     Q_DISABLE_COPY(NoteDialog)
 public:
-	explicit NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId);
+	explicit NoteDialog(const QString &storageId, const QString &noteId);
     virtual ~NoteDialog();
 	void setText(QString text);
 	QString text();

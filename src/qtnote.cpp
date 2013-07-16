@@ -1,26 +1,4 @@
-/*
-QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-Contacts:
-E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
-*/
-
-#include "mainwidget.h"
-
+#include <QAction>
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QStyle>
@@ -30,7 +8,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDebug>
 #include <QProcess>
 #include <QClipboard>
+#include <QMenu>
 
+#include "qtnote.h"
 #include "notemanager.h"
 #include "notedialog.h"
 #include "aboutdlg.h"
@@ -38,8 +18,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notemanagerdlg.h"
 #include "utils.h"
 
-Widget::Widget(QWidget *parent)
-    : QWidget(parent)
+QtNote::QtNote(QObject *parent) :
+    QObject(parent)
 {
 	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
@@ -47,7 +27,7 @@ Widget::Widget(QWidget *parent)
 	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
 	actManager = new QAction(QIcon(":/icons/manager"), tr("&Note Manager"), this);
 
-	contextMenu = new QMenu(this);
+	contextMenu = new QMenu;
 	contextMenu->addAction(actNew);
 	contextMenu->addSeparator();
 	contextMenu->addAction(actManager);
@@ -74,11 +54,7 @@ Widget::Widget(QWidget *parent)
 	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }
 
-Widget::~Widget()
-{
-}
-
-void Widget::parseAppArguments(const QStringList &args)
+void QtNote::parseAppArguments(const QStringList &args)
 {
 	if (args.isEmpty()) {
 		return;
@@ -99,12 +75,12 @@ void Widget::parseAppArguments(const QStringList &args)
 	}
 }
 
-void Widget::exitQtNote()
+void QtNote::exitQtNote()
 {
 	QApplication::quit();
 }
 
-void Widget::appMessageReceived(const QByteArray &msg)
+void QtNote::appMessageReceived(const QByteArray &msg)
 {
 	QDataStream stream(msg);
 	QStringList params;
@@ -112,29 +88,30 @@ void Widget::appMessageReceived(const QByteArray &msg)
 	parseAppArguments(params);
 }
 
-void Widget::showAbout()
+void QtNote::showAbout()
 {
-	AboutDlg *d = new AboutDlg(this);
+	AboutDlg *d = new AboutDlg;
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
 
-void Widget::showNoteManager()
+void QtNote::showNoteManager()
 {
-	NoteManagerDlg *d = new NoteManagerDlg(this);
+	NoteManagerDlg *d = new NoteManagerDlg;
+	connect(d, SIGNAL(showNoteRequested(QString,QString)), SLOT(showNoteDialog(QString,QString)));
 	d->setWindowIcon(QIcon(":/icons/manager"));
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
 
-void Widget::showOptions()
+void QtNote::showOptions()
 {
-	OptionsDlg *d = new OptionsDlg(this);
+	OptionsDlg *d = new OptionsDlg;
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
 
-void Widget::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
+void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
 {
 	Note note;
 	NoteDialog *dlg = 0;
@@ -149,7 +126,7 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId, con
 	}
 
 	if (!dlg) {
-		dlg = new NoteDialog(this, storageId, noteId);
+		dlg = new NoteDialog(storageId, noteId);
 		dlg->setObjectName("noteDlg");
 		dlg->setWindowIcon(QIcon(":/icons/trayicon"));
 		dlg->setAcceptRichText(NoteManager::instance()->storage(storageId)
@@ -171,7 +148,7 @@ void Widget::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->raise();
 }
 
-void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
+void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
 	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
 		createNewNote();
@@ -180,7 +157,7 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	if (reason != QSystemTrayIcon::Trigger) {
 		return;
 	}
-	QMenu menu(this);
+	QMenu menu;
 	menu.addAction(actNew);
 	menu.addSeparator();
 	QSettings s;
@@ -219,12 +196,12 @@ void Widget::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	}
 }
 
-void Widget::createNewNote()
+void QtNote::createNewNote()
 {
 	showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
 }
 
-void Widget::createNewNoteFromSelection()
+void QtNote::createNewNoteFromSelection()
 {
 	QString contents;
 #ifdef Q_OS_UNIX
@@ -293,7 +270,7 @@ void Widget::createNewNoteFromSelection()
 	}
 }
 
-void Widget::onSaveNote()
+void QtNote::onSaveNote()
 {
 	NoteDialog *dlg = static_cast<NoteDialog *>(sender());
 	QString storageId = dlg->storageId();
@@ -317,13 +294,13 @@ void Widget::onSaveNote()
 	}
 }
 
-void Widget::onDeleteNote()
+void QtNote::onDeleteNote()
 {
 	NoteDialog *dlg = static_cast<NoteDialog *>(sender());
 	QSettings s;
 	NoteStorage *storage = NoteManager::instance()->storage(dlg->storageId());
 	if (!dlg->text().isEmpty() && s.value("ui.ask-on-delete", true).toBool() &&
-		QMessageBox::question(this, tr("Deletion confirmation"),
+		QMessageBox::question(0, tr("Deletion confirmation"),
 							  tr("Are you sure want to delete this note?"),
 							  QMessageBox::Yes | QMessageBox::No) !=
 		QMessageBox::Yes) {

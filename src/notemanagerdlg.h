@@ -15,8 +15,11 @@ class NoteManagerDlg : public QDialog
     Q_OBJECT
 
 public:
-    explicit NoteManagerDlg(QWidget *parent = 0);
+	explicit NoteManagerDlg();
     ~NoteManagerDlg();
+
+signals:
+	void showNoteRequested(const QString &, const QString &);
 
 protected:
     void changeEvent(QEvent *e);

@@ -1,10 +1,9 @@
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
 #include "notemanagermodel.h"
-#include "mainwidget.h"
 
-NoteManagerDlg::NoteManagerDlg(QWidget *parent) :
-    QDialog(parent),
+NoteManagerDlg::NoteManagerDlg() :
+	QDialog(0),
     ui(new Ui::NoteManagerDlg)
 {
     ui->setupUi(this);
@@ -39,6 +38,6 @@ void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 {
 	QString noteId = model->data(index, NoteManagerModel::NoteId).toString();
 	if (!noteId.isEmpty()) {
-		((Widget*)parent())->showNoteDialog(model->data(index, NoteManagerModel::StorageId).toString(), noteId);
+		emit showNoteRequested(model->data(index, NoteManagerModel::StorageId).toString(), noteId);
 	}
 }

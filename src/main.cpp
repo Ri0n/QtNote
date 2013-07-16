@@ -31,7 +31,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QBuffer>
 #include <iostream>
 
-#include "mainwidget.h"
+#include "qtnote.h"
 #include "notemanager.h"
 #ifdef TOMBOY
 #include "tomboystorage.h"
@@ -118,6 +118,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	Widget w;
+	QtNote qtnote;
     return a.exec();
 }

@@ -32,7 +32,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "utils.h"
 
-NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString &noteId) :
+NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
 	QDialog(0),
 	m_ui(new Ui::NoteDialog),
 	storageId_(storageId),
@@ -59,7 +59,7 @@ NoteDialog::NoteDialog(QWidget *parent, const QString &storageId, const QString 
 
 	autosaveTimer_.setInterval(10000);
 	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
-	connect(parent, SIGNAL(destroyed()), SLOT(close()));
+	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(m_ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
