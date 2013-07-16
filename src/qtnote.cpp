@@ -9,6 +9,9 @@
 #include <QProcess>
 #include <QClipboard>
 #include <QMenu>
+#ifdef Q_OS_MAC
+# include <ApplicationServices/ApplicationServices.h>
+#endif
 
 #include "qtnote.h"
 #include "notemanager.h"
@@ -254,9 +257,9 @@ void QtNote::createNewNoteFromSelection()
 #ifdef Q_OS_MAC
 	// copied from http://stackoverflow.com/questions/9758053/programming-with-qt-creator-and-cocoa-copying-the-selected-text-from-the-curre
 	CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateCombinedSessionState);
-	CGEventRef saveCommandDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, YES);
+	CGEventRef saveCommandDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, true);
 	CGEventSetFlags(saveCommandDown, kCGEventFlagMaskCommand);
-	CGEventRef saveCommandUp = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, NO);
+	CGEventRef saveCommandUp = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, false);
 
 	CGEventPost(kCGAnnotatedSessionEventTap, saveCommandDown);
 	CGEventPost(kCGAnnotatedSessionEventTap, saveCommandUp);
@@ -264,6 +267,8 @@ void QtNote::createNewNoteFromSelection()
 	CFRelease(saveCommandUp);
 	CFRelease(saveCommandDown);
 	CFRelease(source);
+
+	contents = QApplication::clipboard()->text();
 #endif
 	if (contents.size()) {
 		showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);

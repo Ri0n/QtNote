@@ -72,4 +72,8 @@ PRECOMPILED_HEADER = $$PWD/config.h
 
 INCLUDEPATH += $$PWD
 
+macx {
+    LIBS = -framework ApplicationServices
+}
+
 include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)
