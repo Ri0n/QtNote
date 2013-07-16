@@ -207,7 +207,7 @@ void QtNote::createNewNote()
 void QtNote::createNewNoteFromSelection()
 {
 	QString contents;
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 	contents = QApplication::clipboard()->text(QClipboard::Selection);
 #endif
 #ifdef Q_OS_WIN
