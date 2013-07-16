@@ -182,37 +182,37 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="24"/>
+        <location filename="../src/qtnote.cpp" line="27"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="25"/>
+        <location filename="../src/qtnote.cpp" line="28"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="26"/>
+        <location filename="../src/qtnote.cpp" line="29"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="27"/>
+        <location filename="../src/qtnote.cpp" line="30"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="28"/>
+        <location filename="../src/qtnote.cpp" line="31"/>
         <source>&amp;Note Manager</source>
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="303"/>
+        <location filename="../src/qtnote.cpp" line="308"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="304"/>
+        <location filename="../src/qtnote.cpp" line="309"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>

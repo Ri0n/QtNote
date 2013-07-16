@@ -180,39 +180,39 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="24"/>
-        <source>&amp;Quit</source>
-        <translation>&amp;Thoát</translation>
-    </message>
-    <message>
-        <location filename="../src/qtnote.cpp" line="25"/>
-        <source>&amp;New</source>
-        <translation>&amp;Tạo mới</translation>
-    </message>
-    <message>
-        <location filename="../src/qtnote.cpp" line="26"/>
-        <source>&amp;About</source>
-        <translation>&amp;Thông tin</translation>
-    </message>
-    <message>
         <location filename="../src/qtnote.cpp" line="27"/>
-        <source>&amp;Options</source>
-        <translation>T&amp;ùy chọn</translation>
+        <source>&amp;Quit</source>
+        <translation>%Thoát</translation>
     </message>
     <message>
         <location filename="../src/qtnote.cpp" line="28"/>
+        <source>&amp;New</source>
+        <translation>Tạo M&amp;ới</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="29"/>
+        <source>&amp;About</source>
+        <translation>Thô&amp;ng tin</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="30"/>
+        <source>&amp;Options</source>
+        <translation>Tù&amp;y Chọn</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="31"/>
         <source>&amp;Note Manager</source>
         <translation>Q&amp;uản lý ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="303"/>
+        <location filename="../src/qtnote.cpp" line="308"/>
         <source>Deletion confirmation</source>
-        <translation>Xác nhận xóa</translation>
+        <translation>Xác nhận việc thực hiện thao tác xóa</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="304"/>
+        <location filename="../src/qtnote.cpp" line="309"/>
         <source>Are you sure want to delete this note?</source>
-        <translation>Bạn có muốn xóa ghi chú này hay không?</translation>
+        <translation>Bạn có thực sự chắc rằng muốn xóa đi ghi chú này?</translation>
     </message>
 </context>
 <context>

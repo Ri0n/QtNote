@@ -176,37 +176,37 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="24"/>
+        <location filename="../src/qtnote.cpp" line="27"/>
         <source>&amp;Quit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="25"/>
+        <location filename="../src/qtnote.cpp" line="28"/>
         <source>&amp;New</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="26"/>
+        <location filename="../src/qtnote.cpp" line="29"/>
         <source>&amp;About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="27"/>
+        <location filename="../src/qtnote.cpp" line="30"/>
         <source>&amp;Options</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="28"/>
+        <location filename="../src/qtnote.cpp" line="31"/>
         <source>&amp;Note Manager</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="303"/>
+        <location filename="../src/qtnote.cpp" line="308"/>
         <source>Deletion confirmation</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="304"/>
+        <location filename="../src/qtnote.cpp" line="309"/>
         <source>Are you sure want to delete this note?</source>
         <translation></translation>
     </message>
