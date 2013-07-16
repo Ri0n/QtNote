@@ -95,12 +95,12 @@ Việt Nam Quê Hương Tôi:
         <translation>Đóng lại</translation>
     </message>
     <message>
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>Note Manager (%1)</source>
         <translation>Quản lý ghi chú (%1)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>%n notes</source>
         <translation>
             <numerusform>%n ghi chú</numerusform>
@@ -146,7 +146,7 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="93"/>
+        <location filename="../src/ptfstorage.cpp" line="90"/>
         <source>Plain Text Storage</source>
         <translation>Lưu trữ văn bản thông thường</translation>
     </message>
@@ -178,49 +178,49 @@ Việt Nam Quê Hương Tôi:
     </message>
 </context>
 <context>
+    <name>QtNote</name>
+    <message>
+        <location filename="../src/qtnote.cpp" line="24"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Thoát</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="25"/>
+        <source>&amp;New</source>
+        <translation>&amp;Tạo mới</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="26"/>
+        <source>&amp;About</source>
+        <translation>&amp;Thông tin</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="27"/>
+        <source>&amp;Options</source>
+        <translation>T&amp;ùy chọn</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="28"/>
+        <source>&amp;Note Manager</source>
+        <translation>Q&amp;uản lý ghi chú</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="303"/>
+        <source>Deletion confirmation</source>
+        <translation>Xác nhận xóa</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="304"/>
+        <source>Are you sure want to delete this note?</source>
+        <translation>Bạn có muốn xóa ghi chú này hay không?</translation>
+    </message>
+</context>
+<context>
     <name>TomboyStorage</name>
     <message>
         <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation>Lưu trữ Tomboy</translation>
-    </message>
-</context>
-<context>
-    <name>Widget</name>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="43"/>
-        <source>&amp;Quit</source>
-        <translation>&amp;Thoát</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="44"/>
-        <source>&amp;New</source>
-        <translation>&amp;Tạo mới</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="45"/>
-        <source>&amp;About</source>
-        <translation>&amp;Thông tin</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="46"/>
-        <source>&amp;Options</source>
-        <translation>T&amp;ùy chọn</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="47"/>
-        <source>&amp;Note Manager</source>
-        <translation>Q&amp;uản lý ghi chú</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="272"/>
-        <source>Deletion confirmation</source>
-        <translation>Xác nhận xóa</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="273"/>
-        <source>Are you sure want to delete this note?</source>
-        <translation>Bạn có muốn xóa ghi chú này hay không?</translation>
     </message>
 </context>
 </TS>

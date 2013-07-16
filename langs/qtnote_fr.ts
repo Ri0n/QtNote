@@ -11,7 +11,7 @@
     <message>
         <location filename="../src/aboutdlg.ui" line="49"/>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="63"/>
@@ -31,7 +31,7 @@
     <message>
         <location filename="../src/aboutdlg.ui" line="120"/>
         <source>Translations</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/aboutdlg.ui" line="132"/>
@@ -41,7 +41,7 @@
 Vietnamese:
   Phan Anh
 </source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -54,7 +54,7 @@ Vietnamese:
     <message>
         <location filename="../src/notedialog.ui" line="47"/>
         <source>Ctrl+Shift+C</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="57"/>
@@ -90,12 +90,12 @@ Vietnamese:
         <translation>Fermer</translation>
     </message>
     <message>
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>Note Manager (%1)</source>
         <translation>Gestionnaire de notes (%1)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>%n notes</source>
         <translation>
             <numerusform>%n note</numerusform>
@@ -142,7 +142,7 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="93"/>
+        <location filename="../src/ptfstorage.cpp" line="90"/>
         <source>Plain Text Storage</source>
         <translation>Stockage plein texte</translation>
     </message>
@@ -174,49 +174,49 @@ Vietnamese:
     </message>
 </context>
 <context>
+    <name>QtNote</name>
+    <message>
+        <location filename="../src/qtnote.cpp" line="24"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Quitter</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="25"/>
+        <source>&amp;New</source>
+        <translation>&amp;Nouvelle</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="26"/>
+        <source>&amp;About</source>
+        <translation>&amp;À propos</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="27"/>
+        <source>&amp;Options</source>
+        <translation>&amp;Options</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="28"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Gestionnaire de notes</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="303"/>
+        <source>Deletion confirmation</source>
+        <translation>Confirmation de la suppression</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="304"/>
+        <source>Are you sure want to delete this note?</source>
+        <translation>Êtes-vous certain de vouloir supprimer cette note ?</translation>
+    </message>
+</context>
+<context>
     <name>TomboyStorage</name>
     <message>
         <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation>Stockage Tomboy</translation>
-    </message>
-</context>
-<context>
-    <name>Widget</name>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="43"/>
-        <source>&amp;Quit</source>
-        <translation>&amp;Quitter</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="44"/>
-        <source>&amp;New</source>
-        <translation>&amp;Nouvelle</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="45"/>
-        <source>&amp;About</source>
-        <translation>&amp;À propos</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="46"/>
-        <source>&amp;Options</source>
-        <translation>&amp;Options</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="47"/>
-        <source>&amp;Note Manager</source>
-        <translation>&amp;Gestionnaire de notes</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="272"/>
-        <source>Deletion confirmation</source>
-        <translation>Confirmation de la suppression</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="273"/>
-        <source>Are you sure want to delete this note?</source>
-        <translation>Êtes-vous certain de vouloir supprimer cette note ?</translation>
     </message>
 </context>
 </TS>

@@ -95,12 +95,12 @@ Vietnamese:
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>Note Manager (%1)</source>
         <translation>Менеджер заметок (%1)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/notemanagerdlg.cpp" line="17"/>
+        <location filename="../src/notemanagerdlg.cpp" line="16"/>
         <source>%n notes</source>
         <translation>
             <numerusform>%n заметка</numerusform>
@@ -148,7 +148,7 @@ Vietnamese:
 <context>
     <name>PTFStorage</name>
     <message>
-        <location filename="../src/ptfstorage.cpp" line="93"/>
+        <location filename="../src/ptfstorage.cpp" line="90"/>
         <source>Plain Text Storage</source>
         <translation>Хранилище текстовых файлов</translation>
     </message>
@@ -180,49 +180,49 @@ Vietnamese:
     </message>
 </context>
 <context>
+    <name>QtNote</name>
+    <message>
+        <location filename="../src/qtnote.cpp" line="24"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Выход</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="25"/>
+        <source>&amp;New</source>
+        <translation>&amp;Новая</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="26"/>
+        <source>&amp;About</source>
+        <translation>&amp;О Программе</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="27"/>
+        <source>&amp;Options</source>
+        <translation>Н&amp;астройки</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="28"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="303"/>
+        <source>Deletion confirmation</source>
+        <translation>Подтверждение удаления</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="304"/>
+        <source>Are you sure want to delete this note?</source>
+        <translation>Вы действительно хотите удалить эту заметку?</translation>
+    </message>
+</context>
+<context>
     <name>TomboyStorage</name>
     <message>
         <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation>Хранилище Tomboy</translation>
-    </message>
-</context>
-<context>
-    <name>Widget</name>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="43"/>
-        <source>&amp;Quit</source>
-        <translation>&amp;Выход</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="44"/>
-        <source>&amp;New</source>
-        <translation>&amp;Новая</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="45"/>
-        <source>&amp;About</source>
-        <translation>&amp;О Программе</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="46"/>
-        <source>&amp;Options</source>
-        <translation>Н&amp;астройки</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="47"/>
-        <source>&amp;Note Manager</source>
-        <translation>&amp;Менеджер Заметок</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="272"/>
-        <source>Deletion confirmation</source>
-        <translation>Подтверждение удаления</translation>
-    </message>
-    <message>
-        <location filename="../src/mainwidget.cpp" line="273"/>
-        <source>Are you sure want to delete this note?</source>
-        <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
 </context>
 </TS>
