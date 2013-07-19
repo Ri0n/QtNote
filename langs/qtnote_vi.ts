@@ -177,7 +177,7 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="116"/>
+        <location filename="../src/qtnote.cpp" line="151"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>không thể truy cập bất kỳ ghi chú nào. không thể tiếp tục...</translation>
     </message>
@@ -185,37 +185,37 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="27"/>
+        <location filename="../src/qtnote.cpp" line="157"/>
         <source>&amp;Quit</source>
         <translation>%Thoát</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="28"/>
+        <location filename="../src/qtnote.cpp" line="158"/>
         <source>&amp;New</source>
         <translation>Tạo M&amp;ới</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="29"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;About</source>
         <translation>Thô&amp;ng tin</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="30"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;Options</source>
         <translation>Tù&amp;y Chọn</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="31"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;Note Manager</source>
         <translation>Q&amp;uản lý ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="308"/>
+        <location filename="../src/qtnote.cpp" line="438"/>
         <source>Deletion confirmation</source>
         <translation>Xác nhận việc thực hiện thao tác xóa</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="309"/>
+        <location filename="../src/qtnote.cpp" line="439"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Bạn có thực sự chắc rằng muốn xóa đi ghi chú này?</translation>
     </message>

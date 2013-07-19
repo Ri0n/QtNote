@@ -1,5 +1,8 @@
 #include <QAction>
 #include <QApplication>
+#include <QLibraryInfo>
+#include <QTranslator>
+#include <QLocale>
 #include <QDesktopWidget>
 #include <QStyle>
 #include <QSettings>
@@ -9,8 +12,17 @@
 #include <QProcess>
 #include <QClipboard>
 #include <QMenu>
+#include <QDataStream>
 #ifdef Q_OS_MAC
 # include <ApplicationServices/ApplicationServices.h>
+#endif
+#if defined(Q_OS_WIN) && QT_VERSION < 0x040800
+# include <winnls.h>
+#  ifndef LOCALE_SNAME
+#   define LOCALE_SNAME 0x5c
+#  endif
+# include <QLibrary>
+# include <QSysInfo>
 #endif
 
 #include "qtnote.h"
@@ -20,10 +32,128 @@
 #include "optionsdlg.h"
 #include "notemanagerdlg.h"
 #include "utils.h"
+#ifdef TOMBOY
+#include "tomboystorage.h"
+#endif
+#include "ptfstorage.h"
+
+#if QT_VERSION < 0x040800
+static QLocale systemUILocale()
+{
+#ifdef Q_OS_WIN
+	QByteArray buffer;
+	buffer.resize(512);
+	LCID lcid = MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT);
+	bool success = false;
+	if (QSysInfo::windowsVersion() >= QSysInfo::WV_VISTA && QSysInfo::windowsVersion() < QSysInfo::WV_NT_based) {
+		success = GetLocaleInfo(lcid,
+								LOCALE_SNAME, (wchar_t*)buffer.data(),
+								buffer.size() / sizeof(wchar_t)) > 0;
+	} else {
+		typedef HRESULT (*LcidToRfc1766)(LCID Locale, LPTSTR pszRfc1766, int nChar);
+		LcidToRfc1766 pLcidToRfc1766;
+		QLibrary mlang("mlang");
+		pLcidToRfc1766 = (LcidToRfc1766) mlang.resolve("LcidToRfc1766W");
+		if (pLcidToRfc1766) {
+			success = pLcidToRfc1766(lcid, (wchar_t*)buffer.data(), buffer.size() / sizeof(wchar_t)) == S_OK;
+		}
+		mlang.unload();
+	}
+	if (success) {
+		QString name = QString::fromWCharArray((wchar_t*)buffer.data());
+		name = name.section('-', 0, 0) + "_" + name.section('-', 1, 1).toUpper();
+		return QLocale(name);
+	} else {
+		qErrnoWarning("systemUILocale");
+	}
+	return QLocale();
+#else
+	return QLocale::system();
+#endif
+}
+#endif
 
 QtNote::QtNote(QObject *parent) :
     QObject(parent)
 {
+	// loading localization
+	QString langFile = APPNAME;
+	QTranslator *translator = new QTranslator(qApp);
+	QTranslator *qtTranslator = new QTranslator(qApp);
+	QStringList langDirs;
+#ifdef Q_OS_UNIX
+	langDirs << TRANSLATIONSDIR;
+	QString qtLangDir = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+#else
+	QString appLangDir = qApp->applicationDirPath() + "/langs";
+	langDirs << appLangDir;
+	langDirs << QString("%1/langs").arg(QDir::currentPath());
+	QString qtLangDir = appLangDir;
+#endif
+	QSettings settings;
+	QString forcedLangName = settings.value("language").toString();
+	bool autoLang = (forcedLangName.isEmpty() || forcedLangName == "auto");
+#if QT_VERSION >= 0x040800
+	QLocale locale = autoLang? QLocale::system() : QLocale(forcedLangName);
+	//qDebug() << forcedLangName;
+	foreach (const QString &langDir, langDirs) {
+		if (translator->load(locale, langFile, "_", langDir)) {
+			qApp->installTranslator(translator);
+			break;
+		}
+	}
+
+	if (qtTranslator->load(locale, "qt", "_", qtLangDir)) {
+		qApp->installTranslator(qtTranslator);
+	}
+#else
+	QString locale = autoLang? systemUILocale().name() : forcedLangName;
+	langFile = QString("%1_%2").arg(langFile, locale);
+	foreach (const QString &langDir, langDirs) {
+		if (translator->load(langFile, langDir)) {
+			qApp->installTranslator(translator);
+			break;
+		}
+	}
+
+	if (qtTranslator->load("qt_" + locale, qtLangDir)) {
+		qApp->installTranslator(qtTranslator);
+	}
+#endif
+
+
+	// itialzation of notes storages
+	QList<NoteStorage*> storages;
+	QStringList priorities = QSettings().value("storage.priority")
+							 .toStringList();
+	QStringList prioritiesR;
+	while (priorities.count()) {
+		prioritiesR.append(priorities.takeLast());
+	}
+
+#ifdef TOMBOY
+	storages.append(new TomboyStorage(qApp));
+#endif
+	storages.append(new PTFStorage(qApp));
+
+	while (storages.count()) {
+		NoteStorage *storage = storages.takeFirst();
+		if (storage->isAccessible()) {
+			int priority = prioritiesR.indexOf(storage->systemName());
+			NoteManager::instance()->registerStorage(storage,
+													 priority >= 0? priority:0);
+		} else {
+			delete storage;
+		}
+	}
+	inited_ = NoteManager::instance()->loadAll();
+	if (!NoteManager::instance()->loadAll()) {
+		QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
+							  "storages is accessible. can't continue.."));
+		return;
+	}
+
+
 	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
 	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);

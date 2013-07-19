@@ -21,22 +21,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QApplication>
 #include <QtSingleApplication>
-#include <QMessageBox>
-#include <QLocale>
-#include <QTranslator>
-#include <QFileInfo>
-#include <QSettings>
-#include <QLibraryInfo>
 #include <QDataStream>
 #include <QBuffer>
 #include <iostream>
 
 #include "qtnote.h"
-#include "notemanager.h"
-#ifdef TOMBOY
-#include "tomboystorage.h"
-#endif
-#include "ptfstorage.h"
 
 int main(int argc, char *argv[])
 {
@@ -69,55 +58,9 @@ int main(int argc, char *argv[])
 
 	QApplication::setQuitOnLastWindowClosed(false);
 
-	// loading localization
-	QString locale = QLocale::system().name();
-	QTranslator translator;
-	if (!translator.load(QString("langs/qtnote_") + locale)) {
-#ifdef Q_OS_UNIX
-		if (!translator.load(QString(TRANSLATIONSDIR) + "/qtnote_" + locale))
-#endif
-			qDebug("failed to load translation");
-	}
-	a.installTranslator(&translator);
-	QTranslator qtTranslator;
-#ifdef Q_OS_UNIX
-	if (!qtTranslator.load(QLibraryInfo::location(QLibraryInfo::TranslationsPath)
-		+ "/qt_" + locale))
-#endif
-		qtTranslator.load(QString("langs/qt_") + locale);
-	a.installTranslator(&qtTranslator);
-
-
-	// itialzation of notes storages
-	QList<NoteStorage*> storages;
-	QStringList priorities = QSettings().value("storage.priority")
-							 .toStringList();
-	QStringList prioritiesR;
-	while (priorities.count()) {
-		prioritiesR.append(priorities.takeLast());
-	}
-
-#ifdef TOMBOY
-	storages.append(new TomboyStorage(&a));
-#endif
-	storages.append(new PTFStorage(&a));
-
-	while (storages.count()) {
-		NoteStorage *storage = storages.takeFirst();
-		if (storage->isAccessible()) {
-			int priority = prioritiesR.indexOf(storage->systemName());
-			NoteManager::instance()->registerStorage(storage,
-													 priority >= 0? priority:0);
-		} else {
-			delete storage;
-		}
-	}
-	if (!NoteManager::instance()->loadAll()) {
-		QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
-							  "storages is accessible. can't continue.."));
-		return 1;
-	}
-
 	QtNote qtnote;
-    return a.exec();
+	if (qtnote.isOperable()) {
+		return a.exec();
+	}
+	return 1;
 }

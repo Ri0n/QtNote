@@ -11,11 +11,13 @@ class QtNote : public QObject
 	Q_OBJECT
 public:
 	explicit QtNote(QObject *parent = 0);
+	inline bool isOperable() const { return inited_; }
 
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 
 private:
+	bool inited_;
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;

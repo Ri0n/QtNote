@@ -179,7 +179,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/main.cpp" line="116"/>
+        <location filename="../src/qtnote.cpp" line="151"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -187,37 +187,37 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="27"/>
+        <location filename="../src/qtnote.cpp" line="157"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="28"/>
+        <location filename="../src/qtnote.cpp" line="158"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="29"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="30"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="31"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;Note Manager</source>
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="308"/>
+        <location filename="../src/qtnote.cpp" line="438"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="309"/>
+        <location filename="../src/qtnote.cpp" line="439"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
