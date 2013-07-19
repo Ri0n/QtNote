@@ -54,7 +54,7 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/notedialog.ui" line="31"/>
         <source>Save Note</source>
-        <translation type="unfinished"></translation>
+        <translation>Lưu ghi chú</translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="44"/>
@@ -79,7 +79,7 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/notedialog.ui" line="97"/>
         <source>Find</source>
-        <translation type="unfinished"></translation>
+        <translation>Tìm kiếm</translation>
     </message>
     <message>
         <location filename="../src/notedialog.ui" line="130"/>
@@ -99,7 +99,7 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/notedialog.cpp" line="215"/>
         <source>Save Note As</source>
-        <translation type="unfinished"></translation>
+        <translation>Lưu ghi chú dưới dạng</translation>
     </message>
 </context>
 <context>
@@ -187,7 +187,7 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="151"/>
+        <location filename="../src/qtnote.cpp" line="152"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>không thể truy cập bất kỳ ghi chú nào. không thể tiếp tục...</translation>
     </message>
@@ -195,37 +195,37 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="157"/>
+        <location filename="../src/qtnote.cpp" line="158"/>
         <source>&amp;Quit</source>
         <translation>%Thoát</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="158"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;New</source>
         <translation>Tạo M&amp;ới</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="159"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;About</source>
         <translation>Thô&amp;ng tin</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="160"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;Options</source>
         <translation>Tù&amp;y Chọn</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="161"/>
+        <location filename="../src/qtnote.cpp" line="162"/>
         <source>&amp;Note Manager</source>
         <translation>Q&amp;uản lý ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="438"/>
+        <location filename="../src/qtnote.cpp" line="439"/>
         <source>Deletion confirmation</source>
         <translation>Xác nhận việc thực hiện thao tác xóa</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="439"/>
+        <location filename="../src/qtnote.cpp" line="440"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Bạn có thực sự chắc rằng muốn xóa đi ghi chú này?</translation>
     </message>
@@ -243,24 +243,24 @@ Việt Nam Quê Hương Tôi:
     <message>
         <location filename="../src/typeaheadfind.cpp" line="127"/>
         <source>Search</source>
-        <translation type="unfinished"></translation>
+        <translation>Tìm kiếm</translation>
     </message>
     <message>
         <location filename="../src/typeaheadfind.cpp" line="131"/>
         <location filename="../src/typeaheadfind.cpp" line="133"/>
         <source>Find next</source>
-        <translation type="unfinished"></translation>
+        <translation>Tìm tiếp theo</translation>
     </message>
     <message>
         <location filename="../src/typeaheadfind.cpp" line="137"/>
         <location filename="../src/typeaheadfind.cpp" line="139"/>
         <source>Find previous</source>
-        <translation type="unfinished"></translation>
+        <translation>Tìm trước đó</translation>
     </message>
     <message>
         <location filename="../src/typeaheadfind.cpp" line="143"/>
         <source>&amp;Case sensitive</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Phân biệt chữ hoa chữ thường</translation>
     </message>
 </context>
 </TS>

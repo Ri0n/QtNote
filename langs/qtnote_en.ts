@@ -183,7 +183,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="151"/>
+        <location filename="../src/qtnote.cpp" line="152"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation></translation>
     </message>
@@ -191,37 +191,37 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="157"/>
+        <location filename="../src/qtnote.cpp" line="158"/>
         <source>&amp;Quit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="158"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;New</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="159"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="160"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;Options</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="161"/>
+        <location filename="../src/qtnote.cpp" line="162"/>
         <source>&amp;Note Manager</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="438"/>
+        <location filename="../src/qtnote.cpp" line="439"/>
         <source>Deletion confirmation</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="439"/>
+        <location filename="../src/qtnote.cpp" line="440"/>
         <source>Are you sure want to delete this note?</source>
         <translation></translation>
     </message>
