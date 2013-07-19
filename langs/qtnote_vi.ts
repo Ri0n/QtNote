@@ -52,39 +52,44 @@ Việt Nam Quê Hương Tôi:
 <context>
     <name>NoteDialog</name>
     <message>
-        <location filename="../src/notedialog.ui" line="31"/>
+        <location filename="../src/notedialog.ui" line="41"/>
         <source>Copy note to clipboard</source>
         <translation>Sao chép ghi chú vào bộ nhớ ảo</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="47"/>
+        <location filename="../src/notedialog.ui" line="57"/>
         <source>Ctrl+Shift+C</source>
         <translation>Ctrl+Shift+C</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="57"/>
+        <location filename="../src/notedialog.ui" line="67"/>
         <source>Print Note</source>
         <translation>In ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="67"/>
+        <location filename="../src/notedialog.ui" line="77"/>
         <source>Ctrl+P</source>
         <translation>Ctrl+P</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="100"/>
+        <location filename="../src/notedialog.ui" line="110"/>
         <source>Delete note</source>
         <translation>Xóa ghi chú</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="116"/>
+        <location filename="../src/notedialog.ui" line="126"/>
         <source>Ctrl+D</source>
         <translation>Ctrl+D</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="153"/>
+        <location filename="../src/notedialog.cpp" line="156"/>
         <source>[No Title]</source>
         <translation>[Chưa đặt tiêu đề]</translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.cpp" line="198"/>
+        <source>Save Note As</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

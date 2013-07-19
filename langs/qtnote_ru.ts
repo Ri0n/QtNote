@@ -52,39 +52,44 @@ Vietnamese:
 <context>
     <name>NoteDialog</name>
     <message>
-        <location filename="../src/notedialog.ui" line="31"/>
+        <location filename="../src/notedialog.ui" line="41"/>
         <source>Copy note to clipboard</source>
         <translation>Скопировать заметку в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="47"/>
+        <location filename="../src/notedialog.ui" line="57"/>
         <source>Ctrl+Shift+C</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="57"/>
+        <location filename="../src/notedialog.ui" line="67"/>
         <source>Print Note</source>
         <translation>Распечатать</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="67"/>
+        <location filename="../src/notedialog.ui" line="77"/>
         <source>Ctrl+P</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="100"/>
+        <location filename="../src/notedialog.ui" line="110"/>
         <source>Delete note</source>
         <translation>Удалить заметку</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="116"/>
+        <location filename="../src/notedialog.ui" line="126"/>
         <source>Ctrl+D</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="153"/>
+        <location filename="../src/notedialog.cpp" line="156"/>
         <source>[No Title]</source>
         <translation>[Нет заголовка]</translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.cpp" line="198"/>
+        <source>Save Note As</source>
+        <translation>Сохранить заметку как</translation>
     </message>
 </context>
 <context>

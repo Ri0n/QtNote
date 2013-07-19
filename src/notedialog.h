@@ -57,6 +57,7 @@ private:
 	QString storageId_;
 	QString noteId_;
 	QString firstLine_;
+	QString extFileName_;
 	QTimer autosaveTimer_;
 	bool trashRequested_;
 	bool changed_;
@@ -76,6 +77,7 @@ private slots:
 	void copyClicked();
 	void textChanged();
 	void on_printBtn_clicked();
+	void on_saveBtn_clicked();
 };
 
 #endif // NOTEDIALOG_H

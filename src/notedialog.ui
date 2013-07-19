@@ -26,6 +26,16 @@
       <number>0</number>
      </property>
      <item>
+      <widget class="QToolButton" name="saveBtn">
+       <property name="shortcut">
+        <string notr="true">Ctrl+S</string>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QToolButton" name="copyBtn">
        <property name="toolTip">
         <string>Copy note to clipboard</string>

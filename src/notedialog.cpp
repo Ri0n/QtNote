@@ -29,6 +29,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTextFragment>
 #include <QPrinter>
 #include <QSettings>
+#include <QFileDialog>
+#include <QDesktopServices>
 
 #include "utils.h"
 
@@ -47,6 +49,7 @@ NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
 	m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
 	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
+	m_ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 
 	QSize avail = QApplication::desktop()->size() - sizeHint();
 	int x = avail.width() / 4 + (qrand()/(float)RAND_MAX)*avail.width() / 2;
@@ -186,6 +189,27 @@ void NoteDialog::on_printBtn_clicked()
 	QPrinter printer;
 	if (!text().isEmpty()) {
 		m_ui->noteEdit->print(&printer);
+	}
+}
+
+void NoteDialog::on_saveBtn_clicked()
+{
+	if (extFileName_.isEmpty() || !QFile::exists(extFileName_)) {
+		extFileName_ = QFileDialog::getSaveFileName(this, tr("Save Note As"),
+			QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+	}
+	if (!extFileName_.isEmpty()) {
+		QFile f(extFileName_);
+		if (f.open(QIODevice::WriteOnly)) {
+			QFileInfo fi(extFileName_);
+			if ((QStringList() << "html" << "htm" << "xhtml" << "xml")
+					.contains(fi.suffix().toLower())) {
+				f.write(m_ui->noteEdit->toHtml().toLocal8Bit());
+			} else {
+				f.write(m_ui->noteEdit->toPlainText().toLocal8Bit());
+			}
+			f.close();
+		}
 	}
 }
 
