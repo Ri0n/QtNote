@@ -31,8 +31,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 #include <QFileDialog>
 #include <QDesktopServices>
+#include <QKeyEvent>
 
 #include "utils.h"
+#include "typeaheadfind.h"
 
 NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
 	QDialog(0),
@@ -60,12 +62,18 @@ NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
 	titleCharFormat_.setForeground(QBrush(QColor(255,0,0)));
 	secondLineCharFormat_ = m_ui->noteEdit->currentCharFormat();
 
+	QHBoxLayout *hb3a = new QHBoxLayout();
+	findBar = new TypeAheadFindBar(m_ui->noteEdit, QString::null, this);
+	hb3a->addWidget(findBar);
+	m_ui->dialogLayout->addLayout(hb3a);
+
 	autosaveTimer_.setInterval(10000);
 	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
 	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(m_ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
 	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
+	connect(m_ui->findBtn, SIGNAL(clicked()), findBar, SLOT(toggleVisibility()));
 
 	m_ui->noteEdit->setText(""); // to force update event
 	if (!noteId.isEmpty()) {
@@ -81,6 +89,15 @@ NoteDialog::~NoteDialog()
 {
 	autosaveTimer_.stop();
     delete m_ui;
+}
+
+void NoteDialog::keyPressEvent(QKeyEvent * event)
+{
+	if (event->key() == Qt::Key_Escape && findBar->isVisible()) {
+		findBar->hide();
+		return;
+	}
+	QDialog::keyPressEvent(event);
 }
 
 NoteDialog* NoteDialog::findDialog(const QString &storageId, const QString &noteId)

@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string notr="true">Note</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="dialogLayout">
    <property name="spacing">
     <number>0</number>
    </property>
@@ -27,6 +27,9 @@
      </property>
      <item>
       <widget class="QToolButton" name="saveBtn">
+       <property name="toolTip">
+        <string>Save Note</string>
+       </property>
        <property name="shortcut">
         <string notr="true">Ctrl+S</string>
        </property>
@@ -82,6 +85,30 @@
       </widget>
      </item>
      <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="findBtn">
+       <property name="toolTip">
+        <string>Find</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../main.qrc">
+         <normaloff>:/icons/find</normaloff>:/icons/find</iconset>
+       </property>
+       <property name="shortcut">
+        <string notr="true">Ctrl+F</string>
+       </property>
+       <property name="autoRaise">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -96,13 +123,6 @@
         </size>
        </property>
       </spacer>
-     </item>
-     <item>
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
      </item>
      <item>
       <widget class="QToolButton" name="trashBtn">

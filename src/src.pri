@@ -33,7 +33,8 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/notemanagerview.cpp \
     $$PWD/notedialogedit.cpp \
     $$PWD/ptfstoragesettingswidget.cpp \
-    $$PWD/qtnote.cpp
+    $$PWD/qtnote.cpp \
+    $$PWD/typeaheadfind.cpp
 
 HEADERS += $$PWD/notedialog.h \
     $$PWD/note.h \
@@ -52,7 +53,8 @@ HEADERS += $$PWD/notedialog.h \
     $$PWD/notemanagerview.h \
     $$PWD/notedialogedit.h \
     $$PWD/ptfstoragesettingswidget.h \
-    $$PWD/qtnote.h
+    $$PWD/qtnote.h \
+    $$PWD/typeaheadfind.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \

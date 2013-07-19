@@ -52,42 +52,52 @@ Vietnamese:
 <context>
     <name>NoteDialog</name>
     <message>
-        <location filename="../src/notedialog.ui" line="41"/>
+        <location filename="../src/notedialog.ui" line="31"/>
+        <source>Save Note</source>
+        <translation>Сохранить заметку</translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.ui" line="44"/>
         <source>Copy note to clipboard</source>
         <translation>Скопировать заметку в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="57"/>
+        <location filename="../src/notedialog.ui" line="60"/>
         <source>Ctrl+Shift+C</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="67"/>
+        <location filename="../src/notedialog.ui" line="70"/>
         <source>Print Note</source>
         <translation>Распечатать</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="77"/>
+        <location filename="../src/notedialog.ui" line="80"/>
         <source>Ctrl+P</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="110"/>
+        <location filename="../src/notedialog.ui" line="97"/>
+        <source>Find</source>
+        <translation>Найти</translation>
+    </message>
+    <message>
+        <location filename="../src/notedialog.ui" line="130"/>
         <source>Delete note</source>
         <translation>Удалить заметку</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.ui" line="126"/>
+        <location filename="../src/notedialog.ui" line="146"/>
         <source>Ctrl+D</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="156"/>
+        <location filename="../src/notedialog.cpp" line="173"/>
         <source>[No Title]</source>
         <translation>[Нет заголовка]</translation>
     </message>
     <message>
-        <location filename="../src/notedialog.cpp" line="198"/>
+        <location filename="../src/notedialog.cpp" line="215"/>
         <source>Save Note As</source>
         <translation>Сохранить заметку как</translation>
     </message>
@@ -228,6 +238,31 @@ Vietnamese:
         <location filename="../src/tomboystorage.cpp" line="83"/>
         <source>Tomboy Storage</source>
         <translation>Хранилище Tomboy</translation>
+    </message>
+</context>
+<context>
+    <name>TypeAheadFindBar</name>
+    <message>
+        <location filename="../src/typeaheadfind.cpp" line="127"/>
+        <source>Search</source>
+        <translation>Искать</translation>
+    </message>
+    <message>
+        <location filename="../src/typeaheadfind.cpp" line="131"/>
+        <location filename="../src/typeaheadfind.cpp" line="133"/>
+        <source>Find next</source>
+        <translation>Следующее</translation>
+    </message>
+    <message>
+        <location filename="../src/typeaheadfind.cpp" line="137"/>
+        <location filename="../src/typeaheadfind.cpp" line="139"/>
+        <source>Find previous</source>
+        <translation>Предыдущее</translation>
+    </message>
+    <message>
+        <location filename="../src/typeaheadfind.cpp" line="143"/>
+        <source>&amp;Case sensitive</source>
+        <translation>&amp;Учитывать регистр</translation>
     </message>
 </context>
 </TS>

@@ -30,7 +30,7 @@ namespace Ui {
     class NoteDialog;
 }
 
-class NoteDialog;
+class TypeAheadFindBar;
 
 class NoteDialog : public QDialog {
     Q_OBJECT
@@ -48,10 +48,12 @@ public:
 	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
 
 protected:
-	virtual void changeEvent(QEvent *e);
+	void changeEvent(QEvent *e);
+	void keyPressEvent(QKeyEvent *event);
 
 private:
     Ui::NoteDialog *m_ui;
+	TypeAheadFindBar *findBar;
 	QTextCharFormat titleCharFormat_;
 	QTextCharFormat secondLineCharFormat_;
 	QString storageId_;
