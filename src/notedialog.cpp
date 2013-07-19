@@ -19,9 +19,6 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "notedialog.h"
-#include "ui_notedialog.h"
-#include "note.h"
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QClipboard>
@@ -35,6 +32,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "utils.h"
 #include "typeaheadfind.h"
+#include "notedialog.h"
+#include "ui_notedialog.h"
+#include "note.h"
 
 NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
 	QDialog(0),
@@ -213,18 +213,29 @@ void NoteDialog::on_saveBtn_clicked()
 {
 	if (extFileName_.isEmpty() || !QFile::exists(extFileName_)) {
 		extFileName_ = QFileDialog::getSaveFileName(this, tr("Save Note As"),
-			QDesktopServices::storageLocation(QDesktopServices::DesktopLocation));
+#if QT_VERSION < 0x050000
+			QDesktopServices::storageLocation(QDesktopServices::DesktopLocation)
+#else
+			QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
+#endif
+													);
 	}
 	if (!extFileName_.isEmpty()) {
 		QFile f(extFileName_);
 		if (f.open(QIODevice::WriteOnly)) {
 			QFileInfo fi(extFileName_);
+			QString text;
 			if ((QStringList() << "html" << "htm" << "xhtml" << "xml")
 					.contains(fi.suffix().toLower())) {
-				f.write(m_ui->noteEdit->toHtml().toLocal8Bit());
+				text = m_ui->noteEdit->toHtml();
 			} else {
-				f.write(m_ui->noteEdit->toPlainText().toLocal8Bit());
+				text = m_ui->noteEdit->toPlainText();
 			}
+			QByteArray data = text.toLocal8Bit();
+#ifdef Q_OS_WIN
+			data = data.replace("\n", 1, "\r\n", 2);
+#endif
+			f.write(data);
 			f.close();
 		}
 	}

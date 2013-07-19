@@ -46,8 +46,7 @@ unix {
     # translations
     TRANSLATIONSDIR = $$DATADIR/$$TARGET
     DEFINES += TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\" \
-            DATADIR=\\\"$$DATADIR\\\" \
-            APPNAME=\\\"$$TARGET\\\"
+            DATADIR=\\\"$$DATADIR\\\"
 
     LANGS = en fr ru vi
     for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
@@ -68,6 +67,8 @@ unix {
 
     INSTALLS += translations desktop pixmap man
 }
+
+DEFINES += APPNAME=\\\"$$TARGET\\\"
 RC_FILE = win/$${TARGET}.rc
 
 MOC_DIR = .moc

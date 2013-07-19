@@ -13,6 +13,7 @@
 #include <QClipboard>
 #include <QMenu>
 #include <QDataStream>
+#include <QDir>
 #ifdef Q_OS_MAC
 # include <ApplicationServices/ApplicationServices.h>
 #endif
