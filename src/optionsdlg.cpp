@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFileInfo>
 #include <QDir>
 
+#include "qtnote.h"
 
 class OptionsDlg::PriorityModel : public QStringListModel
 {
@@ -93,9 +94,10 @@ public:
 };
 
 
-OptionsDlg::OptionsDlg(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::OptionsDlg)
+OptionsDlg::OptionsDlg(QtNote *qtnote) :
+	QDialog(0),
+	ui(new Ui::OptionsDlg),
+	qtnote(qtnote)
 {
 	ui->setupUi(this);
 #ifdef Q_OS_LINUX
@@ -117,6 +119,7 @@ OptionsDlg::OptionsDlg(QWidget *parent) :
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
+	ui->leNoteFromSelShortcut->setSequence(QKeySequence(s.value("shortcuts.note-from-selection").toString()));
 	resize(0, 0);
 
 	connect(ui->priorityView, SIGNAL(doubleClicked(QModelIndex)), SLOT(storage_doubleClicked(const QModelIndex &)));
@@ -143,10 +146,16 @@ void OptionsDlg::accept()
 {
 	QStringList storageCodes = priorityModel->priorityList();
 	NoteManager::instance()->updatePriorities(storageCodes);
+	QKeySequence noteFromSelShortcut = ui->leNoteFromSelShortcut->sequence();
 	QSettings s;
 	s.setValue("storage.priority", storageCodes);
 	s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
 	s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
+	if (ShortcutsManager::updateSequence(ShortcutsManager::NoteFromSelection, noteFromSelShortcut)) {
+		s.setValue("shortcuts.note-from-selection", noteFromSelShortcut.toString());
+	} else {
+		qtnote->notifyError(tr("Failed to update shortcut for %1") % ShortcutsManager::shortcutName(ShortcutsManager::NoteFromSelection));
+	}
 #ifdef Q_OS_LINUX
 	QDir home = QDir::home();
 	if (!home.exists(".config/autostart")) {

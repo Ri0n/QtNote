@@ -252,7 +252,7 @@ void QtNote::showNoteManager()
 
 void QtNote::showOptions()
 {
-	OptionsDlg *d = new OptionsDlg;
+	OptionsDlg *d = new OptionsDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
@@ -292,6 +292,11 @@ void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->show();
 	dlg->activateWindow();
 	dlg->raise();
+}
+
+void QtNote::notifyError(const QString &)
+{
+	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }
 
 void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)

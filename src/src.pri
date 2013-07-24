@@ -34,7 +34,9 @@ SOURCES += $$PWD/main.cpp \
     $$PWD/notedialogedit.cpp \
     $$PWD/ptfstoragesettingswidget.cpp \
     $$PWD/qtnote.cpp \
-    $$PWD/typeaheadfind.cpp
+    $$PWD/typeaheadfind.cpp \
+    $$PWD/shortcutedit.cpp \
+    src/shortcutsmanager.cpp
 
 HEADERS += $$PWD/notedialog.h \
     $$PWD/note.h \
@@ -54,7 +56,9 @@ HEADERS += $$PWD/notedialog.h \
     $$PWD/notedialogedit.h \
     $$PWD/ptfstoragesettingswidget.h \
     $$PWD/qtnote.h \
-    $$PWD/typeaheadfind.h
+    $$PWD/typeaheadfind.h \
+    $$PWD/shortcutedit.h \
+    src/shortcutsmanager.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
@@ -79,3 +83,4 @@ macx {
 }
 
 include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)
+include(../3rdparty/qxt/qxt.pri)

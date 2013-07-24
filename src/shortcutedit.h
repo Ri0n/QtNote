@@ -19,32 +19,30 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef PTFSTORAGESETTINGSWIDGET_H
-#define PTFSTORAGESETTINGSWIDGET_H
+#ifndef SHORTCUTEDIT_H
+#define SHORTCUTEDIT_H
 
-#include <QWidget>
+#include <QLineEdit>
+#include <QKeySequence>
 
-namespace Ui {
-class PTFStorageSettingsWidget;
-}
-
-class PTFStorageSettingsWidget : public QWidget
+class ShortcutEdit : public QLineEdit
 {
 	Q_OBJECT
-	
 public:
-	explicit PTFStorageSettingsWidget(const QString &path, QWidget *parent = 0);
-	~PTFStorageSettingsWidget();
-	QString path() const;
-
+	explicit ShortcutEdit(QWidget *parent = 0);
+	inline const QKeySequence &sequence() const { return _seq; }
+	inline void setSequence(const QKeySequence &seq) {
+		_seq = seq; setText(seq.toString(QKeySequence::PortableText));
+	}
+protected:
+	void keyPressEvent(QKeyEvent *event);
 signals:
-	void apply();
 	
-private slots:
-	void on_btnBrowse_clicked();
+public slots:
 
 private:
-	Ui::PTFStorageSettingsWidget *ui;
+	QKeySequence _seq;
+	
 };
 
-#endif // PTFSTORAGESETTINGSWIDGET_H
+#endif // SHORTCUTEDIT_H

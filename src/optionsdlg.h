@@ -29,11 +29,12 @@ namespace Ui {
 }
 
 class QModelIndex;
+class QtNote;
 
 class OptionsDlg : public QDialog {
     Q_OBJECT
 public:
-    OptionsDlg(QWidget *parent = 0);
+	OptionsDlg(QtNote *qtnote = 0);
     ~OptionsDlg();
 
 protected:
@@ -41,6 +42,7 @@ protected:
 
 private:
     Ui::OptionsDlg *ui;
+	QtNote *qtnote;
 	class PriorityModel;
 	PriorityModel *priorityModel;
 

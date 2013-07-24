@@ -19,32 +19,31 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef PTFSTORAGESETTINGSWIDGET_H
-#define PTFSTORAGESETTINGSWIDGET_H
+#include <QKeyEvent>
 
-#include <QWidget>
+#include "shortcutedit.h"
 
-namespace Ui {
-class PTFStorageSettingsWidget;
+ShortcutEdit::ShortcutEdit(QWidget *parent) :
+	QLineEdit(parent)
+{
 }
 
-class PTFStorageSettingsWidget : public QWidget
+void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 {
-	Q_OBJECT
-	
-public:
-	explicit PTFStorageSettingsWidget(const QString &path, QWidget *parent = 0);
-	~PTFStorageSettingsWidget();
-	QString path() const;
-
-signals:
-	void apply();
-	
-private slots:
-	void on_btnBrowse_clicked();
-
-private:
-	Ui::PTFStorageSettingsWidget *ui;
-};
-
-#endif // PTFSTORAGESETTINGSWIDGET_H
+	QString grab;
+	int modifiers = event->modifiers();
+	if(modifiers & Qt::ControlModifier) {
+		grab.append("Ctrl+");
+	}
+	if(modifiers & Qt::ShiftModifier) {
+		grab.append("Shift+");
+	}
+	if(modifiers & Qt::AltModifier) {
+		grab.append("Alt+");
+	}
+	if(modifiers & Qt::MetaModifier) {
+		grab.append("Meta+");
+	}
+	QString key =  (QString)QKeySequence(event->key());
+	setSequence(QKeySequence(grab + key));
+}
