@@ -190,10 +190,8 @@ QtNote::QtNote(QObject *parent) :
 
 void QtNote::parseAppArguments(const QStringList &args)
 {
-	if (args.isEmpty()) {
-		return;
-	}
 	int i = 0;
+	bool argsHandled = false;
 	while (i < args.size()) {
 		if (args.at(i) == QLatin1String("-n")) {
 			if (i < args.size() + 1 && args.at(i + 1)[0] != '-') {
@@ -204,8 +202,22 @@ void QtNote::parseAppArguments(const QStringList &args)
 			} else {
 				createNewNote();
 			}
+			argsHandled = true;
 		}
 		i++;
+	}
+	QSettings s;
+	if (!argsHandled && !s.value("first-start").toBool()) {
+		QMessageBox *mb = new QMessageBox(QMessageBox::Information, tr("First Start"),
+		  tr(
+			  "This is your first start of QtNote note-taking application.\n\n"
+			  "To start using just click on pencil in the system tray and choose \"New\" item to create new note.\n"
+			  "Notes will be automatically saved to special storage, so you should not worry about this."
+		  ), QMessageBox::Ok);
+		mb->setModal(false);
+		mb->setAttribute(Qt::WA_DeleteOnClose);
+		mb->show();
+		s.setValue("first-start", true);
 	}
 }
 
