@@ -29,5 +29,19 @@ bool ShortcutsManager::updateShortcut(const QLatin1String &name, const QKeySeque
 
 bool ShortcutsManager::setShortcutSeq(QxtGlobalShortcut *shortcut, const QKeySequence &seq)
 {
+	if (!seq.isEmpty() shortcut->setShortcut(seq)) {
+		connect(shortcut, SIGNAL(activated()), object, slot);
+		shortcuts.insert(name, shortcut);
+		return true;
+	}
+	if (!seq.isEmpty()) {
+		QxtGlobalShortcut *shortcut = new QxtGlobalShortcut(object);
+		if (shortcut->setShortcut(seq)) {
+			connect(shortcut, SIGNAL(activated()), object, slot);
+			shortcuts.insert(name, shortcut);
+			return true;
+		}
+	}
+	return false;
 
 }
