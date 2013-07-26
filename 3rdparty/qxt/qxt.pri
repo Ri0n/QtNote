@@ -8,3 +8,5 @@ unix:!mac:SOURCES += $$PWD/qxtglobalshortcut_x11.cpp
 HEADERS += \
 	$$PWD/qxtglobalshortcut.h \
 	$$PWD/qxtglobalshortcut_p.h
+
+INCLUDEPATH += $$PWD
