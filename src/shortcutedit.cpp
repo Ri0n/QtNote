@@ -44,6 +44,6 @@ void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 	if(modifiers & Qt::MetaModifier) {
 		grab.append("Meta+");
 	}
-	QString key =  (QString)QKeySequence(event->key());
+	QString key =  QKeySequence(event->key()).toString();
 	setSequence(QKeySequence(grab + key));
 }

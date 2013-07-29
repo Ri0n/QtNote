@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDir>
 
 #include "qtnote.h"
+#include "shortcutsmanager.h"
 
 class OptionsDlg::PriorityModel : public QStringListModel
 {
@@ -151,10 +152,8 @@ void OptionsDlg::accept()
 	s.setValue("storage.priority", storageCodes);
 	s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
 	s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
-	if (ShortcutsManager::updateSequence(ShortcutsManager::NoteFromSelection, noteFromSelShortcut)) {
-		s.setValue("shortcuts.note-from-selection", noteFromSelShortcut.toString());
-	} else {
-		qtnote->notifyError(tr("Failed to update shortcut for %1") % ShortcutsManager::shortcutName(ShortcutsManager::NoteFromSelection));
+	if (!qtnote->shortcutsManager()->setShortcutSeq("note-from-selection", noteFromSelShortcut)) {
+		qtnote->notifyError(tr("Failed to update shortcut for \"Note From Selection\""));
 	}
 #ifdef Q_OS_LINUX
 	QDir home = QDir::home();

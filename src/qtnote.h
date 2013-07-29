@@ -26,6 +26,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSystemTrayIcon>
 
 class QAction;
+class ShortcutsManager;
 
 class QtNote : public QObject
 {
@@ -37,12 +38,14 @@ public:
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 	void notifyError(const QString &);
+	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
 
 private:
 	bool inited_;
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
+	ShortcutsManager* _shortcutsManager;
 
 	void parseAppArguments(const QStringList &args);
 private slots:

@@ -37,6 +37,7 @@
 #include "tomboystorage.h"
 #endif
 #include "ptfstorage.h"
+#include "shortcutsmanager.h"
 
 #if QT_VERSION < 0x040800
 static QLocale systemUILocale()
@@ -176,6 +177,8 @@ QtNote::QtNote(QObject *parent) :
 	tray->show();
 	tray->setContextMenu(contextMenu);
 
+	_shortcutsManager = new ShortcutsManager(this);
+
 	connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), SLOT(appMessageReceived(const QByteArray &)));
 	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
 	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
@@ -184,6 +187,7 @@ QtNote::QtNote(QObject *parent) :
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
+	connect(_shortcutsManager->shortcut(QLatin1String("note-from-sel")), SIGNAL(triggered()), SLOT(createNewNoteFromSelection()));
 
 	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }
@@ -294,7 +298,7 @@ void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->raise();
 }
 
-void QtNote::notifyError(const QString &)
+void QtNote::notifyError(const QString &text)
 {
 	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }

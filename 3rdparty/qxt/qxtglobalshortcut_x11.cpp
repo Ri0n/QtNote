@@ -34,8 +34,12 @@
 #if QT_VERSION < QT_VERSION_CHECK(5,0,0)
 #   include <QX11Info>
 #else
+#if QT_VERSION < QT_VERSION_CHECK(5,1,0)
 #   include <QApplication>
 #   include <qpa/qplatformnativeinterface.h>
+#else
+#   include <QGuiApplication>
+#endif
 #   include <xcb/xcb.h>
 #endif
 

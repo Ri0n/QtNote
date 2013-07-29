@@ -10,19 +10,30 @@ class QxtGlobalShortcut;
 class ShortcutsManager : public QObject
 {
 	Q_OBJECT
+
+	class ShortcutAction
+	{
+	public:
+		ShortcutAction() : action(0), shortcut(0) {}
+
+		QAction *action;
+		QxtGlobalShortcut *shortcut;
+		QString option;
+	};
+
 public:
 	explicit ShortcutsManager(QObject *parent = 0);
-	bool initShortcut(const QLatin1String &name, QObject *object, const char *slot);
-	bool updateShortcut(const QLatin1String &name, const QKeySequence &seq);
+	QAction *shortcut(const QLatin1String &option);
+	bool setShortcutSeq(const QString &option, const QKeySequence &seq);
 	
 signals:
 	
 public slots:
 
 private:
-	QHash<QString, QxtGlobalShortcut*> shortcuts;
-	
-	bool setShortcutSeq(QxtGlobalShortcut *shortcut, const QKeySequence &seq);
+	QHash<QString, ShortcutAction> shortcuts;
+
+	bool updateShortcut(ShortcutAction &sa);
 };
 
 #endif // SHORTCUTSMANAGER_H
