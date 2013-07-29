@@ -31,15 +31,13 @@
 
 #include <QVector>
 #include <X11/Xlib.h>
-#if QT_VERSION < QT_VERSION_CHECK(5,0,0)
+#if QT_VERSION < QT_VERSION_CHECK(5,0,0) || QT_VERSION >= QT_VERSION_CHECK(5,1,0)
 #   include <QX11Info>
 #else
-#if QT_VERSION < QT_VERSION_CHECK(5,1,0)
 #   include <QApplication>
 #   include <qpa/qplatformnativeinterface.h>
-#else
-#   include <QGuiApplication>
 #endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
 #   include <xcb/xcb.h>
 #endif
 
@@ -95,7 +93,7 @@ class QxtX11Data {
 public:
     QxtX11Data()
     {
-#if QT_VERSION < QT_VERSION_CHECK(5,0,0)
+#if QT_VERSION < QT_VERSION_CHECK(5,0,0) || QT_VERSION >= QT_VERSION_CHECK(5,1,0)
         m_display = QX11Info::display();
 #else
         QPlatformNativeInterface *native = qApp->platformNativeInterface();

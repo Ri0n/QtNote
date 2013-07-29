@@ -187,7 +187,7 @@ QtNote::QtNote(QObject *parent) :
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
-	connect(_shortcutsManager->shortcut(QLatin1String("note-from-sel")), SIGNAL(triggered()), SLOT(createNewNoteFromSelection()));
+	connect(_shortcutsManager->shortcut(QLatin1String("note-from-selection")), SIGNAL(triggered()), SLOT(createNewNoteFromSelection()));
 
 	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }

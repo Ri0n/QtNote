@@ -110,12 +110,12 @@ Vietnamese:
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location filename="../src/notemanagerdlg.cpp" line="16"/>
+        <location filename="../src/notemanagerdlg.cpp" line="37"/>
         <source>Note Manager (%1)</source>
         <translation>Менеджер заметок (%1)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/notemanagerdlg.cpp" line="16"/>
+        <location filename="../src/notemanagerdlg.cpp" line="37"/>
         <source>%n notes</source>
         <translation>
             <numerusform>%n заметка</numerusform>
@@ -127,7 +127,7 @@ Vietnamese:
 <context>
     <name>NoteManagerView</name>
     <message>
-        <location filename="../src/notemanagerview.cpp" line="18"/>
+        <location filename="../src/notemanagerview.cpp" line="40"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
@@ -155,9 +155,24 @@ Vietnamese:
         <translation>Запускать вместе с системой</translation>
     </message>
     <message>
-        <location filename="../src/optionsdlg.ui" line="59"/>
+        <location filename="../src/optionsdlg.ui" line="57"/>
+        <source>Shortcuts</source>
+        <translation>Горячие клавиши</translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.ui" line="63"/>
+        <source>Note from selection</source>
+        <translation>Заметка из выделения</translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.ui" line="78"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation>Количество заметок в меню трея</translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.cpp" line="156"/>
+        <source>Failed to update shortcut for &quot;Note From Selection&quot;</source>
+        <translation>Не удалось обновить горяую кнопку для &quot;Заметка из выделения&quot;</translation>
     </message>
 </context>
 <context>
@@ -181,7 +196,7 @@ Vietnamese:
         <translation>Обзор</translation>
     </message>
     <message>
-        <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
+        <location filename="../src/ptfstoragesettingswidget.cpp" line="48"/>
         <source>Choose storage directory</source>
         <translation>Выберите каталог хранилища</translation>
     </message>
@@ -189,7 +204,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="152"/>
+        <location filename="../src/qtnote.cpp" line="153"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -197,37 +212,57 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="158"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="159"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="160"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="161"/>
+        <location filename="../src/qtnote.cpp" line="162"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="162"/>
+        <location filename="../src/qtnote.cpp" line="163"/>
         <source>&amp;Note Manager</source>
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="439"/>
+        <location filename="../src/qtnote.cpp" line="215"/>
+        <source>First Start</source>
+        <translation>Первый запуск</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="216"/>
+        <source>This is your first start of QtNote note-taking application.
+
+To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
+Notes will be automatically saved to special storage, so you should not worry about this.</source>
+        <translation>Это Ваш первый запуск QtNote - программы для работы с заметками
+
+Чтобы начать пользоваться программой, просто щелкните карандаш в системном трее и выберите пункт &quot;Новая&quot; для создания новой заметки. Заметки автоматически сохраняются в специальное хранилище, так что вы не должны об этом беспокоиться.</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="303"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="460"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="440"/>
+        <location filename="../src/qtnote.cpp" line="461"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>

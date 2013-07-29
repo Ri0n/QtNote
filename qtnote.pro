@@ -23,6 +23,9 @@ VERSION = 0.2.3
 QT += xml
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= printsupport
+    greaterThan(QT_MAJOR_VERSION, 5)|greaterThan(QT_MINOR_VERSION, 0) {
+        unix:!mac:QT += x11extras
+    }
 }
 
 include (src/src.pri)

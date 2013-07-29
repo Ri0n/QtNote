@@ -5,6 +5,7 @@
 #include <QHash>
 
 class QAction;
+class QKeySequence;
 class QxtGlobalShortcut;
 
 class ShortcutsManager : public QObject

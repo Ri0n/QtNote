@@ -144,8 +144,6 @@ void TypeAheadFindBar::init()
 	connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
 	addWidget(d->cb_case);
 
-	layout()->addItem(new QSpacerItem(1,1, QSizePolicy::Expanding, QSizePolicy::Preferred));
-
 	optionsUpdate();
 
 	hide();

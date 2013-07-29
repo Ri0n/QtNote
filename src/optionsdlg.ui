@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>391</width>
-    <height>338</height>
+    <height>371</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,31 +52,23 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLabel" name="lblNoteFromSel">
-       <property name="text">
-        <string>Note from selection shortcut</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="ShortcutEdit" name="leNoteFromSelShortcut"/>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Shortcuts</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="lblNoteFromSel">
+        <property name="text">
+         <string>Note from selection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="ShortcutEdit" name="leNoteFromSelShortcut"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">

@@ -105,12 +105,12 @@ Vietnamese:
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/notemanagerdlg.cpp" line="16"/>
+        <location filename="../src/notemanagerdlg.cpp" line="37"/>
         <source>Note Manager (%1)</source>
         <translation></translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/notemanagerdlg.cpp" line="16"/>
+        <location filename="../src/notemanagerdlg.cpp" line="37"/>
         <source>%n notes</source>
         <translation>
             <numerusform>%n note</numerusform>
@@ -121,7 +121,7 @@ Vietnamese:
 <context>
     <name>NoteManagerView</name>
     <message>
-        <location filename="../src/notemanagerview.cpp" line="18"/>
+        <location filename="../src/notemanagerview.cpp" line="40"/>
         <source>Delete</source>
         <translation></translation>
     </message>
@@ -149,9 +149,24 @@ Vietnamese:
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/optionsdlg.ui" line="59"/>
+        <location filename="../src/optionsdlg.ui" line="57"/>
+        <source>Shortcuts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.ui" line="63"/>
+        <source>Note from selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.ui" line="78"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/optionsdlg.cpp" line="156"/>
+        <source>Failed to update shortcut for &quot;Note From Selection&quot;</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -175,7 +190,7 @@ Vietnamese:
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/ptfstoragesettingswidget.cpp" line="27"/>
+        <location filename="../src/ptfstoragesettingswidget.cpp" line="48"/>
         <source>Choose storage directory</source>
         <translation></translation>
     </message>
@@ -183,7 +198,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="152"/>
+        <location filename="../src/qtnote.cpp" line="153"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation></translation>
     </message>
@@ -191,37 +206,55 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../src/qtnote.cpp" line="158"/>
+        <location filename="../src/qtnote.cpp" line="159"/>
         <source>&amp;Quit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="159"/>
+        <location filename="../src/qtnote.cpp" line="160"/>
         <source>&amp;New</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="160"/>
+        <location filename="../src/qtnote.cpp" line="161"/>
         <source>&amp;About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="161"/>
+        <location filename="../src/qtnote.cpp" line="162"/>
         <source>&amp;Options</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="162"/>
+        <location filename="../src/qtnote.cpp" line="163"/>
         <source>&amp;Note Manager</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="439"/>
+        <location filename="../src/qtnote.cpp" line="215"/>
+        <source>First Start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="216"/>
+        <source>This is your first start of QtNote note-taking application.
+
+To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
+Notes will be automatically saved to special storage, so you should not worry about this.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="303"/>
+        <source>Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qtnote.cpp" line="460"/>
         <source>Deletion confirmation</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/qtnote.cpp" line="440"/>
+        <location filename="../src/qtnote.cpp" line="461"/>
         <source>Are you sure want to delete this note?</source>
         <translation></translation>
     </message>

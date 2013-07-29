@@ -45,5 +45,6 @@ void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 		grab.append("Meta+");
 	}
 	QString key =  QKeySequence(event->key()).toString();
+	qDebug("SEQ: %s", qPrintable(grab + key));
 	setSequence(QKeySequence(grab + key));
 }
