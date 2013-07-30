@@ -120,6 +120,17 @@ OptionsDlg::OptionsDlg(QtNote *qtnote) :
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
+
+	QMap<QString, QString> shortcuts = qtnote->shortcutsManager()->optionsMap();
+	QMap<QString, QString>::const_iterator it;
+	for (it = shortcuts.constBegin();  it != shortcuts.constEnd(); it++) {
+		ShortcutEdit *se = new ShortcutEdit;
+		se->setObjectName("shortcut-"+it.key());
+		se->setSequence(qtnote->shortcutsManager()->sequence(it.key()));
+		((QFormLayout*)ui->gbShortcuts->layout())->addRow(it.value(), se);
+	}
+
+
 	ui->leNoteFromSelShortcut->setSequence(QKeySequence(s.value("shortcuts.note-from-selection").toString()));
 	resize(0, 0);
 

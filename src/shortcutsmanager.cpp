@@ -9,6 +9,15 @@ ShortcutsManager::ShortcutsManager(QObject *parent) :
 {
 }
 
+QMap<QString, QString> &ShortcutsManager::optionsMap() const
+{
+	static QMap<QString, QString> map;
+	if (map.isEmpty()) {
+		map.insert(QLatin1String("note-from-selection"), tr("Note From Selection"));
+	}
+	return map;
+}
+
 QAction* ShortcutsManager::shortcut(const QLatin1String &option)
 {
 	ShortcutAction &sa = shortcuts[option];
@@ -18,6 +27,12 @@ QAction* ShortcutsManager::shortcut(const QLatin1String &option)
 		updateShortcut(sa);
 	}
 	return sa.action;
+}
+
+QKeySequence ShortcutsManager::sequence(const QString &option) const
+{
+	QSettings s;
+	return QKeySequence(s.value("shortcuts." + option).toString());
 }
 
 bool ShortcutsManager::updateShortcut(ShortcutAction &sa)

@@ -3,9 +3,9 @@
 
 #include <QObject>
 #include <QHash>
+#include <QKeySequence>
 
 class QAction;
-class QKeySequence;
 class QxtGlobalShortcut;
 
 class ShortcutsManager : public QObject
@@ -24,7 +24,9 @@ class ShortcutsManager : public QObject
 
 public:
 	explicit ShortcutsManager(QObject *parent = 0);
+	QMap<QString, QString> &optionsMap() const;
 	QAction *shortcut(const QLatin1String &option);
+	QKeySequence sequence(const QString &option) const;
 	bool setShortcutSeq(const QString &option, const QKeySequence &seq);
 	
 signals:

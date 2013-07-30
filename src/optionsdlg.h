@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define OPTIONSDLG_H
 
 #include <QDialog>
+#include <QMap>
 
 namespace Ui {
     class OptionsDlg;

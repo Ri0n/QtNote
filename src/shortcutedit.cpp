@@ -30,6 +30,10 @@ ShortcutEdit::ShortcutEdit(QWidget *parent) :
 
 void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 {
+	if (event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) {
+		setText("");
+		return;
+	}
 	QString grab;
 	int modifiers = event->modifiers();
 	if(modifiers & Qt::ControlModifier) {
@@ -45,6 +49,5 @@ void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 		grab.append("Meta+");
 	}
 	QString key =  QKeySequence(event->key()).toString();
-	qDebug("SEQ: %s", qPrintable(grab + key));
 	setSequence(QKeySequence(grab + key));
 }

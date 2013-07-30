@@ -52,11 +52,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="gbShortcuts">
      <property name="title">
       <string>Shortcuts</string>
      </property>
      <layout class="QFormLayout" name="formLayout">
+      <property name="fieldGrowthPolicy">
+       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+      </property>
       <item row="0" column="0">
        <widget class="QLabel" name="lblNoteFromSel">
         <property name="text">
@@ -113,7 +116,7 @@
   <customwidget>
    <class>ShortcutEdit</class>
    <extends>QLineEdit</extends>
-   <header>src/shortcutedit.h</header>
+   <header>shortcutedit.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
