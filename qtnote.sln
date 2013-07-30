@@ -1,7 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qtnote", "qtnote.vcproj", "{1FCF5D66-D93B-3410-A2FE-189DA61FAAF3}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qtnote", "qtnote.vcxproj", "{9AD73E51-3D72-3E7B-B5C9-E031F90DD0D6}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup1", "..\Setup1\Setup1.vdproj", "{F9E02E18-92BA-412B-8DC1-17611FAAF8DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +11,12 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1FCF5D66-D93B-3410-A2FE-189DA61FAAF3}.Debug|Win32.ActiveCfg = Debug|Win32
-		{1FCF5D66-D93B-3410-A2FE-189DA61FAAF3}.Debug|Win32.Build.0 = Debug|Win32
-		{1FCF5D66-D93B-3410-A2FE-189DA61FAAF3}.Release|Win32.ActiveCfg = Release|Win32
-		{1FCF5D66-D93B-3410-A2FE-189DA61FAAF3}.Release|Win32.Build.0 = Release|Win32
+		{9AD73E51-3D72-3E7B-B5C9-E031F90DD0D6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9AD73E51-3D72-3E7B-B5C9-E031F90DD0D6}.Debug|Win32.Build.0 = Debug|Win32
+		{9AD73E51-3D72-3E7B-B5C9-E031F90DD0D6}.Release|Win32.ActiveCfg = Release|Win32
+		{9AD73E51-3D72-3E7B-B5C9-E031F90DD0D6}.Release|Win32.Build.0 = Release|Win32
+		{F9E02E18-92BA-412B-8DC1-17611FAAF8DF}.Debug|Win32.ActiveCfg = Debug
+		{F9E02E18-92BA-412B-8DC1-17611FAAF8DF}.Release|Win32.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
