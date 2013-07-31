@@ -9,7 +9,7 @@ ShortcutsManager::ShortcutsManager(QObject *parent) :
 {
 }
 
-QMap<QString, QString> &ShortcutsManager::optionsMap() const
+const QMap<QString, QString> &ShortcutsManager::optionsMap() const
 {
 	static QMap<QString, QString> map;
 	if (map.isEmpty()) {
