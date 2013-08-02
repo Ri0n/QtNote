@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qtnote", "qtnote.vcproj", "{14870538-1A49-3F16-9717-C10516B6AB1D}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "QtNote Setup", "Setup.vdproj", "{34A798D9-2F44-4781-B7B6-F5B600002A79}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "QtNote Setup", "QtNote Setup\QtNote Setup.vdproj", "{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +15,8 @@ Global
 		{14870538-1A49-3F16-9717-C10516B6AB1D}.Debug|Win32.Build.0 = Debug|Win32
 		{14870538-1A49-3F16-9717-C10516B6AB1D}.Release|Win32.ActiveCfg = Release|Win32
 		{14870538-1A49-3F16-9717-C10516B6AB1D}.Release|Win32.Build.0 = Release|Win32
-		{34A798D9-2F44-4781-B7B6-F5B600002A79}.Debug|Win32.ActiveCfg = Debug
-		{34A798D9-2F44-4781-B7B6-F5B600002A79}.Debug|Win32.Build.0 = Debug
-		{34A798D9-2F44-4781-B7B6-F5B600002A79}.Release|Win32.ActiveCfg = Release
-		{34A798D9-2F44-4781-B7B6-F5B600002A79}.Release|Win32.Build.0 = Release
+		{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}.Debug|Win32.ActiveCfg = Debug
+		{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}.Release|Win32.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
