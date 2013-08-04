@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/icons">
-        <file alias="trayicon">images/qtnote.png</file>
         <file alias="new">images/new.png</file>
         <file alias="options">images/options22.png</file>
         <file alias="trash">images/trash22.png</file>
@@ -11,5 +10,6 @@
         <file alias="manager">images/manager22.png</file>
         <file alias="print">images/print22.png</file>
         <file alias="find">images/find22.png</file>
+        <file alias="trayicon">images/qtnote22.png</file>
     </qresource>
 </RCC>

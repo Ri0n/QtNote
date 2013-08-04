@@ -61,14 +61,17 @@ unix {
     desktop.path = $$DATADIR/applications
 
     # Desktop pixmap
-    pixmap.files = images/$${TARGET}.png
-    pixmap.path = $$DATADIR/pixmaps
+    pixmap.path = $$DATADIR/icons/hicolor/48x48/apps
+    pixmap.extra = cp -f images/$${TARGET}48.png $(INSTALL_ROOT)$$pixmap.path/$${TARGET}.png
+
+    pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
+    pixmap_svg.files = images/$${TARGET}.svg
 
     # Man page
     man.files = docs/qtnote.1
     man.path = $$MANDIR
 
-    INSTALLS += translations desktop pixmap man
+    INSTALLS += translations desktop pixmap pixmap_svg man
 }
 
 DEFINES += APPNAME=\\\"$$TARGET\\\"
