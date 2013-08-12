@@ -1,3 +1,11 @@
+2013-08-12 QtNote-0.2.3.1 Release
++ Note from selection + hotkey feature
++ Print feature
++ Save feature
++ Relocatable storage feature
++ msi installer
+* ctrl+z fix
+
 2010-08-03
 + added simple autostart feature (only linux)
 

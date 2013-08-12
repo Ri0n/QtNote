@@ -1,0 +1,2 @@
+#!/bin/sh
+dch -M -v $(cat version) "New release"
