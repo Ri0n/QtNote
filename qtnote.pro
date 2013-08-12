@@ -28,6 +28,7 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     }
 }
 
+### Version handling ###
 isEmpty(VERSION) {
 	VERSION = $$cat($$PWD/version)
 }
@@ -42,6 +43,7 @@ for(i, VERPOS) {
 }
 DEFINES += QTNOTE_VERSION=$$VERSION
 DEFINES += QTNOTE_VERSION_W=$$join(VERSIONS_FULL, ",")
+### End of version handling ###
 
 include (src/src.pri)
 
