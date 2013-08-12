@@ -163,7 +163,7 @@ void OptionsDlg::accept()
 		if (!w->isModified()) {
 			continue;
 		}
-		QString option = w->objectName().mid(sizeof("shortcut-"));
+		QString option = w->objectName().mid(sizeof("shortcut-") - 1);
 		if (!qtnote->shortcutsManager()->setShortcutSeq(option, w->sequence())) {
 			qtnote->notifyError(tr("Failed to update shortcut for \"%1\"").arg(shortcuts.value(option)));
 		}
