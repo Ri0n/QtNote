@@ -78,8 +78,14 @@ unix {
     desktop.path = $$DATADIR/applications
 
     # Desktop pixmap
-    pixmap.path = $$DATADIR/icons/hicolor/48x48/apps
-    pixmap.extra = cp -f images/$${TARGET}48.png $(INSTALL_ROOT)$$pixmap.path/$${TARGET}.png
+    pixsizes = 16 22 32 48 64
+    for(size, pixsizes) {
+	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
+	extra = cp -f images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+	eval(pix$${size}.path = $$path)
+	eval(pix$${size}.extra = $$extra)
+	eval(pixmaps += pix$${size})
+    }
 
     pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
     pixmap_svg.files = images/$${TARGET}.svg
@@ -88,7 +94,7 @@ unix {
     man.files = docs/qtnote.1
     man.path = $$MANDIR
 
-    INSTALLS += translations desktop pixmap pixmap_svg man
+    INSTALLS += translations desktop $$pixmaps pixmap_svg man
 }
 
 DEFINES += APPNAME=\\\"$$TARGET\\\"
