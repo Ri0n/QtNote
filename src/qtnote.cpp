@@ -327,7 +327,7 @@ void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	menu.show();
 	menu.activateWindow();
 	menu.raise();
-	QRect dr = QApplication::desktop()->geometry();
+	QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
 	QRect ir = tray->geometry();
 	QRect mr = menu.geometry();
 	if (ir.isEmpty()) { // O_O but with kde this happens...
@@ -346,6 +346,19 @@ void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
 		} else {
 			mr.moveBottomRight(ir.topRight());
 		}
+	}
+	// and now align to available desktop geometry
+	if (mr.right() > dr.right()) {
+		mr.moveRight(dr.right());
+	}
+	if (mr.bottom() > dr.bottom()) {
+		mr.moveBottom(dr.bottom());
+	}
+	if (mr.left() < dr.left()) {
+		mr.moveLeft(dr.left());
+	}
+	if (mr.top() < dr.top()) {
+		mr.moveTop(dr.top());
 	}
 	QAction *act = menu.exec(mr.topLeft());
 
