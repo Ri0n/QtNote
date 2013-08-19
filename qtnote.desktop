@@ -7,3 +7,4 @@ Exec=qtnote
 Terminal=false
 Type=Application
 Categories=Utility;TextEditor;
+X-KDE-StartupNotify=false
