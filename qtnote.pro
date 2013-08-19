@@ -78,7 +78,7 @@ unix {
     desktop.path = $$DATADIR/applications
 
     # Desktop pixmap
-    pixsizes = 16 22 32 48 64
+    pixsizes = 16 22 24 32 48 64
     for(size, pixsizes) {
 	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
 	extra = cp -f images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
