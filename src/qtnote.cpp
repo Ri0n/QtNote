@@ -330,6 +330,9 @@ void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	QRect dr = QApplication::desktop()->geometry();
 	QRect ir = tray->geometry();
 	QRect mr = menu.geometry();
+	if (ir.isEmpty()) { // O_O but with kde this happens...
+		ir = QRect(QCursor::pos() - QPoint(8,8), QSize(16,16));
+	}
 	mr.setSize(menu.sizeHint());
 	if (ir.left() < dr.width()/2) {
 		if (ir.top() < dr.height()/2) {
@@ -345,6 +348,7 @@ void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
 		}
 	}
 	QAction *act = menu.exec(mr.topLeft());
+
 	if (act && act != actNew) {
 		NoteListItem &note = notes[act->data().toInt()];
 		showNoteDialog(note.storageId, note.id);
