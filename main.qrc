@@ -10,6 +10,6 @@
         <file alias="manager">images/manager22.png</file>
         <file alias="print">images/print22.png</file>
         <file alias="find">images/find22.png</file>
-        <file alias="trayicon">images/qtnote22.png</file>
+        <file alias="trayicon">images/qtnote24.png</file>
     </qresource>
 </RCC>
