@@ -78,6 +78,9 @@ PRECOMPILED_HEADER = $$PWD/config.h
 
 INCLUDEPATH += $$PWD
 
+# required for shortcuts
+unix:!macx:LIBS += -L$$QMAKE_LIBDIR_X11 -lX11
+
 macx {
     LIBS = -framework ApplicationServices
 }
