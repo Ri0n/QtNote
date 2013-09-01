@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class QAction;
 class ShortcutsManager;
+class NoteWidget;
 
 class QtNote : public QObject
 {
@@ -34,7 +35,7 @@ class QtNote : public QObject
 public:
 	explicit QtNote(QObject *parent = 0);
 	inline bool isOperable() const { return inited_; }
-
+	NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 	void notifyError(const QString &);
@@ -56,10 +57,9 @@ private slots:
 	void showOptions();
 	void createNewNote();
 	void createNewNoteFromSelection();
-	void onSaveNote();
-	void onDeleteNote();
-	void appMessageReceived(const QByteArray &msg);
-	
+	void appMessageReceived(const QByteArray &msg);	
+	void note_trashRequested();
+	void note_saveRequested();
 };
 
 #endif // QTNOTE_H

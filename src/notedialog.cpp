@@ -21,83 +21,65 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QApplication>
 #include <QDesktopWidget>
-#include <QClipboard>
-#include <QTimer>
-#include <QTextFragment>
-#include <QPrinter>
 #include <QSettings>
-#include <QFileDialog>
-#include <QDesktopServices>
-#include <QKeyEvent>
+#include <QHBoxLayout>
+
 
 #include "utils.h"
 #include "typeaheadfind.h"
 #include "notedialog.h"
 #include "ui_notedialog.h"
 #include "note.h"
+#include "notewidget.h"
+#include "utils.h"
 
-NoteDialog::NoteDialog(const QString &storageId, const QString &noteId) :
+NoteDialog::NoteDialog(NoteWidget *noteWidget) :
 	QDialog(0),
+	_trashRequested(false),
 	m_ui(new Ui::NoteDialog),
-	storageId_(storageId),
-	noteId_(noteId),
-	trashRequested_(false)
+	noteWidget(noteWidget)
 {
-	Q_ASSERT(!NoteDialog::findDialog(storageId, noteId));
-	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId, noteId), this);
-
 	setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) |
 				   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
 	m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
-	m_ui->noteEdit->setFocus(Qt::OtherFocusReason);
-	m_ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+	setObjectName("noteDlg");
+	setWindowIcon(QIcon(":/icons/trayicon"));
 
-	QSize avail = QApplication::desktop()->size() - sizeHint();
-	int x = avail.width() / 4 + (qrand()/(float)RAND_MAX)*avail.width() / 2;
-	int y = avail.height() / 4 + (qrand()/(float)RAND_MAX)*avail.height() / 2;
-	move(x, y);
+	QHBoxLayout *l = new QHBoxLayout;
+	l->setMargin(2);
+	l->addWidget(noteWidget);
+	setLayout(l);
 
-	titleCharFormat_.setFontPointSize(m_ui->noteEdit->font().pointSize() * 1.5);
-	titleCharFormat_.setForeground(QBrush(QColor(255,0,0)));
-	secondLineCharFormat_ = m_ui->noteEdit->currentCharFormat();
+	QRect rect;
+	if (!noteWidget->noteId().isEmpty()) {
+		rect = QSettings().value(QString("geometry.%1.%2")
+								 .arg(noteWidget->storageId(), noteWidget->noteId())).toRect();
 
-	QHBoxLayout *hb3a = new QHBoxLayout();
-	findBar = new TypeAheadFindBar(m_ui->noteEdit, QString::null, this);
-	hb3a->addWidget(findBar);
-	m_ui->dialogLayout->addLayout(hb3a);
-
-	autosaveTimer_.setInterval(10000);
-	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
-	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
-	connect(m_ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
-	connect(m_ui->trashBtn, SIGNAL(clicked()), SLOT(trashClicked()));
-	connect(m_ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
-	connect(m_ui->findBtn, SIGNAL(clicked()), findBar, SLOT(toggleVisibility()));
-
-	m_ui->noteEdit->setText(""); // to force update event
-	if (!noteId.isEmpty()) {
-		QRect rect = QSettings().value(QString("geometry.%1.%2")
-				  .arg(storageId_, noteId_)).toRect();
-		if (!rect.isEmpty()) {
-			setGeometry(rect);
-		}
+		Q_ASSERT(!NoteDialog::findDialog(noteWidget->storageId(), noteWidget->noteId()));
+		NoteDialog::dialogs.insert(QPair<QString,QString>(noteWidget->storageId(), noteWidget->noteId()), this);
 	}
+	if (rect.isEmpty()) {
+		QSize avail = QApplication::desktop()->size() - sizeHint();
+		int x = avail.width() / 4 + (qrand()/(float)RAND_MAX)*avail.width() / 2;
+		int y = avail.height() / 4 + (qrand()/(float)RAND_MAX)*avail.height() / 2;
+		move(x, y);
+	} else {
+		setGeometry(rect);
+	}
+
+	noteWidget->setFocus(Qt::OtherFocusReason);
+
+	connect(noteWidget, SIGNAL(trashRequested()), SLOT(trashRequested()));
+	connect(noteWidget, SIGNAL(noteIdChanged(QString,QString)), SLOT(noteIdChanged(QString,QString)));
+	connect(noteWidget, SIGNAL(firstLineChanged()), SLOT(firstLineChanged()));
+
+	firstLineChanged();
 }
 
 NoteDialog::~NoteDialog()
 {
-	autosaveTimer_.stop();
     delete m_ui;
-}
-
-void NoteDialog::keyPressEvent(QKeyEvent * event)
-{
-	if (event->key() == Qt::Key_Escape && findBar->isVisible()) {
-		findBar->hide();
-		return;
-	}
-	QDialog::keyPressEvent(event);
 }
 
 NoteDialog* NoteDialog::findDialog(const QString &storageId, const QString &noteId)
@@ -113,132 +95,47 @@ void NoteDialog::changeEvent(QEvent *e)
         break;
     default:
         break;
-    }
+	}
+}
+
+void NoteDialog::trashRequested()
+{
+	_trashRequested  = true;
+	close();
 }
 
 void NoteDialog::done(int r)
 {
-	//qDebug("saving: %d", r);
-	if (trashRequested_) {
-		emit trash();
-	} else {
-		changed_ = false;
-		emit save();
-		if (!noteId_.isEmpty()) {
-			QSettings s;
-			s.setValue(QString("geometry.%1.%2")
-				   .arg(storageId_, noteId_), geometry());
-		}
+	noteWidget->disconnect(this);
+	if (!_trashRequested) { // do it first to update noteWidget::noteId
+		emit noteWidget->save();
 	}
-	NoteDialog::dialogs.remove(QPair<QString,QString>(storageId_, noteId_));
+	if (!noteWidget->noteId().isEmpty()) {
+		QSettings s;
+		QString key = QString("geometry.%1.%2")
+				.arg(noteWidget->storageId(), noteWidget->noteId());
+		if (_trashRequested) {
+			s.remove(key);
+		} else {
+			s.setValue(key, geometry());
+		}
+		NoteDialog::dialogs.remove(QPair<QString,QString>(noteWidget->storageId(), noteWidget->noteId()));
+	}
 	QDialog::done(r);
 }
 
-void NoteDialog::autosave()
+void NoteDialog::firstLineChanged()
 {
-	if (!text().isEmpty() && changed_) {
-		changed_ = false;
-		emit save();
-	} else {
-		autosaveTimer_.stop(); // stop until next text change
+	QString l = noteWidget->firstLine().trimmed();
+	setWindowTitle(Utils::cuttedDots(l.isEmpty() ? tr("[No Title]") : l, 256));
+}
+
+void NoteDialog::noteIdChanged(const QString &oldId, const QString &newId)
+{
+	if (oldId.isEmpty() && !newId.isEmpty()) {
+		NoteDialog::dialogs.insert(QPair<QString,QString>(noteWidget->storageId(), newId), this);
 	}
 }
 
-void NoteDialog::trashClicked()
-{
-	trashRequested_ = true;
-	close();
-}
-
-void NoteDialog::copyClicked()
-{
-	QClipboard *clipboard = QApplication::clipboard();
-	clipboard->setText(text());
-}
-
-void NoteDialog::textChanged()
-{
-	changed_ = true;
-	if (!autosaveTimer_.isActive()) {
-		autosaveTimer_.start();
-	}
-	QTextDocument *doc = m_ui->noteEdit->document();
-	QTextBlock firstBlock = doc->begin();
-
-	QString firstLine = firstBlock.text();
-	if (firstLine != firstLine_ || firstLine.isEmpty()) {
-		firstLine_ = firstLine;
-		setWindowTitle(
-			Utils::cuttedDots(firstLine.isEmpty() ?
-							  tr("[No Title]") :
-							  text().section('\n', 0, 0).trimmed(), 256)
-		);
-	}
-}
-
-void NoteDialog::setText(QString text)
-{
-	m_ui->noteEdit->setPlainText(text);
-	changed_ = false; // mark as unchanged since its not user input.
-	autosaveTimer_.stop(); // timer not required atm
-}
-
-QString NoteDialog::text()
-{
-	return m_ui->noteEdit->toPlainText().trimmed();
-}
-
-void NoteDialog::setAcceptRichText(bool state)
-{
-	m_ui->noteEdit->setAcceptRichText(state);
-}
-
-void NoteDialog::setNoteId(const QString &noteId)
-{
-	NoteDialog::dialogs.remove(NoteDialog::dialogs.key(this));
-	noteId_ = noteId;
-	NoteDialog::dialogs.insert(QPair<QString,QString>(storageId_, noteId_), this);
-}
-
-
-void NoteDialog::on_printBtn_clicked()
-{
-	QPrinter printer;
-	if (!text().isEmpty()) {
-		m_ui->noteEdit->print(&printer);
-	}
-}
-
-void NoteDialog::on_saveBtn_clicked()
-{
-	if (extFileName_.isEmpty() || !QFile::exists(extFileName_)) {
-		extFileName_ = QFileDialog::getSaveFileName(this, tr("Save Note As"),
-#if QT_VERSION < 0x050000
-			QDesktopServices::storageLocation(QDesktopServices::DesktopLocation)
-#else
-			QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
-#endif
-													);
-	}
-	if (!extFileName_.isEmpty()) {
-		QFile f(extFileName_);
-		if (f.open(QIODevice::WriteOnly)) {
-			QFileInfo fi(extFileName_);
-			QString text;
-			if ((QStringList() << "html" << "htm" << "xhtml" << "xml")
-					.contains(fi.suffix().toLower())) {
-				text = m_ui->noteEdit->toHtml();
-			} else {
-				text = m_ui->noteEdit->toPlainText();
-			}
-			QByteArray data = text.toLocal8Bit();
-#ifdef Q_OS_WIN
-			data = data.replace("\n", 1, "\r\n", 2);
-#endif
-			f.write(data);
-			f.close();
-		}
-	}
-}
 
 QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;

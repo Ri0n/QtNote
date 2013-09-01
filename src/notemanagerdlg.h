@@ -25,7 +25,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDialog>
 #include <QModelIndex>
 
-class NoteManagerModel;
+class NotesModel;
+class QtNote;
 
 namespace Ui {
     class NoteManagerDlg;
@@ -36,7 +37,7 @@ class NoteManagerDlg : public QDialog
     Q_OBJECT
 
 public:
-	explicit NoteManagerDlg();
+	explicit NoteManagerDlg(QtNote *qtnote);
     ~NoteManagerDlg();
 
 signals:
@@ -48,9 +49,11 @@ protected:
 private slots:
 	void itemDoubleClicked(const QModelIndex &index);
 
+	void currentRowChanged(const QModelIndex &current, const QModelIndex &previous);
 private:
     Ui::NoteManagerDlg *ui;
-	NoteManagerModel *model;
+	NotesModel *model;
+	QtNote *qtnote;
 };
 
 #endif // NOTEMANAGERDLG_H

@@ -16,49 +16,51 @@
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
 SOURCES += $$PWD/main.cpp \
-    $$PWD/notedialog.cpp \
-    $$PWD/note.cpp \
-    $$PWD/notemanager.cpp \
-    $$PWD/notestorage.cpp \
-    $$PWD/ptfstorage.cpp \
-    $$PWD/ptfdata.cpp \
-    $$PWD/notedata.cpp \
-    $$PWD/filenotedata.cpp \
-    $$PWD/aboutdlg.cpp \
-    $$PWD/optionsdlg.cpp \
-    $$PWD/filestorage.cpp \
-    $$PWD/utils.cpp \
-    $$PWD/notemanagermodel.cpp \
-    $$PWD/notemanagerdlg.cpp \
-    $$PWD/notemanagerview.cpp \
-    $$PWD/notedialogedit.cpp \
-    $$PWD/ptfstoragesettingswidget.cpp \
-    $$PWD/qtnote.cpp \
-    $$PWD/typeaheadfind.cpp \
-    $$PWD/shortcutedit.cpp \
-    $$PWD/shortcutsmanager.cpp
+	$$PWD/notedialog.cpp \
+	$$PWD/note.cpp \
+	$$PWD/notemanager.cpp \
+	$$PWD/notestorage.cpp \
+	$$PWD/ptfstorage.cpp \
+	$$PWD/ptfdata.cpp \
+	$$PWD/notedata.cpp \
+	$$PWD/filenotedata.cpp \
+	$$PWD/aboutdlg.cpp \
+	$$PWD/optionsdlg.cpp \
+	$$PWD/filestorage.cpp \
+	$$PWD/utils.cpp \
+	$$PWD/notesmodel.cpp \
+	$$PWD/notemanagerdlg.cpp \
+	$$PWD/notemanagerview.cpp \
+	$$PWD/notedialogedit.cpp \
+	$$PWD/ptfstoragesettingswidget.cpp \
+	$$PWD/qtnote.cpp \
+	$$PWD/typeaheadfind.cpp \
+	$$PWD/shortcutedit.cpp \
+	$$PWD/shortcutsmanager.cpp \
+	$$PWD/notewidget.cpp
 
 HEADERS += $$PWD/notedialog.h \
-    $$PWD/note.h \
-    $$PWD/notemanager.h \
-    $$PWD/notestorage.h \
-    $$PWD/ptfstorage.h \
-    $$PWD/ptfdata.h \
-    $$PWD/notedata.h \
-    $$PWD/filenotedata.h \
-    $$PWD/aboutdlg.h \
-    $$PWD/optionsdlg.h \
-    $$PWD/filestorage.h \
-    $$PWD/utils.h \
-    $$PWD/notemanagermodel.h \
-    $$PWD/notemanagerdlg.h \
-    $$PWD/notemanagerview.h \
-    $$PWD/notedialogedit.h \
-    $$PWD/ptfstoragesettingswidget.h \
-    $$PWD/qtnote.h \
-    $$PWD/typeaheadfind.h \
-    $$PWD/shortcutedit.h \
-    $$PWD/shortcutsmanager.h
+	$$PWD/note.h \
+	$$PWD/notemanager.h \
+	$$PWD/notestorage.h \
+	$$PWD/ptfstorage.h \
+	$$PWD/ptfdata.h \
+	$$PWD/notedata.h \
+	$$PWD/filenotedata.h \
+	$$PWD/aboutdlg.h \
+	$$PWD/optionsdlg.h \
+	$$PWD/filestorage.h \
+	$$PWD/utils.h \
+	$$PWD/notesmodel.h \
+	$$PWD/notemanagerdlg.h \
+	$$PWD/notemanagerview.h \
+	$$PWD/notedialogedit.h \
+	$$PWD/ptfstoragesettingswidget.h \
+	$$PWD/qtnote.h \
+	$$PWD/typeaheadfind.h \
+	$$PWD/shortcutedit.h \
+	$$PWD/shortcutsmanager.h \
+	$$PWD/notewidget.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
@@ -72,7 +74,8 @@ FORMS += $$PWD/notedialog.ui \
     $$PWD/aboutdlg.ui \
     $$PWD/optionsdlg.ui \
 	$$PWD/notemanagerdlg.ui \
-	$$PWD/ptfstoragesettingswidget.ui
+	$$PWD/ptfstoragesettingswidget.ui \
+    src/notewidget.ui
 
 PRECOMPILED_HEADER = $$PWD/config.h
 

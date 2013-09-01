@@ -19,8 +19,8 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef NOTEMANAGERMODEL_H
-#define NOTEMANAGERMODEL_H
+#ifndef NOTESMODEL_H
+#define NOTESMODEL_H
 
 #include <QAbstractItemModel>
 
@@ -29,17 +29,23 @@ class NMMItem;
 struct StorageItem;
 struct NoteListItem;
 
-class NoteManagerModel : public QAbstractItemModel
+class NotesModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
 	enum DataRole {
-		StorageId = Qt::UserRole + 1,
-		NoteId
+		StorageIdRole = Qt::UserRole + 1,
+		NoteIdRole,
+		ItemTypeRole
 	};
 
-	explicit NoteManagerModel(QObject *parent = 0);
-	~NoteManagerModel();
+	enum ItemType {
+		ItemStorage,
+		ItemNote
+	};
+
+	explicit NotesModel(QObject *parent = 0);
+	~NotesModel();
 	void setStorageSignalHandlers(NoteStorage *s);
 
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
@@ -69,4 +75,4 @@ private:
 	QList<NMMItem*> storages;
 };
 
-#endif // NOTEMANAGERMODEL_H
+#endif // NOTESMODEL_H

@@ -21,14 +21,20 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
-#include "notemanagermodel.h"
+#include "notesmodel.h"
+#include "notewidget.h"
+#include "qtnote.h"
 
-NoteManagerDlg::NoteManagerDlg() :
+NoteManagerDlg::NoteManagerDlg(QtNote *qtnote) :
 	QDialog(0),
-    ui(new Ui::NoteManagerDlg)
+	ui(new Ui::NoteManagerDlg),
+	qtnote(qtnote)
 {
     ui->setupUi(this);
-	model = new NoteManagerModel(this);
+	setWindowIcon(QIcon(":/icons/manager"));
+	setAttribute(Qt::WA_DeleteOnClose);
+
+	model = new NotesModel(this);
 	ui->notesTree->setModel(model);
 	int sumCount = 0;
 	for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
@@ -36,6 +42,7 @@ NoteManagerDlg::NoteManagerDlg() :
 	}
 	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
+	connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
 }
 
 NoteManagerDlg::~NoteManagerDlg()
@@ -57,8 +64,25 @@ void NoteManagerDlg::changeEvent(QEvent *e)
 
 void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 {
-	QString noteId = model->data(index, NoteManagerModel::NoteId).toString();
+	QString noteId = model->data(index, NotesModel::NoteIdRole).toString();
 	if (!noteId.isEmpty()) {
-		emit showNoteRequested(model->data(index, NoteManagerModel::StorageId).toString(), noteId);
+		emit showNoteRequested(model->data(index, NotesModel::StorageIdRole).toString(), noteId);
 	}
+}
+
+void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelIndex &previous)
+{
+	Q_UNUSED(previous)
+	if (current.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
+		return;
+	}
+	NoteWidget *nw = qtnote->noteWidget(current.data(NotesModel::StorageIdRole).toString(),
+										current.data(NotesModel::NoteIdRole).toString());
+
+	if (ui->splitter->count() > 1) {
+		delete ui->splitter->widget(ui->splitter->count() - 1);
+	}
+	ui->splitter->addWidget(nw);
+	ui->splitter->setStretchFactor(0, 1);
+	ui->splitter->setStretchFactor(1, 3);
 }

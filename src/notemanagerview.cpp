@@ -23,7 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QContextMenuEvent>
 
 #include "notemanagerview.h"
-#include "notemanagermodel.h"
+#include "notesmodel.h"
 #include "notemanager.h"
 
 NoteManagerView::NoteManagerView(QWidget *parent) :
@@ -46,8 +46,8 @@ void NoteManagerView::removeSelected()
 {
 	QModelIndexList indexes = selectedIndexes();
 	foreach (QModelIndex index, indexes) {
-		NoteStorage *storage = NoteManager::instance()->storage(index.data(NoteManagerModel::StorageId).toString());
-		QString noteId = index.data(NoteManagerModel::NoteId).toString();
+		NoteStorage *storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
+		QString noteId = index.data(NotesModel::NoteIdRole).toString();
 		if (storage && !noteId.isEmpty()) {
 			storage->deleteNote(noteId);
 		}
