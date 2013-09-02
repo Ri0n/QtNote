@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 class QAction;
 class ShortcutsManager;
 class NoteWidget;
+class TrayIconInterface;
 
 class QtNote : public QObject
 {
@@ -47,6 +48,8 @@ private:
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	ShortcutsManager* _shortcutsManager;
+
+	TrayIconInterface *pluginTrayIcon;
 
 	void parseAppArguments(const QStringList &args);
 private slots:

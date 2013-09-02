@@ -14,6 +14,7 @@
 #include <QMenu>
 #include <QDataStream>
 #include <QDir>
+#include <QPluginLoader>
 #ifdef Q_OS_MAC
 # include <ApplicationServices/ApplicationServices.h>
 #endif
@@ -39,6 +40,7 @@
 #endif
 #include "ptfstorage.h"
 #include "shortcutsmanager.h"
+#include "../plugins/trayiconinterface.h"
 
 #if QT_VERSION < 0x040800
 static QLocale systemUILocale()
@@ -77,7 +79,8 @@ static QLocale systemUILocale()
 #endif
 
 QtNote::QtNote(QObject *parent) :
-    QObject(parent)
+	QObject(parent),
+	pluginTrayIcon(0)
 {
 	// loading localization
 	QString langFile = APPNAME;
@@ -123,6 +126,35 @@ QtNote::QtNote(QObject *parent) :
 		qApp->installTranslator(qtTranslator);
 	}
 #endif
+
+	QDir pluginsDir = QDir(qApp->applicationDirPath());
+#if defined(Q_OS_WIN)
+	if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
+		pluginsDir.cdUp();
+#elif defined(Q_OS_MAC)
+	if (pluginsDir.dirName() == "MacOS") {
+		pluginsDir.cdUp();
+		pluginsDir.cdUp();
+		pluginsDir.cdUp();
+	}
+#endif
+	if (pluginsDir.dirName() == "src") {
+		pluginsDir.cdUp();
+	}
+	pluginsDir.cd("plugins");
+	foreach (QString dirName, pluginsDir.entryList(QDir::Dirs)) {
+		QDir pluginDir = pluginsDir;
+		pluginDir.cd(dirName);
+		foreach (QString fileName, pluginDir.entryList(QDir::Files)) {
+			 QPluginLoader loader(pluginDir.absoluteFilePath(fileName));
+			 QObject *plugin = loader.instance();
+			 if (plugin) {
+				 if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
+					 continue;
+				 }
+			 }
+		 }
+	}
 
 
 	// itialzation of notes storages
@@ -307,6 +339,9 @@ void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->show();
 	dlg->activateWindow();
 	dlg->raise();
+	if (pluginTrayIcon) {
+		pluginTrayIcon->activateNote(dlg);
+	}
 }
 
 void QtNote::notifyError(const QString &text)

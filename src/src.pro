@@ -15,6 +15,83 @@
 # Contacts:
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
+
+include(../common.pri)
+
+TARGET = qtnote
+TEMPLATE = app
+CONFIG += tomboy # force tomboy
+RESOURCES += ../main.qrc
+
+QT += xml
+greaterThan(QT_MAJOR_VERSION, 4) {
+    QT *= printsupport
+    QT *= widgets
+    greaterThan(QT_MAJOR_VERSION, 5)|greaterThan(QT_MINOR_VERSION, 0) {
+	unix:!mac:QT += x11extras
+    }
+}
+
+
+TRANSLATIONS += \
+    langs/qtnote_en.ts \
+    langs/qtnote_fr.ts \
+    langs/qtnote_ru.ts \
+    langs/qtnote_vi.ts
+
+unix {
+    isEmpty(PREFIX) {
+	    PREFIX = /usr
+    }
+    isEmpty(DATADIR):DATADIR = $$PREFIX/share
+    isEmpty(MANDIR):MANDIR = $$DATADIR/man/man1
+
+    target.path = $$PREFIX/bin
+    INSTALLS += target
+
+    # translations
+    TRANSLATIONSDIR = $$DATADIR/$$TARGET
+    DEFINES += TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\" \
+	    DATADIR=\\\"$$DATADIR\\\"
+
+    LANGS = en fr ru vi
+    for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
+    translations.path = $$TRANSLATIONSDIR
+    DISTFILES += $$translations
+
+    # Desktop file
+    desktop.files = $${TARGET}.desktop
+    desktop.path = $$DATADIR/applications
+
+    # Desktop pixmap
+    pixsizes = 16 22 24 32 48 64
+    for(size, pixsizes) {
+	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
+	extra = cp -f images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+	eval(pix$${size}.path = $$path)
+	eval(pix$${size}.extra = $$extra)
+	eval(pixmaps += pix$${size})
+    }
+
+    pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
+    pixmap_svg.files = images/$${TARGET}.svg
+
+    # Man page
+    man.files = docs/qtnote.1
+    man.path = $$MANDIR
+
+    INSTALLS += translations desktop $$pixmaps pixmap_svg man
+}
+
+DEFINES += APPNAME=\\\"$$TARGET\\\"
+RC_FILE = win/$${TARGET}.rc
+
+MOC_DIR = .moc
+OBJECTS_DIR = .obj
+RCC_DIR = .rcc
+UI_DIR = .ui
+
+
 SOURCES += $$PWD/main.cpp \
 	$$PWD/notedialog.cpp \
 	$$PWD/note.cpp \
@@ -71,11 +148,11 @@ tomboy {
 }
 
 FORMS += $$PWD/notedialog.ui \
-    $$PWD/aboutdlg.ui \
-    $$PWD/optionsdlg.ui \
+	$$PWD/aboutdlg.ui \
+	$$PWD/optionsdlg.ui \
 	$$PWD/notemanagerdlg.ui \
 	$$PWD/ptfstoragesettingswidget.ui \
-    src/notewidget.ui
+	$$PWD/notewidget.ui
 
 PRECOMPILED_HEADER = $$PWD/config.h
 
