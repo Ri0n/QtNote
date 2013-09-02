@@ -44,6 +44,7 @@ private slots:
 	void on_printBtn_clicked();
 	void on_saveBtn_clicked();
 	void on_trashBtn_clicked();
+	void invalidated(); // emited when we are unsure we have the latest data
 
 private:
 	Ui::NoteWidget *ui;

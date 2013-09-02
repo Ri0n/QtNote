@@ -34,9 +34,11 @@ public:
 
 protected:
 	void dropEvent(QDropEvent *e);
+	void focusReceived(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
 signals:
 	void focusLost();
+	void focusReceived();
 	
 public slots:
 	

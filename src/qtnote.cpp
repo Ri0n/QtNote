@@ -314,6 +314,7 @@ NoteWidget* QtNote::noteWidget(const QString &storageId, const QString &noteId)
 
 	connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
 	connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
+	connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));
 	return w;
 }
 
@@ -518,5 +519,14 @@ void QtNote::note_saveRequested()
 		{
 			storage->saveNote(noteId, text);
 		}
+	}
+}
+
+void QtNote::note_invalidated()
+{
+	NoteWidget *nw = static_cast<NoteWidget *>(sender());
+	Note note = NoteManager::instance()->getNote(storageId, noteId);
+	if (!note.isNull() && nw->lastChangeTime() < note.lastChange()) {
+		// todo update text
 	}
 }

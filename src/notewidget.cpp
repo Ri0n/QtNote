@@ -38,6 +38,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui->noteEdit->setText(""); // to force update event
 
 	connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
+	connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()));
 
 }
 
