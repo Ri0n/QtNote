@@ -37,6 +37,8 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	ui->noteEdit->setText(""); // to force update event
 
+	connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
+
 }
 
 NoteWidget::~NoteWidget()
@@ -64,6 +66,11 @@ void NoteWidget::keyPressEvent(QKeyEvent * event)
 		return;
 	}
 	QWidget::keyPressEvent(event);
+}
+
+void NoteWidget::save()
+{
+	 if (changed_) { changed_ = false; emit saveRequested(); }
 }
 
 void NoteWidget::autosave()

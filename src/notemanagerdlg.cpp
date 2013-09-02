@@ -72,6 +72,7 @@ void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 
 void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelIndex &previous)
 {
+	// TODO save previous?
 	Q_UNUSED(previous)
 	if (current.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
 		return;
@@ -81,8 +82,10 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
 
 	if (ui->splitter->count() > 1) {
 		delete ui->splitter->widget(ui->splitter->count() - 1);
+	} else {
+		resize(700, 400);
 	}
 	ui->splitter->addWidget(nw);
-	ui->splitter->setStretchFactor(0, 1);
-	ui->splitter->setStretchFactor(1, 3);
+	ui->splitter->setStretchFactor(0, 0);
+	ui->splitter->setStretchFactor(1, 1);
 }

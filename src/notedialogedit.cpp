@@ -56,3 +56,9 @@ void NoteDialogEdit::dropEvent(QDropEvent *e)
 		e->accept();
 	}
 }
+
+void NoteDialogEdit::focusOutEvent(QFocusEvent * event)
+{
+	Q_UNUSED(event)
+	emit focusLost();
+}

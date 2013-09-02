@@ -24,7 +24,6 @@ public:
 	inline QString storageId() const { return storageId_; }
 	inline QString noteId() const { return noteId_; }
 	void setNoteId(const QString &noteId);
-	inline void save() { if (changed_) emit saveRequested(); }
 	inline const QString &firstLine() const { return firstLine_; }
 
 signals:
@@ -35,8 +34,9 @@ signals:
 
 protected:
 	void changeEvent(QEvent *e);
-	void keyPressEvent(QKeyEvent *event);
-
+	void keyPressEvent(QKeyEvent *event);	
+public slots:
+	void save();
 private slots:
 	void autosave();
 	void copyClicked();
