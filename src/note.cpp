@@ -58,3 +58,8 @@ NoteData* Note::data() const
 {
 	return d.data();
 }
+
+qint64 Note::lastChangeElapsed() const
+{
+	return d->lastChangeElapsed();
+}

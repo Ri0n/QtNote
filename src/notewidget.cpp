@@ -14,9 +14,9 @@
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),
-	storageId_(storageId),
+	_storageId(storageId),
 	noteId_(noteId),
-	trashRequested_(false)
+	_trashRequested(false)
 {
 	ui->setupUi(this);
 
@@ -28,9 +28,9 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	hb3a->addWidget(findBar);
 	ui->noteLayout->addLayout(hb3a);
 
-	autosaveTimer_.setInterval(10000);
+	_autosaveTimer.setInterval(10000);
 	_lastChangeElapsed.start();
-	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
+	connect(&_autosaveTimer, SIGNAL(timeout()), SLOT(autosave()));
 	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 	connect(ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
@@ -39,13 +39,13 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui->noteEdit->setText(""); // to force update event
 
 	connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
-	connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()));
+	connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()), Qt::QueuedConnection);
 
 }
 
 NoteWidget::~NoteWidget()
 {
-	autosaveTimer_.stop();
+	_autosaveTimer.stop();
 	delete ui;
 }
 
@@ -72,15 +72,15 @@ void NoteWidget::keyPressEvent(QKeyEvent * event)
 
 void NoteWidget::save()
 {
-	 if (changed_) { changed_ = false; emit saveRequested(); _lastChangeElapsed.restart(); }
+	 if (_changed) { _changed = false; emit saveRequested(); _lastChangeElapsed.restart(); }
 }
 
 void NoteWidget::autosave()
 {
-	if (!text().isEmpty() && changed_) {
+	if (!text().isEmpty() && _changed) {
 		save();
 	} else {
-		autosaveTimer_.stop(); // stop until next text change
+		_autosaveTimer.stop(); // stop until next text change
 	}
 }
 
@@ -92,17 +92,17 @@ void NoteWidget::copyClicked()
 
 void NoteWidget::textChanged()
 {
-	changed_ = true;
-	if (!autosaveTimer_.isActive()) {
-		autosaveTimer_.start();
+	_changed = true;
+	if (!_autosaveTimer.isActive()) {
+		_autosaveTimer.start();
 		_lastChangeElapsed.restart();
 	}
 	QTextDocument *doc = ui->noteEdit->document();
 	QTextBlock firstBlock = doc->begin();
 
 	QString firstLine = firstBlock.text();
-	if (firstLine != firstLine_ || firstLine.isEmpty()) {
-		firstLine_ = firstLine;
+	if (firstLine != _firstLine || firstLine.isEmpty()) {
+		_firstLine = firstLine;
 		emit firstLineChanged();
 	}
 }
@@ -110,8 +110,8 @@ void NoteWidget::textChanged()
 void NoteWidget::setText(QString text)
 {
 	ui->noteEdit->setPlainText(text);
-	changed_ = false; // mark as unchanged since its not user input.
-	autosaveTimer_.stop(); // timer not required atm
+	_changed = false; // mark as unchanged since its not user input.
+	_autosaveTimer.stop(); // timer not required atm
 	_lastChangeElapsed.restart();
 }
 

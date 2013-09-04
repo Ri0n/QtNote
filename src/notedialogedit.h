@@ -36,6 +36,7 @@ protected:
 	void dropEvent(QDropEvent *e);
 	void focusReceived(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
+	void focusInEvent(QFocusEvent *);
 signals:
 	void focusLost();
 	void focusReceived();

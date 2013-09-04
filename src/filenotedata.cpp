@@ -48,6 +48,11 @@ QDateTime FileNoteData::modifyTime() const
 	return dtLastChange;
 }
 
+qint64 FileNoteData::lastChangeElapsed() const
+{
+	return dtLastChange.msecsTo(QDateTime::currentDateTime());
+}
+
 
 void FileNoteData::toTrash()
 {

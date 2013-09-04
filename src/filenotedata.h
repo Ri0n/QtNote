@@ -32,6 +32,7 @@ public:
 	QString uid() const;
 	void setFile(QString fn);
 	QDateTime modifyTime() const;
+	qint64 lastChangeElapsed() const;
 	void toTrash();
 
 protected:

@@ -63,6 +63,7 @@ private slots:
 	void appMessageReceived(const QByteArray &msg);	
 	void note_trashRequested();
 	void note_saveRequested();
+	void note_invalidated();
 };
 
 #endif // QTNOTE_H

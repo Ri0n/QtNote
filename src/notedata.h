@@ -36,6 +36,7 @@ public:
 	virtual QString text() const;
 	virtual QString title() const;
 	virtual void setText(const QString &text);
+	virtual qint64 lastChangeElapsed() const = 0;
 
 protected:
 	QString sTitle;

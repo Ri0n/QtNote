@@ -525,8 +525,12 @@ void QtNote::note_saveRequested()
 void QtNote::note_invalidated()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
-	Note note = NoteManager::instance()->getNote(storageId, noteId);
-	if (!note.isNull() && nw->lastChangeElapsed() < note.lastChangeElapsed()) {
-		// todo update text
+	Note note = NoteManager::instance()->getNote(nw->storageId(), nw->noteId());
+	if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
+		if (note.text().startsWith(note.title())) {
+			nw->setText(note.text());
+		} else {
+			nw->setText(note.title() + "\n" + note.text());
+		}
 	}
 }

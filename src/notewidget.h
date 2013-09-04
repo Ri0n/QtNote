@@ -22,17 +22,18 @@ public:
 	void setText(QString text);
 	QString text();
 	void setAcceptRichText(bool state);
-	inline QString storageId() const { return storageId_; }
+	inline QString storageId() const { return _storageId; }
 	inline QString noteId() const { return noteId_; }
 	void setNoteId(const QString &noteId);
-	inline const QString &firstLine() const { return firstLine_; }
-	inline quint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
+	inline const QString &firstLine() const { return _firstLine; }
+	inline qint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
 
 signals:
 	void firstLineChanged();
 	void trashRequested();
 	void saveRequested();
 	void noteIdChanged(const QString &oldId, const QString &newId);
+	void invalidated(); // emited when we are unsure we have the latest data
 
 protected:
 	void changeEvent(QEvent *e);
@@ -46,20 +47,19 @@ private slots:
 	void on_printBtn_clicked();
 	void on_saveBtn_clicked();
 	void on_trashBtn_clicked();
-	void invalidated(); // emited when we are unsure we have the latest data
 
 private:
 	Ui::NoteWidget *ui;
 
 	TypeAheadFindBar *findBar;
-	QString storageId_;
+	QString _storageId;
 	QString noteId_;
-	QString firstLine_;
+	QString _firstLine;
 	QString extFileName_;
-	QTimer autosaveTimer_;
+	QTimer _autosaveTimer;
 	QElapsedTimer _lastChangeElapsed;
-	bool trashRequested_;
-	bool changed_;
+	bool _trashRequested;
+	bool _changed;
 };
 
 #endif // NOTEWIDGET_H

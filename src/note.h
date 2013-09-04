@@ -39,6 +39,7 @@ public:
 	QString text() const;
 	QString title() const;
 	NoteData* data() const;
+	qint64 lastChangeElapsed() const;
 
 private:
 	QSharedPointer<NoteData> d;
