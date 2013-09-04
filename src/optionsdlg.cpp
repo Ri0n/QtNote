@@ -95,6 +95,18 @@ public:
 	}
 };
 
+class MouseDisabler : public QObject
+{
+public:
+	MouseDisabler(QObject  *parent) : QObject(parent) {}
+	bool eventFilter(QObject *obj, QEvent *event)
+	 {
+		 if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
+			 return true;
+		 }
+		 return QObject::eventFilter(obj, event);
+	 }
+};
 
 OptionsDlg::OptionsDlg(QtNote *qtnote) :
 	QDialog(0),
@@ -102,6 +114,11 @@ OptionsDlg::OptionsDlg(QtNote *qtnote) :
 	qtnote(qtnote)
 {
 	ui->setupUi(this);
+	MouseDisabler *md = new MouseDisabler(this);
+	ui->ckLegendAuto->installEventFilter(md);
+	ui->ckLegendEnabled->installEventFilter(md);
+	ui->ckLegendDisabled->installEventFilter(md);
+	ui->ckLegendAuto->setCheckState(Qt::PartiallyChecked);
 #ifdef Q_OS_LINUX
 	QFile desktop(QDir::homePath() + "/.config/autostart/" APPNAME ".desktop");
 	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll())

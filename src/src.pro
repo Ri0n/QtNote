@@ -67,7 +67,8 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/typeaheadfind.cpp \
 	$$PWD/shortcutedit.cpp \
 	$$PWD/shortcutsmanager.cpp \
-	$$PWD/notewidget.cpp
+	$$PWD/notewidget.cpp \
+    pluginmanager.cpp
 
 HEADERS += $$PWD/notedialog.h \
 	$$PWD/note.h \
@@ -90,7 +91,8 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/typeaheadfind.h \
 	$$PWD/shortcutedit.h \
 	$$PWD/shortcutsmanager.h \
-	$$PWD/notewidget.h
+	$$PWD/notewidget.h \
+    pluginmanager.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
