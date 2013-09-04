@@ -127,6 +127,7 @@ QtNote::QtNote(QObject *parent) :
 	}
 #endif
 
+#ifdef DEVEL
 	QDir pluginsDir = QDir(qApp->applicationDirPath());
 #if defined(Q_OS_WIN)
 	if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
@@ -142,10 +143,10 @@ QtNote::QtNote(QObject *parent) :
 		pluginsDir.cdUp();
 	}
 	pluginsDir.cd("plugins");
-	foreach (QString dirName, pluginsDir.entryList(QDir::Dirs)) {
+	foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs)) {
 		QDir pluginDir = pluginsDir;
 		pluginDir.cd(dirName);
-		foreach (QString fileName, pluginDir.entryList(QDir::Files)) {
+		foreach (const QString &fileName, pluginDir.entryList(QDir::Files)) {
 			 QPluginLoader loader(pluginDir.absoluteFilePath(fileName));
 			 QObject *plugin = loader.instance();
 			 if (plugin) {
@@ -155,6 +156,29 @@ QtNote::QtNote(QObject *parent) :
 			 }
 		 }
 	}
+#else
+	QStringList pluginsDirs;
+#if defined(Q_OS_UNIX) && ! defined(Q_OS_MAC)
+	pluginsDirs << LIBDIR "/" APPNAME;
+#elif defined(Q_OS_WIN)
+	pluginsDirs << qApp->applicationDirPath() + "/plugins";
+#endif
+	foreach (const QString &dirName, pluginsDirs) {
+		QDir pluginsDir(dirName);
+		if (!pluginsDir.isReadable()) {
+			continue;
+		}
+		foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
+			 QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
+			 QObject *plugin = loader.instance();
+			 if (plugin) {
+				 if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
+					 continue;
+				 }
+			 }
+		 }
+	}
+#endif
 
 
 	// itialzation of notes storages

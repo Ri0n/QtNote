@@ -18,3 +18,41 @@
 
 TEMPLATE = subdirs
 SUBDIRS += src plugins
+
+TRANSLATIONS += \
+	langs/qtnote_en.ts \
+	langs/qtnote_fr.ts \
+	langs/qtnote_ru.ts \
+	langs/qtnote_vi.ts
+
+include(common.pri)
+
+unix {
+	LANGS = en fr ru vi
+	for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
+	translations.path = $$TRANSLATIONSDIR
+	DISTFILES += $$translations
+
+	# Desktop file
+	desktop.files = $${TARGET}.desktop
+	desktop.path = $$DATADIR/applications
+
+	# Desktop pixmap
+	pixsizes = 16 22 24 32 48 64
+	for(size, pixsizes) {
+	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
+	extra = cp -f images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+	eval(pix$${size}.path = $$path)
+	eval(pix$${size}.extra = $$extra)
+	eval(pixmaps += pix$${size})
+	}
+
+	pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
+	pixmap_svg.files = images/$${TARGET}.svg
+
+	# Man page
+	man.files = docs/qtnote.1
+	man.path = $$MANDIR
+
+	INSTALLS += translations desktop $$pixmaps pixmap_svg man
+}

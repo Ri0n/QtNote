@@ -13,3 +13,10 @@ Some features:
 * Create notes from selection by hotkey (X11 only)
 * Crossplatform (tested on linux and windows with gcc and Visual C)
 * Other: configurable amount of notes in menu. configurable storage path, print note, save note dialog geometry
+
+Development:
+You can try to start qmake in development mode.
+
+  qmake CONFIG+=devel
+
+this mode forces plugins loader to use application directory to load plugins.

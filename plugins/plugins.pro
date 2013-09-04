@@ -2,4 +2,4 @@ include(../common.pri)
 
 TEMPLATE = subdirs
 
-SUBDIRS += kdeintegration
+exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration

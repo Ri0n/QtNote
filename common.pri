@@ -1,7 +1,11 @@
 ### Version handling ###
 
-QT += core
+QT *= core
 
+APPNAME = qtnote
+DEFINES += APPNAME=\\\"$$APPNAME\\\"
+
+### Start of version handling ###
 isEmpty(VERSION) {
 	VERSION = $$cat($$PWD/version)
 }
@@ -17,3 +21,21 @@ for(i, VERPOS) {
 DEFINES += QTNOTE_VERSION=$$VERSION
 DEFINES += QTNOTE_VERSION_W=$$join(VERSIONS_FULL, ",")
 ### End of version handling ###
+
+unix {
+	isEmpty(PREFIX) {
+		PREFIX = /usr
+	}
+	isEmpty(DATADIR):DATADIR = $$PREFIX/share
+	isEmpty(LIBDIR):LIBDIR = $$PREFIX/lib
+	isEmpty(MANDIR):MANDIR = $$DATADIR/man/man1
+	isEmpty(TRANSLATIONSDIR):TRANSLATIONSDIR = $$DATADIR/$$APPNAME
+
+	DEFINES += LIBDIR=\\\"$$LIBDIR\\\" \
+		DATADIR=\\\"$$DATADIR\\\" \
+		TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\"
+}
+
+devel {
+	DEFINES += DEVEL
+}
