@@ -29,6 +29,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui->noteLayout->addLayout(hb3a);
 
 	autosaveTimer_.setInterval(10000);
+	_lastChangeElapsed.start();
 	connect(&autosaveTimer_, SIGNAL(timeout()), SLOT(autosave()));
 	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
@@ -71,14 +72,13 @@ void NoteWidget::keyPressEvent(QKeyEvent * event)
 
 void NoteWidget::save()
 {
-	 if (changed_) { changed_ = false; emit saveRequested(); }
+	 if (changed_) { changed_ = false; emit saveRequested(); _lastChangeElapsed.restart(); }
 }
 
 void NoteWidget::autosave()
 {
 	if (!text().isEmpty() && changed_) {
-		changed_ = false;
-		emit saveRequested();
+		save();
 	} else {
 		autosaveTimer_.stop(); // stop until next text change
 	}
@@ -95,6 +95,7 @@ void NoteWidget::textChanged()
 	changed_ = true;
 	if (!autosaveTimer_.isActive()) {
 		autosaveTimer_.start();
+		_lastChangeElapsed.restart();
 	}
 	QTextDocument *doc = ui->noteEdit->document();
 	QTextBlock firstBlock = doc->begin();
@@ -111,6 +112,7 @@ void NoteWidget::setText(QString text)
 	ui->noteEdit->setPlainText(text);
 	changed_ = false; // mark as unchanged since its not user input.
 	autosaveTimer_.stop(); // timer not required atm
+	_lastChangeElapsed.restart();
 }
 
 QString NoteWidget::text()

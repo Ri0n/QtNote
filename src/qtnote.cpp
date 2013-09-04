@@ -526,7 +526,7 @@ void QtNote::note_invalidated()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
 	Note note = NoteManager::instance()->getNote(storageId, noteId);
-	if (!note.isNull() && nw->lastChangeTime() < note.lastChange()) {
+	if (!note.isNull() && nw->lastChangeElapsed() < note.lastChangeElapsed()) {
 		// todo update text
 	}
 }

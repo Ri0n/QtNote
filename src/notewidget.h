@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QTimer>
+#include <QElapsedTimer>
 
 namespace Ui {
 class NoteWidget;
@@ -25,6 +26,7 @@ public:
 	inline QString noteId() const { return noteId_; }
 	void setNoteId(const QString &noteId);
 	inline const QString &firstLine() const { return firstLine_; }
+	inline quint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
 
 signals:
 	void firstLineChanged();
@@ -55,6 +57,7 @@ private:
 	QString firstLine_;
 	QString extFileName_;
 	QTimer autosaveTimer_;
+	QElapsedTimer _lastChangeElapsed;
 	bool trashRequested_;
 	bool changed_;
 };
