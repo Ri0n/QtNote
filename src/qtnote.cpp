@@ -127,60 +127,6 @@ QtNote::QtNote(QObject *parent) :
 	}
 #endif
 
-#ifdef DEVEL
-	QDir pluginsDir = QDir(qApp->applicationDirPath());
-#if defined(Q_OS_WIN)
-	if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
-		pluginsDir.cdUp();
-#elif defined(Q_OS_MAC)
-	if (pluginsDir.dirName() == "MacOS") {
-		pluginsDir.cdUp();
-		pluginsDir.cdUp();
-		pluginsDir.cdUp();
-	}
-#endif
-	if (pluginsDir.dirName() == "src") {
-		pluginsDir.cdUp();
-	}
-	pluginsDir.cd("plugins");
-	foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs)) {
-		QDir pluginDir = pluginsDir;
-		pluginDir.cd(dirName);
-		foreach (const QString &fileName, pluginDir.entryList(QDir::Files)) {
-			 QPluginLoader loader(pluginDir.absoluteFilePath(fileName));
-			 QObject *plugin = loader.instance();
-			 if (plugin) {
-				 if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
-					 continue;
-				 }
-			 }
-		 }
-	}
-#else
-	QStringList pluginsDirs;
-#if defined(Q_OS_UNIX) && ! defined(Q_OS_MAC)
-	pluginsDirs << LIBDIR "/" APPNAME;
-#elif defined(Q_OS_WIN)
-	pluginsDirs << qApp->applicationDirPath() + "/plugins";
-#endif
-	foreach (const QString &dirName, pluginsDirs) {
-		QDir pluginsDir(dirName);
-		if (!pluginsDir.isReadable()) {
-			continue;
-		}
-		foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
-			 QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
-			 QObject *plugin = loader.instance();
-			 if (plugin) {
-				 if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
-					 continue;
-				 }
-			 }
-		 }
-	}
-#endif
-
-
 	// itialzation of notes storages
 	QList<NoteStorage*> storages;
 	QStringList priorities = QSettings().value("storage.priority")
