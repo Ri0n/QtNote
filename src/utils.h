@@ -30,6 +30,8 @@ public:
     Utils();
 
 	static QString cuttedDots(const QString &, int);
+
+	static const QString &localDataDir();
 };
 
 #endif // UTILS_H

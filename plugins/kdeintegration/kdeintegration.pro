@@ -9,5 +9,5 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 SOURCES = \
 	trayicon.cpp
 
-HEADERS += ../trayiconinterface.h \
+HEADERS += \
 	trayicon.h

@@ -4,6 +4,7 @@
 #include <QPluginLoader>
 
 #include "pluginmanager.h"
+#include "utils.h"
 
 class PluginsIterator
 {
@@ -68,13 +69,14 @@ public:
 		if (pluginsIt != plugins.constEnd()) {
 			return currentDir.absoluteFilePath(*pluginsIt);
 		}
+		return QString();
 	}
 
 private:
 	void findDirWithPlugins()
 	{
 		while (pluginsDirsIt != pluginsDirs.constEnd()) {
-			currentDir = QDir(dirName);
+			currentDir = QDir(*pluginsDirsIt);
 			if (currentDir.isReadable()) {
 				plugins = currentDir.entryList(QDir::Files);
 				if (!plugins.isEmpty()) {
@@ -93,6 +95,9 @@ PluginManager::PluginManager(QObject *parent) :
 {
 	QSettings s;
 	PluginsIterator it;
+
+	QDir iconsDir = Utils::localDataDir();
+
 	while (!it.isFinished()) {
 		QFileInfo fi(it.fileName());
 		if (!fi.isFile() || !fi.isReadable()) {
@@ -105,12 +110,15 @@ PluginManager::PluginManager(QObject *parent) :
 			QPluginLoader loader(it.fileName());
 			QObject *plugin = loader.instance();
 			if (plugin) {
-				QtNotePlugin *qnp = qobject_cast<TrayIconInterface*>(plugin);
+				QtNotePluginInterface *qnp = qobject_cast<QtNotePluginInterface *>(plugin);
 				if (!qnp) {
 					qDebug("foreign Qt plugin %s. ignore it", qPrintable(baseName));
 					continue;
 				}
-				s.setValue("plugins."+baseName, qnp->metadata());
+				s.beginGroup("plugins");
+				s.beginGroup(baseName);
+				PluginMetadata md = qnp->metadata();
+				s.setValue("name", md.name);
 				/*if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
 					continue;
 				}*/
