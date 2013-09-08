@@ -6,12 +6,13 @@
 
 struct PluginMetadata
 {
-	QString fileName;
+	QIcon icon;
 	QString name;
 	QString description;
-	QString version;
 	QString author;
-	QIcon icon;
+	quint32 version;	// plugin's version 0xXXYYZZPP
+	quint32 minVersion; // minimum compatible version of QtNote
+	quint32 maxVersion; // maximum compatible version of QtNote
 	QVariantHash extra;
 };
 

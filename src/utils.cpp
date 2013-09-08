@@ -52,7 +52,7 @@ const QString &Utils::localDataDir()
 		SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
 		if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
 			dataDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
-					QLatin1Char('/') + s.applicationName();
+					QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
 		} else {
 #endif
 #if QT_VERSION >= 0x050000
@@ -64,7 +64,7 @@ const QString &Utils::localDataDir()
 		if (dataDir.isEmpty()) {
 			dataDir = QDir::homePath() + "/.local/share";
 		}
-		dataDir += QLatin1Char('/') + s.applicationName();
+		dataDir += QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
 # else
 		dataDir = QDir(QDesktopServices::storageLocation(
 			QDesktopServices::DataLocation)).absoluteFilePath(systemName());

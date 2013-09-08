@@ -109,8 +109,6 @@ FORMS += $$PWD/notedialog.ui \
 	$$PWD/ptfstoragesettingswidget.ui \
 	$$PWD/notewidget.ui
 
-PRECOMPILED_HEADER = $$PWD/config.h
-
 INCLUDEPATH += $$PWD
 
 # required for shortcuts

@@ -18,8 +18,13 @@ for(i, VERPOS) {
 	isEmpty(verval):VERSIONS_FULL += "0"
 	!isEmpty(verval):VERSIONS_FULL += $${verval}
 }
-DEFINES += QTNOTE_VERSION=$$VERSION
+
+DEFINES += QTNOTE_VERSION_S=$$VERSION
 DEFINES += QTNOTE_VERSION_W=$$join(VERSIONS_FULL, ",")
+DEFINES += QTNOTE_VERSION_PRODUCT=$$member(VERSIONS_FULL, 0)
+DEFINES += QTNOTE_VERSION_MAJOR=$$member(VERSIONS_FULL, 1)
+DEFINES += QTNOTE_VERSION_MINOR=$$member(VERSIONS_FULL, 2)
+DEFINES += QTNOTE_VERSION_PATCH=$$member(VERSIONS_FULL, 3)
 ### End of version handling ###
 
 unix {
@@ -39,3 +44,6 @@ unix {
 devel {
 	DEFINES += DEVEL
 }
+
+CONFIG += precompile_header
+PRECOMPILED_HEADER = $$PWD/config.h
