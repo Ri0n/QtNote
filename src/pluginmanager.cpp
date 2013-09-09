@@ -94,86 +94,131 @@ PluginManager::PluginManager(QObject *parent) :
     QObject(parent)
 {
 	QSettings s;
-	PluginsIterator it;
 
 	s.beginGroup("plugins");
 	foreach (const QString &pluginName, s.childGroups()) {
 		s.beginGroup(pluginName);
-		QFileInfo fi(s.value(QLatin1String("filename")).toString());
-		if (fi.isFile() && fi.isReadable()) {
-			PluginData &pd = plugins[fi.absoluteFilePath()];
-			pd.loadStatus = PluginData::LS_Undefined;
-			pd.fileName = fi.absoluteFilePath();
-			pd.modifyTime = s.value("lastModified").toDateTime();
-			pd.metadata.name = pluginName;
-			pd.metadata.description = s.value("description").toString();
-			pd.metadata.author = s.value("author").toString();
-			pd.metadata.version = s.value("version").toUInt();
-			pd.metadata.minVersion = s.value("minVersion").toUInt();
-			pd.metadata.maxVersion = s.value("maxVersion").toUInt();
-			//pd.metadata.extra = s.value("extra").();
-			plugins.insert(pd.fileName, pd);
-		} else {
-			s.endGroup();
-			s.remove(pluginName);
-			continue;
-		}
+		PluginData &pd = plugins[pluginName];
+		pd.loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
+		pd.loadStatus = LS_Undefined;
+		pd.fileName = s.value("filename").toString();
+		pd.modifyTime = s.value("lastModified").toDateTime();
+		pd.metadata.pluginType = (PluginMetadata::PluginType)s.value("pluginType").toInt();
+		pd.metadata.name = pluginName;
+		pd.metadata.description = s.value("description").toString();
+		pd.metadata.author = s.value("author").toString();
+		pd.metadata.version = s.value("version").toUInt();
+		pd.metadata.minVersion = s.value("minVersion").toUInt();
+		pd.metadata.maxVersion = s.value("maxVersion").toUInt();
+		//pd.metadata.extra = s.value("extra").();
 		s.endGroup();
 	}
+	s.endGroup();
+}
 
-	QDir iconsDir = Utils::localDataDir();
+void PluginManager::updateMetadata()
+{
+	QHash<QString, QString> file2name;
+	QHash<QString, PluginData>::const_iterator cacheIt = plugins.begin();
+	while (cacheIt != plugins.constEnd()) {
+		file2name[cacheIt->fileName] = cacheIt->metadata.name;
+		cacheIt++;
+	}
 
+	PluginsIterator it;
 	while (!it.isFinished()) {
-		QFileInfo fi(it.fileName());
-		if (!fi.isReadable()) {
-			continue;
-		}
-		QHash<QString, PluginData>::Iterator cacheIt = plugins.find(fi.absoluteFilePath());
-		if (cacheIt == plugins.end() || cacheIt->modifyTime < fi.lastModified()) { // have to update metadata cache
+		QString fileName = it.fileName();
+		QHash<QString, PluginData>::Iterator cacheIt = plugins.find(file2name[fileName]);
+		if (cacheIt == plugins.end() || (cacheIt->loadStatus != LS_Loaded &&
+										 cacheIt->modifyTime < QFileInfo(cacheIt->fileName).lastModified())) { // have to update metadata cache
 
-			QPluginLoader loader(cacheIt->fileName);
-			QObject *plugin = loader.instance();
-			if (plugin) {
-				QtNotePluginInterface *qnp = qobject_cast<QtNotePluginInterface *>(plugin);
-				if (!qnp) {
-					loader.unload();
-					if(cacheIt != plugins.end()) {
-						cacheIt->loadStatus = PluginData::LS_ErrAbi;
-					}
-					qDebug("foreign Qt plugin %s. ignore it", qPrintable(fi.baseName()));
-					continue;
-				}
-
-				PluginData  &pd = plugins[fi.absoluteFilePath()];
-				pd.fileName = fi.absoluteFilePath();
-				pd.modifyTime = fi.lastModified();
-				pd.loadStatus = PluginData::LS_Loaded;
-				pd.metadata = qnp->metadata();
-				s.beginGroup(pd.metadata.name);
-				s.setValue("filename", pd.fileName);
-				s.setValue("lastModify", pd.modifyTime);
-				s.setValue("name", pd.metadata.name);
-				s.setValue("description", pd.metadata.description);
-				s.setValue("author", pd.metadata.author);
-				s.setValue("version", pd.metadata.version);
-				s.setValue("minVersion", pd.metadata.minVersion);
-				s.setValue("maxVersion", pd.metadata.maxVersion);
-
-				if ((QTNOTE_VERSION  < pd.metadata.minVersion) || (QTNOTE_VERSION  > pd.metadata.maxVersion)) {
-					cacheIt->loadStatus = PluginData::LS_ErrVersion;
-					loader.unload();
-					qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fi.baseName()));
-					continue;
-				}
-				/*if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
-					continue;
-				}*/
-			} else if(cacheIt != plugins.end()) {
-				cacheIt->loadStatus = PluginData::LS_NotPlugin;
+			PluginData pd;
+			pd.loadPolicy = cacheIt != plugins.end()? cacheIt->loadPolicy : LP_Enabled;
+			LoadStatus ls = loadPlugin(fileName, &pd);
+			if (ls != LS_Undefined) { // plugin data updated
+				plugins.insert(pd.metadata.name, pd);
 			}
+
+
+			/*if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
+				continue;
+			}*/
 		}
 
 		it.next();
 	}
-	s.endGroup();
+}
+
+bool PluginManager::loadDEIntegration()
+{
+	foreach (const PluginData &pd, plugins) {
+		if (pd.loadPolicy == LP_Disabled || pd.metadata.pluginType != PluginMetadata::DEIntegration) {
+			continue;
+		}
+		QStringList de = pd.metadata.extra["de"].toStringList();
+		QString session = qgetenv("DESKTOP_SESSION");
+		if (pd.loadPolicy == LP_Enabled || de.contains(session)) { // FIXME all plugins are LP_Enabled by default
+			if (pd.loadStatus != LS_Loaded) {
+				if (loadPlugin(pd.fileName) == LS_Loaded) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, PluginData *pluginData)
+{
+	QPluginLoader loader(fileName);
+	QSettings s;
+	s.beginGroup("plugins");
+	QObject *plugin = loader.instance();
+	if (plugin) {
+		QtNotePluginInterface *qnp = qobject_cast<QtNotePluginInterface *>(plugin);
+		if (!qnp) {
+			loader.unload();
+			qDebug("foreign Qt plugin %s. ignore it", qPrintable(fileName));
+			return LS_ErrAbi;
+		}
+
+		LoadStatus loadStatus = LS_Loaded;
+		PluginMetadata md = qnp->metadata();
+		if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
+			loader.unload();
+			qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));
+			loadStatus = LS_ErrVersion;
+		}
+
+		if (pluginData) {
+			PluginData  &pd = *pluginData;
+			if (pd.loadPolicy == LP_Disabled) {
+				loader.unload();
+				loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
+			}
+			pd.instance = loadStatus == LS_Loaded? qnp : 0;
+			pd.fileName = fileName;
+			pd.modifyTime = QFileInfo(fileName).lastModified();
+			pd.loadStatus = loadStatus;
+			pd.metadata = md;
+			s.beginGroup(pd.metadata.name);
+			s.setValue("loadPolicy", pd.loadPolicy);
+			s.setValue("filename", pd.fileName);
+			s.setValue("lastModify", pd.modifyTime);
+			s.setValue("pluginType", md.pluginType);
+			s.setValue("name", md.name);
+			s.setValue("description", md.description);
+			s.setValue("author", md.author);
+			s.setValue("version", md.version);
+			s.setValue("minVersion", md.minVersion);
+			s.setValue("maxVersion", md.maxVersion);
+			if (!pd.metadata.icon.isNull()) {
+				pd.metadata.icon.pixmap(16, 16).save(Utils::localDataDir() + "/plugin-icons/" + md.name + ".png");
+			}
+		}
+
+		return loadStatus;
+	}
+	qDebug("failed to load %s : %s", qPrintable(fileName), qPrintable(loader.errorString()));
+	return LS_NotPlugin;
 }

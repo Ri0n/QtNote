@@ -10,6 +10,21 @@ TrayIcon::TrayIcon(QObject *parent) :
 {
 }
 
+PluginMetadata TrayIcon::metadata()
+{
+	PluginMetadata md;
+	md.pluginType = PluginMetadata::DEIntegration;
+	md.icon = QIcon(":/kde-logo");
+	md.name = "KDE Integration";
+	md.description = "Provide native look and feel for KDE users";
+	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
+	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
+	md.minVersion = 0x020300; // minimum compatible version of QtNote
+	md.maxVersion = 0x030000; // maximum compatible version of QtNote
+	md.extra.insert("de", QStringList() << "KDE-4");
+	return md;
+}
+
 void TrayIcon::activateNote(QWidget *w)
 {
     KWindowSystem::forceActiveWindow(w->winId());

@@ -6,6 +6,12 @@
 
 struct PluginMetadata
 {
+	enum PluginType {
+		DEIntegration,
+		NoteStorage,
+		Other
+	};
+	PluginType pluginType;
 	QIcon icon;
 	QString name;
 	QString description;

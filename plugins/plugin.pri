@@ -9,3 +9,5 @@ unix {
 
 HEADERS += $$PWD/trayiconinterface.h \
 	$$PWD/qtnoteplugininterface.h
+
+INCLUDEPATH *= $$PWD
