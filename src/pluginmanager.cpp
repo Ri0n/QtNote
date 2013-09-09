@@ -2,6 +2,7 @@
 #include <QStringList>
 #include <QDir>
 #include <QPluginLoader>
+#include <QSet>
 
 #include "pluginmanager.h"
 #include "utils.h"
@@ -98,45 +99,46 @@ PluginManager::PluginManager(QObject *parent) :
 	s.beginGroup("plugins");
 	foreach (const QString &pluginName, s.childGroups()) {
 		s.beginGroup(pluginName);
-		PluginData &pd = plugins[pluginName];
-		pd.loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
-		pd.loadStatus = LS_Undefined;
-		pd.fileName = s.value("filename").toString();
-		pd.modifyTime = s.value("lastModified").toDateTime();
-		pd.metadata.pluginType = (PluginMetadata::PluginType)s.value("pluginType").toInt();
-		pd.metadata.name = pluginName;
-		pd.metadata.description = s.value("description").toString();
-		pd.metadata.author = s.value("author").toString();
-		pd.metadata.version = s.value("version").toUInt();
-		pd.metadata.minVersion = s.value("minVersion").toUInt();
-		pd.metadata.maxVersion = s.value("maxVersion").toUInt();
-		//pd.metadata.extra = s.value("extra").();
+		PluginData::Ptr pd(new PluginData);
+		plugins[pluginName] = pd;
+		pd->loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
+		pd->loadStatus = LS_Undefined;
+		pd->fileName = s.value("filename").toString();
+		pd->modifyTime = s.value("lastModified").toDateTime();
+		pd->metadata.pluginType = (PluginMetadata::PluginType)s.value("pluginType").toInt();
+		pd->metadata.name = pluginName;
+		pd->metadata.description = s.value("description").toString();
+		pd->metadata.author = s.value("author").toString();
+		pd->metadata.version = s.value("version").toUInt();
+		pd->metadata.minVersion = s.value("minVersion").toUInt();
+		pd->metadata.maxVersion = s.value("maxVersion").toUInt();
+		pd->metadata.extra = s.value("extra").toHash();
+		//pd->metadata.extra = s.value("extra").();
 		s.endGroup();
 	}
 	s.endGroup();
+	updateMetadata();
 }
 
 void PluginManager::updateMetadata()
 {
 	QHash<QString, QString> file2name;
-	QHash<QString, PluginData>::const_iterator cacheIt = plugins.begin();
-	while (cacheIt != plugins.constEnd()) {
-		file2name[cacheIt->fileName] = cacheIt->metadata.name;
-		cacheIt++;
+	foreach (const PluginData::Ptr &p, plugins) {
+		file2name[p->fileName] = p->metadata.name;
 	}
 
 	PluginsIterator it;
 	while (!it.isFinished()) {
 		QString fileName = it.fileName();
-		QHash<QString, PluginData>::Iterator cacheIt = plugins.find(file2name[fileName]);
-		if (cacheIt == plugins.end() || (cacheIt->loadStatus != LS_Loaded &&
-										 cacheIt->modifyTime < QFileInfo(cacheIt->fileName).lastModified())) { // have to update metadata cache
+		QString pluginName = file2name.value(fileName);
+		PluginData::Ptr tmpCache;
+		PluginData::Ptr &cache = pluginName.isEmpty()? tmpCache : plugins[pluginName];
+		if (cache.isNull() || (cache->loadStatus != LS_Loaded &&
+							   cache->modifyTime < QFileInfo(cache->fileName).lastModified())) { // have to update metadata cache
 
-			PluginData pd;
-			pd.loadPolicy = cacheIt != plugins.end()? cacheIt->loadPolicy : LP_Enabled;
-			LoadStatus ls = loadPlugin(fileName, &pd);
-			if (ls != LS_Undefined) { // plugin data updated
-				plugins.insert(pd.metadata.name, pd);
+			loadPlugin(fileName, cache);
+			if (!tmpCache.isNull()) { // new cache
+				plugins.insert(tmpCache->metadata.name, tmpCache);
 			}
 
 
@@ -151,24 +153,46 @@ void PluginManager::updateMetadata()
 
 bool PluginManager::loadDEIntegration()
 {
-	foreach (const PluginData &pd, plugins) {
-		if (pd.loadPolicy == LP_Disabled || pd.metadata.pluginType != PluginMetadata::DEIntegration) {
-			continue;
+	QList<PluginData::Ptr> preferList;
+	foreach (const PluginData::Ptr &pd, plugins) {
+		if (pd->metadata.pluginType == PluginMetadata::DEIntegration &&
+				pd->loadPolicy == LP_Enabled && (pd->loadStatus == LS_Undefined ||
+												  pd->loadStatus == LS_Loaded)) {
+			preferList.append(pd);
 		}
-		QStringList de = pd.metadata.extra["de"].toStringList();
-		QString session = qgetenv("DESKTOP_SESSION");
-		if (pd.loadPolicy == LP_Enabled || de.contains(session)) { // FIXME all plugins are LP_Enabled by default
-			if (pd.loadStatus != LS_Loaded) {
-				if (loadPlugin(pd.fileName) == LS_Loaded) {
-					return true;
-				}
+	}
+	foreach (const PluginData::Ptr &pd, plugins) {
+		if (pd->metadata.pluginType == PluginMetadata::DEIntegration &&
+				pd->loadPolicy != LP_Auto && (pd->loadStatus == LS_Undefined ||
+												pd->loadStatus == LS_Loaded)) {
+			preferList.append(pd);
+		}
+	}
+
+	QMutableHashIterator<QString,PluginData::Ptr> mhi(plugins);
+	while(mhi.hasNext()) {
+		PluginData::Ptr &pd = mhi.next().value();
+		if (pd->loadPolicy == LP_Enabled) {
+			if (pd->loadStatus == LS_Loaded || (pd->loadStatus == LS_Undefined &&
+												loadPlugin(pd->fileName, pd) == LS_Loaded)) {
+				pd->instance->init();
+				return true;
+			}
+		} else { // auto
+			QStringList de = pd->metadata.extra["de"].toStringList();
+			QString session = qgetenv("DESKTOP_SESSION");
+			if (de.contains(session) && (pd->loadStatus == LS_Loaded ||
+										 loadPlugin(pd->fileName, pd) == LS_Loaded)) {
+				pd->instance->init();
+				return true;
 			}
 		}
 	}
 	return false;
 }
 
-PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, PluginData *pluginData)
+PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
+													PluginData::Ptr &cache)
 {
 	QPluginLoader loader(fileName);
 	QSettings s;
@@ -190,31 +214,34 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
 			loadStatus = LS_ErrVersion;
 		}
 
-		if (pluginData) {
-			PluginData  &pd = *pluginData;
-			if (pd.loadPolicy == LP_Disabled) {
-				loader.unload();
-				loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
-			}
-			pd.instance = loadStatus == LS_Loaded? qnp : 0;
-			pd.fileName = fileName;
-			pd.modifyTime = QFileInfo(fileName).lastModified();
-			pd.loadStatus = loadStatus;
-			pd.metadata = md;
-			s.beginGroup(pd.metadata.name);
-			s.setValue("loadPolicy", pd.loadPolicy);
-			s.setValue("filename", pd.fileName);
-			s.setValue("lastModify", pd.modifyTime);
-			s.setValue("pluginType", md.pluginType);
-			s.setValue("name", md.name);
-			s.setValue("description", md.description);
-			s.setValue("author", md.author);
-			s.setValue("version", md.version);
-			s.setValue("minVersion", md.minVersion);
-			s.setValue("maxVersion", md.maxVersion);
-			if (!pd.metadata.icon.isNull()) {
-				pd.metadata.icon.pixmap(16, 16).save(Utils::localDataDir() + "/plugin-icons/" + md.name + ".png");
-			}
+		if (!cache) {
+			cache = PluginData::Ptr(new PluginData);
+			cache->loadPolicy = md.pluginType ==  PluginMetadata::DEIntegration?
+						LP_Auto : LP_Enabled;
+		}
+		if (cache->loadPolicy == LP_Disabled) {
+			loader.unload();
+			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
+		}
+		cache->instance = loadStatus == LS_Loaded? qnp : 0;
+		cache->fileName = fileName;
+		cache->modifyTime = QFileInfo(fileName).lastModified();
+		cache->loadStatus = loadStatus;
+		cache->metadata = md;
+		s.beginGroup(cache->metadata.name);
+		s.setValue("loadPolicy", cache->loadPolicy);
+		s.setValue("filename", cache->fileName);
+		s.setValue("lastModify", cache->modifyTime);
+		s.setValue("pluginType", md.pluginType);
+		s.setValue("name", md.name);
+		s.setValue("description", md.description);
+		s.setValue("author", md.author);
+		s.setValue("version", md.version);
+		s.setValue("minVersion", md.minVersion);
+		s.setValue("maxVersion", md.maxVersion);
+		s.setValue("extra", md.extra);
+		if (!cache->metadata.icon.isNull()) {
+			cache->metadata.icon.pixmap(16, 16).save(Utils::localDataDir() + "/plugin-icons/" + md.name + ".png");
 		}
 
 		return loadStatus;

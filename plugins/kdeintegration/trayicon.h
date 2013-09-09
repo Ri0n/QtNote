@@ -17,6 +17,7 @@ public:
 	explicit TrayIcon(QObject *parent = 0);
 
 	virtual PluginMetadata metadata();
+	bool init();
 
 	void activateNote(QWidget *w);
 	

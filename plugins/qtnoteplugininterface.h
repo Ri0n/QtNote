@@ -26,6 +26,7 @@ class QtNotePluginInterface
 {
 public:
 	virtual PluginMetadata metadata() = 0;
+	virtual bool init() = 0;
 };
 
 Q_DECLARE_INTERFACE(QtNotePluginInterface,

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QDateTime>
+#include <QSharedPointer>
 
 #include "../plugins/qtnoteplugininterface.h"
 
@@ -28,6 +29,8 @@ public:
 	class PluginData
 	{
 	public:
+		typedef QSharedPointer<PluginData> Ptr;
+
 		PluginData() : instance(0), loadStatus(LS_Undefined) {}
 		QtNotePluginInterface *instance;
 		LoadPolicy loadPolicy;
@@ -45,9 +48,9 @@ signals:
 public slots:
 
 private:
-	QHash<QString, PluginData> plugins;
+	QHash<QString, PluginData::Ptr> plugins;
 
-	LoadStatus loadPlugin(const QString &fileName, PluginData *pluginData = 0);
+	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache);
 	void updateMetadata();
 };
 

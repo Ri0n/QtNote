@@ -25,6 +25,12 @@ PluginMetadata TrayIcon::metadata()
 	return md;
 }
 
+bool TrayIcon::init()
+{
+	// TODO set trayicon to QtNote class
+	return true;
+}
+
 void TrayIcon::activateNote(QWidget *w)
 {
     KWindowSystem::forceActiveWindow(w->winId());
