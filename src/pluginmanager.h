@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QDateTime>
 #include <QSharedPointer>
+#include <QLibrary>
 
 #include "../plugins/qtnoteplugininterface.h"
 
@@ -40,7 +41,7 @@ public:
 		PluginMetadata metadata;
 	};
 
-	explicit PluginManager(QObject *parent = 0);
+	explicit PluginManager(QtNote *parent);
 
 	bool loadDEIntegration();
 signals:
@@ -48,9 +49,10 @@ signals:
 public slots:
 
 private:
+	QtNote *qtnote;
 	QHash<QString, PluginData::Ptr> plugins;
 
-	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache);
+	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);
 	void updateMetadata();
 };
 

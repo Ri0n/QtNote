@@ -41,7 +41,6 @@
 #endif
 #include "ptfstorage.h"
 #include "shortcutsmanager.h"
-#include "../plugins/trayiconinterface.h"
 
 #if QT_VERSION < 0x040800
 static QLocale systemUILocale()
@@ -94,8 +93,7 @@ public:
 
 
 QtNote::QtNote(QObject *parent) :
-	QObject(parent),
-	pluginTrayIcon(0)
+	QObject(parent)
 {
 	// loading localization
 	QString langFile = APPNAME;
@@ -325,9 +323,6 @@ void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->show();
 	dlg->activateWindow();
 	dlg->raise();
-	if (pluginTrayIcon) {
-		pluginTrayIcon->activateNote(dlg);
-	}
 }
 
 void QtNote::notifyError(const QString &text)

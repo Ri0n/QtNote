@@ -11,3 +11,6 @@ SOURCES = \
 
 HEADERS += \
 	trayicon.h
+
+RESOURCES += \
+    main.qrc

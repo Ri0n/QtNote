@@ -4,6 +4,7 @@
 #include <QtPlugin>
 
 #include "baseintegration.h"
+#include "qtnote.h"
 
 BaseIntegration::BaseIntegration(QObject *parent) :
 	QObject(parent)

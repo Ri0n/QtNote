@@ -14,7 +14,7 @@ PluginMetadata TrayIcon::metadata()
 {
 	PluginMetadata md;
 	md.pluginType = PluginMetadata::DEIntegration;
-	md.icon = QIcon(":/kde-logo");
+	md.icon = QIcon(":/icons/logo");
 	md.name = "KDE Integration";
 	md.description = "Provide native look and feel for KDE users";
 	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";

@@ -53,8 +53,6 @@ private:
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	ShortcutsManager* _shortcutsManager;
 
-	TrayIconInterface *pluginTrayIcon;
-
 	void parseAppArguments(const QStringList &args);
 private slots:
 	void showNoteList(int);

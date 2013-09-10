@@ -6,6 +6,7 @@
 
 #include "pluginmanager.h"
 #include "utils.h"
+#include "qtnote.h"
 
 class PluginsIterator
 {
@@ -91,8 +92,9 @@ private:
 	}
 };
 
-PluginManager::PluginManager(QObject *parent) :
-    QObject(parent)
+PluginManager::PluginManager(QtNote *parent) :
+	QObject(parent),
+	qtnote(parent)
 {
 	QSettings s;
 
@@ -136,7 +138,7 @@ void PluginManager::updateMetadata()
 		if (cache.isNull() || (cache->loadStatus != LS_Loaded &&
 							   cache->modifyTime < QFileInfo(cache->fileName).lastModified())) { // have to update metadata cache
 
-			loadPlugin(fileName, cache);
+			loadPlugin(fileName, cache, QLibrary::ExportExternalSymbolsHint);
 			if (!tmpCache.isNull()) { // new cache
 				plugins.insert(tmpCache->metadata.name, tmpCache);
 			}
@@ -175,7 +177,7 @@ bool PluginManager::loadDEIntegration()
 		if (pd->loadPolicy == LP_Enabled) {
 			if (pd->loadStatus == LS_Loaded || (pd->loadStatus == LS_Undefined &&
 												loadPlugin(pd->fileName, pd) == LS_Loaded)) {
-				pd->instance->init();
+				pd->instance->init(qtnote);
 				return true;
 			}
 		} else { // auto
@@ -183,7 +185,7 @@ bool PluginManager::loadDEIntegration()
 			QString session = qgetenv("DESKTOP_SESSION");
 			if (de.contains(session) && (pd->loadStatus == LS_Loaded ||
 										 loadPlugin(pd->fileName, pd) == LS_Loaded)) {
-				pd->instance->init();
+				pd->instance->init(qtnote);
 				return true;
 			}
 		}
@@ -192,9 +194,10 @@ bool PluginManager::loadDEIntegration()
 }
 
 PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
-													PluginData::Ptr &cache)
+													PluginData::Ptr &cache, QLibrary::LoadHints loadHints)
 {
 	QPluginLoader loader(fileName);
+	loader.setLoadHints(loadHints);
 	QSettings s;
 	s.beginGroup("plugins");
 	QObject *plugin = loader.instance();
@@ -219,7 +222,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 			cache->loadPolicy = md.pluginType ==  PluginMetadata::DEIntegration?
 						LP_Auto : LP_Enabled;
 		}
-		if (cache->loadPolicy == LP_Disabled) {
+		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
 			loader.unload();
 			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
 		}
