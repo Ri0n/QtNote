@@ -119,4 +119,3 @@ macx {
 }
 
 include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)
-include(../3rdparty/qxt/qxt.pri)

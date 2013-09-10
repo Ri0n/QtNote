@@ -23,9 +23,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define QTNOTE_H
 
 #include <QObject>
-#include <QSystemTrayIcon>
 
+class QSystemTrayIcon;
 class QAction;
+class QMenu;
 class ShortcutsManager;
 class NoteWidget;
 class TrayIconInterface;
@@ -43,6 +44,9 @@ public slots:
 	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
 
 private:
+	class Private;
+	Private *d;
+
 	bool inited_;
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;
@@ -53,7 +57,7 @@ private:
 
 	void parseAppArguments(const QStringList &args);
 private slots:
-	void showNoteList(QSystemTrayIcon::ActivationReason);
+	void showNoteList(int);
 	void exitQtNote();
 	void showAbout();
 	void showNoteManager();

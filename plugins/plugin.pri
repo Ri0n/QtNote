@@ -7,7 +7,7 @@ unix {
 	INSTALLS += target
 }
 
-HEADERS += $$PWD/trayiconinterface.h \
+HEADERS += $$PWD/deintegrationinterface.h \
 	$$PWD/qtnoteplugininterface.h
 
 INCLUDEPATH *= $$PWD

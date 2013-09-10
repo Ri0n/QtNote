@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtSingleApplication>
 #include <QDataStream>
 #include <QBuffer>
+#include <QStringList>
 #include <iostream>
 
 #include "qtnote.h"

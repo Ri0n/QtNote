@@ -14,6 +14,7 @@
 #include <QMenu>
 #include <QDataStream>
 #include <QDir>
+#include <QSystemTrayIcon>
 #include <QPluginLoader>
 #ifdef Q_OS_MAC
 # include <ApplicationServices/ApplicationServices.h>
@@ -77,6 +78,20 @@ static QLocale systemUILocale()
 #endif
 }
 #endif
+
+class QtNote::Private : public QObject
+{
+	Q_OBJECT
+
+	QSystemTrayIcon *tray;
+
+public:
+	Private(QtNote *parent) : QObject(parent)
+	{
+
+	}
+};
+
 
 QtNote::QtNote(QObject *parent) :
 	QObject(parent),
@@ -189,7 +204,7 @@ QtNote::QtNote(QObject *parent) :
 	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-			SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
+			SLOT(showNoteList(int)));
 	connect(_shortcutsManager->shortcut(QLatin1String("note-from-selection")), SIGNAL(triggered()), SLOT(createNewNoteFromSelection()));
 
 	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
@@ -320,7 +335,7 @@ void QtNote::notifyError(const QString &text)
 	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }
 
-void QtNote::showNoteList(QSystemTrayIcon::ActivationReason reason)
+void QtNote::showNoteList(int reason)
 {
 	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
 		createNewNote();
@@ -504,3 +519,5 @@ void QtNote::note_invalidated()
 		}
 	}
 }
+
+#include "qtnote.moc"
