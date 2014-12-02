@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "qtnote.h"
 
+namespace QtNote {
+
 class PluginsIterator
 {
 	QDir currentDir;
@@ -92,7 +94,7 @@ private:
 	}
 };
 
-PluginManager::PluginManager(QtNote *parent) :
+PluginManager::PluginManager(Main *parent) :
 	QObject(parent),
 	qtnote(parent)
 {
@@ -252,3 +254,5 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 	qDebug("failed to load %s : %s", qPrintable(fileName), qPrintable(loader.errorString()));
 	return LS_NotPlugin;
 }
+
+} // namespace QtNote

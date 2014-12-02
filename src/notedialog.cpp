@@ -33,6 +33,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notewidget.h"
 #include "utils.h"
 
+namespace QtNote {
+
 NoteDialog::NoteDialog(NoteWidget *noteWidget) :
 	QDialog(0),
 	_trashRequested(false),
@@ -139,3 +141,5 @@ void NoteDialog::noteIdChanged(const QString &oldId, const QString &newId)
 
 
 QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;
+
+} // namespace QtNote

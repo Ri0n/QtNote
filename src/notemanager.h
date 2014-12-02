@@ -26,6 +26,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMap>
 #include "notestorage.h"
 
+namespace QtNote {
+
 struct StorageItem {
 	StorageItem()
 		: storage(0)
@@ -71,5 +73,7 @@ private:
 	QMap<QString, StorageItem>storages_;
 	NoteStorage *defaultStorage_;
 };
+
+}
 
 #endif // NOTEMANAGER_H

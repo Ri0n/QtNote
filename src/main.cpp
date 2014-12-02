@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
 	QApplication::setQuitOnLastWindowClosed(false);
 
-	QtNote qtnote;
+	QtNote::Main qtnote;
 	if (qtnote.isOperable()) {
 		return a.exec();
 	}

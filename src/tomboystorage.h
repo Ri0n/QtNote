@@ -23,9 +23,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define TOMBOYSTORAGE_H
 
 #include <QMap>
-#include "filestorage.h"
 
+#include "filestorage.h"
 #include "tomboydata.h"
+
+namespace QtNote {
 
 class TomboyStorage : public FileStorage
 {
@@ -43,5 +45,7 @@ public:
 	void saveNote(const QString &noteId, const QString &text);
 	bool isRichTextAllowed() const;
 };
+
+} // namespace
 
 #endif // TOMBOYSTORAGE_H

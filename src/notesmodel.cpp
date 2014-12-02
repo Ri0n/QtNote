@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notesmodel.h"
 #include "notemanager.h"
 
+namespace QtNote {
 
 class NMMItem
 {
@@ -275,3 +276,5 @@ bool NotesModel::removeRows(int row, int count, const QModelIndex &parent)
 
 	return false;
 }
+
+} // namespace QtNote

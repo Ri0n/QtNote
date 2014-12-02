@@ -19,10 +19,13 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "filestorage.h"
 #include <QUuid>
 #include <QFile>
 #include <QDir>
+
+#include "filestorage.h"
+
+namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent)
 	: NoteStorage(parent)
@@ -61,3 +64,5 @@ void FileStorage::putToCache(const NoteListItem &note)
 		emit noteAdded(note);
 	}
 }
+
+} // namespace QtNote

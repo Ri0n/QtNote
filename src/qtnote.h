@@ -27,15 +27,18 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 class QSystemTrayIcon;
 class QAction;
 class QMenu;
+
+namespace QtNote {
+
 class ShortcutsManager;
 class NoteWidget;
 class TrayIconInterface;
 
-class QtNote : public QObject
+class Main : public QObject
 {
 	Q_OBJECT
 public:
-	explicit QtNote(QObject *parent = 0);
+	explicit Main(QObject *parent = 0);
 	inline bool isOperable() const { return inited_; }
 	NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
 public slots:
@@ -67,5 +70,7 @@ private slots:
 	void note_saveRequested();
 	void note_invalidated();
 };
+
+} // namespace QtNote
 
 #endif // QTNOTE_H

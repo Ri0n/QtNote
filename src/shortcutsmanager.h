@@ -4,39 +4,44 @@
 #include <QObject>
 #include <QHash>
 #include <QKeySequence>
+#include "globalshortcut.h"
 
 class QAction;
-class QxtGlobalShortcut;
+
+namespace QtNote {
 
 class ShortcutsManager : public QObject
 {
 	Q_OBJECT
 
-	class ShortcutAction
+public:
+
+	class ShortcutInfo
 	{
 	public:
-		ShortcutAction() : action(0), shortcut(0) {}
-
-		QAction *action;
-		QxtGlobalShortcut *shortcut;
 		QString option;
+		QString name;
+		QKeySequence key;
 	};
 
-public:
+	static const char *SKNoteFromSelection;
+
 	explicit ShortcutsManager(QObject *parent = 0);
-	const QMap<QString, QString> &optionsMap() const;
-	QAction *shortcut(const QLatin1String &option);
-	QKeySequence sequence(const QString &option) const;
-	bool setShortcutSeq(const QString &option, const QKeySequence &seq);
+	//const QMap<QString, QString> &optionsMap() const;
+	//QAction *shortcut(const QLatin1String &option);
+	QKeySequence key(const QString &option) const;
+	bool setKey(const QString &option, const QKeySequence &seq);
+	QList<ShortcutInfo> all() const;
+	QString friendlyName(const QString &option) const;
+
+	bool registerGlobal(const char *option, QObject *receiver, const char *slot);
 	
 signals:
 	
 public slots:
 
-private:
-	QHash<QString, ShortcutAction> shortcuts;
-
-	bool updateShortcut(ShortcutAction &sa);
 };
+
+} // namespace QtNote
 
 #endif // SHORTCUTSMANAGER_H

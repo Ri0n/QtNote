@@ -1,19 +1,28 @@
 #include <QSettings>
-#include <QAction>
+#include <QList>
 
-#include "qxtglobalshortcut.h"
+
+//#include "qxtglobalshortcut.h"
 #include "shortcutsmanager.h"
+
+namespace QtNote {
+
+const char* ShortcutsManager::SKNoteFromSelection = "note-from-selection";
+
+static QHash<QString, QString> shortcuts;
 
 ShortcutsManager::ShortcutsManager(QObject *parent) :
 	QObject(parent)
 {
+	shortcuts.insert(QLatin1String(SKNoteFromSelection), tr("Note From Selection"));
 }
 
+#if 0
 const QMap<QString, QString> &ShortcutsManager::optionsMap() const
 {
 	static QMap<QString, QString> map;
 	if (map.isEmpty()) {
-		map.insert(QLatin1String("note-from-selection"), tr("Note From Selection"));
+		map.insert(QLatin1String(SKNoteFromSelection), tr("Note From Selection"));
 	}
 	return map;
 }
@@ -28,30 +37,55 @@ QAction* ShortcutsManager::shortcut(const QLatin1String &option)
 	}
 	return sa.action;
 }
-
-QKeySequence ShortcutsManager::sequence(const QString &option) const
+#endif
+QKeySequence ShortcutsManager::key(const QString &option) const
 {
 	QSettings s;
 	return QKeySequence(s.value("shortcuts." + option).toString());
 }
 
+#if 0
 bool ShortcutsManager::updateShortcut(ShortcutAction &sa)
 {
 	QSettings s;
 	QKeySequence seq(s.value("shortcuts." + sa.option).toString());
-	if (sa.shortcut && sa.shortcut->shortcut() == seq) {
+	if (sa.shortcut.key() == seq) {
 		return true;
 	}
-	delete sa.shortcut;
+	/*delete sa.shortcut;
 	sa.shortcut = new QxtGlobalShortcut(this);
-	connect(sa.shortcut, SIGNAL(activated()), sa.action, SIGNAL(triggered()));
-	return sa.shortcut->setShortcut(seq);
+	connect(sa.shortcut, SIGNAL(activated()), sa.action, SIGNAL(triggered()));*/
+	return sa.shortcut.setKey(seq);
 }
+#endif
 
-bool ShortcutsManager::setShortcutSeq(const QString &option, const QKeySequence &seq)
+bool ShortcutsManager::setKey(const QString &option, const QKeySequence &seq)
 {
 	QSettings s;
-	ShortcutAction &sa = shortcuts[option];
 	s.setValue("shortcuts." + option, seq.toString());
-	return updateShortcut(sa);
+	// TODO check if it's global and reassign
+	return true;
 }
+
+QList<ShortcutsManager::ShortcutInfo> ShortcutsManager::all() const
+{
+	QSettings s;
+	QList<ShortcutInfo> ret;
+	foreach (const QString &option, shortcuts.keys()) {
+		ret.append({option, shortcuts[option], s.value("shortcuts." + option).toString()});
+	}
+	return ret;
+}
+
+QString ShortcutsManager::friendlyName(const QString &option) const
+{
+	return shortcuts.value(option);
+}
+
+bool ShortcutsManager::registerGlobal(const char *option, QObject *receiver, const char *slot)
+{
+	return true;
+}
+
+} // namespace QtNote
+

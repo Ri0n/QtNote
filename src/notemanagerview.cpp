@@ -26,6 +26,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notesmodel.h"
 #include "notemanager.h"
 
+namespace QtNote {
+
 NoteManagerView::NoteManagerView(QWidget *parent) :
     QTreeView(parent)
 {
@@ -53,3 +55,5 @@ void NoteManagerView::removeSelected()
 		}
 	}
 }
+
+} // namespace QtNote

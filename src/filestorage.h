@@ -25,6 +25,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notestorage.h"
 #include <QHash>
 
+namespace QtNote {
+
 class FileStorage : public NoteStorage
 {
 public:
@@ -38,5 +40,7 @@ protected:
 	QHash<QString, NoteListItem> cache;
 	QString notesDir;
 };
+
+}
 
 #endif // FILESTORAGE_H

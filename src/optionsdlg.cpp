@@ -32,6 +32,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "shortcutsmanager.h"
 #include "shortcutedit.h"
 
+namespace QtNote {
+
 class OptionsDlg::PriorityModel : public QStringListModel
 {
 private:
@@ -108,7 +110,7 @@ public:
 	 }
 };
 
-OptionsDlg::OptionsDlg(QtNote *qtnote) :
+OptionsDlg::OptionsDlg(Main *qtnote) :
 	QDialog(0),
 	ui(new Ui::OptionsDlg),
 	qtnote(qtnote)
@@ -139,13 +141,11 @@ OptionsDlg::OptionsDlg(QtNote *qtnote) :
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
 
-	QMap<QString, QString> shortcuts = qtnote->shortcutsManager()->optionsMap();
-	QMap<QString, QString>::const_iterator it;
-	for (it = shortcuts.constBegin();  it != shortcuts.constEnd(); it++) {
+	foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
 		ShortcutEdit *se = new ShortcutEdit;
-		se->setObjectName("shortcut-"+it.key());
-		se->setSequence(qtnote->shortcutsManager()->sequence(it.key()));
-		((QFormLayout*)ui->gbShortcuts->layout())->addRow(it.value(), se);
+		se->setObjectName("shortcut-"+si.option);
+		se->setSequence(si.key);
+		((QFormLayout*)ui->gbShortcuts->layout())->addRow(si.name, se);
 	}
 
 	resize(0, 0);
@@ -175,14 +175,14 @@ void OptionsDlg::accept()
 	QStringList storageCodes = priorityModel->priorityList();
 	NoteManager::instance()->updatePriorities(storageCodes);
 
-	const QMap<QString, QString> &shortcuts = qtnote->shortcutsManager()->optionsMap();
+	//const QMap<QString, QString> &shortcuts = qtnote->shortcutsManager()->all();
 	foreach(ShortcutEdit *w, ui->gbShortcuts->findChildren<ShortcutEdit*>()) {
 		if (!w->isModified()) {
 			continue;
 		}
 		QString option = w->objectName().mid(sizeof("shortcut-") - 1);
-		if (!qtnote->shortcutsManager()->setShortcutSeq(option, w->sequence())) {
-			qtnote->notifyError(tr("Failed to update shortcut for \"%1\"").arg(shortcuts.value(option)));
+		if (!qtnote->shortcutsManager()->setKey(option, w->sequence())) {
+			qtnote->notifyError(tr("Failed to update shortcut for \"%1\"").arg(qtnote->shortcutsManager()->friendlyName(option)));
 		}
 	}
 
@@ -240,3 +240,5 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
 	dlg->setAttribute(Qt::WA_DeleteOnClose);
 	dlg->show();
 }
+
+} // namespace QtNote

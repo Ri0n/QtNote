@@ -6,6 +6,8 @@
 
 #include "qtnote.h"
 
+namespace QtNote {
+
 struct PluginMetadata
 {
 	enum PluginType {
@@ -28,10 +30,12 @@ class QtNotePluginInterface
 {
 public:
 	virtual PluginMetadata metadata() = 0;
-	virtual bool init(QtNote *qtnote) = 0;
+	virtual bool init(Main *qtnote) = 0;
 };
 
-Q_DECLARE_INTERFACE(QtNotePluginInterface,
+} // namespace QtNote
+
+Q_DECLARE_INTERFACE(QtNote::QtNotePluginInterface,
 					 "com.rion-soft.QtNote.PluginInterface/1.0")
 
 #endif // QTNOTEPLUGININTERFACE_H

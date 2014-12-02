@@ -42,6 +42,8 @@
 #include "ptfstorage.h"
 #include "shortcutsmanager.h"
 
+namespace QtNote {
+
 #if QT_VERSION < 0x040800
 static QLocale systemUILocale()
 {
@@ -78,21 +80,21 @@ static QLocale systemUILocale()
 }
 #endif
 
-class QtNote::Private : public QObject
+class Main::Private : public QObject
 {
 	Q_OBJECT
 
 	QSystemTrayIcon *tray;
 
 public:
-	Private(QtNote *parent) : QObject(parent)
+	Private(Main *parent) : QObject(parent)
 	{
 
 	}
 };
 
 
-QtNote::QtNote(QObject *parent) :
+Main::Main(QObject *parent) :
 	QObject(parent)
 {
 	// loading localization
@@ -172,6 +174,7 @@ QtNote::QtNote(QObject *parent) :
 	}
 
 
+	NoteWidget::initActions();
 	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
 	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
@@ -203,12 +206,13 @@ QtNote::QtNote(QObject *parent) :
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			SLOT(showNoteList(int)));
-	connect(_shortcutsManager->shortcut(QLatin1String("note-from-selection")), SIGNAL(triggered()), SLOT(createNewNoteFromSelection()));
+	_shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
+
 
 	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }
 
-void QtNote::parseAppArguments(const QStringList &args)
+void Main::parseAppArguments(const QStringList &args)
 {
 	int i = 0;
 	bool argsHandled = false;
@@ -241,12 +245,12 @@ void QtNote::parseAppArguments(const QStringList &args)
 	}
 }
 
-void QtNote::exitQtNote()
+void Main::exitQtNote()
 {
 	QApplication::quit();
 }
 
-void QtNote::appMessageReceived(const QByteArray &msg)
+void Main::appMessageReceived(const QByteArray &msg)
 {
 	QDataStream stream(msg);
 	QStringList params;
@@ -254,28 +258,28 @@ void QtNote::appMessageReceived(const QByteArray &msg)
 	parseAppArguments(params);
 }
 
-void QtNote::showAbout()
+void Main::showAbout()
 {
 	AboutDlg *d = new AboutDlg;
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
 
-void QtNote::showNoteManager()
+void Main::showNoteManager()
 {
 	NoteManagerDlg *d = new NoteManagerDlg(this);
 	connect(d, SIGNAL(showNoteRequested(QString,QString)), SLOT(showNoteDialog(QString,QString)));
 	d->show();
 }
 
-void QtNote::showOptions()
+void Main::showOptions()
 {
 	OptionsDlg *d = new OptionsDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
 }
 
-NoteWidget* QtNote::noteWidget(const QString &storageId, const QString &noteId)
+NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
 {
 	Note note;
 	NoteWidget *w = new NoteWidget(storageId, noteId);
@@ -301,7 +305,7 @@ NoteWidget* QtNote::noteWidget(const QString &storageId, const QString &noteId)
 	return w;
 }
 
-void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
+void Main::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
 {
 
 	NoteDialog *dlg = 0;
@@ -325,12 +329,12 @@ void QtNote::showNoteDialog(const QString &storageId, const QString &noteId, con
 	dlg->raise();
 }
 
-void QtNote::notifyError(const QString &text)
+void Main::notifyError(const QString &text)
 {
 	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }
 
-void QtNote::showNoteList(int reason)
+void Main::showNoteList(int reason)
 {
 	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
 		createNewNote();
@@ -395,12 +399,12 @@ void QtNote::showNoteList(int reason)
 	}
 }
 
-void QtNote::createNewNote()
+void Main::createNewNote()
 {
 	showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
 }
 
-void QtNote::createNewNoteFromSelection()
+void Main::createNewNoteFromSelection()
 {
 	QString contents;
 #ifdef Q_OS_LINUX
@@ -471,14 +475,14 @@ void QtNote::createNewNoteFromSelection()
 	}
 }
 
-void QtNote::note_trashRequested()
+void Main::note_trashRequested()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
 	NoteStorage *storage = NoteManager::instance()->storage(nw->storageId());
 	storage->deleteNote(nw->noteId());
 }
 
-void QtNote::note_saveRequested()
+void Main::note_saveRequested()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
 	QString storageId = nw->storageId();
@@ -502,7 +506,7 @@ void QtNote::note_saveRequested()
 	}
 }
 
-void QtNote::note_invalidated()
+void Main::note_invalidated()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
 	Note note = NoteManager::instance()->getNote(nw->storageId(), nw->noteId());
@@ -514,5 +518,7 @@ void QtNote::note_invalidated()
 		}
 	}
 }
+
+} // namespace QtNote
 
 #include "qtnote.moc"

@@ -35,6 +35,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "ptfstoragesettingswidget.h"
 #include "utils.h"
 
+namespace QtNote {
+
 PTFStorage::PTFStorage(QObject *parent)
 	: FileStorage(parent)
 {
@@ -142,3 +144,5 @@ void PTFStorage::settingsApplied()
 	initNotesDir();
 	emit invalidated();
 }
+
+} // namespace QtNote

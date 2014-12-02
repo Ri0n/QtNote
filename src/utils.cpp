@@ -25,6 +25,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QLibrary>
 #include <ShlObj.h>
 #endif // Q_OS_WIN
+#if QT_VERSION >= 0x050000
+#include <QStandardPaths>
+#endif
 
 #include "utils.h"
 
@@ -56,8 +59,7 @@ const QString &Utils::localDataDir()
 		} else {
 #endif
 #if QT_VERSION >= 0x050000
-		dataDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation))
-				.absoluteFilePath(systemName());
+		dataDir = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
 #else
 # if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
 		dataDir = qgetenv("XDG_DATA_HOME");
@@ -66,8 +68,7 @@ const QString &Utils::localDataDir()
 		}
 		dataDir += QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
 # else
-		dataDir = QDir(QDesktopServices::storageLocation(
-			QDesktopServices::DataLocation)).absoluteFilePath(systemName());
+		dataDir = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
 # endif
 #endif
 #ifdef Q_OS_WIN

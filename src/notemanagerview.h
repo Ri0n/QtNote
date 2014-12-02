@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QTreeView>
 
+namespace QtNote {
+
 class NoteManagerView : public QTreeView
 {
     Q_OBJECT
@@ -40,5 +42,7 @@ public slots:
 	void removeSelected();
 
 };
+
+} // namespace QtNote
 
 #endif // NOTEMANAGERVIEW_H

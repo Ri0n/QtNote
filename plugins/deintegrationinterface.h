@@ -2,6 +2,8 @@
 
 class QWidget;
 
+namespace QtNote {
+
 class TrayHandlerInterface
 {
 public:
@@ -15,5 +17,7 @@ public:
     virtual void activateNote(QWidget *w) = 0;
 };
 
-Q_DECLARE_INTERFACE(DEIntegrationInterface,
+} // namespace QtNote
+
+Q_DECLARE_INTERFACE(QtNote::DEIntegrationInterface,
                      "com.rion-soft.QtNote.TrayIconInterface/1.0")

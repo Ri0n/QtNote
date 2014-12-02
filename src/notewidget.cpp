@@ -12,6 +12,10 @@
 #include "ui_notewidget.h"
 #include "typeaheadfind.h"
 
+namespace QtNote {
+
+QHash<QString,QAction*> NoteWidget::_actions;
+
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),
 	_storageId(storageId),
@@ -32,9 +36,34 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	_lastChangeElapsed.start();
 	connect(&_autosaveTimer, SIGNAL(timeout()), SLOT(autosave()));
 	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
+	
+	QToolBar *tbar = new QToolBar(this);
+	
+	QAction *act = cloneAction("save");
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+
+	act = cloneAction("copy");
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+
+	act = cloneAction("print");
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), SLOT(onPrintClicked()));
+
+	tbar->addSeparator();
+
+	act = cloneAction("find");
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), findBar, SLOT(toggleVisibility()));
+
+	tbar->addSeparator();
+
+	act = cloneAction("delete");
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), SLOT(onDeleteClicked()));
+
 	connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
-	connect(ui->copyBtn, SIGNAL(clicked()), SLOT(copyClicked()));
-	connect(ui->findBtn, SIGNAL(clicked()), findBar, SLOT(toggleVisibility()));
 
 	ui->noteEdit->setText(""); // to force update event
 
@@ -47,6 +76,44 @@ NoteWidget::~NoteWidget()
 {
 	_autosaveTimer.stop();
 	delete ui;
+}
+void NoteWidget::initActions()
+{
+	struct ActionInfo {
+		const char *name;
+		const char *icon;
+		const QString text;
+		const QString toolTip;
+		const char *shortcut;
+	};
+
+
+	ActionInfo actData[] = {
+		{"save",  ":/save",  QObject::tr("Save"),  QObject::tr("Save note to file"), "Ctrl+S"},
+		{"copy",  ":/copy",  QObject::tr("Copy"),  QObject::tr("Copy note to clipboard"), "Ctrl+Shift+C"},
+		{"print", ":/print", QObject::tr("Print"), QObject::tr("Print note"), "Ctrl+P"},
+		{"find",  ":/find",  QObject::tr("Find"),  QObject::tr("Find text in note"), "Ctrl+F"},
+		{"trash", ":/trash", QObject::tr("Delete"), QObject::tr("Delete note"), "Ctrl+D"}
+	};
+
+	for (size_t i = 0; i < sizeof(actData); i++) {
+		QAction *act = new QAction(QIcon(actData[i].icon), actData[i].text, qApp);
+		act->setToolTip(actData[i].toolTip);
+		act->setShortcut(QKeySequence(QLatin1String(actData[i].shortcut)));
+		act->setShortcutContext(Qt::WindowShortcut);
+		_actions.insert(actData[i].name, act);
+	}
+}
+
+QAction* NoteWidget::cloneAction(const QString &name)
+{
+	QAction *act = _actions.value(name);
+	QAction *newAct = new QAction(qApp);
+	newAct->setText(act->text());
+	newAct->setIcon(act->icon());
+	newAct->setToolTip(act->toolTip());
+	newAct->setShortcut(act->shortcut());
+	return act;
 }
 
 void NoteWidget::changeEvent(QEvent *e)
@@ -82,12 +149,6 @@ void NoteWidget::autosave()
 	} else {
 		_autosaveTimer.stop(); // stop until next text change
 	}
-}
-
-void NoteWidget::copyClicked()
-{
-	QClipboard *clipboard = QApplication::clipboard();
-	clipboard->setText(text());
 }
 
 void NoteWidget::textChanged()
@@ -132,7 +193,13 @@ void NoteWidget::setNoteId(const QString &noteId)
 	emit noteIdChanged(old, noteId);
 }
 
-void NoteWidget::on_printBtn_clicked()
+void NoteWidget::onCopyClicked()
+{
+	QClipboard *clipboard = QApplication::clipboard();
+	clipboard->setText(text());
+}
+
+void NoteWidget::onPrintClicked()
 {
 	QPrinter printer;
 	if (!text().isEmpty()) {
@@ -140,7 +207,7 @@ void NoteWidget::on_printBtn_clicked()
 	}
 }
 
-void NoteWidget::on_saveBtn_clicked()
+void NoteWidget::onSaveClicked()
 {
 	if (extFileName_.isEmpty() || !QFile::exists(extFileName_)) {
 		extFileName_ = QFileDialog::getSaveFileName(this, tr("Save Note As"),
@@ -172,7 +239,7 @@ void NoteWidget::on_saveBtn_clicked()
 	}
 }
 
-void NoteWidget::on_trashBtn_clicked()
+void NoteWidget::onTrashClicked()
 {
 	QSettings s;
 	if (!text().isEmpty() && s.value("ui.ask-on-delete", true).toBool() &&
@@ -184,3 +251,5 @@ void NoteWidget::on_trashBtn_clicked()
 	}
 	emit trashRequested();
 }
+
+} // namespace QtNote

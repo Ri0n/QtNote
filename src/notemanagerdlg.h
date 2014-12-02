@@ -25,19 +25,21 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDialog>
 #include <QModelIndex>
 
-class NotesModel;
-class QtNote;
-
 namespace Ui {
     class NoteManagerDlg;
 }
+
+namespace QtNote {
+
+class NotesModel;
+class Main;
 
 class NoteManagerDlg : public QDialog
 {
     Q_OBJECT
 
 public:
-	explicit NoteManagerDlg(QtNote *qtnote);
+	explicit NoteManagerDlg(Main *qtnote);
     ~NoteManagerDlg();
 
 signals:
@@ -53,7 +55,9 @@ private slots:
 private:
     Ui::NoteManagerDlg *ui;
 	NotesModel *model;
-	QtNote *qtnote;
+	Main *qtnote;
 };
+
+}
 
 #endif // NOTEMANAGERDLG_H

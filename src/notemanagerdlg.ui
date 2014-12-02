@@ -20,7 +20,7 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="NoteManagerView" name="notesTree">
+     <widget class="QtNote::NoteManagerView" name="notesTree">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
@@ -76,7 +76,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>NoteManagerView</class>
+   <class>QtNote::NoteManagerView</class>
    <extends>QTreeView</extends>
    <header>notemanagerview.h</header>
   </customwidget>

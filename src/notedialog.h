@@ -28,6 +28,8 @@ namespace Ui {
     class NoteDialog;
 }
 
+namespace QtNote {
+
 class NoteWidget;
 
 class NoteDialog : public QDialog {
@@ -60,5 +62,7 @@ public slots:
 
 
 };
+
+} // namespace QtNote
 
 #endif // NOTEDIALOG_H

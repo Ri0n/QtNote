@@ -8,6 +8,8 @@
 
 #include "../plugins/qtnoteplugininterface.h"
 
+namespace QtNote {
+
 class PluginManager : public QObject
 {
 	Q_OBJECT
@@ -41,7 +43,7 @@ public:
 		PluginMetadata metadata;
 	};
 
-	explicit PluginManager(QtNote *parent);
+	explicit PluginManager(Main *parent);
 
 	bool loadDEIntegration();
 signals:
@@ -49,11 +51,13 @@ signals:
 public slots:
 
 private:
-	QtNote *qtnote;
+	Main *qtnote;
 	QHash<QString, PluginData::Ptr> plugins;
 
 	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);
 	void updateMetadata();
 };
+
+}
 
 #endif // PLUGINMANAGER_H

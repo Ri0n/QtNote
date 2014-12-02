@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QAbstractItemModel>
 
+namespace QtNote {
+
 class NoteStorage;
 class NMMItem;
 struct StorageItem;
@@ -74,5 +76,7 @@ private:
 private:
 	QList<NMMItem*> storages;
 };
+
+} // namespace QtNote
 
 #endif // NOTESMODEL_H

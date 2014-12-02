@@ -23,6 +23,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QStringList>
 
+namespace QtNote {
+
 NoteManager::NoteManager(QObject *parent)
 	: QObject(parent)
 	, defaultStorage_(0)
@@ -144,3 +146,5 @@ NoteManager *NoteManager::instance()
 }
 
 NoteManager* NoteManager::instance_ = NULL;
+
+} // namespace QtNote

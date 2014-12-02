@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "filestorage.h"
 
+namespace QtNote {
+
 class PTFStorage : public FileStorage
 {
 	Q_OBJECT
@@ -44,5 +46,7 @@ public:
 private slots:
 	void settingsApplied();
 };
+
+} // namespace QtNote
 
 #endif // PTFSTORAGE_H

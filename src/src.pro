@@ -44,6 +44,7 @@ OBJECTS_DIR = .obj
 RCC_DIR = .rcc
 UI_DIR = .ui
 
+unix:!mac:QMAKE_CXXFLAGS *= -std=c++11
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/notedialog.cpp \
@@ -92,7 +93,8 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/shortcutedit.h \
 	$$PWD/shortcutsmanager.h \
 	$$PWD/notewidget.h \
-    pluginmanager.h
+    pluginmanager.h \
+    globalshortcut.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \

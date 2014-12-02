@@ -30,12 +30,15 @@ namespace Ui {
 }
 
 class QModelIndex;
-class QtNote;
+
+namespace QtNote {
+
+class Main;
 
 class OptionsDlg : public QDialog {
     Q_OBJECT
 public:
-	OptionsDlg(QtNote *qtnote = 0);
+	OptionsDlg(Main *qtnote = 0);
     ~OptionsDlg();
 
 protected:
@@ -43,7 +46,7 @@ protected:
 
 private:
     Ui::OptionsDlg *ui;
-	QtNote *qtnote;
+	Main *qtnote;
 	class PriorityModel;
 	PriorityModel *priorityModel;
 
@@ -52,5 +55,7 @@ public slots:
 private slots:
 	void storage_doubleClicked(const QModelIndex &index);
 };
+
+} // namespace QtNote
 
 #endif // OPTIONSDLG_H

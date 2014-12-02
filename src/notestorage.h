@@ -27,6 +27,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QIcon>
 #include "note.h"
 
+namespace QtNote {
+
 struct NoteListItem
 {
 	NoteListItem(const QString &id_, const QString &storageId_,
@@ -68,5 +70,7 @@ signals:
 	void noteRemoved(const NoteListItem &);
 	void invalidated();
 };
+
+} // namespace QtNote
 
 #endif // NOTESTORAGE_H

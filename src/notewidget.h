@@ -11,6 +11,8 @@ class NoteWidget;
 
 class TypeAheadFindBar;
 
+namespace QtNote {
+
 class NoteWidget : public QWidget
 {
 	Q_OBJECT
@@ -18,6 +20,8 @@ class NoteWidget : public QWidget
 public:
 	explicit NoteWidget(const QString &storageId, const QString &noteId);
 	~NoteWidget();
+
+	static void initActions();
 
 	void setText(QString text);
 	QString text();
@@ -42,11 +46,11 @@ public slots:
 	void save();
 private slots:
 	void autosave();
-	void copyClicked();
+	void onCopyClicked();
 	void textChanged();
-	void on_printBtn_clicked();
-	void on_saveBtn_clicked();
-	void on_trashBtn_clicked();
+	void onPrintClicked();
+	void onSaveClicked();
+	void onTrashClicked();
 
 private:
 	Ui::NoteWidget *ui;
@@ -60,6 +64,12 @@ private:
 	QElapsedTimer _lastChangeElapsed;
 	bool _trashRequested;
 	bool _changed;
+
+	static QHash<QString,QAction*> _actions;
+
+	QAction *cloneAction(const QString &name);
 };
+
+} // namespace QtNote
 
 #endif // NOTEWIDGET_H

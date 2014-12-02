@@ -19,15 +19,17 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "tomboystorage.h"
-
-#include "tomboydata.h"
 #include <QDir>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #ifdef Q_OS_WIN
 #include <QSettings>
 #endif
+
+#include "tomboystorage.h"
+#include "tomboydata.h"
+
+namespace QtNote {
 
 TomboyStorage::TomboyStorage(QObject *parent)
 	: FileStorage(parent)
@@ -136,3 +138,5 @@ bool TomboyStorage::isRichTextAllowed() const
 {
 	return true;
 }
+
+} // namespace QtNote

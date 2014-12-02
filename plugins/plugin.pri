@@ -10,4 +10,4 @@ unix {
 HEADERS += $$PWD/deintegrationinterface.h \
 	$$PWD/qtnoteplugininterface.h
 
-INCLUDEPATH *= $$PWD
+INCLUDEPATH *= $$PWD $$PWD/../src

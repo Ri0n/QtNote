@@ -25,7 +25,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notewidget.h"
 #include "qtnote.h"
 
-NoteManagerDlg::NoteManagerDlg(QtNote *qtnote) :
+namespace QtNote {
+
+NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 	QDialog(0),
 	ui(new Ui::NoteManagerDlg),
 	qtnote(qtnote)
@@ -89,3 +91,5 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
 	ui->splitter->setStretchFactor(0, 0);
 	ui->splitter->setStretchFactor(1, 1);
 }
+
+} // namespace QtNote
