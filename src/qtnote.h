@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define QTNOTE_H
 
 #include <QObject>
+#include <QSystemTrayIcon> // move QSystemTrayIcon to base integration plugin
 
 class QSystemTrayIcon;
 class QAction;
@@ -58,7 +59,7 @@ private:
 
 	void parseAppArguments(const QStringList &args);
 private slots:
-	void showNoteList(int);
+    void showNoteList(QSystemTrayIcon::ActivationReason);
 	void exitQtNote();
 	void showAbout();
 	void showNoteManager();

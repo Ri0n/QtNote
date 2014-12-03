@@ -205,7 +205,7 @@ Main::Main(QObject *parent) :
 	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
 	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-			SLOT(showNoteList(int)));
+            SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
 	_shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
 
 
@@ -334,7 +334,7 @@ void Main::notifyError(const QString &text)
 	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }
 
-void Main::showNoteList(int reason)
+void Main::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
 	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
 		createNewNote();

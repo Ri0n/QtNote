@@ -96,7 +96,7 @@ void NoteWidget::initActions()
 		{"trash", ":/trash", QObject::tr("Delete"), QObject::tr("Delete note"), "Ctrl+D"}
 	};
 
-	for (size_t i = 0; i < sizeof(actData); i++) {
+    for (size_t i = 0; i < (sizeof(actData) / sizeof(actData[0])); i++) {
 		QAction *act = new QAction(QIcon(actData[i].icon), actData[i].text, qApp);
 		act->setToolTip(actData[i].toolTip);
 		act->setShortcut(QKeySequence(QLatin1String(actData[i].shortcut)));
