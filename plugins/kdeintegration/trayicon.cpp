@@ -5,6 +5,8 @@
 
 #include "trayicon.h"
 
+namespace QtNote {
+
 TrayIcon::TrayIcon(QObject *parent) :
 	QObject(parent)
 {
@@ -25,17 +27,24 @@ PluginMetadata TrayIcon::metadata()
 	return md;
 }
 
-bool TrayIcon::init()
+bool TrayIcon::init(Main *qtnote)
 {
 	// TODO set trayicon to QtNote class
 	return true;
 }
 
-void TrayIcon::activateNote(QWidget *w)
+void TrayIcon::setNoteList(QList<NoteListItem>)
 {
-    KWindowSystem::forceActiveWindow(w->winId());
+
 }
 
+void TrayIcon::notify(const QString &message)
+{
+
+}
+
+} // namespace QtNote
+
 #if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(kdeintegration, TrayIcon)
+Q_EXPORT_PLUGIN2(kdeintegration, QtNote::TrayIcon)
 #endif

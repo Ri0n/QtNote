@@ -6,6 +6,8 @@
 #include "baseintegration.h"
 #include "qtnote.h"
 
+namespace QtNote {
+
 BaseIntegration::BaseIntegration(QObject *parent) :
 	QObject(parent)
 {
@@ -26,7 +28,7 @@ PluginMetadata BaseIntegration::metadata()
 	return md;
 }
 
-bool BaseIntegration::init()
+bool BaseIntegration::init(Main *qtnote)
 {
 	// TODO set trayicon to QtNote class
 	return true;
@@ -37,6 +39,8 @@ void BaseIntegration::activateNote(QWidget *w)
     KWindowSystem::forceActiveWindow(w->winId());
 }
 
+} // namespace QtNote
+
 #if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(kdeintegration, BaseIntegration)
+Q_EXPORT_PLUGIN2(kdeintegration, QtNote::BaseIntegration)
 #endif
