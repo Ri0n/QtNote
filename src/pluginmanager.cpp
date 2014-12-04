@@ -3,6 +3,8 @@
 #include <QDir>
 #include <QPluginLoader>
 #include <QSet>
+#include <QApplication>
+#include <QDebug>
 
 #include "pluginmanager.h"
 #include "utils.h"
@@ -41,6 +43,7 @@ public:
 		foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs)) {
 			pluginsDirs << pluginsDir.absoluteFilePath(dirName);
 		}
+		qDebug() << "Plugins dirs: " << pluginsDirs;
 #else
 
 		pluginsDirs << Utils::localDataDir() + "/plugins";
@@ -82,7 +85,12 @@ private:
 		while (pluginsDirsIt != pluginsDirs.constEnd()) {
 			currentDir = QDir(*pluginsDirsIt);
 			if (currentDir.isReadable()) {
-				plugins = currentDir.entryList(QDir::Files);
+				plugins.clear();
+				foreach(const QString &file, currentDir.entryList(QDir::Files)) {
+					if (QLibrary::isLibrary(file)) {
+						plugins.append(file);
+					}
+				}
 				if (!plugins.isEmpty()) {
 					pluginsIt = plugins.constBegin();
 					return;
@@ -207,7 +215,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		QtNotePluginInterface *qnp = qobject_cast<QtNotePluginInterface *>(plugin);
 		if (!qnp) {
 			loader.unload();
-			qDebug("foreign Qt plugin %s. ignore it", qPrintable(fileName));
+			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));
 			return LS_ErrAbi;
 		}
 

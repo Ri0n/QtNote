@@ -31,6 +31,7 @@ class QMenu;
 
 namespace QtNote {
 
+class PluginManager;
 class ShortcutsManager;
 class NoteWidget;
 class TrayIconInterface;
@@ -56,6 +57,7 @@ private:
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	ShortcutsManager* _shortcutsManager;
+	PluginManager *_pluginManager;
 
 	void parseAppArguments(const QStringList &args);
 private slots:
