@@ -23,9 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define QTNOTE_H
 
 #include <QObject>
-#include <QSystemTrayIcon> // move QSystemTrayIcon to base integration plugin
 
-class QSystemTrayIcon;
 class QAction;
 class QMenu;
 
@@ -34,14 +32,14 @@ namespace QtNote {
 class PluginManager;
 class ShortcutsManager;
 class NoteWidget;
-class TrayIconInterface;
 
 class Main : public QObject
 {
 	Q_OBJECT
 public:
 	explicit Main(QObject *parent = 0);
-	inline bool isOperable() const { return inited_; }
+    ~Main();
+    inline bool isOperable() const { return _inited; }
 	NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
@@ -52,8 +50,7 @@ private:
 	class Private;
 	Private *d;
 
-	bool inited_;
-	QSystemTrayIcon *tray;
+    bool _inited;
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	ShortcutsManager* _shortcutsManager;
@@ -61,8 +58,7 @@ private:
 
 	void parseAppArguments(const QStringList &args);
 private slots:
-    void showNoteList(QSystemTrayIcon::ActivationReason);
-	void exitQtNote();
+    void exitQtNote();
 	void showAbout();
 	void showNoteManager();
 	void showOptions();

@@ -17,7 +17,7 @@ public:
 class DEIntegrationInterface
 {
 public:
-    virtual void activateNote(QWidget *w) = 0;
+    virtual void activateWidget(QWidget *w) = 0;
 };
 
 } // namespace QtNote

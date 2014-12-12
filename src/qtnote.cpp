@@ -34,6 +34,7 @@
 #include "ptfstorage.h"
 #include "shortcutsmanager.h"
 #include "pluginmanager.h"
+#include "deintegrationinterface.h"
 
 namespace QtNote {
 
@@ -41,10 +42,15 @@ class Main::Private : public QObject
 {
 	Q_OBJECT
 
-	QSystemTrayIcon *tray;
-
 public:
-	Private(Main *parent) : QObject(parent)
+    Main *q;
+    DEIntegrationInterface *de;
+    TrayHandlerInterface *tray;
+
+    Private(Main *parent) :
+        QObject(parent),
+        q(parent),
+        de(0)
 	{
 
 	}
@@ -52,7 +58,9 @@ public:
 
 
 Main::Main(QObject *parent) :
-	QObject(parent)
+    QObject(parent),
+    d(new Private(this)),
+    _inited(false)
 {
 	// loading localization
 	QString langFile = APPNAME;
@@ -87,6 +95,15 @@ Main::Main(QObject *parent) :
 
 	_pluginManager = new PluginManager(this);
 	// TODO load translations from plugins;
+    if (!d->de) {
+        QMessageBox::critical(0, tr("Initialization Error"), tr("Desktop integration plugin is not loaded"));
+        return;
+    }
+
+    if (!d->tray) {
+        QMessageBox::critical(0, tr("Initialization Error"), tr("Tray icon is not initialized"));
+        return;
+    }
 
 	// itialzation of notes storages
 	QList<NoteStorage*> storages;
@@ -112,7 +129,7 @@ Main::Main(QObject *parent) :
 			delete storage;
 		}
 	}
-	inited_ = NoteManager::instance()->loadAll();
+    _inited = NoteManager::instance()->loadAll();
 	if (!NoteManager::instance()->loadAll()) {
 		QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
 							  "storages is accessible. can't continue.."));
@@ -137,10 +154,10 @@ Main::Main(QObject *parent) :
 	contextMenu->addAction(actQuit);
 
 
-	tray = new QSystemTrayIcon(this);
-	tray->setIcon(QIcon(":/icons/trayicon"));
-	tray->show();
-	tray->setContextMenu(contextMenu);
+    d->tray = new QSystemTrayIcon(this);
+    d->tray->setIcon(QIcon(":/icons/trayicon"));
+    d->tray->show();
+    d->tray->setContextMenu(contextMenu);
 
 	_shortcutsManager = new ShortcutsManager(this);
 
@@ -150,12 +167,17 @@ Main::Main(QObject *parent) :
 	connect(actManager, SIGNAL(triggered()), this, SLOT(showNoteManager()));
 	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
 	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
-	connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+    connect(d->tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
             SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
 	_shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
 
 
-	parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
+    parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
+}
+
+Main::~Main()
+{
+
 }
 
 void Main::parseAppArguments(const QStringList &args)
@@ -271,78 +293,17 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
 		dlg = new NoteDialog(w);
 	}
 	dlg->show();
-	dlg->activateWindow();
-	dlg->raise();
+    d->de->activateWidget(dlg);
 }
 
 void Main::notifyError(const QString &text)
 {
-	tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
+    d->tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
 }
 
 void Main::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
-	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
-		createNewNote();
-		return;
-	}
-	if (reason != QSystemTrayIcon::Trigger) {
-		return;
-	}
-	QMenu menu;
-	menu.addAction(actNew);
-	menu.addSeparator();
-	QSettings s;
-	QList<NoteListItem> notes = NoteManager::instance()->noteList(
-								s.value("ui.menu-notes-amount", 15).toInt());
-	for (int i=0; i<notes.count(); i++) {
-		menu.addAction(menu.style()->standardIcon(
-			QStyle::SP_MessageBoxInformation),
-			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
-		)->setData(i);
-	}
-	menu.show();
-	menu.activateWindow();
-	menu.raise();
-	QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
-	QRect ir = tray->geometry();
-	QRect mr = menu.geometry();
-	if (ir.isEmpty()) { // O_O but with kde this happens...
-		ir = QRect(QCursor::pos() - QPoint(8,8), QSize(16,16));
-	}
-	mr.setSize(menu.sizeHint());
-	if (ir.left() < dr.width()/2) {
-		if (ir.top() < dr.height()/2) {
-			mr.moveTopLeft(ir.bottomLeft());
-		} else {
-			mr.moveBottomLeft(ir.topLeft());
-		}
-	} else {
-		if (ir.top() < dr.height()/2) {
-			mr.moveTopRight(ir.bottomRight());
-		} else {
-			mr.moveBottomRight(ir.topRight());
-		}
-	}
-	// and now align to available desktop geometry
-	if (mr.right() > dr.right()) {
-		mr.moveRight(dr.right());
-	}
-	if (mr.bottom() > dr.bottom()) {
-		mr.moveBottom(dr.bottom());
-	}
-	if (mr.left() < dr.left()) {
-		mr.moveLeft(dr.left());
-	}
-	if (mr.top() < dr.top()) {
-		mr.moveTop(dr.top());
-	}
-	QAction *act = menu.exec(mr.topLeft());
 
-	if (act && act != actNew) {
-		NoteListItem &note = notes[act->data().toInt()];
-		showNoteDialog(note.storageId, note.id);
-	}
 }
 
 void Main::createNewNote()

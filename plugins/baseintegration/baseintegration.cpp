@@ -1,15 +1,96 @@
-#include <KDE/KStatusNotifierItem>
-#include <KDE/KWindowSystem>
 #include <QWidget>
 #include <QtPlugin>
+#include <QSystemTrayIcon>
 
 #include "baseintegration.h"
 #include "qtnote.h"
 
 namespace QtNote {
 
+class BaseIntegration::Private : public QObject
+{
+    Q_OBJECT
+
+public:
+    Main *qtnote;
+    BaseIntegration *q;
+
+    Private(BaseIntegration *q) :
+        QObject(q),
+        q(q)
+    {
+
+    }
+
+private slots:
+    void showNoteList(QSystemTrayIcon::ActivationReason)
+    {
+        if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {
+            createNewNote();
+            return;
+        }
+        if (reason != QSystemTrayIcon::Trigger) {
+            return;
+        }
+        QMenu menu;
+        menu.addAction(actNew);
+        menu.addSeparator();
+        QSettings s;
+        QList<NoteListItem> notes = NoteManager::instance()->noteList(
+                                    s.value("ui.menu-notes-amount", 15).toInt());
+        for (int i=0; i<notes.count(); i++) {
+            menu.addAction(menu.style()->standardIcon(
+                QStyle::SP_MessageBoxInformation),
+                Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
+            )->setData(i);
+        }
+        menu.show();
+        q->activateWidget(menu);
+        QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
+        QRect ir = d->tray->geometry();
+        QRect mr = menu.geometry();
+        if (ir.isEmpty()) { // O_O but with kde this happens...
+            ir = QRect(QCursor::pos() - QPoint(8,8), QSize(16,16));
+        }
+        mr.setSize(menu.sizeHint());
+        if (ir.left() < dr.width()/2) {
+            if (ir.top() < dr.height()/2) {
+                mr.moveTopLeft(ir.bottomLeft());
+            } else {
+                mr.moveBottomLeft(ir.topLeft());
+            }
+        } else {
+            if (ir.top() < dr.height()/2) {
+                mr.moveTopRight(ir.bottomRight());
+            } else {
+                mr.moveBottomRight(ir.topRight());
+            }
+        }
+        // and now align to available desktop geometry
+        if (mr.right() > dr.right()) {
+            mr.moveRight(dr.right());
+        }
+        if (mr.bottom() > dr.bottom()) {
+            mr.moveBottom(dr.bottom());
+        }
+        if (mr.left() < dr.left()) {
+            mr.moveLeft(dr.left());
+        }
+        if (mr.top() < dr.top()) {
+            mr.moveTop(dr.top());
+        }
+        QAction *act = menu.exec(mr.topLeft());
+
+        if (act && act != actNew) {
+            NoteListItem &note = notes[act->data().toInt()];
+            showNoteDialog(note.storageId, note.id);
+        }
+    }
+};
+
 BaseIntegration::BaseIntegration(QObject *parent) :
-	QObject(parent)
+    QObject(parent),
+    d(new Private(this))
 {
 }
 
@@ -30,13 +111,17 @@ PluginMetadata BaseIntegration::metadata()
 
 bool BaseIntegration::init(Main *qtnote)
 {
-	// TODO set trayicon to QtNote class
+    d->qtnote = qtnote;
+    // TODO isn't it better to try few dynamic_casts right in qtnote.
+    qtnote->setTrayImplementation(this);
+    qtnote->setDesktopImplementation(this);
 	return true;
 }
 
-void BaseIntegration::activateNote(QWidget *w)
+void BaseIntegration::activateWidget(QWidget *w)
 {
-    KWindowSystem::forceActiveWindow(w->winId());
+    w->activateWindow();
+    w->raise();
 }
 
 } // namespace QtNote

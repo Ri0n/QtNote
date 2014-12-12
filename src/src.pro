@@ -111,7 +111,7 @@ FORMS += $$PWD/notedialog.ui \
 	$$PWD/ptfstoragesettingswidget.ui \
 	$$PWD/notewidget.ui
 
-INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD $$PWD/../plugins
 
 # required for shortcuts
 unix:!macx:LIBS += -L$$QMAKE_LIBDIR_X11 -lX11
