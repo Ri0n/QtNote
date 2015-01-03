@@ -4,17 +4,20 @@
 #include <QObject>
 
 #include "deintegrationinterface.h"
+#include "trayinterface.h"
 #include "qtnoteplugininterface.h"
 
 namespace QtNote {
 
-class BaseIntegration : public QObject, public QtNotePluginInterface, public DEIntegrationInterface, public TrayHandlerInterface
+class Main;
+
+class BaseIntegration : public QObject, public QtNotePluginInterface, public DEIntegrationInterface, public TrayInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.BaseIntegration")
 #endif
-    Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::DEIntegrationInterface, QtNote::TrayHandlerInterface)
+	Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::DEIntegrationInterface QtNote::TrayInterface)
 public:
 	explicit BaseIntegration(QObject *parent = 0);
 
@@ -22,9 +25,9 @@ public:
 	bool init(Main *qtnote);
 
 	void activateWidget(QWidget *w);
-	
-signals:
-	
+
+	TrayImpl* initTray(Main *qtnote);
+
 public slots:
 
 private:

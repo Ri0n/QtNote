@@ -35,7 +35,7 @@ public:
 		typedef QSharedPointer<PluginData> Ptr;
 
 		PluginData() : instance(0), loadStatus(LS_Undefined) {}
-		QtNotePluginInterface *instance;
+		QObject *instance;
 		LoadPolicy loadPolicy;
 		LoadStatus loadStatus;
 		QString fileName;
@@ -45,7 +45,7 @@ public:
 
 	explicit PluginManager(Main *parent);
 
-	bool loadDEIntegration();
+	void loadPlugins();
 signals:
 
 public slots:

@@ -32,6 +32,8 @@ namespace QtNote {
 class PluginManager;
 class ShortcutsManager;
 class NoteWidget;
+class TrayImpl;
+class DEIntegrationInterface;
 
 class Main : public QObject
 {
@@ -44,15 +46,17 @@ public:
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 	void notifyError(const QString &);
+	void activateWidget(QWidget *w) const;
 	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
+
+	void setTrayImpl(TrayImpl *tray);
+	void setDesktopImpl(DEIntegrationInterface *de);
 
 private:
 	class Private;
 	Private *d;
 
     bool _inited;
-	QMenu *contextMenu;
-	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	ShortcutsManager* _shortcutsManager;
 	PluginManager *_pluginManager;
 

@@ -35,6 +35,7 @@
 #include "shortcutsmanager.h"
 #include "pluginmanager.h"
 #include "deintegrationinterface.h"
+#include "trayinterface.h"
 
 namespace QtNote {
 
@@ -45,7 +46,7 @@ class Main::Private : public QObject
 public:
     Main *q;
     DEIntegrationInterface *de;
-    TrayHandlerInterface *tray;
+	TrayImpl *tray;
 
     Private(Main *parent) :
         QObject(parent),
@@ -94,6 +95,7 @@ Main::Main(QObject *parent) :
 	}
 
 	_pluginManager = new PluginManager(this);
+	_pluginManager->loadPlugins();
 	// TODO load translations from plugins;
     if (!d->de) {
         QMessageBox::critical(0, tr("Initialization Error"), tr("Desktop integration plugin is not loaded"));
@@ -138,37 +140,17 @@ Main::Main(QObject *parent) :
 
 
 	NoteWidget::initActions();
-	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
-	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
-	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
-	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
-	actManager = new QAction(QIcon(":/icons/manager"), tr("&Note Manager"), this);
-
-	contextMenu = new QMenu;
-	contextMenu->addAction(actNew);
-	contextMenu->addSeparator();
-	contextMenu->addAction(actManager);
-	contextMenu->addAction(actOptions);
-	contextMenu->addAction(actAbout);
-	contextMenu->addSeparator();
-	contextMenu->addAction(actQuit);
-
-
-    d->tray = new QSystemTrayIcon(this);
-    d->tray->setIcon(QIcon(":/icons/trayicon"));
-    d->tray->show();
-    d->tray->setContextMenu(contextMenu);
 
 	_shortcutsManager = new ShortcutsManager(this);
 
 	connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), SLOT(appMessageReceived(const QByteArray &)));
-	connect(actQuit, SIGNAL(triggered()), this, SLOT(exitQtNote()));
-	connect(actNew, SIGNAL(triggered()), this, SLOT(createNewNote()));
-	connect(actManager, SIGNAL(triggered()), this, SLOT(showNoteManager()));
-	connect(actOptions, SIGNAL(triggered()), this, SLOT(showOptions()));
-	connect(actAbout, SIGNAL(triggered()), this, SLOT(showAbout()));
-    connect(d->tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-            SLOT(showNoteList(QSystemTrayIcon::ActivationReason)));
+	connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
+	connect(d->tray, SIGNAL(newNoteTriggered()), SLOT(createNewNote()));
+	connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
+	connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
+	connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
+	connect(d->tray, SIGNAL(showNoteTriggered(QString,QString)), SLOT(showNoteDialog(QString,QString)));
+
 	_shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
 
 
@@ -293,17 +275,27 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
 		dlg = new NoteDialog(w);
 	}
 	dlg->show();
-    d->de->activateWidget(dlg);
+	activateWidget(dlg);
 }
 
 void Main::notifyError(const QString &text)
 {
-    d->tray->showMessage(tr("Error"), text, QSystemTrayIcon::Warning, 5000);
+	d->tray->notifyError(text);
 }
 
-void Main::showNoteList(QSystemTrayIcon::ActivationReason reason)
+void Main::activateWidget(QWidget *w) const
 {
+	d->de->activateWidget(w);
+}
 
+void Main::setTrayImpl(TrayImpl *tray)
+{
+	d->tray = tray;
+}
+
+void Main::setDesktopImpl(DEIntegrationInterface *de)
+{
+	d->de = de;
 }
 
 void Main::createNewNote()

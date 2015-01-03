@@ -8,4 +8,6 @@ exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
 !nocrypt:SUBDIRS += crypt
 
 HEADERS += qtnoteplugininterface.h \
-	deintegrationinterface.h
+	deintegrationinterface.h \
+	trayinterface.h \
+	globalshortcutsinterface.h

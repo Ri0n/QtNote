@@ -3,16 +3,16 @@
 #include <QWidget>
 #include <QtPlugin>
 
-#include "trayicon.h"
+#include "kdeintegration.h"
 
 namespace QtNote {
 
-TrayIcon::TrayIcon(QObject *parent) :
+KDEIntegration::KDEIntegration(QObject *parent) :
 	QObject(parent)
 {
 }
 
-PluginMetadata TrayIcon::metadata()
+PluginMetadata KDEIntegration::metadata()
 {
 	PluginMetadata md;
 	md.pluginType = PluginMetadata::DEIntegration;
@@ -27,24 +27,21 @@ PluginMetadata TrayIcon::metadata()
 	return md;
 }
 
-bool TrayIcon::init(Main *qtnote)
+bool KDEIntegration::init(Main *qtnote)
 {
-	// TODO set trayicon to QtNote class
+	Q_UNUSED(qtnote)
 	return true;
 }
 
-void TrayIcon::setNoteList(QList<NoteListItem>)
+TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
-
-}
-
-void TrayIcon::notify(const QString &message)
-{
-
+	// TODO implement
+	Q_UNUSED(qtnote)
+	return 0;
 }
 
 } // namespace QtNote
 
 #if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(kdeintegration, QtNote::TrayIcon)
+Q_EXPORT_PLUGIN2(kdeintegration, QtNote::KDEIntegration)
 #endif

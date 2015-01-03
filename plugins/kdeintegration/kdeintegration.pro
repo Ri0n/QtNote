@@ -7,10 +7,10 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 }
 
 SOURCES = \
-	trayicon.cpp
+	kdeintegration.cpp
 
 HEADERS += \
-	trayicon.h
+	kdeintegration.h
 
 RESOURCES += \
     main.qrc

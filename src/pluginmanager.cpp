@@ -10,6 +10,10 @@
 #include "utils.h"
 #include "qtnote.h"
 
+#include "deintegrationinterface.h"
+#include "trayinterface.h"
+#include "globalshortcutsinterface.h"
+
 namespace QtNote {
 
 class PluginsIterator
@@ -132,6 +136,88 @@ PluginManager::PluginManager(Main *parent) :
 	updateMetadata();
 }
 
+void PluginManager::loadPlugins()
+{
+	enum Feature
+	{
+		NotSpecial,
+		Desktop,
+		Tray,
+		GlobalShortcuts
+	};
+
+	struct FeaturedPlugin {
+		QStringList native;
+		QStringList base;
+	};
+	
+	QMap<Feature,FeaturedPlugin> featurePriority;
+	
+
+	QSettings s;
+	QStringList prioritizedList = s.value("plugins-priority").toStringList();
+	QMutableStringListIterator it(prioritizedList);
+	while (it.hasNext()) {
+		if (!plugins.contains(it.next())) {
+			it.remove();
+		}
+	}
+
+	prioritizedList += (plugins.keys().toSet() - prioritizedList.toSet()).toList();
+	s.setValue("plugins-priority", prioritizedList);
+
+	/*
+	 * now we have fully prioritized list.
+	 * time to load the plugins. start from required unique features
+	 * like tray integration, global shortcuts integrtion etc.
+	 */
+	QString session = qgetenv("DESKTOP_SESSION");
+	foreach (const QString &plugin, prioritizedList) {
+		PluginData::Ptr pd = plugins[plugin];
+		QStringList deList = pd->metadata.extra["de"].toStringList();
+		bool native = deList.contains(session);
+
+		if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty()) || loadPlugin(pd->fileName, pd) != LS_Loaded) {
+			continue;
+		}
+
+		Feature special = NotSpecial;
+		if (qobject_cast<TrayInterface*>(plugins[plugin]->instance)) {
+			special = Tray;
+		} else if (qobject_cast<DEIntegrationInterface*>(plugins[plugin]->instance)) {
+			special = Desktop;
+		} else if (qobject_cast<GlobalShortcutsInterface*>(plugins[plugin]->instance)) {
+			special = GlobalShortcuts;
+		}
+		if (special != NotSpecial) {
+			FeaturedPlugin &fp = featurePriority[special];
+			if (native) {
+				fp.native.push_back(plugin);
+			} else {
+				fp.base.push_back(plugin);
+			}
+		}
+		reinterpret_cast<QtNotePluginInterface*>(pd->instance)->init(qtnote);
+	}
+
+	/* set most desirable tray implementation */
+	QStringList trayPlugins = featurePriority[Tray].native + featurePriority[Tray].base;
+	foreach(const QString &plugin, trayPlugins) {
+		TrayInterface *tp = reinterpret_cast<TrayInterface *>(plugins[plugin]->instance);
+		TrayImpl *tray = tp->initTray(qtnote);
+		if (tray) {
+			qtnote->setTrayImpl(tray);
+			break;
+		}
+	}
+
+	/* set most desirable desktop environment plugin */
+	QStringList dePlugins = featurePriority[Desktop].native + featurePriority[Desktop].base;
+	if (dePlugins.length()) {
+		qtnote->setDesktopImpl(reinterpret_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
+	}
+}
+
 void PluginManager::updateMetadata()
 {
 	QHash<QString, QString> file2name;
@@ -161,46 +247,6 @@ void PluginManager::updateMetadata()
 
 		it.next();
 	}
-}
-
-bool PluginManager::loadDEIntegration()
-{
-	QList<PluginData::Ptr> preferList;
-	foreach (const PluginData::Ptr &pd, plugins) {
-		if (pd->metadata.pluginType == PluginMetadata::DEIntegration &&
-				pd->loadPolicy == LP_Enabled && (pd->loadStatus == LS_Undefined ||
-												  pd->loadStatus == LS_Loaded)) {
-			preferList.append(pd);
-		}
-	}
-	foreach (const PluginData::Ptr &pd, plugins) {
-		if (pd->metadata.pluginType == PluginMetadata::DEIntegration &&
-				pd->loadPolicy != LP_Auto && (pd->loadStatus == LS_Undefined ||
-												pd->loadStatus == LS_Loaded)) {
-			preferList.append(pd);
-		}
-	}
-
-	QMutableHashIterator<QString,PluginData::Ptr> mhi(plugins);
-	while(mhi.hasNext()) {
-		PluginData::Ptr &pd = mhi.next().value();
-		if (pd->loadPolicy == LP_Enabled) {
-			if (pd->loadStatus == LS_Loaded || (pd->loadStatus == LS_Undefined &&
-												loadPlugin(pd->fileName, pd) == LS_Loaded)) {
-				pd->instance->init(qtnote);
-				return true;
-			}
-		} else { // auto
-			QStringList de = pd->metadata.extra["de"].toStringList();
-			QString session = qgetenv("DESKTOP_SESSION");
-			if (de.contains(session) && (pd->loadStatus == LS_Loaded ||
-										 loadPlugin(pd->fileName, pd) == LS_Loaded)) {
-				pd->instance->init(qtnote);
-				return true;
-			}
-		}
-	}
-	return false;
 }
 
 PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
@@ -236,7 +282,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 			loader.unload();
 			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
 		}
-		cache->instance = loadStatus == LS_Loaded? qnp : 0;
+		cache->instance = loadStatus == LS_Loaded? plugin : 0;
 		cache->fileName = fileName;
 		cache->modifyTime = QFileInfo(fileName).lastModified();
 		cache->loadStatus = loadStatus;
