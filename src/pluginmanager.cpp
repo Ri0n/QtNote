@@ -181,29 +181,31 @@ void PluginManager::loadPlugins()
 			continue;
 		}
 
-		Feature special = NotSpecial;
+		QList<Feature> featureList;
 		if (qobject_cast<TrayInterface*>(plugins[plugin]->instance)) {
-			special = Tray;
-		} else if (qobject_cast<DEIntegrationInterface*>(plugins[plugin]->instance)) {
-			special = Desktop;
-		} else if (qobject_cast<GlobalShortcutsInterface*>(plugins[plugin]->instance)) {
-			special = GlobalShortcuts;
+			featureList.append(Tray);
 		}
-		if (special != NotSpecial) {
-			FeaturedPlugin &fp = featurePriority[special];
+		if (qobject_cast<DEIntegrationInterface*>(plugins[plugin]->instance)) {
+			featureList.append(Desktop);
+		}
+		if (qobject_cast<GlobalShortcutsInterface*>(plugins[plugin]->instance)) {
+			featureList.append(GlobalShortcuts);
+		}
+		foreach (Feature f, featureList) {
+			FeaturedPlugin &fp = featurePriority[f];
 			if (native) {
 				fp.native.push_back(plugin);
 			} else {
 				fp.base.push_back(plugin);
 			}
 		}
-		reinterpret_cast<QtNotePluginInterface*>(pd->instance)->init(qtnote);
+		qobject_cast<QtNotePluginInterface*>(pd->instance)->init(qtnote);
 	}
 
 	/* set most desirable tray implementation */
 	QStringList trayPlugins = featurePriority[Tray].native + featurePriority[Tray].base;
 	foreach(const QString &plugin, trayPlugins) {
-		TrayInterface *tp = reinterpret_cast<TrayInterface *>(plugins[plugin]->instance);
+		TrayInterface *tp = qobject_cast<TrayInterface *>(plugins[plugin]->instance);
 		TrayImpl *tray = tp->initTray(qtnote);
 		if (tray) {
 			qtnote->setTrayImpl(tray);
@@ -214,7 +216,7 @@ void PluginManager::loadPlugins()
 	/* set most desirable desktop environment plugin */
 	QStringList dePlugins = featurePriority[Desktop].native + featurePriority[Desktop].base;
 	if (dePlugins.length()) {
-		qtnote->setDesktopImpl(reinterpret_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
+		qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
 	}
 }
 

@@ -35,7 +35,7 @@
 #include "shortcutsmanager.h"
 #include "pluginmanager.h"
 #include "deintegrationinterface.h"
-#include "trayinterface.h"
+#include "trayimpl.h"
 
 namespace QtNote {
 

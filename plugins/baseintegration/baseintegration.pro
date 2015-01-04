@@ -6,11 +6,14 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= widgets
 }
 
-SOURCES = \
-	baseintegration.cpp
+SOURCES += \
+	baseintegration.cpp \
+    baseintegrationtray.cpp
 
 HEADERS += \
-	baseintegration.h
+	baseintegration.h \
+	baseintegrationtray.h \
+	../trayinterface.h
 
 RESOURCES += \
     base.qrc

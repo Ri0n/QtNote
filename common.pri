@@ -47,3 +47,6 @@ devel {
 
 CONFIG += precompile_header
 PRECOMPILED_HEADER = $$PWD/config.h
+
+HEADERS += \
+	$$PWD/plugins/trayimpl.h

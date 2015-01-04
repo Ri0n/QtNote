@@ -11,3 +11,5 @@ HEADERS += $$PWD/deintegrationinterface.h \
 	$$PWD/qtnoteplugininterface.h
 
 INCLUDEPATH *= $$PWD $$PWD/../src
+
+DEFINES += QTNOTE_PLUGIN

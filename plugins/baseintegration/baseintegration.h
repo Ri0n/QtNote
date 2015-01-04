@@ -31,8 +31,8 @@ public:
 public slots:
 
 private:
-    class Private;
-    Private *d;
+	Main *qtnote;
+	TrayImpl *tray;
 	
 };
 
