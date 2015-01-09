@@ -42,15 +42,18 @@ public:
 	explicit Main(QObject *parent = 0);
     ~Main();
     inline bool isOperable() const { return _inited; }
+	void parseAppArguments(const QStringList &args);
+
 	NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
-public slots:
-	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 	void notifyError(const QString &);
 	void activateWidget(QWidget *w) const;
 	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
 
 	void setTrayImpl(TrayImpl *tray);
 	void setDesktopImpl(DEIntegrationInterface *de);
+
+public slots:
+	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 
 private:
 	class Private;
@@ -60,7 +63,6 @@ private:
 	ShortcutsManager* _shortcutsManager;
 	PluginManager *_pluginManager;
 
-	void parseAppArguments(const QStringList &args);
 private slots:
     void exitQtNote();
 	void showAbout();

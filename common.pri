@@ -39,6 +39,8 @@ unix {
 	DEFINES += LIBDIR=\\\"$$LIBDIR\\\" \
 		DATADIR=\\\"$$DATADIR\\\" \
 		TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\"
+	
+	!mac:QMAKE_CXXFLAGS *= -std=c++11
 }
 
 devel {

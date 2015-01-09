@@ -10,6 +10,6 @@ unix {
 HEADERS += $$PWD/deintegrationinterface.h \
 	$$PWD/qtnoteplugininterface.h
 
-INCLUDEPATH *= $$PWD $$PWD/../src
+INCLUDEPATH *= $$PWD $$PWD/../libqtnote
 
 DEFINES += QTNOTE_PLUGIN

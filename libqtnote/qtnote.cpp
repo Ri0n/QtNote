@@ -7,7 +7,6 @@
 #include <QStyle>
 #include <QSettings>
 #include <QMessageBox>
-#include <QtSingleApplication>
 #include <QDebug>
 #include <QProcess>
 #include <QClipboard>
@@ -138,12 +137,9 @@ Main::Main(QObject *parent) :
 		return;
 	}
 
-
-	NoteWidget::initActions();
-
 	_shortcutsManager = new ShortcutsManager(this);
 
-	connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), SLOT(appMessageReceived(const QByteArray &)));
+
 	connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
 	connect(d->tray, SIGNAL(newNoteTriggered()), SLOT(createNewNote()));
 	connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
@@ -152,9 +148,6 @@ Main::Main(QObject *parent) :
 	connect(d->tray, SIGNAL(showNoteTriggered(QString,QString)), SLOT(showNoteDialog(QString,QString)));
 
 	_shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
-
-
-    parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 }
 
 Main::~Main()

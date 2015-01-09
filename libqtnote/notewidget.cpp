@@ -14,7 +14,26 @@
 
 namespace QtNote {
 
-QHash<QString,QAction*> NoteWidget::_actions;
+struct ActData {
+	const char* icon;
+	const char* text;
+	const char* toolTip;
+	const char* shortcut;
+};
+
+static struct {
+	ActData save;
+	ActData copy;
+	ActData print;
+	ActData find;
+	ActData trash;
+} staticActData = {
+	.save  =  {":/save",  QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
+	.copy  =  {":/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
+	.print =  {":/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
+	.find  =  {":/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
+	.trash =  {":/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
+};
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),
@@ -39,27 +58,27 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	
 	QToolBar *tbar = new QToolBar(this);
 	
-	QAction *act = cloneAction("save");
+	QAction *act = initAction(staticActData.save);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
 
-	act = cloneAction("copy");
+	act = initAction(staticActData.copy);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
 
-	act = cloneAction("print");
+	act = initAction(staticActData.print);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onPrintClicked()));
 
 	tbar->addSeparator();
 
-	act = cloneAction("find");
+	act = initAction(staticActData.find);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), findBar, SLOT(toggleVisibility()));
 
 	tbar->addSeparator();
 
-	act = cloneAction("delete");
+	act = initAction(staticActData.trash);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onDeleteClicked()));
 
@@ -77,42 +96,13 @@ NoteWidget::~NoteWidget()
 	_autosaveTimer.stop();
 	delete ui;
 }
-void NoteWidget::initActions()
+
+QAction* NoteWidget::initAction(const ActData &actData)
 {
-	struct ActionInfo {
-		const char *name;
-		const char *icon;
-		const QString text;
-		const QString toolTip;
-		const char *shortcut;
-	};
-
-
-	ActionInfo actData[] = {
-		{"save",  ":/save",  QObject::tr("Save"),  QObject::tr("Save note to file"), "Ctrl+S"},
-		{"copy",  ":/copy",  QObject::tr("Copy"),  QObject::tr("Copy note to clipboard"), "Ctrl+Shift+C"},
-		{"print", ":/print", QObject::tr("Print"), QObject::tr("Print note"), "Ctrl+P"},
-		{"find",  ":/find",  QObject::tr("Find"),  QObject::tr("Find text in note"), "Ctrl+F"},
-		{"trash", ":/trash", QObject::tr("Delete"), QObject::tr("Delete note"), "Ctrl+D"}
-	};
-
-    for (size_t i = 0; i < (sizeof(actData) / sizeof(actData[0])); i++) {
-		QAction *act = new QAction(QIcon(actData[i].icon), actData[i].text, qApp);
-		act->setToolTip(actData[i].toolTip);
-		act->setShortcut(QKeySequence(QLatin1String(actData[i].shortcut)));
-		act->setShortcutContext(Qt::WindowShortcut);
-		_actions.insert(actData[i].name, act);
-	}
-}
-
-QAction* NoteWidget::cloneAction(const QString &name)
-{
-	QAction *act = _actions.value(name);
-	QAction *newAct = new QAction(qApp);
-	newAct->setText(act->text());
-	newAct->setIcon(act->icon());
-	newAct->setToolTip(act->toolTip());
-	newAct->setShortcut(act->shortcut());
+	QAction *act = new QAction(QIcon(actData.icon), tr(actData.text), this);
+	act->setToolTip(actData.toolTip);
+	act->setShortcut(QKeySequence(QLatin1String(actData.shortcut)));
+	act->setShortcutContext(Qt::WindowShortcut);
 	return act;
 }
 

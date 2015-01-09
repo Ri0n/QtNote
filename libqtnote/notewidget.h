@@ -13,6 +13,8 @@ class TypeAheadFindBar;
 
 namespace QtNote {
 
+struct ActData;
+
 class NoteWidget : public QWidget
 {
 	Q_OBJECT
@@ -20,8 +22,6 @@ class NoteWidget : public QWidget
 public:
 	explicit NoteWidget(const QString &storageId, const QString &noteId);
 	~NoteWidget();
-
-	static void initActions();
 
 	void setText(QString text);
 	QString text();
@@ -65,9 +65,7 @@ private:
 	bool _trashRequested;
 	bool _changed;
 
-	static QHash<QString,QAction*> _actions;
-
-	QAction *cloneAction(const QString &name);
+	QAction *initAction(const ActData &name);
 };
 
 } // namespace QtNote

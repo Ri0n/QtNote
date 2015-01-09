@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
 
 	QtNote::Main qtnote;
 	if (qtnote.isOperable()) {
+		QtSingleApplication::instance()->connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), &qtnote, SLOT(appMessageReceived(const QByteArray &)));
+		qtnote.parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 		return a.exec();
 	}
 	return 1;
