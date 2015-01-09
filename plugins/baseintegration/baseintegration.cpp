@@ -3,6 +3,7 @@
 
 #include "baseintegration.h"
 #include "baseintegrationtray.h"
+#include "qxtglobalshortcut.h"
 
 namespace QtNote {
 
@@ -45,6 +46,13 @@ TrayImpl* BaseIntegration::initTray(Main *qtnote)
 {
 	tray = new BaseIntegrationTray(qtnote, this);
 	return tray;
+}
+
+bool BaseIntegration::registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot)
+{
+	QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
+	connect(gs, SIGNAL(activated()), receiver, slot);
+	return true;
 }
 
 } // namespace QtNote

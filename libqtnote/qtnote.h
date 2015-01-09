@@ -34,6 +34,7 @@ class ShortcutsManager;
 class NoteWidget;
 class TrayImpl;
 class DEIntegrationInterface;
+class GlobalShortcutsInterface;
 
 class Main : public QObject
 {
@@ -51,6 +52,7 @@ public:
 
 	void setTrayImpl(TrayImpl *tray);
 	void setDesktopImpl(DEIntegrationInterface *de);
+	void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
 
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);

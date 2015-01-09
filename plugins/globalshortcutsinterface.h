@@ -9,7 +9,8 @@ namespace QtNote {
 class GlobalShortcutsInterface
 {
 public:
-	virtual void registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot) = 0;
+	virtual bool registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot) = 0;
+	// TODO unregister. add string identifier
 };
 
 } // namespace QtNote

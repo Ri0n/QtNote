@@ -80,7 +80,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	act = initAction(staticActData.trash);
 	tbar->addAction(act);
-	connect(act, SIGNAL(triggered()), SLOT(onDeleteClicked()));
+	connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
 
 	connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 

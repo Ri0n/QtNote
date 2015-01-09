@@ -35,6 +35,7 @@
 #include "pluginmanager.h"
 #include "deintegrationinterface.h"
 #include "trayimpl.h"
+#include "globalshortcutsinterface.h"
 
 namespace QtNote {
 
@@ -46,11 +47,13 @@ public:
     Main *q;
     DEIntegrationInterface *de;
 	TrayImpl *tray;
+	GlobalShortcutsInterface *globalShortcuts;
 
     Private(Main *parent) :
         QObject(parent),
         q(parent),
-        de(0)
+		de(0),
+		globalShortcuts(0)
 	{
 
 	}
@@ -137,7 +140,7 @@ Main::Main(QObject *parent) :
 		return;
 	}
 
-	_shortcutsManager = new ShortcutsManager(this);
+	_shortcutsManager = new ShortcutsManager(d->globalShortcuts, this);
 
 
 	connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
@@ -289,6 +292,11 @@ void Main::setTrayImpl(TrayImpl *tray)
 void Main::setDesktopImpl(DEIntegrationInterface *de)
 {
 	d->de = de;
+}
+
+void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
+{
+	d->globalShortcuts = gs;
 }
 
 void Main::createNewNote()

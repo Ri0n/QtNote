@@ -9,6 +9,7 @@
 #include "pluginmanager.h"
 #include "utils.h"
 #include "qtnote.h"
+#include "shortcutsmanager.h"
 
 #include "deintegrationinterface.h"
 #include "trayinterface.h"
@@ -217,6 +218,12 @@ void PluginManager::loadPlugins()
 	QStringList dePlugins = featurePriority[Desktop].native + featurePriority[Desktop].base;
 	if (dePlugins.length()) {
 		qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
+	}
+
+	/* set most desirable global shortcuts plugin */
+	QStringList gsPlugins = featurePriority[GlobalShortcuts].native + featurePriority[GlobalShortcuts].base;
+	if (gsPlugins.length()) {
+		qtnote->setGlobalShortcutsImpl(qobject_cast<GlobalShortcutsInterface *>(plugins[gsPlugins[0]]->instance));
 	}
 }
 

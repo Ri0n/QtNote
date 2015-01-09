@@ -4,11 +4,12 @@
 #include <QObject>
 #include <QHash>
 #include <QKeySequence>
-#include "globalshortcut.h"
 
 class QAction;
 
 namespace QtNote {
+
+class GlobalShortcutsInterface;
 
 class ShortcutsManager : public QObject
 {
@@ -26,7 +27,7 @@ public:
 
 	static const char *SKNoteFromSelection;
 
-	explicit ShortcutsManager(QObject *parent = 0);
+	explicit ShortcutsManager(GlobalShortcutsInterface *gs, QObject *parent = 0);
 	//const QMap<QString, QString> &optionsMap() const;
 	//QAction *shortcut(const QLatin1String &option);
 	QKeySequence key(const QString &option) const;
@@ -40,6 +41,8 @@ signals:
 	
 public slots:
 
+private:
+	GlobalShortcutsInterface *gs;
 };
 
 } // namespace QtNote

@@ -1,9 +1,8 @@
 #include <QSettings>
 #include <QList>
 
-
-//#include "qxtglobalshortcut.h"
 #include "shortcutsmanager.h"
+#include "globalshortcutsinterface.h"
 
 namespace QtNote {
 
@@ -11,8 +10,9 @@ const char* ShortcutsManager::SKNoteFromSelection = "note-from-selection";
 
 static QHash<QString, QString> shortcuts;
 
-ShortcutsManager::ShortcutsManager(QObject *parent) :
-	QObject(parent)
+ShortcutsManager::ShortcutsManager(GlobalShortcutsInterface *gs, QObject *parent) :
+	QObject(parent),
+	gs(gs)
 {
 	shortcuts.insert(QLatin1String(SKNoteFromSelection), tr("Note From Selection"));
 }
@@ -84,7 +84,13 @@ QString ShortcutsManager::friendlyName(const QString &option) const
 
 bool ShortcutsManager::registerGlobal(const char *option, QObject *receiver, const char *slot)
 {
-	return true;
+	if (gs) {
+		QKeySequence ks = key(option);
+		if (!ks.isEmpty()) {
+			return gs->registerGlobalShortcut(ks, receiver, slot);
+		}
+	}
+	return false;
 }
 
 } // namespace QtNote

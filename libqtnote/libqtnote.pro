@@ -82,8 +82,7 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/shortcutedit.h \
 	$$PWD/shortcutsmanager.h \
 	$$PWD/notewidget.h \
-	$$PWD/pluginmanager.h \
-	$$PWD/globalshortcut.h
+	$$PWD/pluginmanager.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
