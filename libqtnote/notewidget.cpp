@@ -28,11 +28,11 @@ static struct {
 	ActData find;
 	ActData trash;
 } staticActData = {
-	.save  =  {":/save",  QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
-	.copy  =  {":/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
-	.print =  {":/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
-	.find  =  {":/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
-	.trash =  {":/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
+	.save  =  {":/icons/save",  QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
+	.copy  =  {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
+	.print =  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
+	.find  =  {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
+	.trash =  {":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
 };
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
@@ -64,7 +64,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	act = initAction(staticActData.copy);
 	tbar->addAction(act);
-	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+	connect(act, SIGNAL(triggered()), SLOT(onCopyClicked()));
 
 	act = initAction(staticActData.print);
 	tbar->addAction(act);
