@@ -1,5 +1,4 @@
 #include <QClipboard>
-#include <QTimer>
 #include <QTextFragment>
 #include <QPrinter>
 #include <QSettings>
@@ -28,7 +27,7 @@ static struct {
 	ActData find;
 	ActData trash;
 } staticActData = {
-	.save  =  {":/icons/save",  QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
+	.save  =  {"",              QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
 	.copy  =  {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
 	.print =  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
 	.find  =  {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
@@ -44,7 +43,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui->setupUi(this);
 
 	setFocusProxy(ui->noteEdit);
-	ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+	//ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 
 	QHBoxLayout *hb3a = new QHBoxLayout();
 	findBar = new TypeAheadFindBar(ui->noteEdit, QString::null, this);
@@ -57,8 +56,10 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	//connect(parent, SIGNAL(destroyed()), SLOT(close()));
 	
 	QToolBar *tbar = new QToolBar(this);
+	ui->toolbarLayout->addWidget(tbar);
 	
 	QAction *act = initAction(staticActData.save);
+	act->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
 

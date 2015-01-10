@@ -21,148 +21,10 @@
     <number>0</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="toolbarLayout">
      <property name="spacing">
       <number>0</number>
      </property>
-     <item>
-      <widget class="QToolButton" name="saveBtn">
-       <property name="toolTip">
-        <string>Save Note</string>
-       </property>
-       <property name="shortcut">
-        <string notr="true">Ctrl+S</string>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="copyBtn">
-       <property name="toolTip">
-        <string>Copy note to clipboard</string>
-       </property>
-       <property name="text">
-        <string notr="true"/>
-       </property>
-       <property name="icon">
-        <iconset resource="../main.qrc">
-         <normaloff>:/icons/copy</normaloff>:/icons/copy</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="shortcut">
-        <string>Ctrl+Shift+C</string>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="printBtn">
-       <property name="toolTip">
-        <string>Print Note</string>
-       </property>
-       <property name="text">
-        <string notr="true"/>
-       </property>
-       <property name="icon">
-        <iconset resource="../main.qrc">
-         <normaloff>:/icons/print</normaloff>:/icons/print</iconset>
-       </property>
-       <property name="shortcut">
-        <string>Ctrl+P</string>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="findBtn">
-       <property name="toolTip">
-        <string>Find</string>
-       </property>
-       <property name="icon">
-        <iconset resource="../main.qrc">
-         <normaloff>:/icons/find</normaloff>:/icons/find</iconset>
-       </property>
-       <property name="shortcut">
-        <string notr="true">Ctrl+F</string>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QToolButton" name="trashBtn">
-       <property name="toolTip">
-        <string>Delete note</string>
-       </property>
-       <property name="text">
-        <string notr="true"/>
-       </property>
-       <property name="icon">
-        <iconset resource="../main.qrc">
-         <normaloff>:/icons/trash</normaloff>:/icons/trash</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="shortcut">
-        <string>Ctrl+D</string>
-       </property>
-       <property name="autoRaise">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
     </layout>
    </item>
    <item>
@@ -177,8 +39,6 @@
    <header>notedialogedit.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../main.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
