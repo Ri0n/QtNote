@@ -46,6 +46,10 @@ public:
 	explicit PluginManager(Main *parent);
 
 	void loadPlugins();
+	LoadPolicy loadPolicy(const QString &pluginName) const { return plugins[pluginName]->loadPolicy; }
+	void setLoadPolicy(const QString &pluginName, LoadPolicy lp);
+	int pluginsCount() const { return plugins.size(); }
+	QStringList pluginsNames() const;
 signals:
 
 public slots:

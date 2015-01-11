@@ -50,6 +50,7 @@ public:
 	void notifyError(const QString &);
 	void activateWidget(QWidget *w) const;
 	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
+	inline PluginManager* pluginManager() const { return _pluginManager; }
 
 	void setTrayImpl(TrayImpl *tray);
 	void setDesktopImpl(DEIntegrationInterface *de);

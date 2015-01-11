@@ -34,6 +34,7 @@ class QModelIndex;
 namespace QtNote {
 
 class Main;
+class PluginsModel;
 
 class OptionsDlg : public QDialog {
     Q_OBJECT
@@ -49,6 +50,7 @@ private:
 	Main *qtnote;
 	class PriorityModel;
 	PriorityModel *priorityModel;
+	PluginsModel *pluginsModel;
 
 public slots:
 	void accept();

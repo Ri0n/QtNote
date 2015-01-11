@@ -227,6 +227,20 @@ void PluginManager::loadPlugins()
 	}
 }
 
+void PluginManager::setLoadPolicy(const QString &pluginName, PluginManager::LoadPolicy lp)
+{
+	QSettings s;
+	plugins[pluginName]->loadPolicy = lp;
+	s.beginGroup("plugins");
+	s.beginGroup(pluginName);
+	s.setValue("loadPolicy", (int)lp);
+}
+
+QStringList PluginManager::pluginsNames() const
+{
+	return QSettings().value("plugins-priority").toStringList();
+}
+
 void PluginManager::updateMetadata()
 {
 	QHash<QString, QString> file2name;

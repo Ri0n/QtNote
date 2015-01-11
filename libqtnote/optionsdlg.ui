@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabGeneral">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="general">
       <attribute name="title">
@@ -172,7 +172,7 @@
         </layout>
        </item>
        <item>
-        <widget class="QListWidget" name="listWidget"/>
+        <widget class="QTableView" name="tblPlugins"/>
        </item>
       </layout>
      </widget>
