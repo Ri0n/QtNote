@@ -35,6 +35,7 @@ class NoteWidget;
 class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
+class NoteListItem;
 
 class Main : public QObject
 {
@@ -76,6 +77,7 @@ private slots:
 	void note_trashRequested();
 	void note_saveRequested();
 	void note_invalidated();
+	void note_removed(const NoteListItem &noteItem);
 };
 
 } // namespace QtNote

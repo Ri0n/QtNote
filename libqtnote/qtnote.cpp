@@ -129,6 +129,7 @@ Main::Main(QObject *parent) :
 			int priority = prioritiesR.indexOf(storage->systemName());
 			NoteManager::instance()->registerStorage(storage,
 													 priority >= 0? priority:0);
+			connect(storage, SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
 		} else {
 			delete storage;
 		}
@@ -379,7 +380,9 @@ void Main::note_trashRequested()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
 	NoteStorage *storage = NoteManager::instance()->storage(nw->storageId());
-	storage->deleteNote(nw->noteId());
+	if (!nw->noteId().isEmpty()) {
+		storage->deleteNote(nw->noteId());
+	}
 }
 
 void Main::note_saveRequested()
@@ -399,8 +402,7 @@ void Main::note_saveRequested()
 		noteId = storage->createNote(text);
 		nw->setNoteId(noteId);
 	} else {
-		if (NoteManager::instance()->getNote(storageId, noteId).text() != text)
-		{
+		if (NoteManager::instance()->getNote(storageId, noteId).text() != text) {
 			storage->saveNote(noteId, text);
 		}
 	}
@@ -416,6 +418,14 @@ void Main::note_invalidated()
 		} else {
 			nw->setText(note.title() + "\n" + note.text());
 		}
+	}
+}
+
+void Main::note_removed(const NoteListItem &noteItem)
+{
+	NoteDialog *dlg = NoteDialog::findDialog(noteItem.storageId, noteItem.id);
+	if (dlg) {
+		dlg->accept();
 	}
 }
 

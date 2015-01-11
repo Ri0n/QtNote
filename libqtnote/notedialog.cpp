@@ -37,7 +37,6 @@ namespace QtNote {
 
 NoteDialog::NoteDialog(NoteWidget *noteWidget) :
 	QDialog(0),
-	_trashRequested(false),
 	m_ui(new Ui::NoteDialog),
 	noteWidget(noteWidget)
 {
@@ -102,21 +101,22 @@ void NoteDialog::changeEvent(QEvent *e)
 
 void NoteDialog::trashRequested()
 {
-	_trashRequested  = true;
-	close();
+	if (noteWidget->noteId().isEmpty()) {
+		close();
+	}
 }
 
 void NoteDialog::done(int r)
 {
 	noteWidget->disconnect(this);
-	if (!_trashRequested) { // do it first to update noteWidget::noteId
+	if (!noteWidget->isTrashRequested()) { // do it first to update noteWidget::noteId
 		emit noteWidget->save();
 	}
 	if (!noteWidget->noteId().isEmpty()) {
 		QSettings s;
 		QString key = QString("geometry.%1.%2")
 				.arg(noteWidget->storageId(), noteWidget->noteId());
-		if (_trashRequested) {
+		if (noteWidget->isTrashRequested()) {
 			s.remove(key);
 		} else {
 			s.setValue(key, geometry());

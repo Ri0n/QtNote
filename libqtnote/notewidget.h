@@ -31,6 +31,7 @@ public:
 	void setNoteId(const QString &noteId);
 	inline const QString &firstLine() const { return _firstLine; }
 	inline qint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
+	inline bool isTrashRequested() const { return _trashRequested; }
 
 signals:
 	void firstLineChanged();

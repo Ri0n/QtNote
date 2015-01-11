@@ -49,7 +49,6 @@ private slots:
 	void noteIdChanged(const QString &oldId, const QString &newId);
 	void firstLineChanged();
 private:
-	bool _trashRequested;
     Ui::NoteDialog *m_ui;
 	NoteWidget *noteWidget;
 

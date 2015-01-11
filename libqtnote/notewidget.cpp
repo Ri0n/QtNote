@@ -240,6 +240,8 @@ void NoteWidget::onTrashClicked()
 		QMessageBox::Yes) {
 		return;
 	}
+	_changed = false;
+	_trashRequested  = true;
 	emit trashRequested();
 }
 
