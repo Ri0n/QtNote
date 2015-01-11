@@ -425,7 +425,7 @@ void Main::note_removed(const NoteListItem &noteItem)
 {
 	NoteDialog *dlg = NoteDialog::findDialog(noteItem.storageId, noteItem.id);
 	if (dlg) {
-		dlg->accept();
+		dlg->trashRequested();
 	}
 }
 

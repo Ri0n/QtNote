@@ -45,9 +45,9 @@ protected:
 	void changeEvent(QEvent *e);
 
 private slots:
-	void trashRequested();
 	void noteIdChanged(const QString &oldId, const QString &newId);
 	void firstLineChanged();
+
 private:
     Ui::NoteDialog *m_ui;
 	NoteWidget *noteWidget;
@@ -57,6 +57,7 @@ private:
 
 
 public slots:
+	void trashRequested();
 	void done(int r);
 
 

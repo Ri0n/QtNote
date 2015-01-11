@@ -32,6 +32,7 @@ public:
 	inline const QString &firstLine() const { return _firstLine; }
 	inline qint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
 	inline bool isTrashRequested() const { return _trashRequested; }
+	inline void setTrashRequested(bool state) { _trashRequested = state; }
 
 signals:
 	void firstLineChanged();
@@ -43,8 +44,10 @@ signals:
 protected:
 	void changeEvent(QEvent *e);
 	void keyPressEvent(QKeyEvent *event);	
+
 public slots:
 	void save();
+
 private slots:
 	void autosave();
 	void onCopyClicked();
