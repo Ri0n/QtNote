@@ -58,7 +58,8 @@ SOURCES += $$PWD/notedialog.cpp \
 	$$PWD/shortcutedit.cpp \
 	$$PWD/shortcutsmanager.cpp \
 	$$PWD/notewidget.cpp \
-	$$PWD/pluginmanager.cpp
+	$$PWD/pluginmanager.cpp \
+    optionsplugins.cpp
 
 HEADERS += $$PWD/notedialog.h \
 	$$PWD/note.h \
@@ -82,7 +83,8 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/shortcutedit.h \
 	$$PWD/shortcutsmanager.h \
 	$$PWD/notewidget.h \
-	$$PWD/pluginmanager.h
+	$$PWD/pluginmanager.h \
+    optionsplugins.h
 
 tomboy { 
     SOURCES += $$PWD/tomboystorage.cpp \
@@ -97,7 +99,8 @@ FORMS += $$PWD/notedialog.ui \
 	$$PWD/optionsdlg.ui \
 	$$PWD/notemanagerdlg.ui \
 	$$PWD/ptfstoragesettingswidget.ui \
-	$$PWD/notewidget.ui
+	$$PWD/notewidget.ui \
+    optionsplugins.ui
 
 INCLUDEPATH += $$PWD $$PWD/../plugins
 

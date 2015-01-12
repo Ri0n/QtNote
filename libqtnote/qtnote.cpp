@@ -15,6 +15,8 @@
 #include <QDir>
 #include <QSystemTrayIcon>
 #include <QPluginLoader>
+#include <QHBoxLayout>
+#include <QDialog>
 #ifdef Q_OS_MAC
 # include <ApplicationServices/ApplicationServices.h>
 #endif
@@ -36,6 +38,7 @@
 #include "deintegrationinterface.h"
 #include "trayimpl.h"
 #include "globalshortcutsinterface.h"
+#include "optionsplugins.h"
 
 namespace QtNote {
 
@@ -98,16 +101,22 @@ Main::Main(QObject *parent) :
 
 	_pluginManager = new PluginManager(this);
 	_pluginManager->loadPlugins();
+	QString pluginError;
 	// TODO load translations from plugins;
     if (!d->de) {
-        QMessageBox::critical(0, tr("Initialization Error"), tr("Desktop integration plugin is not loaded"));
-        return;
+		pluginError = tr("Desktop integration plugin is not loaded");
+	} else if (!d->tray) {
+		pluginError = tr("Tray icon is not initialized");
     }
 
-    if (!d->tray) {
-        QMessageBox::critical(0, tr("Initialization Error"), tr("Tray icon is not initialized"));
-        return;
-    }
+	if (!pluginError.isEmpty()) {
+		QMessageBox::critical(0, tr("Initialization Error"), pluginError + "\n" + tr("Enable a plugin with required functionality and restart QtNote"));
+		QDialog dlg;
+		dlg.setLayout(new QHBoxLayout);
+		dlg.layout()->addWidget(new OptionsPlugins(this));
+		dlg.exec();
+		return;
+	}
 
 	// itialzation of notes storages
 	QList<NoteStorage*> storages;

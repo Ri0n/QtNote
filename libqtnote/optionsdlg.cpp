@@ -19,20 +19,20 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "optionsdlg.h"
-#include "ui_optionsdlg.h"
-#include "notemanager.h"
 #include <QStringListModel>
-#include <QAbstractTableModel>
 #include <QSettings>
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
 
+#include "optionsdlg.h"
+#include "ui_optionsdlg.h"
+#include "notemanager.h"
 #include "qtnote.h"
 #include "shortcutsmanager.h"
 #include "shortcutedit.h"
 #include "pluginmanager.h"
+#include "optionsplugins.h"
 
 namespace QtNote {
 
@@ -99,101 +99,13 @@ public:
 	}
 };
 
-class PluginsModel : public QAbstractTableModel
-{
-	Main *qtnote;
-	QStringList pluginNames; // by priority
-
-public:
-	PluginsModel(Main *qtnote, QObject *parent) :
-		QAbstractTableModel(parent),
-		qtnote(qtnote)
-	{
-		pluginNames = qtnote->pluginManager()->pluginsNames();
-	}
-
-	int rowCount(const QModelIndex &parent = QModelIndex()) const
-	{
-		if (parent.isValid()) {
-			return 0;
-		}
-		return pluginNames.count();
-	}
-
-	int columnCount(const QModelIndex &parent = QModelIndex()) const
-	{
-		if (parent.isValid()) {
-			return 0;
-		}
-		return 2;
-	}
-
-	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
-	{
-		if (index.column() == 0 && role == Qt::CheckStateRole)
-		{
-			PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginNames[index.row()]);
-			switch (lp)
-			{
-			case PluginManager::LP_Auto:
-				return Qt::PartiallyChecked;
-			case PluginManager::LP_Disabled:
-				return Qt::Unchecked;
-			case PluginManager::LP_Enabled:
-				return Qt::Checked;
-			}
-		} else if (index.column() == 1 && role == Qt::DisplayRole) {
-			return pluginNames[index.row()];
-		}
-		return QVariant();
-	}
-
-	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
-	{
-		if (index.column() == 0 && role == Qt::CheckStateRole) {
-			Qt::CheckState cs = (Qt::CheckState)value.value<int>();
-			qtnote->pluginManager()->setLoadPolicy(pluginNames[index.row()],
-						cs == Qt::PartiallyChecked? PluginManager::LP_Auto :
-						(cs == Qt::Checked? PluginManager::LP_Enabled : PluginManager::LP_Disabled));
-			emit dataChanged(index, index);
-			return true;
-		}
-		return false;
-	}
-
-	Qt::ItemFlags flags(const QModelIndex &index) const
-	{
-		if (index.column() == 0) {
-			return QAbstractTableModel::flags(index) | Qt::ItemIsEditable | Qt::ItemIsTristate;
-		}
-		return QAbstractTableModel::flags(index);
-	}
-};
-
-class MouseDisabler : public QObject
-{
-public:
-	MouseDisabler(QObject  *parent) : QObject(parent) {}
-	bool eventFilter(QObject *obj, QEvent *event)
-	 {
-		 if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
-			 return true;
-		 }
-		 return QObject::eventFilter(obj, event);
-	 }
-};
-
 OptionsDlg::OptionsDlg(Main *qtnote) :
 	QDialog(0),
 	ui(new Ui::OptionsDlg),
 	qtnote(qtnote)
 {
 	ui->setupUi(this);
-	MouseDisabler *md = new MouseDisabler(this);
-	ui->ckLegendAuto->installEventFilter(md);
-	ui->ckLegendEnabled->installEventFilter(md);
-	ui->ckLegendDisabled->installEventFilter(md);
-	ui->ckLegendAuto->setCheckState(Qt::PartiallyChecked);
+
 #ifdef Q_OS_LINUX
 	QFile desktop(QDir::homePath() + "/.config/autostart/" APPNAME ".desktop");
 	if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll())
@@ -221,8 +133,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
 		((QFormLayout*)ui->gbShortcuts->layout())->addRow(si.name, se);
 	}
 
-	pluginsModel = new PluginsModel(qtnote, this);
-	ui->tblPlugins->setModel(pluginsModel);
+	ui->plugins->layout()->addWidget(new OptionsPlugins(qtnote, this));
 
 	resize(0, 0);
 
