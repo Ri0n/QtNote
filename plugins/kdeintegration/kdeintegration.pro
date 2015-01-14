@@ -7,10 +7,12 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 }
 
 SOURCES = \
-	kdeintegration.cpp
+	kdeintegration.cpp \
+    kdeintegrationtray.cpp
 
 HEADERS += \
-	kdeintegration.h
+	kdeintegration.h \
+    kdeintegrationtray.h
 
 RESOURCES += \
     main.qrc

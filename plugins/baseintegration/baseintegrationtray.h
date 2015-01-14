@@ -23,7 +23,6 @@ class BaseIntegrationTray : public TrayImpl
 public:
 	explicit BaseIntegrationTray(Main *qtnote, QObject *parent = 0);
 	void notifyError(const QString &message);
-	void setNoteList(QList<NoteListItem>);
 
 signals:
 

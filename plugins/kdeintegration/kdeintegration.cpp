@@ -4,9 +4,14 @@
 #include <QtPlugin>
 
 #include "kdeintegration.h"
+#include "kdeintegrationtray.h"
 
 namespace QtNote {
 
+
+//------------------------------------------------------------
+// KDEIntegration
+//------------------------------------------------------------
 KDEIntegration::KDEIntegration(QObject *parent) :
 	QObject(parent)
 {
@@ -35,9 +40,7 @@ bool KDEIntegration::init(Main *qtnote)
 
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
-	// TODO implement
-	Q_UNUSED(qtnote)
-	return 0;
+	return new KDEIntegrationTray(qtnote, this);
 }
 
 } // namespace QtNote
