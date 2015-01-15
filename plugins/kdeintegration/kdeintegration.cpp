@@ -29,7 +29,7 @@ PluginMetadata KDEIntegration::metadata()
 	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
 	md.minVersion = 0x020300; // minimum compatible version of QtNote
 	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.extra.insert("de", QStringList() << "KDE-4");
+	md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma");
 	return md;
 }
 
@@ -41,12 +41,12 @@ bool KDEIntegration::init(Main *qtnote)
 
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
-    return new KDEIntegrationTray(qtnote, this);
+	return new KDEIntegrationTray(qtnote, this);
 }
 
 void KDEIntegration::activateWidget(QWidget *w)
 {
-    KWindowSystem::forceActiveWindow(w->winId(), 0); // or just activate? docs say I shouldn't use it.
+	KWindowSystem::forceActiveWindow(w->winId(), 0); // or just activate? docs say I shouldn't use it.
 }
 
 } // namespace QtNote
