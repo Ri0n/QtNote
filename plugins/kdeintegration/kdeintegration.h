@@ -9,13 +9,13 @@
 
 namespace QtNote {
 
-class KDEIntegration : public QObject, public QtNotePluginInterface, public TrayInterface, DEIntegrationInterface
+class KDEIntegration : public QObject, public QtNotePluginInterface, public TrayInterface, public DEIntegrationInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.KdeTrayIcon")
 #endif
-	Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::TrayInterface)
+	Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface)
 public:
 	explicit KDEIntegration(QObject *parent = 0);
 

@@ -31,7 +31,6 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
 	contextMenu->addAction(QIcon(":/icons/manager"), tr("&Note Manager"), this, SIGNAL(noteManagerTriggered()));
 	contextMenu->addAction(QIcon(":/icons/options"), tr("&Options"), this, SIGNAL(optionsTriggered()));
 	contextMenu->addAction(QIcon(":/icons/trayicon"), tr("&About"), this, SIGNAL(aboutTriggered()));
-	contextMenu->addSeparator();
 
 	connect(actNew, SIGNAL(triggered()), SIGNAL(newNoteTriggered()));
 	connect(sni, SIGNAL(activateRequested(bool,QPoint)), SLOT(showNotes(bool,QPoint)));
@@ -63,18 +62,11 @@ void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
 	QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
 	QRect mr = menu.geometry();
 	mr.setSize(menu.sizeHint());
-	if (pos.x() < dr.width()/2) {
-		if (pos.y() < dr.height()/2) { // icon at top-left
-			mr.moveTopLeft(pos);
-		} else { // icons at bottom-left
-			mr.moveBottomLeft(pos);
-		}
-	} else {
-		if (pos.y() < dr.height()/2) {
-			mr.moveTopRight(pos);
-		} else {
-			mr.moveBottomRight(pos);
-		}
+	QPoint mp = pos - QPoint(mr.width() / 2, 0);
+	if (pos.y() < dr.height()/2) { // icon at top-left
+		mr.moveTopLeft(mp);
+	} else { // icons at bottom-left
+		mr.moveBottomLeft(mp);
 	}
 	// and now align to available desktop geometry
 	if (mr.right() > dr.right()) {

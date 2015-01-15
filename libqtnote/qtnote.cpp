@@ -219,6 +219,7 @@ void Main::showAbout()
 	AboutDlg *d = new AboutDlg;
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
+	activateWidget(d);
 }
 
 void Main::showNoteManager()
@@ -226,6 +227,7 @@ void Main::showNoteManager()
 	NoteManagerDlg *d = new NoteManagerDlg(this);
 	connect(d, SIGNAL(showNoteRequested(QString,QString)), SLOT(showNoteDialog(QString,QString)));
 	d->show();
+	activateWidget(d);
 }
 
 void Main::showOptions()
@@ -233,6 +235,7 @@ void Main::showOptions()
 	OptionsDlg *d = new OptionsDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
+	activateWidget(d);
 }
 
 NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
@@ -292,6 +295,7 @@ void Main::notifyError(const QString &text)
 void Main::activateWidget(QWidget *w) const
 {
 	d->de->activateWidget(w);
+	w->raise();
 }
 
 void Main::setTrayImpl(TrayImpl *tray)
