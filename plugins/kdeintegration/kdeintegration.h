@@ -9,7 +9,7 @@
 
 namespace QtNote {
 
-class KDEIntegration : public QObject, public QtNotePluginInterface, public TrayInterface
+class KDEIntegration : public QObject, public QtNotePluginInterface, public TrayInterface, DEIntegrationInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
@@ -21,7 +21,10 @@ public:
 
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
+
 	TrayImpl* initTray(Main *qtnote);
+
+    void activateWidget(QWidget *w);
 	
 signals:
 	

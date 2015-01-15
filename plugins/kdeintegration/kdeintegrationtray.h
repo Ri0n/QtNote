@@ -21,9 +21,12 @@ signals:
 
 public slots:
 
+private slots:
+    void showNotes(bool active, const QPoint &pos);
 private:
 	Main *qtnote;
 	KStatusNotifierItem *sni;
+    QAction *actNew;
 };
 
 }

@@ -1,5 +1,6 @@
 #include <KDE/KStatusNotifierItem>
 #include <KDE/KWindowSystem>
+#include <KDE/KWindowSystem>
 #include <QWidget>
 #include <QtPlugin>
 
@@ -40,7 +41,12 @@ bool KDEIntegration::init(Main *qtnote)
 
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
-	return new KDEIntegrationTray(qtnote, this);
+    return new KDEIntegrationTray(qtnote, this);
+}
+
+void KDEIntegration::activateWidget(QWidget *w)
+{
+    KWindowSystem::forceActiveWindow(w->winId(), 0); // or just activate? docs say I shouldn't use it.
 }
 
 } // namespace QtNote
