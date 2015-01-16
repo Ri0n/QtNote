@@ -109,7 +109,11 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
 
 	pluginsModel = new PluginsModel(qtnote, this);
 	ui->tblPlugins->setModel(pluginsModel);
+#if QT_VERSION >= 0x050000
+	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+#else
 	ui->tblPlugins->horizontalHeader()->setResizeMode(0, QHeaderView::ResizeToContents);
+#endif
 }
 
 OptionsPlugins::~OptionsPlugins()
