@@ -34,6 +34,7 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
 
 	connect(actNew, SIGNAL(triggered()), SIGNAL(newNoteTriggered()));
 	connect(sni, SIGNAL(activateRequested(bool,QPoint)), SLOT(showNotes(bool,QPoint)));
+	connect(sni, SIGNAL(secondaryActivateRequested(QPoint)), SIGNAL(newNoteTriggered()));
 }
 
 void KDEIntegrationTray::notifyError(const QString &message)
