@@ -1,5 +1,6 @@
 #include <KDE/KStatusNotifierItem>
 #include <KDE/KWindowSystem>
+#include <KDE/KAction>
 #include <QWidget>
 #include <QtPlugin>
 
@@ -46,6 +47,19 @@ TrayImpl *KDEIntegration::initTray(Main *qtnote)
 void KDEIntegration::activateWidget(QWidget *w)
 {
 	KWindowSystem::forceActiveWindow(w->winId(), 0); // just activateWindow doesn't work when started from tray
+}
+
+bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
+{
+	KAction *act = _shortcuts.value(id);
+	if (!act) {
+		act = new KAction(tr("New note from selection"), this);
+		act->setObjectName(id);
+		_shortcuts.insert(id, act);
+	}
+	act->setGlobalShortcut(KShortcut(key));
+	connect(act, SIGNAL(triggered()), receiver, slot, Qt::UniqueConnection);
+	return true;
 }
 
 } // namespace QtNote

@@ -3,13 +3,14 @@
 
 class QKeySequence;
 class QObject;
+class QString;
 
 namespace QtNote {
 
 class GlobalShortcutsInterface
 {
 public:
-	virtual bool registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot) = 0;
+	virtual bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot) = 0;
 	// TODO unregister. add string identifier
 };
 

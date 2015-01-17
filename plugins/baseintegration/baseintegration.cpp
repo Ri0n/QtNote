@@ -48,7 +48,7 @@ TrayImpl* BaseIntegration::initTray(Main *qtnote)
 	return tray;
 }
 
-bool BaseIntegration::registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot)
+bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
 {
 	QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
 	connect(gs, SIGNAL(activated()), receiver, slot);

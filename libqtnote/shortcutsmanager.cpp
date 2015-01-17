@@ -87,7 +87,7 @@ bool ShortcutsManager::registerGlobal(const char *option, QObject *receiver, con
 	if (gs) {
 		QKeySequence ks = key(option);
 		if (!ks.isEmpty()) {
-			return gs->registerGlobalShortcut(ks, receiver, slot);
+			return gs->registerGlobalShortcut(option, ks, receiver, slot);
 		}
 	}
 	return false;

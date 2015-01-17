@@ -27,7 +27,7 @@ public:
 	bool init(Main *qtnote);
 	void activateWidget(QWidget *w);
 	TrayImpl* initTray(Main *qtnote);
-	bool registerGlobalShortcut(const QKeySequence &key, QObject *receiver, const char *slot);
+	bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot);
 
 public slots:
 
