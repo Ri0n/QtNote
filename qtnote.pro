@@ -17,7 +17,7 @@
 # -------------------------------------------------
 
 TEMPLATE = subdirs
-SUBDIRS += libqtnote src plugins
+SUBDIRS += 3rdparty libqtnote src plugins
 CONFIG += ordered
 
 TRANSLATIONS += \
