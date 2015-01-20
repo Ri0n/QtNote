@@ -42,6 +42,11 @@ void NoteManager::registerStorage(NoteStorage *storage, int priority)
 		defaultStorage_ = storage;
 		maxPriority = priority;
 	}
+	connect(storage, SIGNAL(invalidated()), SLOT(storageChanged()));
+	connect(storage, SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
+	connect(storage, SIGNAL(noteModified(NoteListItem)), SLOT(storageChanged()));
+	connect(storage, SIGNAL(noteRemoved(NoteListItem)), SLOT(storageChanged()));
+
 	emit storageAdded(item);
 }
 
@@ -52,6 +57,11 @@ bool NoteManager::loadAll()
 		return false;
 	}
 	return true;
+}
+
+void NoteManager::storageChanged()
+{
+	emit storageChanged(storages_[((NoteStorage*)sender())->systemName()]);
 }
 
 QList<NoteListItem> NoteManager::noteList(int count) const

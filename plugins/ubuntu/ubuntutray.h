@@ -1,20 +1,23 @@
-#ifndef KDEINTEGRATIONTRAY_H
-#define KDEINTEGRATIONTRAY_H
+#ifndef UBUNTUTRAY_H
+#define UBUNTUTRAY_H
 
 #include "trayimpl.h"
 
 class QAction;
-class KStatusNotifierItem;
+class QSystemTrayIcon;
+class QTimer;
+class QMenu;
 
 namespace QtNote {
 
 class Main;
 
-class KDEIntegrationTray : public TrayImpl
+class UbuntuTray : public TrayImpl
 {
 	Q_OBJECT
 public:
-	explicit KDEIntegrationTray(Main *qtnote, QObject *parent);
+	explicit UbuntuTray(Main *qtnote, QObject *parent);
+	~UbuntuTray();
 	void notifyError(const QString &message);
 
 signals:
@@ -22,13 +25,18 @@ signals:
 public slots:
 
 private slots:
-    void showNotes(bool active, const QPoint &pos);
+	void rebuildMenu();
+	void noteSelected();
+
 private:
 	Main *qtnote;
-	KStatusNotifierItem *sni;
-    QAction *actNew;
+	QSystemTrayIcon *sti;
+	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
+	QTimer *menuUpdateTimer;
+	QMenu *contextMenu;
+	uint menuUpdateHash;
 };
 
 }
 
-#endif // KDEINTEGRATIONTRAY_H
+#endif // UBUNTUTRAY_H

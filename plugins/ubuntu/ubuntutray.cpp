@@ -2,89 +2,108 @@
 #include <QStyle>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QSystemTrayIcon>
+#include <QTimer>
+#include <QAction>
+#include <QMenu>
+#include <QMetaType>
 
 #include "ubuntutray.h"
 #include "notemanager.h"
 #include "utils.h"
 #include "qtnote.h"
 
+
+typedef QPair<QString,QString> NoteIdent;
+Q_DECLARE_METATYPE(NoteIdent)
+
 namespace QtNote {
 
-KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
+UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) :
 	TrayImpl(parent),
-	qtnote(qtnote)
+	qtnote(qtnote),
+	contextMenu(0)
 {
-	sni = new StatusNotifierItem("qtnote", this);
-	sni->setIconByName("qtnote"); // TODO review dev mode when no icon in /usr/share
-	sni->setStatus(StatusNotifierItem::Active);
-	sni->setTitle("Notes");
+	menuUpdateTimer = new QTimer(this);
+	menuUpdateTimer->setInterval(1000);
+	menuUpdateTimer->setSingleShot(true);
+	connect(menuUpdateTimer, SIGNAL(timeout()), SLOT(rebuildMenu()));
 
-	KMenu *contextMenu = new KMenu;
-	sni->setContextMenu(contextMenu);
+	sti = new QSystemTrayIcon(QIcon::fromTheme("qtnote", QIcon(":/icons/trayicon")), this);
+	connect(sti, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SIGNAL(newNoteTriggered()));
 
+	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
-	contextMenu->addAction(actNew);
-	contextMenu->addSeparator();
-	contextMenu->addAction(QIcon(":/icons/manager"), tr("&Note Manager"), this, SIGNAL(noteManagerTriggered()));
-	contextMenu->addAction(QIcon(":/icons/options"), tr("&Options"), this, SIGNAL(optionsTriggered()));
-	contextMenu->addAction(QIcon(":/icons/trayicon"), tr("&About"), this, SIGNAL(aboutTriggered()));
+	actAbout = new QAction(QIcon(":/icons/trayicon"), tr("&About"), this);
+	actOptions = new QAction(QIcon(":/icons/options"), tr("&Options"), this);
+	actManager = new QAction(QIcon(":/icons/manager"), tr("&Note Manager"), this);
 
+	connect(actQuit, SIGNAL(triggered()), SIGNAL(exitTriggered()));
 	connect(actNew, SIGNAL(triggered()), SIGNAL(newNoteTriggered()));
-	connect(sni, SIGNAL(activateRequested(bool,QPoint)), SLOT(showNotes(bool,QPoint)));
-	connect(sni, SIGNAL(secondaryActivateRequested(QPoint)), SIGNAL(newNoteTriggered()));
+	connect(actManager, SIGNAL(triggered()), SIGNAL(noteManagerTriggered()));
+	connect(actOptions, SIGNAL(triggered()), SIGNAL(optionsTriggered()));
+	connect(actAbout, SIGNAL(triggered()), SIGNAL(aboutTriggered()));
+
+	connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), menuUpdateTimer, SLOT(start()));
+	connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), menuUpdateTimer, SLOT(start()));
+	connect(NoteManager::instance(), SIGNAL(storageChanged(StorageItem)), menuUpdateTimer, SLOT(start()));
+	menuUpdateTimer->start();
 }
 
-void KDEIntegrationTray::notifyError(const QString &message)
+UbuntuTray::~UbuntuTray()
 {
-	//KNotification *n = KNotification::event(KNotification::Error, tr("Error"), message);
-	//n->sendEvent();
+	delete contextMenu;
 }
 
-void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
+void UbuntuTray::notifyError(const QString &message)
 {
-	Q_UNUSED(active)
-	KMenu menu;
-	menu.addAction(actNew);
-	menu.addSeparator();
+	sti->showMessage(tr("Error"), message, QSystemTrayIcon::Warning);
+}
+
+void UbuntuTray::rebuildMenu()
+{
+	uint h = 0;
 	QSettings s;
 	QList<NoteListItem> notes = NoteManager::instance()->noteList(
 								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
-		menu.addAction(menu.style()->standardIcon(
+		h ^= qHash(notes[i].title);
+	}
+
+	if (h == menuUpdateHash) {
+		return; // menu is not changed;
+	}
+
+	delete sti->contextMenu();
+	QMenu *contextMenu = new QMenu(tr("Notes"));
+	contextMenu->addAction(actNew);
+	contextMenu->addSeparator();
+	for (int i=0; i<notes.count(); i++) {
+		QAction *act = contextMenu->addAction(contextMenu->style()->standardIcon(
 			QStyle::SP_MessageBoxInformation),
 			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
-		)->setData(i);
+		);
+		QVariant v;
+		v.setValue<NoteIdent>(NoteIdent(notes[i].storageId, notes[i].id));
+		act->setData(v);
+		connect(act, SIGNAL(triggered()), SLOT(noteSelected()));
 	}
-	menu.show();
-	qtnote->activateWidget(&menu);
-	QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
-	QRect mr = menu.geometry();
-	mr.setSize(menu.sizeHint());
-	QPoint mp = pos - QPoint(mr.width() / 2, 0);
-	if (pos.y() < dr.height()/2) { // icon at top-left
-		mr.moveTopLeft(mp);
-	} else { // icons at bottom-left
-		mr.moveBottomLeft(mp);
+	if (notes.count()) {
+		contextMenu->addSeparator();
 	}
-	// and now align to available desktop geometry
-	if (mr.right() > dr.right()) {
-		mr.moveRight(dr.right());
-	}
-	if (mr.bottom() > dr.bottom()) {
-		mr.moveBottom(dr.bottom());
-	}
-	if (mr.left() < dr.left()) {
-		mr.moveLeft(dr.left());
-	}
-	if (mr.top() < dr.top()) {
-		mr.moveTop(dr.top());
-	}
-	QAction *act = menu.exec(mr.topLeft());
+	contextMenu->addAction(actManager);
+	contextMenu->addAction(actOptions);
+	contextMenu->addSeparator();
+	contextMenu->addAction(actQuit);
 
-	if (act && act != actNew) {
-		NoteListItem &note = notes[act->data().toInt()];
-		emit showNoteTriggered(note.storageId, note.id);
-	}
+	sti->setContextMenu(contextMenu);
+	sti->show();
+}
+
+void UbuntuTray::noteSelected()
+{
+	NoteIdent ni = ((QAction*)sender())->data().value<NoteIdent>();
+	emit showNoteTriggered(ni.first, ni.second);
 }
 
 } // namespace QtNote

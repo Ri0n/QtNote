@@ -38,7 +38,7 @@ bool UbuntuPlugin::init(Main *qtnote)
 
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
-	return new UbuntuPluginTray(qtnote, this);
+	return new UbuntuTray(qtnote, this);
 }
 
 } // namespace QtNote

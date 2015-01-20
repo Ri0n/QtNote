@@ -7,13 +7,11 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 
 SOURCES = \
     ubuntu.cpp \
-    ubuntutray.cpp \
-    statusnotifieritem.cpp
+    ubuntutray.cpp
 
 HEADERS += \
     ubuntu.h \
-    ubuntutray.h \
-    statusnotifieritem.h
+    ubuntutray.h
 
-RESOURCES += \
-    main.qrc
+#RESOURCES += \
+#    main.qrc

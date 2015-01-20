@@ -4,7 +4,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += baseintegration
 exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
-ubuntu:SUBDIRS += ubuntu
+!noubuntu:SUBDIRS += ubuntu
 
 #!nocrypt:SUBDIRS += crypt
 

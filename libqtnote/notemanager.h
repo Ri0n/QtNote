@@ -64,6 +64,10 @@ public:
 signals:
 	void storageAdded(StorageItem);
 	void storageRemoved(StorageItem);
+	void storageChanged(StorageItem);
+
+private slots:
+	void storageChanged();
 
 private:
 	NoteManager(QObject *parent);
