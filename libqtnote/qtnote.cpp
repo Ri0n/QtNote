@@ -295,7 +295,6 @@ void Main::notifyError(const QString &text)
 void Main::activateWidget(QWidget *w) const
 {
 	d->de->activateWidget(w);
-	w->raise();
 }
 
 void Main::setTrayImpl(TrayImpl *tray)

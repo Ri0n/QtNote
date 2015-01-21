@@ -34,6 +34,7 @@ private:
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 	QTimer *menuUpdateTimer;
 	QMenu *contextMenu;
+	QMenu *advancedMenu;
 	uint menuUpdateHash;
 };
 

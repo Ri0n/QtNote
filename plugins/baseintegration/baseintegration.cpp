@@ -38,8 +38,8 @@ bool BaseIntegration::init(Main *qtnote)
 
 void BaseIntegration::activateWidget(QWidget *w)
 {
-    w->activateWindow();
 	w->raise();
+	w->activateWindow();
 }
 
 TrayImpl* BaseIntegration::initTray(Main *qtnote)

@@ -44,6 +44,14 @@ UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) :
 	connect(actOptions, SIGNAL(triggered()), SIGNAL(optionsTriggered()));
 	connect(actAbout, SIGNAL(triggered()), SIGNAL(aboutTriggered()));
 
+	advancedMenu = new QMenu;
+	advancedMenu->addAction(actOptions);
+	advancedMenu->addAction(actManager);
+	advancedMenu->addAction(actAbout);
+	advancedMenu->addSeparator();
+	advancedMenu->addAction(actQuit);
+	advancedMenu->setTitle(tr("More.."));
+
 	connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), menuUpdateTimer, SLOT(start()));
 	connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), menuUpdateTimer, SLOT(start()));
 	connect(NoteManager::instance(), SIGNAL(storageChanged(StorageItem)), menuUpdateTimer, SLOT(start()));
@@ -53,6 +61,7 @@ UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) :
 UbuntuTray::~UbuntuTray()
 {
 	delete contextMenu;
+	delete advancedMenu;
 }
 
 void UbuntuTray::notifyError(const QString &message)
@@ -91,10 +100,7 @@ void UbuntuTray::rebuildMenu()
 	if (notes.count()) {
 		contextMenu->addSeparator();
 	}
-	contextMenu->addAction(actManager);
-	contextMenu->addAction(actOptions);
-	contextMenu->addSeparator();
-	contextMenu->addAction(actQuit);
+	contextMenu->addMenu(advancedMenu);
 
 	sti->setContextMenu(contextMenu);
 	sti->show();
