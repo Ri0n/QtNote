@@ -1,8 +1,32 @@
+/*
+QtNote - Simple note-taking application
+Copyright (C) 2010 Ili'nykh Sergey
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Contacts:
+E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
+*/
+
 #include <QWidget>
 #include <QtPlugin>
+#include <QProcess>
+#include <QTimer>
 
 #include "ubuntu.h"
 #include "ubuntutray.h"
+#include "x11util.h"
 
 namespace QtNote {
 
@@ -39,6 +63,27 @@ bool UbuntuPlugin::init(Main *qtnote)
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
 	return new UbuntuTray(qtnote, this);
+}
+
+void UbuntuPlugin::activateWidget(QWidget *w)
+{
+	QTimer *timer = new QTimer(this);
+	timer->setSingleShot(true);
+	connect(timer, SIGNAL(timeout()), SLOT(activator()));
+	timer->setProperty("widget", QVariant::fromValue<QWidget*>(w));
+	timer->start(100);
+}
+
+
+void UbuntuPlugin::activator()
+{
+	QTimer *timer = (QTimer*)sender();
+	QWidget *w = sender()->property("widget").value<QWidget*>();
+
+	/*w->activateWindow();
+	w->raise();*/
+	X11Util::forceActivateWindow(w->winId());
+	timer->deleteLater();
 }
 
 } // namespace QtNote

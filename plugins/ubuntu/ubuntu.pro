@@ -7,11 +7,13 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 
 SOURCES = \
     ubuntu.cpp \
-    ubuntutray.cpp
+    ubuntutray.cpp \
+    x11util.cpp
 
 HEADERS += \
     ubuntu.h \
-    ubuntutray.h
+    ubuntutray.h \
+    x11util.h
 
 #RESOURCES += \
 #    main.qrc
