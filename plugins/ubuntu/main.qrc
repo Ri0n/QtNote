@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="ubuntu-logo">logo.png</file>
+    </qresource>
+</RCC>

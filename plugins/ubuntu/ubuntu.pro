@@ -15,5 +15,5 @@ HEADERS += \
     ubuntutray.h \
     x11util.h
 
-#RESOURCES += \
-#    main.qrc
+RESOURCES += \
+    main.qrc

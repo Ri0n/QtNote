@@ -43,7 +43,7 @@ PluginMetadata UbuntuPlugin::metadata()
 {
 	PluginMetadata md;
 	md.pluginType = PluginMetadata::DEIntegration;
-	md.icon = QIcon(":/icons/logo");
+	md.icon = QIcon(":/icons/ubuntu-logo");
 	md.name = "Ubuntu Integration";
 	md.description = "Integrtion with ubuntu-only features";
 	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
