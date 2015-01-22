@@ -48,8 +48,9 @@ public:
 	void loadPlugins();
 	LoadPolicy loadPolicy(const QString &pluginName) const { return plugins[pluginName]->loadPolicy; }
 	void setLoadPolicy(const QString &pluginName, LoadPolicy lp);
-	int pluginsCount() const { return plugins.size(); }
+	inline int pluginsCount() const { return plugins.size(); }
 	QStringList pluginsNames() const;
+	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
 signals:
 
 public slots:

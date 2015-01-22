@@ -33,25 +33,29 @@ public:
 		if (parent.isValid()) {
 			return 0;
 		}
-		return 2;
+		return 1;
 	}
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
 	{
-		if (index.column() == 0 && role == Qt::CheckStateRole)
-		{
-			PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginNames[index.row()]);
-			switch (lp)
+		if (index.column() == 0) {
+			if (role == Qt::CheckStateRole)
 			{
-			case PluginManager::LP_Auto:
-				return Qt::PartiallyChecked;
-			case PluginManager::LP_Disabled:
-				return Qt::Unchecked;
-			case PluginManager::LP_Enabled:
-				return Qt::Checked;
+				PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginNames[index.row()]);
+				switch (lp)
+				{
+				case PluginManager::LP_Auto:
+					return Qt::PartiallyChecked;
+				case PluginManager::LP_Disabled:
+					return Qt::Unchecked;
+				case PluginManager::LP_Enabled:
+					return Qt::Checked;
+				}
+			} else if (role == Qt::DisplayRole) {
+				return pluginNames[index.row()];
+			} else if (role == Qt::DecorationRole) {
+				return qtnote->pluginManager()->icon(pluginNames[index.row()]);
 			}
-		} else if (index.column() == 1 && role == Qt::DisplayRole) {
-			return pluginNames[index.row()];
 		}
 		return QVariant();
 	}
