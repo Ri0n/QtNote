@@ -28,6 +28,7 @@
 #include <QApplication>
 #include <QStyle>
 #include <QLayout>
+#include <QTextDocumentFragment>
 
 /*#include "iconaction.h"
 #include "stretchwidget.h"
@@ -90,13 +91,26 @@ public:
 		return true;
 	}
 
+	void doReplace()
+	{
+		if (te->textCursor().selection().isEmpty()) {
+			return;
+		}
+		te->textCursor().removeSelectedText();
+		te->textCursor().insertText(le_replace->text());
+	}
+
 	QString text;
 	bool caseSensitive;
+	TypeAheadFindBar::Mode mode;
 
 	QTextEdit *te;
 	QLineEdit *le_find;
+	QLineEdit *le_replace;
 	QAction *act_next;
 	QAction *act_prev;
+	QAction *act_replace;
+	QAction *act_le_replace;
 	QCheckBox *cb_case;
 };
 
@@ -128,6 +142,11 @@ void TypeAheadFindBar::init()
 	connect(d->le_find, SIGNAL(textEdited(const QString &)), SLOT(textChanged(const QString &)));
 	addWidget(d->le_find);
 
+	d->le_replace = new QLineEdit(this);
+	d->le_replace->setMaximumWidth(200);
+	d->le_replace->setToolTip(tr("Replace"));
+	d->act_le_replace = addWidget(d->le_replace);
+
 	d->act_next = new QAction(QApplication::style()->standardIcon(QStyle::SP_ArrowDown), tr("Find next"), this);
 	d->act_next->setEnabled(false);
 	d->act_next->setToolTip(tr("Find next"));
@@ -140,13 +159,31 @@ void TypeAheadFindBar::init()
 	connect(d->act_prev, SIGNAL(triggered()), SLOT(findPrevious()));
 	addAction(d->act_prev);
 
+	d->act_replace = new QAction(QIcon(":/icons/replace-text"), tr("Replace"), this); // TODO find an icon for button
+	d->act_replace->setToolTip(tr("Replace text"));
+	connect(d->act_replace, SIGNAL(triggered()), SLOT(replaceText()));
+	addAction(d->act_replace);
+
 	d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
 	connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
 	addWidget(d->cb_case);
 
 	optionsUpdate();
 
+	setMode(Find);
 	hide();
+}
+
+void TypeAheadFindBar::setMode(TypeAheadFindBar::Mode mode)
+{
+	d->act_replace->setVisible(mode == Replace);
+	d->act_le_replace->setVisible(mode == Replace);
+	d->mode = mode;
+}
+
+TypeAheadFindBar::Mode TypeAheadFindBar::mode() const
+{
+	return d->mode;
 }
 
 /**
@@ -243,6 +280,11 @@ void TypeAheadFindBar::findNext()
 void TypeAheadFindBar::findPrevious()
 {
 	d->doFind(true);
+}
+
+void TypeAheadFindBar::replaceText()
+{
+	d->doReplace();
 }
 
 /**

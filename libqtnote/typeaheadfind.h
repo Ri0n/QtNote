@@ -30,9 +30,16 @@ class TypeAheadFindBar : public QToolBar
 {
 	Q_OBJECT
 public:
+	enum Mode {
+		Find,
+		Replace
+	};
+
 	TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent = 0);
 	~TypeAheadFindBar();
 	void init();
+	void setMode(Mode mode);
+	Mode mode() const;
 
 public slots:
 	void open();
@@ -48,6 +55,7 @@ private slots:
 	void findNext();
 	void findPrevious();
 	void caseToggled(int);
+	void replaceText();
 
 private:
 	class Private;

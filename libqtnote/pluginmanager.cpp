@@ -172,7 +172,7 @@ void PluginManager::loadPlugins()
 	 * time to load the plugins. start from required unique features
 	 * like tray integration, global shortcuts integrtion etc.
 	 */
-	QString session = qgetenv("DESKTOP_SESSION");
+	QString session = qgetenv("DESKTOP_SESSION"); // FIXME prefer XDG_CURRENT_DESKTOP or QGenericUnixServices::desktopEnvironment for qt5
 	foreach (const QString &plugin, prioritizedList) {
 		PluginData::Ptr pd = plugins[plugin];
 		QStringList deList = pd->metadata.extra["de"].toStringList();

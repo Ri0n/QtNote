@@ -49,6 +49,8 @@ public slots:
 	void save();
 
 private slots:
+	void onFindTriggered();
+	void onReplaceTriggered();
 	void autosave();
 	void onCopyClicked();
 	void textChanged();

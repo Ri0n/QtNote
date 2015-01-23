@@ -25,13 +25,15 @@ static struct {
 	ActData copy;
 	ActData print;
 	ActData find;
+	ActData replace;
 	ActData trash;
 } staticActData = {
-	.save  =  {"",              QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
-	.copy  =  {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
-	.print =  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
-	.find  =  {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
-	.trash =  {":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
+	.save   =  {"",              QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
+	.copy   =  {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
+	.print  =  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
+	.find   =  {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
+	.replace = {":/icons/replace-text",  QT_TR_NOOP("Replace"),QT_TR_NOOP("Replace text in note"),      "Ctrl+R"},
+	.trash  =  {":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
 };
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
@@ -75,7 +77,11 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	act = initAction(staticActData.find);
 	tbar->addAction(act);
-	connect(act, SIGNAL(triggered()), findBar, SLOT(toggleVisibility()));
+	connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
+
+	act = initAction(staticActData.replace);
+	tbar->addAction(act);
+	connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
 
 	tbar->addSeparator();
 
@@ -118,7 +124,6 @@ void NoteWidget::changeEvent(QEvent *e)
 	}
 }
 
-
 void NoteWidget::keyPressEvent(QKeyEvent * event)
 {
 	if (event->key() == Qt::Key_Escape && findBar->isVisible()) {
@@ -126,6 +131,27 @@ void NoteWidget::keyPressEvent(QKeyEvent * event)
 		return;
 	}
 	QWidget::keyPressEvent(event);
+}
+
+void NoteWidget::onFindTriggered()
+{
+	if (findBar->mode() == TypeAheadFindBar::Find) {
+		findBar->toggleVisibility();
+	} else {
+		findBar->setMode(TypeAheadFindBar::Find);
+		findBar->open();
+	}
+}
+
+
+void NoteWidget::onReplaceTriggered()
+{
+	if (findBar->mode() == TypeAheadFindBar::Replace) {
+		findBar->toggleVisibility();
+	} else {
+		findBar->setMode(TypeAheadFindBar::Replace);
+		findBar->open();
+	}
 }
 
 void NoteWidget::save()
