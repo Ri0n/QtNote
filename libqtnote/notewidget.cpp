@@ -6,6 +6,7 @@
 #include <QDesktopServices>
 #include <QKeyEvent>
 #include <QMessageBox>
+#include <QToolButton>
 
 #include "notewidget.h"
 #include "ui_notewidget.h"
@@ -78,10 +79,14 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	act = initAction(staticActData.find);
 	tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
+	QToolButton *findButton=
+		dynamic_cast<QToolButton*>(tbar->widgetForAction(act));
+	findButton->setPopupMode(QToolButton::InstantPopup);
 
 	act = initAction(staticActData.replace);
-	tbar->addAction(act);
+	//tbar->addAction(act);
 	connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
+	findButton->addAction(act);
 
 	tbar->addSeparator();
 

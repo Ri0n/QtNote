@@ -1,6 +1,7 @@
 /*
  * typeaheadfind.cpp - Typeahead find toolbar
  * Copyright (C) 2006  Maciej Niedzielski
+ *   2015 Added replace mode (C) Ilinykh Sergey
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,11 +30,10 @@
 #include <QStyle>
 #include <QLayout>
 #include <QTextDocumentFragment>
+#include <QPainter>
 
-/*#include "iconaction.h"
-#include "stretchwidget.h"
-#include "shortcutmanager.h"
-#include "psioptions.h"*/
+static const char* replaceIconName = ":/icons/replace-text";
+static QWeakPointer<QIcon> icnReplaceAll;
 
 /**
  * \class TypeAheadFindBar
@@ -91,13 +91,30 @@ public:
 		return true;
 	}
 
-	void doReplace()
+	bool doReplace()
 	{
-		if (te->textCursor().selection().isEmpty()) {
-			return;
+		if (le_find->text().isEmpty()) {
+			return false;
 		}
-		te->textCursor().removeSelectedText();
-		te->textCursor().insertText(le_replace->text());
+
+		QTextDocument::FindFlags options;
+		QTextCursor cursor = te->textCursor();
+		QTextDocumentFragment selected = cursor.selection();
+		if (selected.isEmpty() || (selected.toPlainText() != le_find->text())) {
+			if (!find(options))
+				return false;
+		}
+		cursor.removeSelectedText();
+		cursor.insertText(le_replace->text());
+		return find(options);
+	}
+
+	void doReplaceAll()
+	{
+		QTextCursor cur;
+		cur.setPosition(0);
+		te->setTextCursor(cur);
+		while (doReplace());
 	}
 
 	QString text;
@@ -110,8 +127,10 @@ public:
 	QAction *act_next;
 	QAction *act_prev;
 	QAction *act_replace;
+	QAction *act_replace_all;
 	QAction *act_le_replace;
 	QCheckBox *cb_case;
+	QSharedPointer<QIcon> icnReplaceAll;
 };
 
 /**
@@ -130,7 +149,7 @@ TypeAheadFindBar::TypeAheadFindBar(QTextEdit *textedit, const QString &title, QW
 
 void TypeAheadFindBar::init()
 {
-	setIconSize(QSize(16,16));
+	setIconSize(QSize(20,20));
 	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
 
 	d->caseSensitive = false;
@@ -159,10 +178,26 @@ void TypeAheadFindBar::init()
 	connect(d->act_prev, SIGNAL(triggered()), SLOT(findPrevious()));
 	addAction(d->act_prev);
 
-	d->act_replace = new QAction(QIcon(":/icons/replace-text"), tr("Replace"), this); // TODO find an icon for button
+	d->act_replace = new QAction(QIcon(replaceIconName), tr("Replace"), this);
 	d->act_replace->setToolTip(tr("Replace text"));
 	connect(d->act_replace, SIGNAL(triggered()), SLOT(replaceText()));
 	addAction(d->act_replace);
+
+	d->icnReplaceAll = icnReplaceAll.toStrongRef();
+	if (!d->icnReplaceAll) {
+		QPixmap replPix(replaceIconName);
+		QPainter p(&replPix);
+		int w = replPix.width() / 3.0 * 2.0;
+		int h = replPix.height() / 3.0 * 2.0;
+		p.drawPixmap(replPix.width() - w, replPix.height() - h, w, h,
+					 QApplication::style()->standardPixmap(QStyle::SP_BrowserReload)
+					 .scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+		d->icnReplaceAll = QSharedPointer<QIcon>(new QIcon(replPix));
+		icnReplaceAll = d->icnReplaceAll;
+	}
+	d->act_replace_all = new QAction(*d->icnReplaceAll, tr("Replace all"), this);
+	connect(d->act_replace_all, SIGNAL(triggered()), SLOT(replaceTextAll()));
+	addAction(d->act_replace_all);
 
 	d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
 	connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
@@ -177,6 +212,7 @@ void TypeAheadFindBar::init()
 void TypeAheadFindBar::setMode(TypeAheadFindBar::Mode mode)
 {
 	d->act_replace->setVisible(mode == Replace);
+	d->act_replace_all->setVisible(mode == Replace);
 	d->act_le_replace->setVisible(mode == Replace);
 	d->mode = mode;
 }
@@ -282,9 +318,20 @@ void TypeAheadFindBar::findPrevious()
 	d->doFind(true);
 }
 
+/**
+ * \brief Private slot activated when replace is requested.
+ */
 void TypeAheadFindBar::replaceText()
 {
 	d->doReplace();
+}
+
+/**
+ * \brief Private slot activated when replace-all is requested.
+ */
+void TypeAheadFindBar::replaceTextAll()
+{
+	d->doReplaceAll();
 }
 
 /**

@@ -56,6 +56,7 @@ private slots:
 	void findPrevious();
 	void caseToggled(int);
 	void replaceText();
+	void replaceTextAll();
 
 private:
 	class Private;
