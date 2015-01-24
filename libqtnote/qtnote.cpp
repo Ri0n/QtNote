@@ -261,6 +261,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
 	connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
 	connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
 	connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));
+	emit noteWidgetCreated(w);
 	return w;
 }
 

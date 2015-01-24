@@ -14,6 +14,7 @@ class TypeAheadFindBar;
 namespace QtNote {
 
 struct ActData;
+class NoteDialogEdit;
 
 class NoteWidget : public QWidget
 {
@@ -25,6 +26,7 @@ public:
 
 	void setText(QString text);
 	QString text();
+	NoteDialogEdit* editWidget() const;
 	void setAcceptRichText(bool state);
 	inline QString storageId() const { return _storageId; }
 	inline QString noteId() const { return noteId_; }

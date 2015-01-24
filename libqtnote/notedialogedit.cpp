@@ -26,6 +26,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "notedialogedit.h"
 
+namespace QtNote {
 
 NoteDialogEdit::NoteDialogEdit(QWidget *parent) :
     QTextEdit(parent)
@@ -68,3 +69,5 @@ void NoteDialogEdit::focusOutEvent(QFocusEvent *e)
 	emit focusLost();
 	QTextEdit::focusOutEvent(e);
 }
+
+} // namespace QtNote

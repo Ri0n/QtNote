@@ -2,7 +2,8 @@ include(../common.pri)
 
 TEMPLATE = subdirs
 
-SUBDIRS += baseintegration
+SUBDIRS += baseintegration \
+    spellchecker
 exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
 !noubuntu:SUBDIRS += ubuntu
 

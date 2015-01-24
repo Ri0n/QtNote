@@ -56,16 +56,11 @@ public:
 	void setDesktopImpl(DEIntegrationInterface *de);
 	void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
 
+signals:
+	void noteWidgetCreated(QWidget*);
+
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
-
-private:
-	class Private;
-	Private *d;
-
-    bool _inited;
-	ShortcutsManager* _shortcutsManager;
-	PluginManager *_pluginManager;
 
 private slots:
     void exitQtNote();
@@ -79,6 +74,15 @@ private slots:
 	void note_saveRequested();
 	void note_invalidated();
 	void note_removed(const NoteListItem &noteItem);
+
+private:
+	class Private;
+	Private *d;
+
+	bool _inited;
+	ShortcutsManager* _shortcutsManager;
+	PluginManager *_pluginManager;
+
 };
 
 } // namespace QtNote

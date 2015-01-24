@@ -203,6 +203,11 @@ QString NoteWidget::text()
 	return ui->noteEdit->toPlainText().trimmed();
 }
 
+NoteDialogEdit* NoteWidget::editWidget() const
+{
+	return ui->noteEdit;
+}
+
 void NoteWidget::setAcceptRichText(bool state)
 {
 	ui->noteEdit->setAcceptRichText(state);

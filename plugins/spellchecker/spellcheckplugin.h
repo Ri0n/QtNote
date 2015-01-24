@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2015 Ili'nykh Sergey
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,34 +19,35 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef NOTEDIALOGEDIT_H
-#define NOTEDIALOGEDIT_H
+#ifndef SpellCheckPlugin_H
+#define SpellCheckPlugin_H
 
-#include <QTextEdit>
+#include <QObject>
 
-class QDropEvent;
+#include "qtnoteplugininterface.h"
+#include "trayinterface.h"
+#include "deintegrationinterface.h"
 
 namespace QtNote {
 
-class NoteDialogEdit : public QTextEdit
+class SpellCheckPlugin : public QObject, public QtNotePluginInterface
 {
 	Q_OBJECT
+#if QT_VERSION >= 0x050000
+	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
+#endif
+	Q_INTERFACES(QtNote::QtNotePluginInterface)
 public:
-	explicit NoteDialogEdit(QWidget *parent = 0);
+	explicit SpellCheckPlugin(QObject *parent = 0);
 
-protected:
-	void dropEvent(QDropEvent *e);
-	void focusReceived(QFocusEvent *event);
-	void focusOutEvent(QFocusEvent *event);
-	void focusInEvent(QFocusEvent *);
-signals:
-	void focusLost();
-	void focusReceived();
-	
-public slots:
-	
+	virtual PluginMetadata metadata();
+	bool init(Main *qtnote);
+
+private slots:
+	void noteWidgetCreated(QWidget *w);
+private:
 };
 
 } // namespace QtNote
 
-#endif // NOTEDIALOGEDIT_H
+#endif // SpellCheckPlugin_H
