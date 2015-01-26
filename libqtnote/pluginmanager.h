@@ -53,6 +53,9 @@ public:
 	QStringList pluginsNames() const;
 	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
 	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
+	inline QString tooltip(const QString &pluginName) const {
+		return qobject_cast<QtNotePluginInterface*>(plugins[pluginName]->instance)->tooltip();
+	}
 signals:
 
 public slots:

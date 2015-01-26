@@ -60,6 +60,11 @@ bool UbuntuPlugin::init(Main *qtnote)
 	return true;
 }
 
+QString UbuntuPlugin::tooltip() const
+{
+	return "";
+}
+
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
 	return new UbuntuTray(qtnote, this);

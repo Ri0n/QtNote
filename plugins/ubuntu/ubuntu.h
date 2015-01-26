@@ -22,6 +22,7 @@ public:
 
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
+	QString tooltip() const;
 
 	TrayImpl* initTray(Main *qtnote);
 

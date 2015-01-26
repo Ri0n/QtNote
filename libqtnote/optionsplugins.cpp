@@ -72,8 +72,16 @@ public:
 					strStatus.insert(PluginManager::LS_Undefined, tr("Undefined"));
 					strStatus.insert(PluginManager::LS_Unloaded, tr("Unloaded"));
 				}
-				return tr("Filename: %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "\n" +
-						tr("Status: %1").arg(strStatus[status]);
+				QString ret = tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "\n" +
+						tr("<b>Status:</b> %1").arg(strStatus[status]);
+				if (status == PluginManager::LS_Loaded) {
+					QString tooltip = qtnote->pluginManager()->tooltip(pluginNames[index.row()]);
+					if (!tooltip.isEmpty()) {
+						ret += QLatin1Char('\n');
+						ret += tooltip;
+					}
+				}
+				return ret;
 			}
 			}
 		}

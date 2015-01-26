@@ -39,6 +39,11 @@ bool KDEIntegration::init(Main *qtnote)
 	return true;
 }
 
+QString KDEIntegration::tooltip() const
+{
+	return "";
+}
+
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
 	return new KDEIntegrationTray(qtnote, this);

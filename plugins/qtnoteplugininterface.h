@@ -31,6 +31,7 @@ class QtNotePluginInterface
 public:
 	virtual PluginMetadata metadata() = 0;
 	virtual bool init(Main *qtnote) = 0;
+	virtual QString tooltip() const = 0;
 };
 
 } // namespace QtNote

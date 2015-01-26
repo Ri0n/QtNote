@@ -36,6 +36,11 @@ bool BaseIntegration::init(Main *qtnote)
 	return true;
 }
 
+QString BaseIntegration::tooltip() const
+{
+	return "";
+}
+
 void BaseIntegration::activateWidget(QWidget *w)
 {
 	w->raise();

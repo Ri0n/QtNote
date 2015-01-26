@@ -44,6 +44,7 @@ public:
 
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
+	QString tooltip() const;
 
 private slots:
 	void noteWidgetCreated(QWidget *w);

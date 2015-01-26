@@ -67,6 +67,11 @@ bool SpellCheckPlugin::init(Main *qtnote)
 	return true;
 }
 
+QString SpellCheckPlugin::tooltip() const
+{
+	return ""; // todo return loaded dicts
+}
+
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
 	NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
