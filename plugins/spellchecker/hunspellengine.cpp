@@ -59,6 +59,9 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
 		li.hunspell = new Hunspell(aff.absoluteFilePath().toLocal8Bit(),
 						  dic.absoluteFilePath().toLocal8Bit());
 		li.codec = QTextCodec::codecForName(QByteArray(li.hunspell->get_dic_encoding()));
+		li.info.language = locale.language();
+		li.info.country = locale.country();
+		li.info.filename = dic.filePath();
 		languages.append(li);
 		return true;
 	}
@@ -73,6 +76,15 @@ bool HunspellEngine::spell(const QString &word) const
 		}
 	}
 	return false;
+}
+
+QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const
+{
+	QList<DictInfo> ret;
+	foreach (const LangItem &li, languages) {
+		ret.append(li.info);
+	}
+	return ret;
 }
 
 }

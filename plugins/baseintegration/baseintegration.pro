@@ -17,4 +17,4 @@ HEADERS += \
 	../trayinterface.h
 
 RESOURCES += \
-    base.qrc
+    baseintegration.qrc

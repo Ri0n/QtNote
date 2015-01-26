@@ -69,7 +69,22 @@ bool SpellCheckPlugin::init(Main *qtnote)
 
 QString SpellCheckPlugin::tooltip() const
 {
-	return ""; // todo return loaded dicts
+	QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
+	QStringList ret;
+	foreach (auto &d, dicts) {
+		QLocale locale(d.language, d.country);
+		QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (") +
+				locale.nativeCountryName() + QLatin1Char(')');
+		if (!d.filename.isEmpty()) {
+			l += QLatin1String(":</i> ");
+			l += d.filename;
+		} else {
+			l += QLatin1String("</i>");
+		}
+		ret.append(l);
+	}
+
+	return tr("<b>Loaded dictionaries:</b> ") + ret.join("<br/>  ");
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)

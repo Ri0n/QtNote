@@ -12,20 +12,19 @@ class KAction;
 
 namespace QtNote {
 
-class KDEIntegration : public QObject, public QtNotePluginInterface, public TrayInterface,
+class KDEIntegration : public QObject, public PluginInterface, public TrayInterface,
 		public DEIntegrationInterface, public GlobalShortcutsInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.KdeTrayIcon")
 #endif
-	Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::GlobalShortcutsInterface)
+	Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::GlobalShortcutsInterface)
 public:
 	explicit KDEIntegration(QObject *parent = 0);
 
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
-	QString tooltip() const;
 
 	TrayImpl* initTray(Main *qtnote);
 

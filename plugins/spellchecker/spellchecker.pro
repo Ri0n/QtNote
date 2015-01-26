@@ -22,4 +22,4 @@ HEADERS += \
     engineinterface.h
 
 RESOURCES += \
-    main.qrc
+    spellchecker.qrc

@@ -58,7 +58,10 @@ public:
 				return pluginNames[index.row()];
 
 			case Qt::DecorationRole:
-				return qtnote->pluginManager()->icon(pluginNames[index.row()]);
+			{
+				QIcon icon = qtnote->pluginManager()->icon(pluginNames[index.row()]);
+				return icon.isNull()? QIcon(":/icons/plugin") : icon;
+			}
 
 			case Qt::ToolTipRole:
 			{
@@ -70,14 +73,14 @@ public:
 					strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
 					strStatus.insert(PluginManager::LS_NotPlugin, tr("Not a plugin"));
 					strStatus.insert(PluginManager::LS_Undefined, tr("Undefined"));
-					strStatus.insert(PluginManager::LS_Unloaded, tr("Unloaded"));
+					strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
 				}
-				QString ret = tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "\n" +
+				QString ret = tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "<br/><br/>" +
 						tr("<b>Status:</b> %1").arg(strStatus[status]);
 				if (status == PluginManager::LS_Loaded) {
 					QString tooltip = qtnote->pluginManager()->tooltip(pluginNames[index.row()]);
 					if (!tooltip.isEmpty()) {
-						ret += QLatin1Char('\n');
+						ret += QLatin1String("<br/><br/>");
 						ret += tooltip;
 					}
 				}

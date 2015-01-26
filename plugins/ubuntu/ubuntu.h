@@ -9,20 +9,19 @@
 
 namespace QtNote {
 
-class UbuntuPlugin : public QObject, public QtNotePluginInterface, public TrayInterface,
+class UbuntuPlugin : public QObject, public PluginInterface, public TrayInterface,
 		DEIntegrationInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Ubuntu")
 #endif
-	Q_INTERFACES(QtNote::QtNotePluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface)
+	Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface)
 public:
 	explicit UbuntuPlugin(QObject *parent = 0);
 
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
-	QString tooltip() const;
 
 	TrayImpl* initTray(Main *qtnote);
 

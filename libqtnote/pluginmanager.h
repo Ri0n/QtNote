@@ -54,7 +54,8 @@ public:
 	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
 	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
 	inline QString tooltip(const QString &pluginName) const {
-		return qobject_cast<QtNotePluginInterface*>(plugins[pluginName]->instance)->tooltip();
+		auto plugin = qobject_cast<PluginOptionsTooltipInterface*>(plugins[pluginName]->instance);
+		return plugin? plugin->tooltip() : QString();
 	}
 signals:
 

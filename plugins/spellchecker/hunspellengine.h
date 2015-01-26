@@ -12,6 +12,7 @@ class HunspellEngine : public SpellEngineInterface
 {
 public:
 	struct LangItem {
+		DictInfo info;
 		Hunspell *hunspell;
 		QTextCodec *codec;
 	};
@@ -20,6 +21,7 @@ public:
 
 	bool addLanguage(const QLocale &locale);
 	bool spell(const QString &word) const;
+	QList<DictInfo> loadedDicts() const;
 
 private:
 	QList<LangItem> languages;

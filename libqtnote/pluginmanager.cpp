@@ -200,7 +200,7 @@ void PluginManager::loadPlugins()
 				fp.base.push_back(plugin);
 			}
 		}
-		qobject_cast<QtNotePluginInterface*>(pd->instance)->init(qtnote);
+		qobject_cast<PluginInterface*>(pd->instance)->init(qtnote);
 	}
 
 	/* set most desirable tray implementation */
@@ -281,7 +281,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 	s.beginGroup("plugins");
 	QObject *plugin = loader.instance();
 	if (plugin) {
-		QtNotePluginInterface *qnp = qobject_cast<QtNotePluginInterface *>(plugin);
+		PluginInterface *qnp = qobject_cast<PluginInterface *>(plugin);
 		if (!qnp) {
 			loader.unload();
 			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));

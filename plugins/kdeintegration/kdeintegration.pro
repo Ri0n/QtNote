@@ -15,4 +15,4 @@ HEADERS += \
     kdeintegrationtray.h
 
 RESOURCES += \
-    main.qrc
+    kdeintegration.qrc

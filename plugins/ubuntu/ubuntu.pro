@@ -16,4 +16,4 @@ HEADERS += \
     x11util.h
 
 RESOURCES += \
-    main.qrc
+    ubuntu.qrc
