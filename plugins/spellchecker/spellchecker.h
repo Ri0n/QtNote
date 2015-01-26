@@ -2,26 +2,23 @@
 #define QTNOTE_SPELLCHECKER_H
 
 #include <QObject>
+#include <QSyntaxHighlighter>
 
 #include "notedialogedit.h"
 
 namespace QtNote {
 
-class SpellChecker : public QObject
+class SpellEngineInterface;
+
+class SpellCheckHighlighter : public QSyntaxHighlighter
 {
 	Q_OBJECT
+
+	SpellEngineInterface *sei;
 public:
-	explicit SpellChecker(NoteDialogEdit *parent = 0);
 
-signals:
-
-public slots:
-
-private slots:
-	void contentsChange(int position, int charsRemoved, int charsAdded);
-
-private:
-	NoteDialogEdit *nde;
+	SpellCheckHighlighter(SpellEngineInterface *sei, NoteDialogEdit *nde);
+	void highlightBlock(const QString &text);
 };
 
 } // namespace QtNote

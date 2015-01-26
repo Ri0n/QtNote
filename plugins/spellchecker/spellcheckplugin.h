@@ -30,6 +30,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+class SpellEngineInterface;
+
 class SpellCheckPlugin : public QObject, public QtNotePluginInterface
 {
 	Q_OBJECT
@@ -45,7 +47,9 @@ public:
 
 private slots:
 	void noteWidgetCreated(QWidget *w);
-private:
+
+private:	
+	SpellEngineInterface *sei;
 };
 
 } // namespace QtNote

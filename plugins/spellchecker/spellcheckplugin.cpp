@@ -21,13 +21,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QWidget>
 #include <QtPlugin>
-#include <QProcess>
-#include <QTimer>
+#include <QLocale>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
 #include "notewidget.h"
 #include "spellchecker.h"
+#include "hunspellengine.h"
 
 namespace QtNote {
 
@@ -56,6 +56,13 @@ PluginMetadata SpellCheckPlugin::metadata()
 
 bool SpellCheckPlugin::init(Main *qtnote)
 {
+	sei = new HunspellEngine();
+	QLocale systemLocale = QLocale::system();
+	QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
+	sei->addLanguage(QLocale::system());
+	if (enLocale != systemLocale) {
+		sei->addLanguage(enLocale);
+	}
 	connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
 	return true;
 }
@@ -63,8 +70,7 @@ bool SpellCheckPlugin::init(Main *qtnote)
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
 	NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
-
-	new SpellChecker(nw->editWidget());
+	new SpellCheckHighlighter(sei, nw->editWidget());
 }
 
 } // namespace QtNote
