@@ -9,6 +9,8 @@ namespace QtNote {
 
 class PluginsModel : public QAbstractTableModel
 {
+	Q_OBJECT
+
 	Main *qtnote;
 	QStringList pluginNames; // by priority
 
