@@ -103,7 +103,7 @@
        <item>
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string notr="true">www: &lt;a href=&quot;http://qtnote.googlecode.com/&quot;&gt;http://qtnote.googlecode.com&lt;/a&gt;</string>
+          <string notr="true">www: &lt;a href=&quot;http://ri0n.github.io/QtNote&quot;&gt;http://ri0n.github.io/QtNote&lt;/a&gt;</string>
          </property>
          <property name="openExternalLinks">
           <bool>true</bool>

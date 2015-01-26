@@ -47,10 +47,12 @@ public:
 
 	void loadPlugins();
 	LoadPolicy loadPolicy(const QString &pluginName) const { return plugins[pluginName]->loadPolicy; }
+	LoadStatus loadStatus(const QString &pluginName) const { return plugins[pluginName]->loadStatus; }
 	void setLoadPolicy(const QString &pluginName, LoadPolicy lp);
 	inline int pluginsCount() const { return plugins.size(); }
 	QStringList pluginsNames() const;
 	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
+	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
 signals:
 
 public slots:

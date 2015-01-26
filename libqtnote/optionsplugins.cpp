@@ -39,7 +39,8 @@ public:
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
 	{
 		if (index.column() == 0) {
-			if (role == Qt::CheckStateRole)
+			switch (role) {
+			case Qt::CheckStateRole:
 			{
 				PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginNames[index.row()]);
 				switch (lp)
@@ -51,10 +52,29 @@ public:
 				case PluginManager::LP_Enabled:
 					return Qt::Checked;
 				}
-			} else if (role == Qt::DisplayRole) {
+			}
+
+			case Qt::DisplayRole:
 				return pluginNames[index.row()];
-			} else if (role == Qt::DecorationRole) {
+
+			case Qt::DecorationRole:
 				return qtnote->pluginManager()->icon(pluginNames[index.row()]);
+
+			case Qt::ToolTipRole:
+			{
+				PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginNames[index.row()]);
+				static QMap<PluginManager::LoadStatus,QString> strStatus;
+				if (strStatus.isEmpty()) {
+					strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
+					strStatus.insert(PluginManager::LS_ErrVersion, tr("Incompatible version"));
+					strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
+					strStatus.insert(PluginManager::LS_NotPlugin, tr("Not a plugin"));
+					strStatus.insert(PluginManager::LS_Undefined, tr("Undefined"));
+					strStatus.insert(PluginManager::LS_Unloaded, tr("Unloaded"));
+				}
+				return tr("Filename: %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "\n" +
+						tr("Status: %1").arg(strStatus[status]);
+			}
 			}
 		}
 		return QVariant();

@@ -44,7 +44,7 @@ PluginMetadata SpellCheckPlugin::metadata()
 {
 	PluginMetadata md;
 	md.pluginType = PluginMetadata::DEIntegration;
-	md.icon = QIcon(":/icons/ubuntu-logo");
+	md.icon = QIcon(":/icons/spellcheck-logo");
 	md.name = "Spell check";
 	md.description = "Realtime spell check.";
 	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
