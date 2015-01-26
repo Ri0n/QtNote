@@ -159,3 +159,5 @@ OptionsPlugins::~OptionsPlugins()
 }
 
 } // namespace QtNote
+
+#include "optionsplugins.moc"
