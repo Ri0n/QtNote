@@ -292,10 +292,6 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 			cache = PluginData::Ptr(new PluginData);
 			cache->loadPolicy = LP_Auto;
 		}
-		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
-			loader.unload();
-			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
-		}
 		cache->instance = loadStatus == LS_Loaded? plugin : 0;
 		cache->fileName = fileName;
 		cache->modifyTime = QFileInfo(fileName).lastModified();
@@ -325,6 +321,10 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		s.setValue("extra", md.extra);
 		if (!cache->metadata.icon.isNull()) {
 			cache->metadata.icon.pixmap(16, 16).save(Utils::localDataDir() + "/plugin-icons/" + md.name + ".png");
+		}
+		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
+			loader.unload();
+			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
 		}
 
 		return loadStatus;
