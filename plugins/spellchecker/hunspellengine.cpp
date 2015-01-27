@@ -25,7 +25,9 @@ static bool scanDictPaths(const QString &language, QFileInfo &aff , QFileInfo &d
 	dictPaths << QLatin1String("/opt/local/share/myspell"); // MacPorts standard paths
 #else
 	dictPaths << QLatin1String("/usr/share/myspell")
-			  << QLatin1String("/usr/local/share/myspell");
+			  << QLatin1String("/usr/share/hunspell")
+			  << QLatin1String("/usr/local/share/myspell")
+			  << QLatin1String("/usr/local/share/hunspell");
 #endif
 
 	foreach (const QString &dictPath, dictPaths.toList()) {
