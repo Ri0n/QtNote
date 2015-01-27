@@ -16,7 +16,7 @@ void SpellCheckHighlighter::highlightBlock(const QString &text)
 {
 	QTextCharFormat myClassFormat;
 	myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
-	QString pattern = "\\b[A-Za-z]{2,}\\b";
+	QString pattern = "\\b\\w{2,}\\b";
 
 	QRegExp expression(pattern);
 	int index = text.indexOf(expression);
