@@ -139,20 +139,12 @@ PluginManager::PluginManager(Main *parent) :
 
 void PluginManager::loadPlugins()
 {
-	enum Feature
-	{
-		NotSpecial,
-		Desktop,
-		Tray,
-		GlobalShortcuts
-	};
-
 	struct FeaturedPlugin {
 		QStringList native;
 		QStringList base;
 	};
 	
-	QMap<Feature,FeaturedPlugin> featurePriority;
+	QMap<PluginFeature,FeaturedPlugin> featurePriority;
 	
 
 	QSettings s;
@@ -182,17 +174,17 @@ void PluginManager::loadPlugins()
 			continue;
 		}
 
-		QList<Feature> featureList;
-		if (qobject_cast<TrayInterface*>(plugins[plugin]->instance)) {
-			featureList.append(Tray);
+		QList<PluginFeature> featureList;
+		if (pd->features & TrayIcon) {
+			featureList.append(TrayIcon);
 		}
-		if (qobject_cast<DEIntegrationInterface*>(plugins[plugin]->instance)) {
-			featureList.append(Desktop);
+		if (pd->features & DEIntegration) {
+			featureList.append(DEIntegration);
 		}
-		if (qobject_cast<GlobalShortcutsInterface*>(plugins[plugin]->instance)) {
+		if (pd->features & GlobalShortcuts) {
 			featureList.append(GlobalShortcuts);
 		}
-		foreach (Feature f, featureList) {
+		foreach (PluginFeature f, featureList) {
 			FeaturedPlugin &fp = featurePriority[f];
 			if (native) {
 				fp.native.push_back(plugin);
@@ -204,7 +196,7 @@ void PluginManager::loadPlugins()
 	}
 
 	/* set most desirable tray implementation */
-	QStringList trayPlugins = featurePriority[Tray].native + featurePriority[Tray].base;
+	QStringList trayPlugins = featurePriority[TrayIcon].native + featurePriority[TrayIcon].base;
 	foreach(const QString &plugin, trayPlugins) {
 		TrayInterface *tp = qobject_cast<TrayInterface *>(plugins[plugin]->instance);
 		TrayImpl *tray = tp->initTray(qtnote);
@@ -215,7 +207,7 @@ void PluginManager::loadPlugins()
 	}
 
 	/* set most desirable desktop environment plugin */
-	QStringList dePlugins = featurePriority[Desktop].native + featurePriority[Desktop].base;
+	QStringList dePlugins = featurePriority[DEIntegration].native + featurePriority[DEIntegration].base;
 	if (dePlugins.length()) {
 		qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
 	}
@@ -309,6 +301,16 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		cache->modifyTime = QFileInfo(fileName).lastModified();
 		cache->loadStatus = loadStatus;
 		cache->metadata = md;
+		cache->features &= 0;
+		if (qobject_cast<TrayInterface*>(plugin)) {
+			cache->features |= TrayIcon;
+		}
+		if (qobject_cast<DEIntegrationInterface*>(plugin)) {
+			cache->features |= DEIntegration;
+		}
+		if (qobject_cast<GlobalShortcutsInterface*>(plugin)) {
+			cache->features |= GlobalShortcuts;
+		}
 		s.beginGroup(cache->metadata.name);
 		s.setValue("loadPolicy", cache->loadPolicy);
 		s.setValue("filename", cache->fileName);
