@@ -63,8 +63,12 @@ public:
 	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
 	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
 	inline QString tooltip(const QString &pluginName) const {
-		auto plugin = qobject_cast<PluginOptionsTooltipInterface*>(plugins[pluginName]->instance);
-		return plugin? plugin->tooltip() : QString();
+		PluginData::Ptr pd = plugins[pluginName];
+		PluginOptionsTooltipInterface *plugin;
+		if ((pd->loadStatus == LS_Loaded) && (plugin = qobject_cast<PluginOptionsTooltipInterface*>(pd->instance))) {
+			return plugin->tooltip();
+		}
+		return QString();
 	}
 signals:
 

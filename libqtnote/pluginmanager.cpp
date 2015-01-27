@@ -295,7 +295,6 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		cache->instance = loadStatus == LS_Loaded? plugin : 0;
 		cache->fileName = fileName;
 		cache->modifyTime = QFileInfo(fileName).lastModified();
-		cache->loadStatus = loadStatus;
 		cache->metadata = md;
 		cache->features &= 0;
 		if (qobject_cast<TrayInterface*>(plugin)) {
@@ -326,6 +325,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 			loader.unload();
 			loadStatus = LS_Unloaded; // actual status knows only QPluginLoader. probably I should fix it
 		}
+		cache->loadStatus = loadStatus;
 
 		return loadStatus;
 	}
