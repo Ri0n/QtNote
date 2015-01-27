@@ -29,6 +29,14 @@ public:
 		LP_Disabled
 	};
 
+	enum PluginFeature {
+		DEIntegration   = 0x1,
+		TrayIcon        = 0x2,
+		GlobalShortcuts = 0x4,
+		NoteStorage     = 0x8
+	};
+	Q_DECLARE_FLAGS(PluginFeatures, PluginFeature)
+
 	class PluginData
 	{
 	public:
@@ -40,6 +48,7 @@ public:
 		LoadStatus loadStatus;
 		QString fileName;
 		QDateTime modifyTime;
+		PluginManager::PluginFeatures features;
 		PluginMetadata metadata;
 	};
 

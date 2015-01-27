@@ -29,9 +29,6 @@
 #include "optionsdlg.h"
 #include "notemanagerdlg.h"
 #include "utils.h"
-#ifdef TOMBOY
-#include "tomboystorage.h"
-#endif
 #include "ptfstorage.h"
 #include "shortcutsmanager.h"
 #include "pluginmanager.h"
@@ -118,31 +115,11 @@ Main::Main(QObject *parent) :
 		return;
 	}
 
-	// itialzation of notes storages
-	QList<NoteStorage*> storages;
-	QStringList priorities = QSettings().value("storage.priority")
-							 .toStringList();
-	QStringList prioritiesR;
-	while (priorities.count()) {
-		prioritiesR.append(priorities.takeLast());
+	auto ptfStorage = new PTFStorage(qApp);
+	if (!registerStorage(ptfStorage)) {
+		delete ptfStorage;
 	}
 
-#ifdef TOMBOY
-	storages.append(new TomboyStorage(qApp));
-#endif
-	storages.append(new PTFStorage(qApp));
-
-	while (storages.count()) {
-		NoteStorage *storage = storages.takeFirst();
-		if (storage->isAccessible()) {
-			int priority = prioritiesR.indexOf(storage->systemName());
-			NoteManager::instance()->registerStorage(storage,
-													 priority >= 0? priority:0);
-			connect(storage, SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
-		} else {
-			delete storage;
-		}
-	}
     _inited = NoteManager::instance()->loadAll();
 	if (!NoteManager::instance()->loadAll()) {
 		QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
@@ -311,6 +288,21 @@ void Main::setDesktopImpl(DEIntegrationInterface *de)
 void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
 {
 	d->globalShortcuts = gs;
+}
+
+bool Main::registerStorage(NoteStorage *storage)
+{
+	static QStringList priorities = QSettings().value("storage.priority")
+							 .toStringList();
+
+	if (storage->isAccessible()) {
+		int priority = priorities.indexOf(storage->systemName());
+		NoteManager::instance()->registerStorage(storage,
+												 priority >= 0? priority:0);
+		connect(storage, SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
+		return true;
+	}
+	return false;
 }
 
 void Main::createNewNote()

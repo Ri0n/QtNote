@@ -18,7 +18,6 @@ BaseIntegration::BaseIntegration(QObject *parent) :
 PluginMetadata BaseIntegration::metadata()
 {
 	PluginMetadata md;
-	md.pluginType = PluginMetadata::DEIntegration;
 	md.icon = QIcon(":/icons/logo");
 	md.name = "Base Integration";
 	md.description = "Provides fallback desktop environment integration";
@@ -50,6 +49,7 @@ TrayImpl* BaseIntegration::initTray(Main *qtnote)
 
 bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
 {
+	// TODO remember id for future deregistration
 	QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
 	connect(gs, SIGNAL(activated()), receiver, slot);
 	return true;

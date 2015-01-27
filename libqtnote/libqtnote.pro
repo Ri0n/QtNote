@@ -20,7 +20,6 @@ include(../common.pri)
 
 TARGET = $$APPNAME
 TEMPLATE = lib
-CONFIG += tomboy # force tomboy
 
 QT += xml
 greaterThan(QT_MAJOR_VERSION, 4) {
@@ -85,14 +84,6 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/notewidget.h \
 	$$PWD/pluginmanager.h \
     optionsplugins.h
-
-tomboy { 
-    SOURCES += $$PWD/tomboystorage.cpp \
-        $$PWD/tomboydata.cpp
-    HEADERS += $$PWD/tomboystorage.h \
-        $$PWD/tomboydata.h
-    DEFINES += TOMBOY
-}
 
 FORMS += $$PWD/notedialog.ui \
 	$$PWD/aboutdlg.ui \

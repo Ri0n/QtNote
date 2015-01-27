@@ -6,6 +6,7 @@ SUBDIRS += baseintegration \
     spellchecker
 exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
 !noubuntu:SUBDIRS += ubuntu
+!notomboy:SUBDIRS += tomboy
 
 #!nocrypt:SUBDIRS += crypt
 

@@ -36,6 +36,7 @@ class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
 class NoteListItem;
+class NoteStorage;
 
 class Main : public QObject
 {
@@ -55,6 +56,7 @@ public:
 	void setTrayImpl(TrayImpl *tray);
 	void setDesktopImpl(DEIntegrationInterface *de);
 	void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
+	bool registerStorage(NoteStorage *storage);
 
 signals:
 	void noteWidgetCreated(QWidget*);

@@ -122,7 +122,7 @@ PluginManager::PluginManager(Main *parent) :
 		pd->loadStatus = LS_Undefined;
 		pd->fileName = s.value("filename").toString();
 		pd->modifyTime = s.value("lastModified").toDateTime();
-		pd->metadata.pluginType = (PluginMetadata::PluginType)s.value("pluginType").toInt();
+		pd->features = (PluginFeatures)s.value("features").toUInt();
 		pd->metadata.name = pluginName;
 		pd->metadata.description = s.value("description").toString();
 		pd->metadata.author = s.value("author").toString();
@@ -298,8 +298,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 
 		if (!cache) {
 			cache = PluginData::Ptr(new PluginData);
-			cache->loadPolicy = md.pluginType ==  PluginMetadata::DEIntegration?
-						LP_Auto : LP_Enabled;
+			cache->loadPolicy = LP_Auto;
 		}
 		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
 			loader.unload();
@@ -314,7 +313,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		s.setValue("loadPolicy", cache->loadPolicy);
 		s.setValue("filename", cache->fileName);
 		s.setValue("lastModify", cache->modifyTime);
-		s.setValue("pluginType", md.pluginType);
+		s.setValue("features", (uint)cache->features);
 		s.setValue("name", md.name);
 		s.setValue("description", md.description);
 		s.setValue("author", md.author);

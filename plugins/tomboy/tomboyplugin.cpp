@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2015 Ili'nykh Sergey
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,74 +19,48 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QWidget>
 #include <QtPlugin>
-#include <QProcess>
-#include <QTimer>
 
-#include "ubuntu.h"
-#include "ubuntutray.h"
-#include "x11util.h"
+#include "qtnote.h"
+#include "tomboyplugin.h"
+#include "tomboystorage.h"
 
 namespace QtNote {
 
 
 //------------------------------------------------------------
-// UbuntuPlugin
+// TomboyPlugin
 //------------------------------------------------------------
-UbuntuPlugin::UbuntuPlugin(QObject *parent) :
+TomboyPlugin::TomboyPlugin(QObject *parent) :
 	QObject(parent)
 {
 }
 
-PluginMetadata UbuntuPlugin::metadata()
+PluginMetadata TomboyPlugin::metadata()
 {
 	PluginMetadata md;
-	md.icon = QIcon(":/icons/ubuntu-logo");
-	md.name = "Ubuntu Integration";
-	md.description = "Integrtion with ubuntu-only features";
+	md.icon = QIcon(":/icons/tomboy");
+	md.name = "Tomboy Storage";
+	md.description = "Allows read and write tomboy notes";
 	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
 	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
 	md.minVersion = 0x020300; // minimum compatible version of QtNote
 	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.extra.insert("de", QStringList() << "ubuntu");
 	return md;
 }
 
-bool UbuntuPlugin::init(Main *qtnote)
+bool TomboyPlugin::init(Main *qtnote)
 {
-	Q_UNUSED(qtnote)
+	auto storage = new TomboyStorage(this);
+	if (!qtnote->registerStorage(storage)) {
+		delete storage;
+		return false;
+	}
 	return true;
-}
-
-TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
-{
-	return new UbuntuTray(qtnote, this);
-}
-
-void UbuntuPlugin::activateWidget(QWidget *w)
-{
-	QTimer *timer = new QTimer(this);
-	timer->setSingleShot(true);
-	connect(timer, SIGNAL(timeout()), SLOT(activator()));
-	timer->setProperty("widget", QVariant::fromValue<QWidget*>(w));
-	timer->start(100);
-}
-
-
-void UbuntuPlugin::activator()
-{
-	QTimer *timer = (QTimer*)sender();
-	QWidget *w = sender()->property("widget").value<QWidget*>();
-
-	/*w->activateWindow();
-	w->raise();*/
-	X11Util::forceActivateWindow(w->winId());
-	timer->deleteLater();
 }
 
 } // namespace QtNote
 
 #if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(ubuntuplugin, QtNote::UbuntuPlugin)
+Q_EXPORT_PLUGIN2(TomboyPlugin, QtNote::TomboyPlugin)
 #endif

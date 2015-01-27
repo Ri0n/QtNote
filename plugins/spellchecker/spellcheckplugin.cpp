@@ -43,7 +43,6 @@ SpellCheckPlugin::SpellCheckPlugin(QObject *parent) :
 PluginMetadata SpellCheckPlugin::metadata()
 {
 	PluginMetadata md;
-	md.pluginType = PluginMetadata::DEIntegration;
 	md.icon = QIcon(":/icons/spellcheck-logo");
 	md.name = "Spell check";
 	md.description = "Realtime spell check.";
