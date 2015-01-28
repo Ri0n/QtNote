@@ -67,7 +67,8 @@ public:
 
 	QString storageId(const QModelIndex &index) const
 	{
-		return titleMap.keys()[index.row()];
+		QString storageId = titleMap.key(stringList()[index.row()]);
+		return storageId;
 	}
 
 	Qt::ItemFlags flags(const QModelIndex &index) const
@@ -214,6 +215,9 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
 		return;
 	}
 	QWidget *w = NoteManager::instance()->storage(storageId)->settingsWidget();
+	if (!w) {
+		return;
+	}
 	QDialog *dlg = new QDialog(this);
 	QVBoxLayout *vl = new QVBoxLayout;
 	QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok
