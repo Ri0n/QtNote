@@ -51,9 +51,8 @@ PluginMetadata TomboyPlugin::metadata()
 
 bool TomboyPlugin::init(Main *qtnote)
 {
-	auto storage = new TomboyStorage(this);
+	auto storage = NoteStorage::Ptr(new TomboyStorage(this));
 	if (!qtnote->registerStorage(storage)) {
-		delete storage;
 		return false;
 	}
 	return true;

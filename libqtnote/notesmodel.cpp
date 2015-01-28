@@ -30,13 +30,13 @@ class NMMItem
 {
 public:
 
-	NMMItem(const StorageItem &storage)
+	NMMItem(const NoteStorage::Ptr &storage)
 		: parent(0)
 		, type(NotesModel::ItemStorage)
-		, title(storage.storage->titleName())
-		, id(storage.storage->systemName())
+		, title(storage->titleName())
+		, id(storage->systemName())
 	{
-		foreach (const NoteListItem &note, storage.storage->noteList()) {
+		foreach (const NoteListItem &note, storage->noteList()) {
 			children.append(new NMMItem(note, this));
 		}
 	}
@@ -78,9 +78,9 @@ void debug(const QString &prefix, NMMItem *item)
 NotesModel::NotesModel(QObject *parent)
 	: QAbstractItemModel(parent)
 {
-	foreach (const StorageItem &s, NoteManager::instance()->storages()) {
+	foreach (const NoteStorage::Ptr &s, NoteManager::instance()->storages()) {
 		storages.append(new NMMItem(s));
-		setStorageSignalHandlers(s.storage);
+		setStorageSignalHandlers(s);
 	}
 	connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), SLOT(storageAdded(StorageItem)));
 	connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), SLOT(storageRemoved(StorageItem)));
@@ -91,12 +91,12 @@ NotesModel::~NotesModel()
 	qDeleteAll(storages);
 }
 
-void NotesModel::setStorageSignalHandlers(NoteStorage *s)
+void NotesModel::setStorageSignalHandlers(NoteStorage::Ptr s)
 {
-	connect(s, SIGNAL(noteAdded(NoteListItem)), SLOT(noteAdded(NoteListItem)));
-	connect(s, SIGNAL(noteModified(NoteListItem)), SLOT(noteModified(NoteListItem)));
-	connect(s, SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
-	connect(s, SIGNAL(invalidated()), SLOT(storageInvalidated()));
+	connect(s.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(noteAdded(NoteListItem)));
+	connect(s.data(), SIGNAL(noteModified(NoteListItem)), SLOT(noteModified(NoteListItem)));
+	connect(s.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
+	connect(s.data(), SIGNAL(invalidated()), SLOT(storageInvalidated()));
 }
 
 QModelIndex NotesModel::storageIndex(const QString &storageId) const
@@ -127,12 +127,12 @@ QModelIndex NotesModel::noteIndex(const QString &storageId, const QString &noteI
 	return QModelIndex();
 }
 
-void NotesModel::storageAdded(const StorageItem &)
+void NotesModel::storageAdded(const NoteStorage::Ptr &)
 {
 
 }
 
-void NotesModel::storageRemoved(const StorageItem &)
+void NotesModel::storageRemoved(const NoteStorage::Ptr &)
 {
 
 }

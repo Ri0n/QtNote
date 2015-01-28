@@ -32,7 +32,7 @@ class PTFStorage : public FileStorage
 	Q_DISABLE_COPY(PTFStorage)
 	void initNotesDir();
 public:
-	PTFStorage(QObject *parent);
+	PTFStorage(QObject *parent = 0);
 	bool isAccessible() const;
 	const QString systemName() const;
 	const QString titleName() const;

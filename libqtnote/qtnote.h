@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define QTNOTE_H
 
 #include <QObject>
+#include "notestorage.h"
 
 class QAction;
 class QMenu;
@@ -36,7 +37,6 @@ class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
 class NoteListItem;
-class NoteStorage;
 
 class Main : public QObject
 {
@@ -56,7 +56,7 @@ public:
 	void setTrayImpl(TrayImpl *tray);
 	void setDesktopImpl(DEIntegrationInterface *de);
 	void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
-	bool registerStorage(NoteStorage *storage);
+	bool registerStorage(NoteStorage::Ptr &storage);
 
 signals:
 	void noteWidgetCreated(QWidget*);

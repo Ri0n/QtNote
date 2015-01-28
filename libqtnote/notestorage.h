@@ -50,6 +50,8 @@ class NoteStorage : public QObject
 {
 	Q_OBJECT
 public:
+	typedef QSharedPointer<NoteStorage> Ptr;
+
 	NoteStorage(QObject *parent);
 	virtual const QString systemName() const = 0;
 	virtual const QString titleName() const = 0;
@@ -70,6 +72,7 @@ signals:
 	void noteRemoved(const NoteListItem &);
 	void invalidated();
 };
+
 
 } // namespace QtNote
 

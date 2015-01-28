@@ -115,10 +115,8 @@ Main::Main(QObject *parent) :
 		return;
 	}
 
-	auto ptfStorage = new PTFStorage(qApp);
-	if (!registerStorage(ptfStorage)) {
-		delete ptfStorage;
-	}
+	auto ptfStorage = NoteStorage::Ptr(new PTFStorage());
+	registerStorage(ptfStorage);
 
     _inited = NoteManager::instance()->loadAll();
 	if (!NoteManager::instance()->loadAll()) {
@@ -290,7 +288,7 @@ void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
 	d->globalShortcuts = gs;
 }
 
-bool Main::registerStorage(NoteStorage *storage)
+bool Main::registerStorage(NoteStorage::Ptr &storage)
 {
 	static QStringList priorities = QSettings().value("storage.priority")
 							 .toStringList();
@@ -299,7 +297,7 @@ bool Main::registerStorage(NoteStorage *storage)
 		int priority = priorities.indexOf(storage->systemName());
 		NoteManager::instance()->registerStorage(storage,
 												 priority >= 0? priority:0);
-		connect(storage, SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
+		connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
 		return true;
 	}
 	return false;
@@ -384,7 +382,7 @@ void Main::createNewNoteFromSelection()
 void Main::note_trashRequested()
 {
 	NoteWidget *nw = static_cast<NoteWidget *>(sender());
-	NoteStorage *storage = NoteManager::instance()->storage(nw->storageId());
+	auto storage = NoteManager::instance()->storage(nw->storageId());
 	if (!nw->noteId().isEmpty()) {
 		storage->deleteNote(nw->noteId());
 	}
@@ -396,7 +394,7 @@ void Main::note_saveRequested()
 	QString storageId = nw->storageId();
 	QString noteId = nw->noteId();
 	QString text = nw->text();
-	NoteStorage *storage = NoteManager::instance()->storage(storageId);
+	auto storage = NoteManager::instance()->storage(storageId);
 	if (text.isEmpty()) { // delete empty note
 		if (!noteId.isEmpty()) {
 			storage->deleteNote(noteId);

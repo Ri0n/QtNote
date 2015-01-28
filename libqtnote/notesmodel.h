@@ -23,12 +23,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTESMODEL_H
 
 #include <QAbstractItemModel>
+#include "notestorage.h"
 
 namespace QtNote {
 
-class NoteStorage;
 class NMMItem;
-struct StorageItem;
 struct NoteListItem;
 
 class NotesModel : public QAbstractItemModel
@@ -48,7 +47,7 @@ public:
 
 	explicit NotesModel(QObject *parent = 0);
 	~NotesModel();
-	void setStorageSignalHandlers(NoteStorage *s);
+	void setStorageSignalHandlers(NoteStorage::Ptr s);
 
 	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
@@ -62,8 +61,8 @@ signals:
 public slots:
 
 private slots:
-	void storageAdded(const StorageItem &);
-	void storageRemoved(const StorageItem &);
+	void storageAdded(const NoteStorage::Ptr &);
+	void storageRemoved(const NoteStorage::Ptr &);
 	void noteAdded(const NoteListItem &);
 	void noteModified(const NoteListItem &);
 	void noteRemoved(const NoteListItem &);

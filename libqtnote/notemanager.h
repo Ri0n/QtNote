@@ -28,54 +28,43 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-struct StorageItem {
-	StorageItem()
-		: storage(0)
-	{
-
-	}
-	StorageItem(NoteStorage *storage_, int priority_)
-		: storage(storage_)
-		, priority(priority_)
-	{
-
-	}
-	NoteStorage *storage;
-	int priority;
-};
-
 class NoteManager : public QObject
 {
 	Q_OBJECT
 public:
 	static NoteManager *instance();
-	void registerStorage(NoteStorage *storage, int priority = 0);
+	void registerStorage(NoteStorage::Ptr storage, quint16 priority = 0);
 	bool loadAll();
+
 	QList<NoteListItem> noteList(int count = -1) const;
+
 	Note getNote(const QString &storageId, const QString &noteId);
-	const QMap<QString, StorageItem> storages() const;
-	const QList<StorageItem> prioritizedStorages() const;
-	NoteStorage * storage(const QString &storageId) const;
-	NoteStorage *defaultStorage();
-	//QStringList storageCodes() const;
+
+	const QMap<QString, NoteStorage::Ptr> storages() const;
+
+	inline const QMap<quint16, NoteStorage::Ptr> prioritizedStorages() const
+	{ return _prioritizedStorages; }
+
+	NoteStorage::Ptr storage(const QString &storageId) const;
+	inline NoteStorage::Ptr defaultStorage() const
+	{ return _prioritizedStorages.constBegin().value(); }
+
 	void updatePriorities(const QStringList &storageCodes);
-	//int notesAmount(const QString &storage = QString()) const;
 
 signals:
-	void storageAdded(StorageItem);
-	void storageRemoved(StorageItem);
-	void storageChanged(StorageItem);
+	void storageAdded(NoteStorage::Ptr);
+	void storageRemoved(NoteStorage::Ptr);
+	void storageChanged(NoteStorage::Ptr);
 
 private slots:
 	void storageChanged();
 
 private:
 	NoteManager(QObject *parent);
-	static bool prioritySorter(const StorageItem &a, const StorageItem &b);
 
-	static NoteManager *instance_;
-	QMap<QString, StorageItem>storages_;
-	NoteStorage *defaultStorage_;
+	static NoteManager *_instance;
+	QMap<QString, NoteStorage::Ptr> _storages;
+	QMap<quint16, NoteStorage::Ptr> _prioritizedStorages;
 };
 
 }

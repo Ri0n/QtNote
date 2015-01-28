@@ -48,10 +48,10 @@ public:
 	{
 		QStringList orderedNames;
 
-		foreach(StorageItem s,  NoteManager::instance()->prioritizedStorages())
+		foreach(NoteStorage::Ptr storage,  NoteManager::instance()->prioritizedStorages())
 		{
-			titleMap[s.storage->systemName()] = s.storage->titleName();
-			orderedNames.append(s.storage->titleName());
+			titleMap[storage->systemName()] = storage->titleName();
+			orderedNames.append(storage->titleName());
 		}
 		setStringList(orderedNames);
 	}

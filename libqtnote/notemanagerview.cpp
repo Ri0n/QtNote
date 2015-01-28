@@ -48,7 +48,7 @@ void NoteManagerView::removeSelected()
 {
 	QModelIndexList indexes = selectedIndexes();
 	foreach (QModelIndex index, indexes) {
-		NoteStorage *storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
+		NoteStorage::Ptr storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
 		QString noteId = index.data(NotesModel::NoteIdRole).toString();
 		if (storage && !noteId.isEmpty()) {
 			storage->deleteNote(noteId);
