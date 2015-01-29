@@ -5,7 +5,7 @@
 
 namespace QtNote {
 
-SpellCheckHighlighter::SpellCheckHighlighter(SpellEngineInterface *sei, NoteDialogEdit *nde) :
+SpellCheckHighlighter::SpellCheckHighlighter(SpellEngineInterface *sei, NoteEdit *nde) :
    QSyntaxHighlighter(nde),
    sei(sei)
 {

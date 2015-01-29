@@ -24,16 +24,16 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTextCursor>
 #include <QMimeData>
 
-#include "notedialogedit.h"
+#include "noteedit.h"
 
 namespace QtNote {
 
-NoteDialogEdit::NoteDialogEdit(QWidget *parent) :
-    QTextEdit(parent)
+NoteEdit::NoteEdit(QWidget *parent) :
+	QTextEdit(parent)
 {
 }
 
-void NoteDialogEdit::dropEvent(QDropEvent *e)
+void NoteEdit::dropEvent(QDropEvent *e)
 {
 	bool useDefault = true;
 	foreach (const QUrl &url, e->mimeData()->urls()) {
@@ -58,13 +58,13 @@ void NoteDialogEdit::dropEvent(QDropEvent *e)
 	}
 }
 
-void NoteDialogEdit::focusInEvent(QFocusEvent *e)
+void NoteEdit::focusInEvent(QFocusEvent *e)
 {
 	emit focusReceived();
 	QTextEdit::focusInEvent(e);
 }
 
-void NoteDialogEdit::focusOutEvent(QFocusEvent *e)
+void NoteEdit::focusOutEvent(QFocusEvent *e)
 {
 	emit focusLost();
 	QTextEdit::focusOutEvent(e);

@@ -49,7 +49,7 @@ SOURCES += $$PWD/notedialog.cpp \
 	$$PWD/notesmodel.cpp \
 	$$PWD/notemanagerdlg.cpp \
 	$$PWD/notemanagerview.cpp \
-	$$PWD/notedialogedit.cpp \
+	$$PWD/noteedit.cpp \
 	$$PWD/ptfstoragesettingswidget.cpp \
 	$$PWD/qtnote.cpp \
 	$$PWD/typeaheadfind.cpp \
@@ -74,7 +74,7 @@ HEADERS += $$PWD/notedialog.h \
 	$$PWD/notesmodel.h \
 	$$PWD/notemanagerdlg.h \
 	$$PWD/notemanagerview.h \
-	$$PWD/notedialogedit.h \
+	$$PWD/noteedit.h \
 	$$PWD/ptfstoragesettingswidget.h \
 	$$PWD/qtnote.h \
 	$$PWD/typeaheadfind.h \

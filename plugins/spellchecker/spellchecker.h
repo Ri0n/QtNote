@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QSyntaxHighlighter>
 
-#include "notedialogedit.h"
+#include "noteedit.h"
 
 namespace QtNote {
 
@@ -17,7 +17,7 @@ class SpellCheckHighlighter : public QSyntaxHighlighter
 	SpellEngineInterface *sei;
 public:
 
-	SpellCheckHighlighter(SpellEngineInterface *sei, NoteDialogEdit *nde);
+	SpellCheckHighlighter(SpellEngineInterface *sei, NoteEdit *nde);
 	void highlightBlock(const QString &text);
 };
 

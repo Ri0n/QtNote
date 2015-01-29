@@ -25,15 +25,15 @@
     </layout>
    </item>
    <item>
-    <widget class="QtNote::NoteDialogEdit" name="noteEdit"/>
+    <widget class="QtNote::NoteEdit" name="noteEdit"/>
    </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QtNote::NoteDialogEdit</class>
+   <class>QtNote::NoteEdit</class>
    <extends>QTextEdit</extends>
-   <header>notedialogedit.h</header>
+   <header>noteedit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

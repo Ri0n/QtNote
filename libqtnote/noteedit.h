@@ -19,8 +19,8 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#ifndef NOTEDIALOGEDIT_H
-#define NOTEDIALOGEDIT_H
+#ifndef NOTEEDIT_H
+#define NOTEEDIT_H
 
 #include <QTextEdit>
 
@@ -28,25 +28,23 @@ class QDropEvent;
 
 namespace QtNote {
 
-class NoteDialogEdit : public QTextEdit
+class NoteEdit : public QTextEdit
 {
 	Q_OBJECT
 public:
-	explicit NoteDialogEdit(QWidget *parent = 0);
+	explicit NoteEdit(QWidget *parent = 0);
 
 protected:
 	void dropEvent(QDropEvent *e);
 	void focusReceived(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
 	void focusInEvent(QFocusEvent *);
+
 signals:
 	void focusLost();
 	void focusReceived();
-	
-public slots:
-	
 };
 
 } // namespace QtNote
 
-#endif // NOTEDIALOGEDIT_H
+#endif // NOTEEDIT_H

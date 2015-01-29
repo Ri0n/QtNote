@@ -203,7 +203,7 @@ QString NoteWidget::text()
 	return ui->noteEdit->toPlainText().trimmed();
 }
 
-NoteDialogEdit* NoteWidget::editWidget() const
+NoteEdit* NoteWidget::editWidget() const
 {
 	return ui->noteEdit;
 }
