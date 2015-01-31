@@ -20,7 +20,6 @@ include(../common.pri)
 
 TARGET = $$APPNAME
 TEMPLATE = app
-RESOURCES += ../main.qrc
 
 unix {
     target.path = $$PREFIX/bin

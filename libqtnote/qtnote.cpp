@@ -37,6 +37,11 @@
 #include "globalshortcutsinterface.h"
 #include "optionsplugins.h"
 
+void initResources()
+{
+	Q_INIT_RESOURCE(main);
+}
+
 namespace QtNote {
 
 class Main::Private : public QObject
@@ -95,6 +100,8 @@ Main::Main(QObject *parent) :
 	if (qtTranslator->load(locale, "qt", "_", qtLangDir)) {
 		qApp->installTranslator(qtTranslator);
 	}
+
+	initResources();
 
 	_pluginManager = new PluginManager(this);
 	_pluginManager->loadPlugins();

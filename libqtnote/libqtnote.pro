@@ -34,62 +34,62 @@ unix {
     INSTALLS += target
 }
 
-SOURCES += $$PWD/notedialog.cpp \
-	$$PWD/note.cpp \
-	$$PWD/notemanager.cpp \
-	$$PWD/notestorage.cpp \
-	$$PWD/ptfstorage.cpp \
-	$$PWD/ptfdata.cpp \
-	$$PWD/notedata.cpp \
-	$$PWD/filenotedata.cpp \
-	$$PWD/aboutdlg.cpp \
-	$$PWD/optionsdlg.cpp \
-	$$PWD/filestorage.cpp \
-	$$PWD/utils.cpp \
-	$$PWD/notesmodel.cpp \
-	$$PWD/notemanagerdlg.cpp \
-	$$PWD/notemanagerview.cpp \
-	$$PWD/noteedit.cpp \
-	$$PWD/ptfstoragesettingswidget.cpp \
-	$$PWD/qtnote.cpp \
-	$$PWD/typeaheadfind.cpp \
-	$$PWD/shortcutedit.cpp \
-	$$PWD/shortcutsmanager.cpp \
-	$$PWD/notewidget.cpp \
-	$$PWD/pluginmanager.cpp \
+SOURCES += notedialog.cpp \
+	note.cpp \
+	notemanager.cpp \
+	notestorage.cpp \
+	ptfstorage.cpp \
+	ptfdata.cpp \
+	notedata.cpp \
+	filenotedata.cpp \
+	aboutdlg.cpp \
+	optionsdlg.cpp \
+	filestorage.cpp \
+	utils.cpp \
+	notesmodel.cpp \
+	notemanagerdlg.cpp \
+	notemanagerview.cpp \
+	noteedit.cpp \
+	ptfstoragesettingswidget.cpp \
+	qtnote.cpp \
+	typeaheadfind.cpp \
+	shortcutedit.cpp \
+	shortcutsmanager.cpp \
+	notewidget.cpp \
+	pluginmanager.cpp \
     optionsplugins.cpp
 
-HEADERS += $$PWD/notedialog.h \
-	$$PWD/note.h \
-	$$PWD/notemanager.h \
-	$$PWD/notestorage.h \
-	$$PWD/ptfstorage.h \
-	$$PWD/ptfdata.h \
-	$$PWD/notedata.h \
-	$$PWD/filenotedata.h \
-	$$PWD/aboutdlg.h \
-	$$PWD/optionsdlg.h \
-	$$PWD/filestorage.h \
-	$$PWD/utils.h \
-	$$PWD/notesmodel.h \
-	$$PWD/notemanagerdlg.h \
-	$$PWD/notemanagerview.h \
-	$$PWD/noteedit.h \
-	$$PWD/ptfstoragesettingswidget.h \
-	$$PWD/qtnote.h \
-	$$PWD/typeaheadfind.h \
-	$$PWD/shortcutedit.h \
-	$$PWD/shortcutsmanager.h \
-	$$PWD/notewidget.h \
-	$$PWD/pluginmanager.h \
+HEADERS += notedialog.h \
+	note.h \
+	notemanager.h \
+	notestorage.h \
+	ptfstorage.h \
+	ptfdata.h \
+	notedata.h \
+	filenotedata.h \
+	aboutdlg.h \
+	optionsdlg.h \
+	filestorage.h \
+	utils.h \
+	notesmodel.h \
+	notemanagerdlg.h \
+	notemanagerview.h \
+	noteedit.h \
+	ptfstoragesettingswidget.h \
+	qtnote.h \
+	typeaheadfind.h \
+	shortcutedit.h \
+	shortcutsmanager.h \
+	notewidget.h \
+	pluginmanager.h \
     optionsplugins.h
 
-FORMS += $$PWD/notedialog.ui \
-	$$PWD/aboutdlg.ui \
-	$$PWD/optionsdlg.ui \
-	$$PWD/notemanagerdlg.ui \
-	$$PWD/ptfstoragesettingswidget.ui \
-	$$PWD/notewidget.ui \
+FORMS += notedialog.ui \
+	aboutdlg.ui \
+	optionsdlg.ui \
+	notemanagerdlg.ui \
+	ptfstoragesettingswidget.ui \
+	notewidget.ui \
     optionsplugins.ui
 
 INCLUDEPATH += $$PWD $$PWD/../plugins
@@ -100,3 +100,5 @@ unix:!macx:LIBS += -L$$QMAKE_LIBDIR_X11 -lX11
 macx {
     LIBS = -framework ApplicationServices
 }
+
+RESOURCES += main.qrc
