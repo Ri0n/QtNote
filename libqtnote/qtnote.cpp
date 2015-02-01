@@ -226,6 +226,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
 	NoteWidget *w = new NoteWidget(storageId, noteId);
 	w->setAcceptRichText(NoteManager::instance()->storage(storageId)
 						   ->isRichTextAllowed());
+	emit noteWidgetCreated(w);
 	if (!noteId.isEmpty()) {
 		note = NoteManager::instance()->getNote(storageId, noteId);
 		if (note.isNull()) {
@@ -243,7 +244,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
 	connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
 	connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
 	connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));
-	emit noteWidgetCreated(w);
+	emit noteWidgetInitiated(w);
 	return w;
 }
 

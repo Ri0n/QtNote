@@ -57,7 +57,8 @@ SOURCES += notedialog.cpp \
 	shortcutsmanager.cpp \
 	notewidget.cpp \
 	pluginmanager.cpp \
-    optionsplugins.cpp
+    optionsplugins.cpp \
+    notehighlighter.cpp
 
 HEADERS += notedialog.h \
 	note.h \
@@ -82,7 +83,9 @@ HEADERS += notedialog.h \
 	shortcutsmanager.h \
 	notewidget.h \
 	pluginmanager.h \
-    optionsplugins.h
+    optionsplugins.h \
+    highlighterext.h \
+    notehighlighter.h
 
 FORMS += notedialog.ui \
 	aboutdlg.ui \

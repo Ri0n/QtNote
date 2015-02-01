@@ -11,13 +11,11 @@ PKGCONFIG += hunspell
 
 SOURCES = \
     spellcheckplugin.cpp \
-    spellchecker.cpp \
     hunspellengine.cpp \
     engineinterface.cpp
 
 HEADERS += \
     spellcheckplugin.h \
-    spellchecker.h \
     hunspellengine.h \
     engineinterface.h
 

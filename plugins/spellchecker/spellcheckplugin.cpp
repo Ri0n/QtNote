@@ -26,11 +26,38 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "spellcheckplugin.h"
 #include "qtnote.h"
 #include "notewidget.h"
-#include "spellchecker.h"
 #include "hunspellengine.h"
+#include "highlighterext.h"
+#include "notehighlighter.h"
 
 namespace QtNote {
 
+static HighlighterExtension::Ptr hlExt;
+
+class SpellCheckHighlighterExtension : public HighlighterExtension
+{
+	SpellEngineInterface *sei;
+
+public:
+	SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei) {}
+
+	void highlight(NoteHighlighter *nh, const QString &text)
+	{
+		QTextCharFormat myClassFormat;
+		myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+		QString pattern = "\\b\\w{2,}\\b";
+
+		QRegExp expression(pattern);
+		int index = text.indexOf(expression);
+		while (index >= 0) {
+			int length = expression.matchedLength();
+			if (sei->spell(expression.capturedTexts()[0]) == 0) {
+				nh->addFormat(index, length, myClassFormat);
+			}
+			index = text.indexOf(expression, index + length);
+		}
+	}
+};
 
 //------------------------------------------------------------
 // SpellCheckPlugin
@@ -62,6 +89,7 @@ bool SpellCheckPlugin::init(Main *qtnote)
 	if (enLocale != systemLocale) {
 		sei->addLanguage(enLocale);
 	}
+	hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
 	connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
 	return true;
 }
@@ -89,7 +117,7 @@ QString SpellCheckPlugin::tooltip() const
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
 	NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
-	new SpellCheckHighlighter(sei, nw->editWidget());
+	nw->highlighter()->addExtension(hlExt);
 }
 
 } // namespace QtNote

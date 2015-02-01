@@ -15,6 +15,7 @@ namespace QtNote {
 
 struct ActData;
 class NoteEdit;
+class NoteHighlighter;
 
 class NoteWidget : public QWidget
 {
@@ -27,9 +28,10 @@ public:
 	void setText(QString text);
 	QString text();
 	NoteEdit* editWidget() const;
+	inline NoteHighlighter* highlighter() const { return _highlighter; }
 	void setAcceptRichText(bool state);
 	inline QString storageId() const { return _storageId; }
-	inline QString noteId() const { return noteId_; }
+	inline QString noteId() const { return _noteId; }
 	void setNoteId(const QString &noteId);
 	inline const QString &firstLine() const { return _firstLine; }
 	inline qint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
@@ -64,10 +66,11 @@ private:
 	Ui::NoteWidget *ui;
 
 	TypeAheadFindBar *findBar;
+	NoteHighlighter* _highlighter;
 	QString _storageId;
-	QString noteId_;
+	QString _noteId;
 	QString _firstLine;
-	QString extFileName_;
+	QString _extFileName;
 	QTimer _autosaveTimer;
 	QElapsedTimer _lastChangeElapsed;
 	bool _trashRequested;

@@ -11,8 +11,27 @@
 #include "notewidget.h"
 #include "ui_notewidget.h"
 #include "typeaheadfind.h"
+#include "notehighlighter.h"
 
 namespace QtNote {
+
+static HighlighterExtension::Ptr firstLineHighlighter;
+
+class FirstLineHighlighter : public HighlighterExtension
+{
+public:
+	void highlight(NoteHighlighter *nh, const QString &text)
+	{
+		Q_UNUSED(text)
+		QTextBlock tb = nh->currentBlock();
+		if (tb.position() == 0) {
+			QTextCharFormat titleHighlightFormat;
+			titleHighlightFormat.setForeground(QColor(Qt::red));
+			titleHighlightFormat.setFontPointSize(tb.charFormat().font().pointSize() * 2);
+			nh->addFormat(0, tb.length(), titleHighlightFormat);
+		}
+	}
+};
 
 struct ActData {
 	const char* icon;
@@ -40,7 +59,7 @@ static struct {
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),
 	_storageId(storageId),
-	noteId_(noteId),
+	_noteId(noteId),
 	_trashRequested(false)
 {
 	ui->setupUi(this);
@@ -97,6 +116,12 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 
 	ui->noteEdit->setText(""); // to force update event
+
+	if (firstLineHighlighter.isNull()) {
+		firstLineHighlighter = HighlighterExtension::Ptr(new FirstLineHighlighter());
+	}
+	_highlighter = new NoteHighlighter(ui->noteEdit);
+	_highlighter->addExtension(firstLineHighlighter);
 
 	connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
 	connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()), Qt::QueuedConnection);
@@ -215,8 +240,8 @@ void NoteWidget::setAcceptRichText(bool state)
 
 void NoteWidget::setNoteId(const QString &noteId)
 {
-	QString old = noteId_;
-	noteId_ = noteId;
+	QString old = _noteId;
+	_noteId = noteId;
 	emit noteIdChanged(old, noteId);
 }
 
@@ -236,8 +261,8 @@ void NoteWidget::onPrintClicked()
 
 void NoteWidget::onSaveClicked()
 {
-	if (extFileName_.isEmpty() || !QFile::exists(extFileName_)) {
-		extFileName_ = QFileDialog::getSaveFileName(this, tr("Save Note As"),
+	if (_extFileName.isEmpty() || !QFile::exists(_extFileName)) {
+		_extFileName = QFileDialog::getSaveFileName(this, tr("Save Note As"),
 #if QT_VERSION < 0x050000
 			QDesktopServices::storageLocation(QDesktopServices::DesktopLocation)
 #else
@@ -245,10 +270,10 @@ void NoteWidget::onSaveClicked()
 #endif
 													);
 	}
-	if (!extFileName_.isEmpty()) {
-		QFile f(extFileName_);
+	if (!_extFileName.isEmpty()) {
+		QFile f(_extFileName);
 		if (f.open(QIODevice::WriteOnly)) {
-			QFileInfo fi(extFileName_);
+			QFileInfo fi(_extFileName);
 			QString text;
 			if ((QStringList() << "html" << "htm" << "xhtml" << "xml")
 					.contains(fi.suffix().toLower())) {
