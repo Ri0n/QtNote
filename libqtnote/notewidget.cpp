@@ -27,7 +27,7 @@ public:
 		if (tb.position() == 0) {
 			QTextCharFormat titleHighlightFormat;
 			titleHighlightFormat.setForeground(QColor(Qt::red));
-			titleHighlightFormat.setFontPointSize(tb.charFormat().font().pointSize() * 2);
+			titleHighlightFormat.setFontPointSize(tb.charFormat().font().pointSize() * 1.5);
 			nh->addFormat(0, tb.length(), titleHighlightFormat);
 		}
 	}
