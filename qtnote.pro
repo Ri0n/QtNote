@@ -42,14 +42,14 @@ unix {
 	pixsizes = 16 22 24 32 48 64
 	for(size, pixsizes) {
 	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
-	extra = cp -f images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+	extra = cp -f libqtnote/images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
 	eval(pix$${size}.path = $$path)
 	eval(pix$${size}.extra = $$extra)
 	eval(pixmaps += pix$${size})
 	}
 
 	pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
-	pixmap_svg.files = images/$${TARGET}.svg
+	pixmap_svg.files = libqtnote/images/$${TARGET}.svg
 
 	# Man page
 	man.files = docs/qtnote.1
