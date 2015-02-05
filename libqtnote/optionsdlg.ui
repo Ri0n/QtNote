@@ -14,7 +14,7 @@
    <string>QtNote Options</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../main.qrc">
+   <iconset resource="main.qrc">
     <normaloff>:/icons/options</normaloff>:/icons/options</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -60,6 +60,33 @@
           <string>Start with system</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QCheckBox" name="ckTitleColor">
+           <property name="text">
+            <string>Custom title color</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QtNote::ColorButton" name="wTitleColor" native="true"/>
+         </item>
+        </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
@@ -129,11 +156,19 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QtNote::ColorButton</class>
+   <extends>QWidget</extends>
+   <header>colorbutton.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>priorityView</tabstop>
  </tabstops>
  <resources>
-  <include location="../main.qrc"/>
+  <include location="main.qrc"/>
  </resources>
  <connections>
   <connection>

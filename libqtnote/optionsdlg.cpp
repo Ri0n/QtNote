@@ -33,6 +33,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "shortcutedit.h"
 #include "pluginmanager.h"
 #include "optionsplugins.h"
+#include "utils.h"
 
 namespace QtNote {
 
@@ -126,6 +127,9 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
+	ui->wTitleColor->setColor(s.value("ui.title-color",
+									  Utils::perceptiveColor(palette().color(QPalette::Base)))
+							  .value<QColor>());
 
 	foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
 		ShortcutEdit *se = new ShortcutEdit;

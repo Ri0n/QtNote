@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #endif
+#include <QColor>
 
 #include "utils.h"
 
@@ -77,4 +78,13 @@ const QString &Utils::localDataDir()
 	}
 
 	return dataDir;
+}
+
+QColor Utils::perceptiveColor(const QColor &against)
+{
+	float brightness = (0.299*against.redF() + 0.587*against.greenF() + 0.114*against.blueF());
+	if (brightness >= 0.5) {
+		return QColor(Qt::black);
+	}
+	return QColor(Qt::white);
 }

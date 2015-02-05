@@ -32,6 +32,8 @@ public:
 	static QString cuttedDots(const QString &, int);
 
 	static const QString &localDataDir();
+
+	static QColor perceptiveColor(const QColor &against);
 };
 
 #endif // UTILS_H
