@@ -88,3 +88,15 @@ QColor Utils::perceptiveColor(const QColor &against)
 	}
 	return QColor(Qt::white);
 }
+
+QColor Utils::mergeColors(const QColor &a, const QColor &b)
+{
+	qreal alphaA(a.alphaF());
+	qreal alphaB(b.alphaF());
+	return QColor::fromRgbF(
+				(a.redF()   * alphaA) + (b.redF()   * alphaB * (1 - alphaA)),
+				(a.greenF() * alphaA) + (b.greenF() * alphaB * (1 - alphaA)),
+				(a.blueF()  * alphaA) + (b.blueF()  * alphaB * (1 - alphaA)),
+				alphaA + (alphaB * (1 - alphaA))
+				);
+}

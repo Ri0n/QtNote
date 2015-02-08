@@ -5,6 +5,7 @@
 #include <QPainter>
 
 #include "colorbutton.h"
+#include "utils.h"
 
 namespace QtNote {
 
@@ -12,27 +13,30 @@ ColorButton::ColorButton(QWidget *parent, Qt::WindowFlags f) :
 	QWidget(parent, f)
 {
 	setMinimumSize(20, 16);
-	setColor(QColor(Qt::white));
 }
 
-void ColorButton::setColor(const QColor &color)
+void ColorButton::setColor(QPalette::ColorRole role, const QColor &color)
 {
+	_role = role;
 	_color = color;
+	QColor merged = Utils::mergeColors(color, parentWidget()->palette().color(role));
 	QString objName = objectName();
 	QString w("QWidget");
 	if (!objName.isEmpty()) {
 		w += ("#" + objName);
 	}
-	QString style = QString("%1 { border:1px solid black;background-color:%2 }").arg(w, color.name());
+	QString style = QString("%1 { border:1px solid black;background-color:%2 }").arg(w, merged.name());
 	setStyleSheet(style);
 }
 
 void ColorButton::mousePressEvent(QMouseEvent *ev)
 {
 	if (ev->button() == Qt::LeftButton) {
-		QColorDialog d(_color, parentWidget());
+		QColorDialog d(parentWidget());
+		d.setOption(QColorDialog::ShowAlphaChannel);
+		d.setCurrentColor(_color);
 		if (d.exec() == QDialog::Accepted) {
-			setColor(d.selectedColor());
+			setColor(_role, d.selectedColor());
 		}
 		return;
 	}

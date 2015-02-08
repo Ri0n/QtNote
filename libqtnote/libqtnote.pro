@@ -87,7 +87,8 @@ HEADERS += notedialog.h \
     optionsplugins.h \
     highlighterext.h \
     notehighlighter.h \
-    colorbutton.h
+    colorbutton.h \
+    defaults.h
 
 FORMS += notedialog.ui \
 	aboutdlg.ui \

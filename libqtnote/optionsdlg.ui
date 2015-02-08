@@ -64,9 +64,9 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QCheckBox" name="ckTitleColor">
+          <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Custom title color</string>
+            <string>Title highlight color</string>
            </property>
           </widget>
          </item>

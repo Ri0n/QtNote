@@ -7,15 +7,22 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QToolButton>
+#include <QPalette>
+#if QT_VERSION >= 0x050400
+# include <QGuiApplication>
+#endif
 
 #include "notewidget.h"
 #include "ui_notewidget.h"
 #include "typeaheadfind.h"
 #include "notehighlighter.h"
+#include "utils.h"
+#include "defaults.h"
 
 namespace QtNote {
 
 static HighlighterExtension::Ptr firstLineHighlighter;
+static QColor firstLineColor;
 
 class FirstLineHighlighter : public HighlighterExtension
 {
@@ -26,7 +33,7 @@ public:
 		QTextBlock tb = nh->currentBlock();
 		if (tb.position() == 0) {
 			QTextCharFormat titleHighlightFormat;
-			titleHighlightFormat.setForeground(QColor(Qt::red));
+			titleHighlightFormat.setForeground(firstLineColor);
 			titleHighlightFormat.setFontPointSize(tb.charFormat().font().pointSize() * 1.5);
 			nh->addFormat(0, tb.length(), titleHighlightFormat);
 		}
@@ -117,6 +124,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	ui->noteEdit->setText(""); // to force update event
 
+	updateFirstLineColor();
 	if (firstLineHighlighter.isNull()) {
 		firstLineHighlighter = HighlighterExtension::Ptr(new FirstLineHighlighter());
 	}
@@ -125,7 +133,10 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
 	connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
 	connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()), Qt::QueuedConnection);
-
+#if QT_VERSION >= 0x050400
+	connect(qGuiApp, &QGuiApplication::paletteChanged,
+			[this](const QPalette &) { updateFirstLineColor(); });
+#endif
 }
 
 NoteWidget::~NoteWidget()
@@ -304,6 +315,12 @@ void NoteWidget::onTrashClicked()
 	_changed = false;
 	_trashRequested  = true;
 	emit trashRequested();
+}
+
+void NoteWidget::updateFirstLineColor()
+{
+	QColor hlColor = QSettings().value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>();
+	firstLineColor = Utils::mergeColors(hlColor, palette().color(QPalette::Text));
 }
 
 } // namespace QtNote

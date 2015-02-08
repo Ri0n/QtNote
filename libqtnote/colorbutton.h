@@ -11,7 +11,7 @@ class ColorButton : public QWidget
 public:
 	explicit ColorButton(QWidget *parent=0, Qt::WindowFlags f=0);
 
-	void setColor(const QColor &color);
+	void setColor(QPalette::ColorRole role, const QColor &color);
 	inline QColor color() const { return _color; }
 signals:
 
@@ -21,6 +21,7 @@ protected:
 	void mousePressEvent(QMouseEvent *ev);
 	void paintEvent(QPaintEvent *);
 private:
+	QPalette::ColorRole _role;
 	QColor _color;
 };
 

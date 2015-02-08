@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QString>
 
+class QColor;
+
 class Utils
 {
 public:
@@ -34,6 +36,7 @@ public:
 	static const QString &localDataDir();
 
 	static QColor perceptiveColor(const QColor &against);
+	static QColor mergeColors(const QColor &a, const QColor &b);
 };
 
 #endif // UTILS_H

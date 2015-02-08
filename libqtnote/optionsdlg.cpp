@@ -34,6 +34,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "pluginmanager.h"
 #include "optionsplugins.h"
 #include "utils.h"
+#include "defaults.h"
 
 namespace QtNote {
 
@@ -127,9 +128,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
 	QSettings s;
 	ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
 	ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
-	ui->wTitleColor->setColor(s.value("ui.title-color",
-									  Utils::perceptiveColor(palette().color(QPalette::Base)))
-							  .value<QColor>());
+	ui->wTitleColor->setColor(QPalette::Text, s.value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>());
 
 	foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
 		ShortcutEdit *se = new ShortcutEdit;
@@ -182,6 +181,8 @@ void OptionsDlg::accept()
 	s.setValue("storage.priority", storageCodes);
 	s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
 	s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
+	s.setValue("ui.title-color", ui->wTitleColor->color());
+
 #ifdef Q_OS_LINUX
 	QDir home = QDir::home();
 	if (!home.exists(".config/autostart")) {
