@@ -217,6 +217,7 @@ void Main::showOptions()
 	OptionsDlg *d = new OptionsDlg(this);
 	d->setAttribute(Qt::WA_DeleteOnClose);
 	d->show();
+	connect(d, SIGNAL(accepted()), SIGNAL(settingsUpdated()));
 	activateWidget(d);
 }
 
@@ -241,6 +242,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
 		}
 	}
 
+	connect(this, SIGNAL(settingsUpdated()), w, SLOT(rereadSettings()));
 	connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
 	connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
 	connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));

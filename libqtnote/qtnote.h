@@ -61,6 +61,7 @@ public:
 signals:
 	void noteWidgetCreated(QWidget*);
 	void noteWidgetInitiated(QWidget*);
+	void settingsUpdated();
 
 public slots:
 	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);

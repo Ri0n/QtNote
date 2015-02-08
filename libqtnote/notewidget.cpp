@@ -320,7 +320,18 @@ void NoteWidget::onTrashClicked()
 void NoteWidget::updateFirstLineColor()
 {
 	QColor hlColor = QSettings().value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>();
-	firstLineColor = Utils::mergeColors(hlColor, palette().color(QPalette::Text));
+	QColor merged = Utils::mergeColors(hlColor, palette().color(QPalette::Text));
+	if (merged != firstLineColor) {
+		firstLineColor = merged;
+		if (_highlighter) {
+			_highlighter->rehighlight();
+		}
+	}
+}
+
+void NoteWidget::rereadSettings()
+{
+	updateFirstLineColor();
 }
 
 } // namespace QtNote

@@ -51,6 +51,7 @@ protected:
 
 public slots:
 	void save();
+	void rereadSettings();
 
 private slots:
 	void onFindTriggered();
