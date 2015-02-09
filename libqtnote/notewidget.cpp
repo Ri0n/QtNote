@@ -65,6 +65,7 @@ static struct {
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),
+	_highlighter(0),
 	_storageId(storageId),
 	_noteId(noteId),
 	_trashRequested(false)
