@@ -1,4 +1,7 @@
 #include <QAbstractTableModel>
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QDialog>
 
 #include "optionsplugins.h"
 #include "ui_optionsplugins.h"
@@ -7,12 +10,62 @@
 
 namespace QtNote {
 
+class ButtonDelegate : public QStyledItemDelegate
+{
+	Q_OBJECT
+
+	enum ButtonRoles {
+		ButtonRole = Qt::UserRole + 1
+	};
+
+public:
+	explicit ButtonDelegate(QObject *parent = 0) :
+		QStyledItemDelegate(parent) {}
+
+	// painting
+	void paint(QPainter *painter,
+			   const QStyleOptionViewItem &option, const QModelIndex &index) const
+	{
+		QStyleOptionViewItemV4 opt = option;
+		initStyleOption(&opt, index);
+		painter->save();
+		if (opt.state & QStyle::State_Selected) {
+			painter->setPen(QPen(Qt::NoPen));
+			if (opt.state & QStyle::State_Active) {
+			  painter->setBrush(QBrush(QPalette().highlight()));
+			}
+			else {
+			  painter->setBrush(QBrush(QPalette().color(QPalette::Inactive,
+														QPalette::Highlight)));
+			}
+			painter->drawRect(opt.rect);
+		  }
+
+		QStyleOptionButton buttonOption;
+		buttonOption.icon = opt.icon;
+		buttonOption.text = opt.text;
+		buttonOption.features = QStyleOptionButton::Flat;
+		buttonOption.rect = opt.rect;
+
+		buttonOption.state |= QStyle::State_Enabled | QStyle::State_AutoRaise;
+		if (opt.state & QStyle::State_MouseOver) {
+			buttonOption.rect = buttonOption.rect.translated(-1,-1);
+			buttonOption.state |= QStyle::State_Active;
+		}
+		QApplication::style()->drawControl(QStyle::CE_PushButton,
+											 &buttonOption,
+											 painter);
+		painter->restore();
+	}
+};
+
 class PluginsModel : public QAbstractTableModel
 {
 	Q_OBJECT
 
 	Main *qtnote;
 	QStringList pluginNames; // by priority
+	QIcon settingIcon;
 
 public:
 	PluginsModel(Main *qtnote, QObject *parent) :
@@ -20,6 +73,10 @@ public:
 		qtnote(qtnote)
 	{
 		pluginNames = qtnote->pluginManager()->pluginsNames();
+		QPixmap pix(":/icons/options");
+		settingIcon = QIcon(pix);
+		settingIcon.addPixmap(pix.scaled(pix.size() + QSize(1,1), Qt::KeepAspectRatio, Qt::SmoothTransformation),
+							  QIcon::Active);
 	}
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const
@@ -35,7 +92,7 @@ public:
 		if (parent.isValid()) {
 			return 0;
 		}
-		return 1;
+		return 2;
 	}
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
@@ -89,6 +146,11 @@ public:
 				return ret;
 			}
 			}
+		} else if (index.column() == 1) {
+			// options button
+			if (role == Qt::DecorationRole) {
+				return settingIcon;
+			}
 		}
 		return QVariant();
 	}
@@ -115,6 +177,11 @@ public:
 			return QAbstractTableModel::flags(index) | Qt::ItemIsTristate | Qt::ItemIsUserCheckable;
 		}
 		return QAbstractTableModel::flags(index);
+	}
+
+	QString pluginName(int row) const
+	{
+		return pluginNames.at(row);
 	}
 };
 
@@ -146,16 +213,33 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
 
 	pluginsModel = new PluginsModel(qtnote, this);
 	ui->tblPlugins->setModel(pluginsModel);
+	ButtonDelegate *btnsDelegate = new ButtonDelegate();
+	ui->tblPlugins->setItemDelegateForColumn(1, btnsDelegate);
 #if QT_VERSION >= 0x050000
-	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 #else
-	ui->tblPlugins->horizontalHeader()->setResizeMode(0, QHeaderView::ResizeToContents);
+	ui->tblPlugins->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
+	ui->tblPlugins->horizontalHeader()->setResizeMode(1, QHeaderView::ResizeToContents);
 #endif
+	connect(ui->tblPlugins, SIGNAL(clicked(QModelIndex)), SLOT(pluginClicked(QModelIndex)));
 }
 
 OptionsPlugins::~OptionsPlugins()
 {
 	delete ui;
+}
+
+void OptionsPlugins::pluginClicked(const QModelIndex &index)
+{
+	if (index.column() == 1) {// settings
+		QDialog *d = qtnote->pluginManager()->optionsDialog(pluginsModel->pluginName(index.row()));
+		if (d) {
+			//d->setParent(this);
+			d->show();
+			d->raise();
+		}
+	}
 }
 
 } // namespace QtNote

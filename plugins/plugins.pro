@@ -13,4 +13,5 @@ exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
 HEADERS += qtnoteplugininterface.h \
 	deintegrationinterface.h \
 	trayinterface.h \
-	globalshortcutsinterface.h
+	globalshortcutsinterface.h \
+	pluginoptionsinterface.h

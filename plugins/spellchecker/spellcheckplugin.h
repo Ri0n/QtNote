@@ -27,18 +27,20 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "qtnoteplugininterface.h"
 #include "trayinterface.h"
 #include "deintegrationinterface.h"
+#include "pluginoptionsinterface.h"
 
 namespace QtNote {
 
 class SpellEngineInterface;
 
-class SpellCheckPlugin : public QObject, public PluginInterface, public PluginOptionsTooltipInterface
+class SpellCheckPlugin : public QObject, public PluginInterface, public PluginOptionsTooltipInterface,
+		public PluginOptionsInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
 #endif
-	Q_INTERFACES(QtNote::PluginInterface QtNote::PluginOptionsTooltipInterface)
+	Q_INTERFACES(QtNote::PluginInterface QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface)
 public:
 	explicit SpellCheckPlugin(QObject *parent = 0);
 
@@ -46,6 +48,8 @@ public:
 	bool init(Main *qtnote);
 
 	QString tooltip() const;
+
+	QDialog* optionsDialog();
 
 private slots:
 	void noteWidgetCreated(QWidget *w);

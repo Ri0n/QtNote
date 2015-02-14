@@ -7,6 +7,8 @@ namespace Ui {
 class OptionsPlugins;
 }
 
+class QModelIndex;
+
 namespace QtNote {
 
 class Main;
@@ -20,6 +22,8 @@ public:
 	explicit OptionsPlugins(Main *qtnote, QWidget *parent = 0);
 	~OptionsPlugins();
 
+private slots:
+	void pluginClicked(const QModelIndex &index);
 private:
 	Ui::OptionsPlugins *ui;
 	Main *qtnote;

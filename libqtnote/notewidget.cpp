@@ -48,20 +48,13 @@ struct ActData {
 };
 
 static struct {
-	ActData save;
-	ActData copy;
-	ActData print;
-	ActData find;
-	ActData replace;
-	ActData trash;
-} staticActData = {
-	.save   =  {"",              QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"},
-	.copy   =  {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"},
-	.print  =  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"},
-	.find   =  {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"},
-	.replace = {":/icons/replace-text",  QT_TR_NOOP("Replace"),QT_TR_NOOP("Replace text in note"),      "Ctrl+R"},
-	.trash  =  {":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"}
-};
+	ActData save   {"",              QT_TR_NOOP("Save"),   QT_TR_NOOP("Save note to file"),      "Ctrl+S"};
+	ActData copy   {":/icons/copy",  QT_TR_NOOP("Copy"),   QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C"};
+	ActData print  {":/icons/print", QT_TR_NOOP("Print"),  QT_TR_NOOP("Print note"),             "Ctrl+P"};
+	ActData find   {":/icons/find",  QT_TR_NOOP("Find"),   QT_TR_NOOP("Find text in note"),      "Ctrl+F"};
+	ActData replace{":/icons/replace-text",  QT_TR_NOOP("Replace"),QT_TR_NOOP("Replace text in note"),      "Ctrl+R"};
+	ActData trash  {":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"),            "Ctrl+D"};
+} staticActData;
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 	ui(new Ui::NoteWidget),

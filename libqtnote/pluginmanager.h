@@ -7,6 +7,7 @@
 #include <QLibrary>
 
 #include "../plugins/qtnoteplugininterface.h"
+#include "../plugins/pluginoptionsinterface.h"
 
 namespace QtNote {
 
@@ -69,6 +70,18 @@ public:
 			return plugin->tooltip();
 		}
 		return QString();
+	}
+	inline bool canOptionsDialog(const QString &pluginName) const {
+		PluginData::Ptr pd = plugins[pluginName];
+		return (pd->loadStatus == LS_Loaded) && qobject_cast<PluginOptionsInterface*>(pd->instance);
+	}
+	inline QDialog* optionsDialog(const QString &pluginName) const {
+		PluginData::Ptr pd = plugins[pluginName];
+		PluginOptionsInterface *plugin;
+		if ((pd->loadStatus == LS_Loaded) && (plugin = qobject_cast<PluginOptionsInterface*>(pd->instance))) {
+			return plugin->optionsDialog();
+		}
+		return 0;
 	}
 signals:
 

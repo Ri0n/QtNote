@@ -22,6 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QWidget>
 #include <QtPlugin>
 #include <QLocale>
+#include <QDialog>
+#include <QHBoxLayout>
+#include <QPushButton>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -112,6 +115,15 @@ QString SpellCheckPlugin::tooltip() const
 	}
 
 	return tr("<b>Loaded dictionaries:</b> ") + ret.join("<br/>  ");
+}
+
+QDialog *SpellCheckPlugin::optionsDialog()
+{
+	QDialog *d = new QDialog();
+	QHBoxLayout *l = new QHBoxLayout;
+	l->addWidget(new QPushButton("hello"));
+	d->setLayout(l);
+	return d;
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
