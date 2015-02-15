@@ -32,6 +32,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "hunspellengine.h"
 #include "highlighterext.h"
 #include "notehighlighter.h"
+#include "settingsdlg.h"
 
 namespace QtNote {
 
@@ -119,11 +120,16 @@ QString SpellCheckPlugin::tooltip() const
 
 QDialog *SpellCheckPlugin::optionsDialog()
 {
-	QDialog *d = new QDialog();
-	QHBoxLayout *l = new QHBoxLayout;
-	l->addWidget(new QPushButton("hello"));
-	d->setLayout(l);
-	return d;
+	auto s = new SettingsDlg;
+	connect(s, SIGNAL(accepted()), SLOT(settingsAccepted()));
+	return s;
+}
+
+void SpellCheckPlugin::settingsAccepted()
+{
+	auto dlg = (SettingsDlg*)sender();
+	auto ret = dlg->preferredList();
+
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)

@@ -35,6 +35,9 @@ public:
 	{
 		QStyleOptionViewItemV4 opt = option;
 		initStyleOption(&opt, index);
+		if (opt.icon.isNull()) {
+			return;
+		}
 		painter->save();
 		if (opt.state & QStyle::State_Selected) {
 			painter->setPen(QPen(Qt::NoPen));
@@ -61,7 +64,6 @@ public:
 			buttonOption.state |= (QStyle::State_Active | QStyle::State_MouseOver);
 		}
 
-		qDebug() << "State:" << (int)buttonOption.state;
 		QApplication::style()->drawControl(QStyle::CE_PushButton,
 											 &buttonOption,
 											 painter);
@@ -183,7 +185,7 @@ public:
 			}
 		} else if (index.column() == 1) {
 			// options button
-			if (role == Qt::DecorationRole) {
+			if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginNames[index.row()])) {
 				return settingIcon;
 			}
 		}
@@ -268,8 +270,11 @@ OptionsPlugins::~OptionsPlugins()
 void OptionsPlugins::pluginClicked(const QModelIndex &index)
 {
 	if (index.column() == 1) {// settings
-		QDialog *d = qtnote->pluginManager()->optionsDialog(pluginsModel->pluginName(index.row()));
+		QString pn = pluginsModel->pluginName(index.row());
+		QDialog *d = qtnote->pluginManager()->optionsDialog(pn);
 		if (d) {
+			d->setWindowTitle(pn + tr(": Settings"));
+			d->setWindowIcon(qtnote->pluginManager()->icon(pn));
 			d->show();
 			d->raise();
 		}

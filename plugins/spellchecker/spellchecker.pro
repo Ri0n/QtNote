@@ -12,12 +12,17 @@ PKGCONFIG += hunspell
 SOURCES = \
     spellcheckplugin.cpp \
     hunspellengine.cpp \
-    engineinterface.cpp
+    engineinterface.cpp \
+    settingsdlg.cpp
 
 HEADERS += \
     spellcheckplugin.h \
     hunspellengine.h \
-    engineinterface.h
+    engineinterface.h \
+    settingsdlg.h
 
 RESOURCES += \
     spellchecker.qrc
+
+FORMS += \
+    settingsdlg.ui

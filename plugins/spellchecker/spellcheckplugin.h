@@ -53,8 +53,8 @@ public:
 
 private slots:
 	void noteWidgetCreated(QWidget *w);
-
-private:	
+	void settingsAccepted();
+private:
 	SpellEngineInterface *sei;
 };
 
