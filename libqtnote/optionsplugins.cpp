@@ -2,6 +2,9 @@
 #include <QStyledItemDelegate>
 #include <QPainter>
 #include <QDialog>
+#include <QMouseEvent>
+#include <QDebug>
+#include <QTransform>
 
 #include "optionsplugins.h"
 #include "ui_optionsplugins.h"
@@ -18,9 +21,13 @@ class ButtonDelegate : public QStyledItemDelegate
 		ButtonRole = Qt::UserRole + 1
 	};
 
+	QModelIndex sunken;
+
 public:
 	explicit ButtonDelegate(QObject *parent = 0) :
-		QStyledItemDelegate(parent) {}
+		QStyledItemDelegate(parent)
+	{
+	}
 
 	// painting
 	void paint(QPainter *painter,
@@ -46,16 +53,40 @@ public:
 		buttonOption.text = opt.text;
 		buttonOption.features = QStyleOptionButton::Flat;
 		buttonOption.rect = opt.rect;
-
-		buttonOption.state |= QStyle::State_Enabled | QStyle::State_AutoRaise;
-		if (opt.state & QStyle::State_MouseOver) {
-			buttonOption.rect = buttonOption.rect.translated(-1,-1);
-			buttonOption.state |= QStyle::State_Active;
+		buttonOption.state = QStyle::State_Enabled;
+		if (index == sunken) {
+			buttonOption.state |= QStyle::State_Sunken;
 		}
+		if (option.state & QStyle::State_MouseOver) {
+			buttonOption.state |= (QStyle::State_Active | QStyle::State_MouseOver);
+		}
+
+		qDebug() << "State:" << (int)buttonOption.state;
 		QApplication::style()->drawControl(QStyle::CE_PushButton,
 											 &buttonOption,
 											 painter);
 		painter->restore();
+	}
+
+	bool editorEvent(QEvent *event,
+		QAbstractItemModel *model,
+		const QStyleOptionViewItem &option,
+		const QModelIndex &index)
+	{
+		Q_UNUSED(model);
+		Q_UNUSED(option);
+
+		if(!(event->type() == QEvent::MouseButtonPress ||
+			event->type() == QEvent::MouseButtonRelease)) {
+			return true;
+		}
+
+		sunken = QModelIndex();
+
+		if( event->type() == QEvent::MouseButtonPress) {
+			sunken = index;
+		}
+		return true;
 	}
 };
 
@@ -75,7 +106,11 @@ public:
 		pluginNames = qtnote->pluginManager()->pluginsNames();
 		QPixmap pix(":/icons/options");
 		settingIcon = QIcon(pix);
-		settingIcon.addPixmap(pix.scaled(pix.size() + QSize(1,1), Qt::KeepAspectRatio, Qt::SmoothTransformation),
+		QTransform transform;
+		transform.rotate(45);
+		pix.transformed(transform, Qt::SmoothTransformation);
+
+		settingIcon.addPixmap(pix.transformed(transform),
 							  QIcon::Active);
 	}
 
@@ -235,7 +270,6 @@ void OptionsPlugins::pluginClicked(const QModelIndex &index)
 	if (index.column() == 1) {// settings
 		QDialog *d = qtnote->pluginManager()->optionsDialog(pluginsModel->pluginName(index.row()));
 		if (d) {
-			//d->setParent(this);
 			d->show();
 			d->raise();
 		}
