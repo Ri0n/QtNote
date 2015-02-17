@@ -40,6 +40,7 @@ class TomboyPlugin : public QObject, public PluginInterface, public RegularPlugi
 public:
 	explicit TomboyPlugin(QObject *parent = 0);
 
+	int metadataVersion() const;
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
 };

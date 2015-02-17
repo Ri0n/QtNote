@@ -71,6 +71,11 @@ SpellCheckPlugin::SpellCheckPlugin(QObject *parent) :
 {
 }
 
+int SpellCheckPlugin::metadataVersion() const
+{
+	 return MetadataVerion;
+}
+
 PluginMetadata SpellCheckPlugin::metadata()
 {
 	PluginMetadata md;

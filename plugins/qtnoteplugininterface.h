@@ -27,7 +27,7 @@ struct PluginMetadata
 class PluginInterface
 {
 public:
-    inline int metadataVersion() const { return MetadataVerion; }
+	virtual int metadataVersion() const = 0;
 	virtual PluginMetadata metadata() = 0;
 };
 
@@ -47,7 +47,7 @@ public:
 } // namespace QtNote
 
 Q_DECLARE_INTERFACE(QtNote::PluginInterface,
-					 "com.rion-soft.QtNote.PluginInterface/1.0")
+					 "com.rion-soft.QtNote.PluginInterface/1.1")
 
 Q_DECLARE_INTERFACE(QtNote::RegularPluginInterface,
                      "com.rion-soft.QtNote.RegularPluginInterface/1.0")

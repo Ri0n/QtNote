@@ -45,6 +45,7 @@ class SpellCheckPlugin : public QObject, public PluginInterface, public RegularP
 public:
 	explicit SpellCheckPlugin(QObject *parent = 0);
 
+	int metadataVersion() const;
 	virtual PluginMetadata metadata();
 	bool init(Main *qtnote);
 

@@ -20,6 +20,7 @@ class UbuntuPlugin : public QObject, public PluginInterface, public TrayInterfac
 public:
 	explicit UbuntuPlugin(QObject *parent = 0);
 
+	int metadataVersion() const;
 	virtual PluginMetadata metadata();
 
 	TrayImpl* initTray(Main *qtnote);

@@ -36,6 +36,11 @@ TomboyPlugin::TomboyPlugin(QObject *parent) :
 {
 }
 
+int TomboyPlugin::metadataVersion() const
+{
+	return MetadataVerion;
+}
+
 PluginMetadata TomboyPlugin::metadata()
 {
 	PluginMetadata md;

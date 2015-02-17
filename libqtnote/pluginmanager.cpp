@@ -304,11 +304,6 @@ void PluginManager::updateMetadata()
 			if (!tmpCache.isNull()) { // new cache
 				plugins.insert(tmpCache->metadata.name, tmpCache);
 			}
-
-
-			/*if (!pluginTrayIcon && (pluginTrayIcon = qobject_cast<TrayIconInterface*>(plugin))) {
-				continue;
-			}*/
 		}
 
 		it.next();
@@ -328,7 +323,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 	QObject *plugin = loader.instance();
 	if (plugin) {
 		PluginInterface *qnp = qobject_cast<PluginInterface *>(plugin);
-        if (!qnp || qnp->metadataVersion() != MetadataVerion) {
+		if (!qnp || qnp->metadataVersion() != MetadataVerion) {
 			loader.unload();
 			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));
 			return LS_ErrAbi;

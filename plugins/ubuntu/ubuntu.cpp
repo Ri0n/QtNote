@@ -39,6 +39,11 @@ UbuntuPlugin::UbuntuPlugin(QObject *parent) :
 {
 }
 
+int UbuntuPlugin::metadataVersion() const
+{
+	 return MetadataVerion;
+}
+
 PluginMetadata UbuntuPlugin::metadata()
 {
 	PluginMetadata md;

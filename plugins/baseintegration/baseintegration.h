@@ -23,6 +23,7 @@ class BaseIntegration : public QObject, public PluginInterface, public DEIntegra
 public:
 	explicit BaseIntegration(QObject *parent = 0);
 
+	int metadataVersion() const;
 	PluginMetadata metadata();
 
 	void activateWidget(QWidget *w);
