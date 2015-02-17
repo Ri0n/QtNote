@@ -91,7 +91,7 @@ bool SpellCheckPlugin::init(Main *qtnote)
 	QLocale systemLocale = QLocale::system();
 	QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
 	sei->addLanguage(QLocale::system());
-	if (enLocale != systemLocale) {
+    if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
 		sei->addLanguage(enLocale);
 	}
 	hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
