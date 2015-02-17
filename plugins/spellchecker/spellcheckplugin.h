@@ -33,14 +33,15 @@ namespace QtNote {
 
 class SpellEngineInterface;
 
-class SpellCheckPlugin : public QObject, public PluginInterface, public PluginOptionsTooltipInterface,
-		public PluginOptionsInterface
+class SpellCheckPlugin : public QObject, public PluginInterface, public RegularPluginInterface,
+        public PluginOptionsTooltipInterface, public PluginOptionsInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
 #endif
-	Q_INTERFACES(QtNote::PluginInterface QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface
+                 QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface)
 public:
 	explicit SpellCheckPlugin(QObject *parent = 0);
 

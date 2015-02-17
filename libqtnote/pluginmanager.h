@@ -16,12 +16,14 @@ class PluginManager : public QObject
 	Q_OBJECT
 public:
 	enum LoadStatus {
-		LS_Undefined,
-		LS_NotPlugin,
-		LS_Unloaded,
-		LS_Loaded,
-		LS_ErrVersion,
-		LS_ErrAbi
+        LS_Undefined = 0,
+        LS_Loaded,
+        LS_Initialized,
+        LS_Errors = 100,
+        LS_NotPlugin = LS_Errors + 1,
+        LS_ErrVersion,
+        LS_ErrAbi,
+        LS_Unloaded
 	};
 
 	enum LoadPolicy {
@@ -31,10 +33,10 @@ public:
 	};
 
 	enum PluginFeature {
-		DEIntegration   = 0x1,
-		TrayIcon        = 0x2,
-		GlobalShortcuts = 0x4,
-		NoteStorage     = 0x8
+        RegularPlugin   = 0x1,
+        DEIntegration   = 0x2,
+        TrayIcon        = 0x4,
+        GlobalShortcuts = 0x8
 	};
 	Q_DECLARE_FLAGS(PluginFeatures, PluginFeature)
 
@@ -55,6 +57,15 @@ public:
 
 	explicit PluginManager(Main *parent);
 
+    template<class T>
+    inline T* castInterface(const PluginData::Ptr &pd) const
+    {
+        if (pd->loadStatus && pd->loadStatus < LS_Errors) {
+            return qobject_cast<T*>(pd->instance);
+        }
+        return 0;
+    }
+
 	void loadPlugins();
 	LoadPolicy loadPolicy(const QString &pluginName) const { return plugins[pluginName]->loadPolicy; }
 	LoadStatus loadStatus(const QString &pluginName) const { return plugins[pluginName]->loadStatus; }
@@ -63,26 +74,18 @@ public:
 	QStringList pluginsNames() const;
 	inline const PluginMetadata &metadata(const QString &pluginName) const { return plugins[pluginName]->metadata; }
 	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
-	inline QString tooltip(const QString &pluginName) const {
-		PluginData::Ptr pd = plugins[pluginName];
-		PluginOptionsTooltipInterface *plugin;
-		if ((pd->loadStatus == LS_Loaded) && (plugin = qobject_cast<PluginOptionsTooltipInterface*>(pd->instance))) {
-			return plugin->tooltip();
-		}
-		return QString();
-	}
+    QString tooltip(const QString &pluginName) const;
 	inline bool canOptionsDialog(const QString &pluginName) const {
-		PluginData::Ptr pd = plugins[pluginName];
-		return (pd->loadStatus == LS_Loaded) && qobject_cast<PluginOptionsInterface*>(pd->instance);
+        return castInterface<PluginOptionsInterface>(plugins[pluginName]) != 0;
 	}
 	inline QDialog* optionsDialog(const QString &pluginName) const {
-		PluginData::Ptr pd = plugins[pluginName];
-		PluginOptionsInterface *plugin;
-		if ((pd->loadStatus == LS_Loaded) && (plugin = qobject_cast<PluginOptionsInterface*>(pd->instance))) {
+        auto plugin = castInterface<PluginOptionsInterface>(plugins[pluginName]);
+        if (plugin) {
 			return plugin->optionsDialog();
 		}
 		return 0;
 	}
+
 signals:
 
 public slots:
@@ -92,7 +95,8 @@ private:
 	QHash<QString, PluginData::Ptr> plugins;
 
 	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);
-	void updateMetadata();
+    void updateMetadata();
+    bool ensureLoaded(PluginData::Ptr pd);
 };
 
 }

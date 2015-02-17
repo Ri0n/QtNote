@@ -24,7 +24,6 @@ public:
 	explicit KDEIntegration(QObject *parent = 0);
 
 	virtual PluginMetadata metadata();
-	bool init(Main *qtnote);
 
 	TrayImpl* initTray(Main *qtnote);
 

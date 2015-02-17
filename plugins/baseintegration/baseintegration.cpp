@@ -30,12 +30,6 @@ PluginMetadata BaseIntegration::metadata()
 	return md;
 }
 
-bool BaseIntegration::init(Main *qtnote)
-{
-	this->qtnote = qtnote;
-	return true;
-}
-
 void BaseIntegration::activateWidget(QWidget *w)
 {
 	w->raise();

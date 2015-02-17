@@ -9,7 +9,7 @@
 
 namespace QtNote {
 
-#define MetadataVerion = 1;
+#define MetadataVerion 1
 
 struct PluginMetadata
 {
@@ -27,8 +27,14 @@ struct PluginMetadata
 class PluginInterface
 {
 public:
+    inline int metadataVersion() const { return MetadataVerion; }
 	virtual PluginMetadata metadata() = 0;
-	virtual bool init(Main *qtnote) = 0;
+};
+
+class RegularPluginInterface
+{
+public:
+    virtual bool init(Main *qtnote) = 0;
 };
 
 class PluginOptionsTooltipInterface
@@ -42,6 +48,9 @@ public:
 
 Q_DECLARE_INTERFACE(QtNote::PluginInterface,
 					 "com.rion-soft.QtNote.PluginInterface/1.0")
+
+Q_DECLARE_INTERFACE(QtNote::RegularPluginInterface,
+                     "com.rion-soft.QtNote.RegularPluginInterface/1.0")
 
 Q_DECLARE_INTERFACE(QtNote::PluginOptionsTooltipInterface,
 					 "com.rion-soft.QtNote.PluginOptionsTooltipInterface/1.0")

@@ -54,12 +54,6 @@ PluginMetadata UbuntuPlugin::metadata()
 	return md;
 }
 
-bool UbuntuPlugin::init(Main *qtnote)
-{
-	Q_UNUSED(qtnote)
-	return true;
-}
-
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
 	return new UbuntuTray(qtnote, this);

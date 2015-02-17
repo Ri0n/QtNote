@@ -121,7 +121,7 @@ PluginManager::PluginManager(Main *parent) :
 		pd->loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
 		pd->loadStatus = LS_Undefined;
 		pd->fileName = s.value("filename").toString();
-		pd->modifyTime = s.value("lastModified").toDateTime();
+        pd->modifyTime = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
 		pd->features = (PluginFeatures)s.value("features").toUInt();
 		pd->metadata.name = pluginName;
 		pd->metadata.description = s.value("description").toString();
@@ -145,7 +145,7 @@ void PluginManager::loadPlugins()
 	};
 	
 	QMap<PluginFeature,FeaturedPlugin> featurePriority;
-	
+    QList<PluginData::Ptr> regularPlugins;
 
 	QSettings s;
 	QStringList prioritizedList = s.value("plugins-priority").toStringList();
@@ -170,7 +170,7 @@ void PluginManager::loadPlugins()
 		QStringList deList = pd->metadata.extra["de"].toStringList();
 		bool native = deList.contains(session);
 
-		if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty()) || loadPlugin(pd->fileName, pd) != LS_Loaded) {
+        if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty())) {
 			continue;
 		}
 
@@ -192,31 +192,71 @@ void PluginManager::loadPlugins()
 				fp.base.push_back(plugin);
 			}
 		}
-		qobject_cast<PluginInterface*>(pd->instance)->init(qtnote);
+
+        if (pd->features & RegularPlugin) {
+            regularPlugins.append(pd);
+        }
 	}
 
 	/* set most desirable tray implementation */
 	QStringList trayPlugins = featurePriority[TrayIcon].native + featurePriority[TrayIcon].base;
 	foreach(const QString &plugin, trayPlugins) {
-		TrayInterface *tp = qobject_cast<TrayInterface *>(plugins[plugin]->instance);
+        auto pd = plugins[plugin];
+        if (!ensureLoaded(pd)) {
+            continue;
+        }
+        TrayInterface *tp = qobject_cast<TrayInterface *>(pd->instance);
 		TrayImpl *tray = tp->initTray(qtnote);
 		if (tray) {
 			qtnote->setTrayImpl(tray);
+            pd->loadStatus = LS_Initialized;
 			break;
 		}
 	}
 
 	/* set most desirable desktop environment plugin */
 	QStringList dePlugins = featurePriority[DEIntegration].native + featurePriority[DEIntegration].base;
-	if (dePlugins.length()) {
-		qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(plugins[dePlugins[0]]->instance));
+    foreach(const QString &plugin, dePlugins) {
+        auto pd = plugins[plugin];
+        if (!ensureLoaded(pd)) {
+            continue;
+        }
+        qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(pd->instance));
+        pd->loadStatus = LS_Initialized;
+        break;
 	}
 
 	/* set most desirable global shortcuts plugin */
 	QStringList gsPlugins = featurePriority[GlobalShortcuts].native + featurePriority[GlobalShortcuts].base;
-	if (gsPlugins.length()) {
-		qtnote->setGlobalShortcutsImpl(qobject_cast<GlobalShortcutsInterface *>(plugins[gsPlugins[0]]->instance));
+    foreach(const QString &plugin, gsPlugins) {
+        auto pd = plugins[plugin];
+        if (!ensureLoaded(pd)) {
+            continue;
+        }
+        qtnote->setGlobalShortcutsImpl(qobject_cast<GlobalShortcutsInterface *>(pd->instance));
+        pd->loadStatus = LS_Initialized;
+        break;
 	}
+
+    foreach (PluginData::Ptr pd, regularPlugins) {
+        if (!ensureLoaded(pd)) {
+            continue;
+        }
+        if (qobject_cast<RegularPluginInterface*>(pd->instance)->init(qtnote)) {
+            pd->loadStatus = LS_Initialized;
+        }
+    }
+}
+
+bool PluginManager::ensureLoaded(PluginData::Ptr pd)
+{
+    if (pd->loadStatus == LS_Undefined || pd->loadStatus == LS_Unloaded) {
+        return loadPlugin(pd->fileName, pd) == LS_Loaded;
+    }
+    if (pd->loadStatus > LS_Errors) {
+        return false;
+    }
+    return true;
 }
 
 void PluginManager::setLoadPolicy(const QString &pluginName, PluginManager::LoadPolicy lp)
@@ -233,23 +273,34 @@ QStringList PluginManager::pluginsNames() const
 	return QSettings().value("plugins-priority").toStringList();
 }
 
+QString PluginManager::tooltip(const QString &pluginName) const {
+    PluginData::Ptr pd = plugins[pluginName];
+    PluginOptionsTooltipInterface *plugin;
+    if ((pd->loadStatus && pd->loadStatus < LS_Errors) &&
+            (plugin = qobject_cast<PluginOptionsTooltipInterface*>(pd->instance)))
+    {
+        return plugin->tooltip();
+    }
+    return QString();
+}
+
 void PluginManager::updateMetadata()
 {
-	QHash<QString, QString> file2name;
-	foreach (const PluginData::Ptr &p, plugins) {
-		file2name[p->fileName] = p->metadata.name;
-	}
+    QHash<QString, QString> file2name;
+    foreach (const PluginData::Ptr &p, plugins) {
+        file2name[p->fileName] = p->metadata.name;
+    }
 
-	PluginsIterator it;
-	while (!it.isFinished()) {
-		QString fileName = it.fileName();
-		QString pluginName = file2name.value(fileName);
-		PluginData::Ptr tmpCache;
-		PluginData::Ptr &cache = pluginName.isEmpty()? tmpCache : plugins[pluginName];
-		if (cache.isNull() || (cache->loadStatus != LS_Loaded &&
+    PluginsIterator it;
+    while (!it.isFinished()) {
+        QString fileName = it.fileName();
+        QString pluginName = file2name.value(fileName);
+        PluginData::Ptr tmpCache;
+        PluginData::Ptr &cache = pluginName.isEmpty()? tmpCache : plugins[pluginName];
+        if (cache.isNull() || (cache->loadStatus == LS_Undefined &&
 							   cache->modifyTime < QFileInfo(cache->fileName).lastModified())) { // have to update metadata cache
 
-			loadPlugin(fileName, cache, QLibrary::ExportExternalSymbolsHint);
+            loadPlugin(fileName, cache, QLibrary::ExportExternalSymbolsHint);
 			if (!tmpCache.isNull()) { // new cache
 				plugins.insert(tmpCache->metadata.name, tmpCache);
 			}
@@ -277,14 +328,14 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 	QObject *plugin = loader.instance();
 	if (plugin) {
 		PluginInterface *qnp = qobject_cast<PluginInterface *>(plugin);
-		if (!qnp) {
+        if (!qnp || qnp->metadataVersion() != MetadataVerion) {
 			loader.unload();
 			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));
 			return LS_ErrAbi;
 		}
 
 		LoadStatus loadStatus = LS_Loaded;
-		PluginMetadata md = qnp->metadata(MetadataVerion);
+        PluginMetadata md = qnp->metadata();
 		if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
 			loader.unload();
 			qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));
@@ -309,10 +360,13 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		if (qobject_cast<GlobalShortcutsInterface*>(plugin)) {
 			cache->features |= GlobalShortcuts;
 		}
+        if (qobject_cast<RegularPluginInterface*>(plugin)) {
+            cache->features |= RegularPlugin;
+        }
 		s.beginGroup(cache->metadata.name);
 		s.setValue("loadPolicy", cache->loadPolicy);
 		s.setValue("filename", cache->fileName);
-		s.setValue("lastModify", cache->modifyTime);
+        s.setValue("lastModify", cache->modifyTime.toTime_t());
 		s.setValue("features", (uint)cache->features);
 		s.setValue("name", md.name);
 		s.setValue("description", md.description);

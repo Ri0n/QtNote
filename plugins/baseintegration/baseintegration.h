@@ -24,7 +24,6 @@ public:
 	explicit BaseIntegration(QObject *parent = 0);
 
 	PluginMetadata metadata();
-	bool init(Main *qtnote);
 
 	void activateWidget(QWidget *w);
 	TrayImpl* initTray(Main *qtnote);
@@ -33,7 +32,6 @@ public:
 public slots:
 
 private:
-	Main *qtnote;
 	TrayImpl *tray;
 	
 };

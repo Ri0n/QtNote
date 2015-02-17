@@ -30,13 +30,13 @@ namespace QtNote {
 
 class SpellEngineInterface;
 
-class TomboyPlugin : public QObject, public PluginInterface
+class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.tomboy")
 #endif
-	Q_INTERFACES(QtNote::PluginInterface)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface)
 public:
 	explicit TomboyPlugin(QObject *parent = 0);
 

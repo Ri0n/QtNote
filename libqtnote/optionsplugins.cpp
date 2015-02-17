@@ -167,13 +167,14 @@ public:
 					strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
 					strStatus.insert(PluginManager::LS_ErrVersion, tr("Incompatible version"));
 					strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
+                    strStatus.insert(PluginManager::LS_Initialized, tr("Initialized"));
 					strStatus.insert(PluginManager::LS_NotPlugin, tr("Not a plugin"));
 					strStatus.insert(PluginManager::LS_Undefined, tr("Undefined"));
 					strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
 				}
 				QString ret = tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "<br/><br/>" +
 						tr("<b>Status:</b> %1").arg(strStatus[status]);
-				if (status == PluginManager::LS_Loaded) {
+                if (status && status < PluginManager::LS_Errors) {
 					QString tooltip = qtnote->pluginManager()->tooltip(pluginNames[index.row()]);
 					if (!tooltip.isEmpty()) {
 						ret += QLatin1String("<br/><br/>");
@@ -184,7 +185,7 @@ public:
 			}
 			}
 		} else if (index.column() == 1) { // version
-			if (role == Qt::DecorationRole) {
+            if (role == Qt::DisplayRole) {
 				auto version = qtnote->pluginManager()->metadata(pluginNames[index.row()]).version;
 				QStringList ret;
 				while (version) {
@@ -198,7 +199,7 @@ public:
 			}
 		} else if (index.column() == 2) { // settings button
 			// options button
-			if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginNames[index.row()])) {
+            if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginNames[index.row()])) {
 				return settingIcon;
 			}
 		}
@@ -284,7 +285,7 @@ OptionsPlugins::~OptionsPlugins()
 
 void OptionsPlugins::pluginClicked(const QModelIndex &index)
 {
-	if (index.column() == 1) {// settings
+    if (index.column() == 2) {// settings
 		QString pn = pluginsModel->pluginName(index.row());
 		QDialog *d = qtnote->pluginManager()->optionsDialog(pn);
 		if (d) {

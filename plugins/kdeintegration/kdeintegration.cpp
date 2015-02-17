@@ -33,12 +33,6 @@ PluginMetadata KDEIntegration::metadata()
 	return md;
 }
 
-bool KDEIntegration::init(Main *qtnote)
-{
-	Q_UNUSED(qtnote)
-	return true;
-}
-
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
 	return new KDEIntegrationTray(qtnote, this);
