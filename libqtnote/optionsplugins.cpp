@@ -129,7 +129,7 @@ public:
 		if (parent.isValid()) {
 			return 0;
 		}
-		return 2;
+		return 3;
 	}
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
@@ -155,7 +155,7 @@ public:
 
 			case Qt::DecorationRole:
 			{
-				QIcon icon = qtnote->pluginManager()->icon(pluginNames[index.row()]);
+				QIcon icon = qtnote->pluginManager()->metadata(pluginNames[index.row()]).icon;
 				return icon.isNull()? QIcon(":/icons/plugin") : icon;
 			}
 
@@ -183,7 +183,20 @@ public:
 				return ret;
 			}
 			}
-		} else if (index.column() == 1) {
+		} else if (index.column() == 1) { // version
+			if (role == Qt::DecorationRole) {
+				auto version = qtnote->pluginManager()->metadata(pluginNames[index.row()]).version;
+				QStringList ret;
+				while (version) {
+					ret.append(QString::number((version & 0xff000000) >> 24));
+					version <<= 8;
+				}
+				if (ret.count() < 2) {
+					ret.append("0");
+				}
+				return ret.join(".");
+			}
+		} else if (index.column() == 2) { // settings button
 			// options button
 			if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginNames[index.row()])) {
 				return settingIcon;
@@ -251,13 +264,15 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
 	pluginsModel = new PluginsModel(qtnote, this);
 	ui->tblPlugins->setModel(pluginsModel);
 	ButtonDelegate *btnsDelegate = new ButtonDelegate();
-	ui->tblPlugins->setItemDelegateForColumn(1, btnsDelegate);
+	ui->tblPlugins->setItemDelegateForColumn(2, btnsDelegate);
 #if QT_VERSION >= 0x050000
 	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+	ui->tblPlugins->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
 #else
 	ui->tblPlugins->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	ui->tblPlugins->horizontalHeader()->setResizeMode(1, QHeaderView::ResizeToContents);
+	ui->tblPlugins->horizontalHeader()->setResizeMode(2, QHeaderView::ResizeToContents);
 #endif
 	connect(ui->tblPlugins, SIGNAL(clicked(QModelIndex)), SLOT(pluginClicked(QModelIndex)));
 }
@@ -274,7 +289,7 @@ void OptionsPlugins::pluginClicked(const QModelIndex &index)
 		QDialog *d = qtnote->pluginManager()->optionsDialog(pn);
 		if (d) {
 			d->setWindowTitle(pn + tr(": Settings"));
-			d->setWindowIcon(qtnote->pluginManager()->icon(pn));
+			d->setWindowIcon(qtnote->pluginManager()->metadata(pn).icon);
 			d->show();
 			d->raise();
 		}

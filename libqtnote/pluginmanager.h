@@ -61,7 +61,7 @@ public:
 	void setLoadPolicy(const QString &pluginName, LoadPolicy lp);
 	inline int pluginsCount() const { return plugins.size(); }
 	QStringList pluginsNames() const;
-	inline QIcon icon(const QString &pluginName) const { return plugins[pluginName]->metadata.icon; }
+	inline const PluginMetadata &metadata(const QString &pluginName) const { return plugins[pluginName]->metadata; }
 	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
 	inline QString tooltip(const QString &pluginName) const {
 		PluginData::Ptr pd = plugins[pluginName];

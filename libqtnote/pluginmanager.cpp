@@ -267,6 +267,9 @@ void PluginManager::updateMetadata()
 PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 													PluginData::Ptr &cache, QLibrary::LoadHints loadHints)
 {
+#ifdef DEVEL
+	qDebug("Loading plugin: %s", qPrintable(fileName));
+#endif
 	QPluginLoader loader(fileName);
 	loader.setLoadHints(loadHints);
 	QSettings s;
@@ -281,7 +284,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		}
 
 		LoadStatus loadStatus = LS_Loaded;
-		PluginMetadata md = qnp->metadata();
+		PluginMetadata md = qnp->metadata(MetadataVerion);
 		if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
 			loader.unload();
 			qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));

@@ -3,10 +3,13 @@
 
 #include <QVariantHash>
 #include <QIcon>
+#include <QUrl>
 
 #include "qtnote.h"
 
 namespace QtNote {
+
+#define MetadataVerion = 1;
 
 struct PluginMetadata
 {
@@ -17,6 +20,7 @@ struct PluginMetadata
 	quint32 version;	// plugin's version 0xXXYYZZPP
 	quint32 minVersion; // minimum compatible version of QtNote
 	quint32 maxVersion; // maximum compatible version of QtNote
+	QUrl homepage;
 	QVariantHash extra;
 };
 
