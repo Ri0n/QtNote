@@ -134,11 +134,12 @@ public:
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
 	{
+        QString pluginName = pluginNames[index.row()];
 		if (index.column() == 0) {
 			switch (role) {
 			case Qt::CheckStateRole:
 			{
-				PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginNames[index.row()]);
+                PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginName);
 				switch (lp)
 				{
 				case PluginManager::LP_Auto:
@@ -151,17 +152,17 @@ public:
 			}
 
 			case Qt::DisplayRole:
-				return pluginNames[index.row()];
+                return pluginName;
 
 			case Qt::DecorationRole:
 			{
-				QIcon icon = qtnote->pluginManager()->metadata(pluginNames[index.row()]).icon;
+                QIcon icon = qtnote->pluginManager()->metadata(pluginName).icon;
 				return icon.isNull()? QIcon(":/icons/plugin") : icon;
 			}
 
 			case Qt::ToolTipRole:
 			{
-				PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginNames[index.row()]);
+                PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginName);
 				static QMap<PluginManager::LoadStatus,QString> strStatus;
 				if (strStatus.isEmpty()) {
 					strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
@@ -169,13 +170,14 @@ public:
 					strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
                     strStatus.insert(PluginManager::LS_Initialized, tr("Initialized"));
 					strStatus.insert(PluginManager::LS_NotPlugin, tr("Not a plugin"));
-					strStatus.insert(PluginManager::LS_Undefined, tr("Undefined"));
+                    strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
 					strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
 				}
-				QString ret = tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginNames[index.row()])) + "<br/><br/>" +
+                QString ret = qtnote->pluginManager()->metadata(pluginName).description + QLatin1String("<br/><br/>") +
+                        tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginName)) + "<br/><br/>" +
 						tr("<b>Status:</b> %1").arg(strStatus[status]);
                 if (status && status < PluginManager::LS_Errors) {
-					QString tooltip = qtnote->pluginManager()->tooltip(pluginNames[index.row()]);
+                    QString tooltip = qtnote->pluginManager()->tooltip(pluginName);
 					if (!tooltip.isEmpty()) {
 						ret += QLatin1String("<br/><br/>");
 						ret += tooltip;
@@ -186,7 +188,7 @@ public:
 			}
 		} else if (index.column() == 1) { // version
             if (role == Qt::DisplayRole) {
-				auto version = qtnote->pluginManager()->metadata(pluginNames[index.row()]).version;
+                auto version = qtnote->pluginManager()->metadata(pluginName).version;
 				QStringList ret;
 				while (version) {
 					ret.append(QString::number((version & 0xff000000) >> 24));
@@ -199,7 +201,7 @@ public:
 			}
 		} else if (index.column() == 2) { // settings button
 			// options button
-            if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginNames[index.row()])) {
+            if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginName)) {
 				return settingIcon;
 			}
 		}

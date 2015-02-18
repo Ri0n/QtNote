@@ -18,6 +18,11 @@ KDEIntegration::KDEIntegration(QObject *parent) :
 {
 }
 
+int KDEIntegration::metadataVersion() const
+{
+    return MetadataVerion;
+}
+
 PluginMetadata KDEIntegration::metadata()
 {
 	PluginMetadata md;

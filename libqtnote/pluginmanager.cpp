@@ -113,6 +113,8 @@ PluginManager::PluginManager(Main *parent) :
 {
 	QSettings s;
 
+    QDir(iconsCacheDir()).mkpath(QLatin1String("."));
+
 	s.beginGroup("plugins");
 	foreach (const QString &pluginName, s.childGroups()) {
 		s.beginGroup(pluginName);
@@ -130,6 +132,7 @@ PluginManager::PluginManager(Main *parent) :
 		pd->metadata.minVersion = s.value("minVersion").toUInt();
 		pd->metadata.maxVersion = s.value("maxVersion").toUInt();
 		pd->metadata.extra = s.value("extra").toHash();
+        pd->metadata.icon = QIcon(iconsCacheDir() + pluginName + QLatin1String(".png"));
 		//pd->metadata.extra = s.value("extra").();
 		s.endGroup();
 	}
@@ -259,6 +262,11 @@ bool PluginManager::ensureLoaded(PluginData::Ptr pd)
     return true;
 }
 
+QString PluginManager::iconsCacheDir() const
+{
+    return Utils::localDataDir() + "/plugin-icons/";
+}
+
 void PluginManager::setLoadPolicy(const QString &pluginName, PluginManager::LoadPolicy lp)
 {
 	QSettings s;
@@ -371,7 +379,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		s.setValue("maxVersion", md.maxVersion);
 		s.setValue("extra", md.extra);
 		if (!cache->metadata.icon.isNull()) {
-			cache->metadata.icon.pixmap(16, 16).save(Utils::localDataDir() + "/plugin-icons/" + md.name + ".png");
+            cache->metadata.icon.pixmap(16, 16).save(iconsCacheDir() + md.name + QLatin1String(".png"));
 		}
 		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
 			loader.unload();

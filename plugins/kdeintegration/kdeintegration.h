@@ -23,6 +23,7 @@ class KDEIntegration : public QObject, public PluginInterface, public TrayInterf
 public:
 	explicit KDEIntegration(QObject *parent = 0);
 
+    int metadataVersion() const;
 	virtual PluginMetadata metadata();
 
 	TrayImpl* initTray(Main *qtnote);

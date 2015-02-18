@@ -97,6 +97,7 @@ private:
 	LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);
     void updateMetadata();
     bool ensureLoaded(PluginData::Ptr pd);
+    QString iconsCacheDir() const;
 };
 
 }
