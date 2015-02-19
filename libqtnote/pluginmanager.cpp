@@ -305,7 +305,7 @@ void PluginManager::updateMetadata()
         QString pluginName = file2name.value(fileName);
         PluginData::Ptr tmpCache;
         PluginData::Ptr &cache = pluginName.isEmpty()? tmpCache : plugins[pluginName];
-        if (cache.isNull() || (cache->loadStatus == LS_Undefined &&
+		if (cache.isNull() || (!(cache->loadStatus && cache->loadStatus < LS_Errors) &&
 							   cache->modifyTime < QFileInfo(cache->fileName).lastModified())) { // have to update metadata cache
 
             loadPlugin(fileName, cache, QLibrary::ExportExternalSymbolsHint);
@@ -333,6 +333,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		PluginInterface *qnp = qobject_cast<PluginInterface *>(plugin);
 		if (!qnp || qnp->metadataVersion() != MetadataVerion) {
 			loader.unload();
+			cache->loadStatus = LS_ErrAbi;
 			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));
 			return LS_ErrAbi;
 		}
