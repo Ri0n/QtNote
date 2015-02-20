@@ -412,7 +412,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		return loadStatus;
 	}
 	qDebug("failed to load %s : %s", qPrintable(fileName), qPrintable(loader.errorString()));
-	return LS_NotPlugin;
+	return LS_ErrNotPlugin;
 }
 
 } // namespace QtNote

@@ -166,11 +166,12 @@ public:
 				static QMap<PluginManager::LoadStatus,QString> strStatus;
 				if (strStatus.isEmpty()) {
 					strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
+					strStatus.insert(PluginManager::LS_ErrMetadata, tr("Incompatible metadata"));
 					strStatus.insert(PluginManager::LS_ErrVersion, tr("Incompatible version"));
 					strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
-                    strStatus.insert(PluginManager::LS_Initialized, tr("Initialized"));
-					strStatus.insert(PluginManager::LS_NotPlugin, tr("Not a plugin"));
-                    strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
+					strStatus.insert(PluginManager::LS_Initialized, tr("Initialized"));
+					strStatus.insert(PluginManager::LS_ErrNotPlugin, tr("Not a plugin"));
+					strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
 					strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
 				}
 				QString ret = qtnote->pluginManager()->metadata(pluginId).description + QLatin1String("<br/><br/>") +

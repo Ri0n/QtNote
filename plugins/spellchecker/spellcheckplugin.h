@@ -53,6 +53,9 @@ public:
 
 	QDialog* optionsDialog();
 
+	inline SpellEngineInterface* engine() const { return sei; }
+	QList<QLocale> preferredLanguages() const;
+
 private slots:
 	void noteWidgetCreated(QWidget *w);
 	void settingsAccepted();

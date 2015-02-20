@@ -20,7 +20,7 @@ public:
         LS_Loaded,
         LS_Initialized,
         LS_Errors = 100,
-        LS_NotPlugin = LS_Errors + 1,
+		LS_ErrNotPlugin = LS_Errors + 1,
         LS_ErrVersion,
         LS_ErrAbi,
 		LS_ErrMetadata,

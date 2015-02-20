@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDialog>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QSettings>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -96,11 +97,8 @@ PluginMetadata SpellCheckPlugin::metadata()
 bool SpellCheckPlugin::init(Main *qtnote)
 {
 	sei = new HunspellEngine();
-	QLocale systemLocale = QLocale::system();
-	QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
-	sei->addLanguage(QLocale::system());
-    if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
-		sei->addLanguage(enLocale);
+	foreach (auto &l, preferredLanguages()) {
+		sei->addLanguage(l);
 	}
 	hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
 	connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
@@ -129,16 +127,48 @@ QString SpellCheckPlugin::tooltip() const
 
 QDialog *SpellCheckPlugin::optionsDialog()
 {
-	auto s = new SettingsDlg;
+	auto s = new SettingsDlg(this);
 	connect(s, SIGNAL(accepted()), SLOT(settingsAccepted()));
 	return s;
+}
+
+QList<QLocale> SpellCheckPlugin::preferredLanguages() const
+{
+	QSettings s;
+	s.beginGroup("plugins");
+	s.beginGroup(pluginId);
+	if (!s.contains("langs")) {
+		QStringList codes;
+		QLocale systemLocale = QLocale::system();
+		QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
+		codes.append(systemLocale.bcp47Name());
+		if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
+			codes.append(enLocale.bcp47Name());
+		}
+		s.setValue("langs", codes);
+	}
+	QList<QLocale> ret;
+	foreach (const QString &code, s.value("langs").toStringList()) {
+		QLocale locale(code);
+		if (locale != QLocale::c()) {
+			ret.append(locale);
+		}
+	}
+	return ret;
 }
 
 void SpellCheckPlugin::settingsAccepted()
 {
 	auto dlg = (SettingsDlg*)sender();
 	auto ret = dlg->preferredList();
-
+	QSettings s;
+	s.beginGroup("plugins");
+	s.beginGroup(pluginId);
+	QStringList langs;
+	foreach (const QLocale &locale, ret) {
+		langs.append(locale.bcp47Name());
+	}
+	s.setValue("langs", langs);
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)

@@ -28,8 +28,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class SpellEngineInterface;
-
 class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface
 {
 	Q_OBJECT

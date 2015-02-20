@@ -19,6 +19,7 @@ public:
 
 	HunspellEngine();
 
+	QList<QLocale> supportedLanguages() const;
 	bool addLanguage(const QLocale &locale);
 	bool spell(const QString &word) const;
 	QList<DictInfo> loadedDicts() const;

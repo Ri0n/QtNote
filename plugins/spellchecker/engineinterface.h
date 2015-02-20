@@ -15,6 +15,7 @@ public:
 		QString filename;
 	};
 
+	virtual QList<QLocale> supportedLanguages() const = 0;
 	virtual bool addLanguage(const QLocale &locale) = 0;
 	virtual bool spell(const QString &word) const = 0;
 	virtual QList<DictInfo> loadedDicts() const = 0;

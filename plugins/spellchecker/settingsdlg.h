@@ -7,12 +7,16 @@ namespace Ui {
 class SettingsDlg;
 }
 
+namespace QtNote {
+
+class SpellCheckPlugin;
+
 class SettingsDlg : public QDialog
 {
 	Q_OBJECT
 
 public:
-	explicit SettingsDlg(QWidget *parent = 0);
+	explicit SettingsDlg(SpellCheckPlugin *plugin, QWidget *parent = 0);
 	~SettingsDlg();
 
 	QList<QLocale> preferredList() const;
@@ -20,5 +24,7 @@ public:
 private:
 	Ui::SettingsDlg *ui;
 };
+
+}
 
 #endif // SETTINGSDLG_H
