@@ -30,6 +30,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+static const QLatin1String pluginId("ubuntu_de");
 
 //------------------------------------------------------------
 // UbuntuPlugin
@@ -47,6 +48,7 @@ int UbuntuPlugin::metadataVersion() const
 PluginMetadata UbuntuPlugin::metadata()
 {
 	PluginMetadata md;
+	md.id = pluginId;
 	md.icon = QIcon(":/icons/ubuntu-logo");
 	md.name = "Ubuntu Integration";
 	md.description = "Integrtion with ubuntu-only features";

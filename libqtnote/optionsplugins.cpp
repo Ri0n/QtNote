@@ -97,7 +97,7 @@ class PluginsModel : public QAbstractTableModel
 	Q_OBJECT
 
 	Main *qtnote;
-	QStringList pluginNames; // by priority
+	QStringList pluginIds; // by priority
 	QIcon settingIcon;
 
 public:
@@ -105,7 +105,7 @@ public:
 		QAbstractTableModel(parent),
 		qtnote(qtnote)
 	{
-		pluginNames = qtnote->pluginManager()->pluginsNames();
+		pluginIds = qtnote->pluginManager()->pluginsIds();
 		QPixmap pix(":/icons/options");
 		settingIcon = QIcon(pix);
 		QTransform transform;
@@ -121,7 +121,7 @@ public:
 		if (parent.isValid()) {
 			return 0;
 		}
-		return pluginNames.count();
+		return pluginIds.count();
 	}
 
 	int columnCount(const QModelIndex &parent = QModelIndex()) const
@@ -134,12 +134,12 @@ public:
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
 	{
-        QString pluginName = pluginNames[index.row()];
+		QString pluginId = pluginIds[index.row()];
 		if (index.column() == 0) {
 			switch (role) {
 			case Qt::CheckStateRole:
 			{
-                PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginName);
+				PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginId);
 				switch (lp)
 				{
 				case PluginManager::LP_Auto:
@@ -152,17 +152,17 @@ public:
 			}
 
 			case Qt::DisplayRole:
-                return pluginName;
+				return qtnote->pluginManager()->metadata(pluginId).name;
 
 			case Qt::DecorationRole:
 			{
-                QIcon icon = qtnote->pluginManager()->metadata(pluginName).icon;
+				QIcon icon = qtnote->pluginManager()->metadata(pluginId).icon;
 				return icon.isNull()? QIcon(":/icons/plugin") : icon;
 			}
 
 			case Qt::ToolTipRole:
 			{
-                PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginName);
+				PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
 				static QMap<PluginManager::LoadStatus,QString> strStatus;
 				if (strStatus.isEmpty()) {
 					strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
@@ -173,11 +173,11 @@ public:
                     strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
 					strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
 				}
-                QString ret = qtnote->pluginManager()->metadata(pluginName).description + QLatin1String("<br/><br/>") +
-                        tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginName)) + "<br/><br/>" +
+				QString ret = qtnote->pluginManager()->metadata(pluginId).description + QLatin1String("<br/><br/>") +
+						tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginId)) + "<br/><br/>" +
 						tr("<b>Status:</b> %1").arg(strStatus[status]);
                 if (status && status < PluginManager::LS_Errors) {
-                    QString tooltip = qtnote->pluginManager()->tooltip(pluginName);
+					QString tooltip = qtnote->pluginManager()->tooltip(pluginId);
 					if (!tooltip.isEmpty()) {
 						ret += QLatin1String("<br/><br/>");
 						ret += tooltip;
@@ -188,7 +188,7 @@ public:
 			}
 		} else if (index.column() == 1) { // version
             if (role == Qt::DisplayRole) {
-                auto version = qtnote->pluginManager()->metadata(pluginName).version;
+				auto version = qtnote->pluginManager()->metadata(pluginId).version;
 				QStringList ret;
 				while (version) {
 					ret.append(QString::number((version & 0xff000000) >> 24));
@@ -201,7 +201,7 @@ public:
 			}
 		} else if (index.column() == 2) { // settings button
 			// options button
-            if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginName)) {
+			if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginId)) {
 				return settingIcon;
 			}
 		}
@@ -215,7 +215,7 @@ public:
 			if (data(index, role) == Qt::Unchecked) {
 				cs = Qt::PartiallyChecked;
 			}
-			qtnote->pluginManager()->setLoadPolicy(pluginNames[index.row()],
+			qtnote->pluginManager()->setLoadPolicy(pluginIds[index.row()],
 						cs == Qt::PartiallyChecked? PluginManager::LP_Auto :
 						(cs == Qt::Checked? PluginManager::LP_Enabled : PluginManager::LP_Disabled));
 			emit dataChanged(index, index);
@@ -232,9 +232,9 @@ public:
 		return QAbstractTableModel::flags(index);
 	}
 
-	QString pluginName(int row) const
+	QString pluginId(int row) const
 	{
-		return pluginNames.at(row);
+		return pluginIds.at(row);
 	}
 };
 
@@ -288,11 +288,12 @@ OptionsPlugins::~OptionsPlugins()
 void OptionsPlugins::pluginClicked(const QModelIndex &index)
 {
     if (index.column() == 2) {// settings
-		QString pn = pluginsModel->pluginName(index.row());
-		QDialog *d = qtnote->pluginManager()->optionsDialog(pn);
+		QString id = pluginsModel->pluginId(index.row());
+		QDialog *d = qtnote->pluginManager()->optionsDialog(id);
 		if (d) {
-			d->setWindowTitle(pn + tr(": Settings"));
-			d->setWindowIcon(qtnote->pluginManager()->metadata(pn).icon);
+			auto &md = qtnote->pluginManager()->metadata(id);
+			d->setWindowTitle(md.name + tr(": Settings"));
+			d->setWindowIcon(md.icon);
 			d->show();
 			d->raise();
 		}

@@ -9,11 +9,12 @@
 
 namespace QtNote {
 
-#define MetadataVerion 1
+#define MetadataVerion 2
 
 struct PluginMetadata
 {
 	QIcon icon;
+	QString id;
 	QString name;
 	QString description;
 	QString author;

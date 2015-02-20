@@ -114,29 +114,6 @@ PluginManager::PluginManager(Main *parent) :
 	QSettings s;
 
     QDir(iconsCacheDir()).mkpath(QLatin1String("."));
-
-	s.beginGroup("plugins");
-	foreach (const QString &pluginName, s.childGroups()) {
-		s.beginGroup(pluginName);
-		PluginData::Ptr pd(new PluginData);
-		plugins[pluginName] = pd;
-		pd->loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
-		pd->loadStatus = LS_Undefined;
-		pd->fileName = s.value("filename").toString();
-        pd->modifyTime = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
-		pd->features = (PluginFeatures)s.value("features").toUInt();
-		pd->metadata.name = pluginName;
-		pd->metadata.description = s.value("description").toString();
-		pd->metadata.author = s.value("author").toString();
-		pd->metadata.version = s.value("version").toUInt();
-		pd->metadata.minVersion = s.value("minVersion").toUInt();
-		pd->metadata.maxVersion = s.value("maxVersion").toUInt();
-		pd->metadata.extra = s.value("extra").toHash();
-        pd->metadata.icon = QIcon(iconsCacheDir() + pluginName + QLatin1String(".png"));
-		//pd->metadata.extra = s.value("extra").();
-		s.endGroup();
-	}
-	s.endGroup();
 	updateMetadata();
 }
 
@@ -267,22 +244,22 @@ QString PluginManager::iconsCacheDir() const
     return Utils::localDataDir() + "/plugin-icons/";
 }
 
-void PluginManager::setLoadPolicy(const QString &pluginName, PluginManager::LoadPolicy lp)
+void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPolicy lp)
 {
 	QSettings s;
-	plugins[pluginName]->loadPolicy = lp;
+	plugins[pluginId]->loadPolicy = lp;
 	s.beginGroup("plugins");
-	s.beginGroup(pluginName);
+	s.beginGroup(pluginId);
 	s.setValue("loadPolicy", (int)lp);
 }
 
-QStringList PluginManager::pluginsNames() const
+QStringList PluginManager::pluginsIds() const
 {
 	return QSettings().value("plugins-priority").toStringList();
 }
 
-QString PluginManager::tooltip(const QString &pluginName) const {
-    PluginData::Ptr pd = plugins[pluginName];
+QString PluginManager::tooltip(const QString &pluginId) const {
+	PluginData::Ptr pd = plugins[pluginId];
     PluginOptionsTooltipInterface *plugin;
     if ((pd->loadStatus && pd->loadStatus < LS_Errors) &&
             (plugin = qobject_cast<PluginOptionsTooltipInterface*>(pd->instance)))
@@ -294,28 +271,59 @@ QString PluginManager::tooltip(const QString &pluginName) const {
 
 void PluginManager::updateMetadata()
 {
-    QHash<QString, QString> file2name;
-    foreach (const PluginData::Ptr &p, plugins) {
-        file2name[p->fileName] = p->metadata.name;
-    }
+	QSettings s;
+	decltype(plugins) tmpPlugins;
+	QHash<QString, PluginData::Ptr> file2data;
+
+	s.beginGroup("plugins");
+	foreach (const QString &pluginId, s.childGroups()) {
+		s.beginGroup(pluginId);
+		if (s.value("metaversion").toInt() != MetadataVerion) {
+			s.remove("");
+			s.endGroup();
+			continue;
+		}
+		PluginData::Ptr pd(new PluginData);
+		pd->fileName = s.value("filename").toString();
+		tmpPlugins[pluginId] = pd;
+		file2data[pd->fileName] = pd;
+		pd->loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
+		pd->loadStatus = LS_Undefined;
+		pd->modifyTime = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
+		pd->features = (PluginFeatures)s.value("features").toUInt();
+		pd->metadata.id = pluginId;
+		pd->metadata.name = s.value("name").toString();
+		pd->metadata.description = s.value("description").toString();
+		pd->metadata.author = s.value("author").toString();
+		pd->metadata.version = s.value("version").toUInt();
+		pd->metadata.minVersion = s.value("minVersion").toUInt();
+		pd->metadata.maxVersion = s.value("maxVersion").toUInt();
+		pd->metadata.extra = s.value("extra").toHash();
+		pd->metadata.icon = QIcon(iconsCacheDir() + pluginId + QLatin1String(".png"));
+		//pd->metadata.extra = s.value("extra").();
+		s.endGroup();
+	}
+	s.endGroup();
 
     PluginsIterator it;
     while (!it.isFinished()) {
         QString fileName = it.fileName();
-        QString pluginName = file2name.value(fileName);
-        PluginData::Ptr tmpCache;
-        PluginData::Ptr &cache = pluginName.isEmpty()? tmpCache : plugins[pluginName];
-		if (cache.isNull() || (!(cache->loadStatus && cache->loadStatus < LS_Errors) &&
-							   cache->modifyTime < QFileInfo(cache->fileName).lastModified())) { // have to update metadata cache
+		PluginData::Ptr pd = file2data.value(fileName);
+		if (pd.isNull() || (!(pd->loadStatus && pd->loadStatus < LS_Errors) &&
+							   pd->modifyTime < QFileInfo(pd->fileName).lastModified())) { // have to update metadata cache
 
-            loadPlugin(fileName, cache, QLibrary::ExportExternalSymbolsHint);
-			if (!tmpCache.isNull()) { // new cache
-				plugins.insert(tmpCache->metadata.name, tmpCache);
+			loadPlugin(fileName, pd, QLibrary::ExportExternalSymbolsHint);
+			if (!pd.isNull()) { // new cache
+				tmpPlugins.insert(pd->metadata.id, pd);
 			}
+		} else {
+			// cache is not null and filetimestamp is the same
+			tmpPlugins.insert(pd->metadata.id, pd);
 		}
 
 		it.next();
 	}
+	plugins = tmpPlugins;
 }
 
 PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
@@ -331,15 +339,26 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 	QObject *plugin = loader.instance();
 	if (plugin) {
 		PluginInterface *qnp = qobject_cast<PluginInterface *>(plugin);
-		if (!qnp || qnp->metadataVersion() != MetadataVerion) {
+		if (!qnp) {
 			loader.unload();
-			cache->loadStatus = LS_ErrAbi;
 			qDebug("not QtNote plugin %s. ignore it", qPrintable(fileName));
 			return LS_ErrAbi;
 		}
 
-		LoadStatus loadStatus = LS_Loaded;
+
         PluginMetadata md = qnp->metadata();
+		bool metaVerMatch = (qnp->metadataVersion() == MetadataVerion);
+		if (!metaVerMatch || md.id.isEmpty() || md.name.isEmpty()) {
+			loader.unload();
+			if (metaVerMatch) {
+				qDebug("QtNote plugin %s did not set metadata id or name. ignore it", qPrintable(fileName));
+			} else {
+				qDebug("Metadata version of QtNote plugin %s is incompatible", qPrintable(fileName));
+			}
+			return LS_ErrMetadata;
+		}
+
+		LoadStatus loadStatus = LS_Loaded;
 		if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
 			loader.unload();
 			qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));
@@ -367,7 +386,9 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
         if (qobject_cast<RegularPluginInterface*>(plugin)) {
             cache->features |= RegularPlugin;
         }
-		s.beginGroup(cache->metadata.name);
+		s.beginGroup(cache->metadata.id);
+		s.setValue("metaversion", qnp->metadataVersion());
+		s.setValue("id", md.id);
 		s.setValue("loadPolicy", cache->loadPolicy);
 		s.setValue("filename", cache->fileName);
         s.setValue("lastModify", cache->modifyTime.toTime_t());
@@ -380,7 +401,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
 		s.setValue("maxVersion", md.maxVersion);
 		s.setValue("extra", md.extra);
 		if (!cache->metadata.icon.isNull()) {
-            cache->metadata.icon.pixmap(16, 16).save(iconsCacheDir() + md.name + QLatin1String(".png"));
+			cache->metadata.icon.pixmap(16, 16).save(iconsCacheDir() + md.id + QLatin1String(".png"));
 		}
 		if (cache->loadPolicy == LP_Disabled || loadHints & QLibrary::ExportExternalSymbolsHint) {
 			loader.unload();

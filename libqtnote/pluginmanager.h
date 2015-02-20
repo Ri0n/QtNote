@@ -23,6 +23,7 @@ public:
         LS_NotPlugin = LS_Errors + 1,
         LS_ErrVersion,
         LS_ErrAbi,
+		LS_ErrMetadata,
         LS_Unloaded
 	};
 
@@ -67,19 +68,24 @@ public:
     }
 
 	void loadPlugins();
-	LoadPolicy loadPolicy(const QString &pluginName) const { return plugins[pluginName]->loadPolicy; }
-	LoadStatus loadStatus(const QString &pluginName) const { return plugins[pluginName]->loadStatus; }
-	void setLoadPolicy(const QString &pluginName, LoadPolicy lp);
-	inline int pluginsCount() const { return plugins.size(); }
-	QStringList pluginsNames() const;
-	inline const PluginMetadata &metadata(const QString &pluginName) const { return plugins[pluginName]->metadata; }
-	inline QString filename(const QString &pluginName) const { return plugins[pluginName]->fileName; }
-    QString tooltip(const QString &pluginName) const;
-	inline bool canOptionsDialog(const QString &pluginName) const {
-        return castInterface<PluginOptionsInterface>(plugins[pluginName]) != 0;
+	inline LoadPolicy loadPolicy(const QString &pluginId) const { return plugins[pluginId]->loadPolicy; }
+	inline LoadStatus loadStatus(const QString &pluginId) const { return plugins[pluginId]->loadStatus; }
+	inline bool isLoaded(const QString &pluginId) const
+	{
+		auto ls = plugins[pluginId]->loadStatus;
+		return ls && ls < LS_Errors;
 	}
-	inline QDialog* optionsDialog(const QString &pluginName) const {
-        auto plugin = castInterface<PluginOptionsInterface>(plugins[pluginName]);
+	void setLoadPolicy(const QString &pluginId, LoadPolicy lp);
+	inline int pluginsCount() const { return plugins.size(); }
+	QStringList pluginsIds() const;
+	inline const PluginMetadata &metadata(const QString &pluginId) const { return plugins[pluginId]->metadata; }
+	inline QString filename(const QString &pluginId) const { return plugins[pluginId]->fileName; }
+	QString tooltip(const QString &pluginId) const;
+	inline bool canOptionsDialog(const QString &pluginId) const {
+		return castInterface<PluginOptionsInterface>(plugins[pluginId]) != 0;
+	}
+	inline QDialog* optionsDialog(const QString &pluginId) const {
+		auto plugin = castInterface<PluginOptionsInterface>(plugins[pluginId]);
         if (plugin) {
 			return plugin->optionsDialog();
 		}

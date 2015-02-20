@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+static const QLatin1String pluginId("tomboy_storge");
 
 //------------------------------------------------------------
 // TomboyPlugin
@@ -44,6 +45,7 @@ int TomboyPlugin::metadataVersion() const
 PluginMetadata TomboyPlugin::metadata()
 {
 	PluginMetadata md;
+	md.id = pluginId;
 	md.icon = QIcon(":/icons/tomboy");
 	md.name = "Tomboy Storage";
 	md.description = "Allows read and write tomboy notes";

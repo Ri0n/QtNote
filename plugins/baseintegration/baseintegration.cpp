@@ -7,6 +7,8 @@
 
 namespace QtNote {
 
+static const QLatin1String pluginId("base_de");
+
 //******************************************
 // BaseIntegration
 //******************************************
@@ -23,6 +25,7 @@ int BaseIntegration::metadataVersion() const
 PluginMetadata BaseIntegration::metadata()
 {
 	PluginMetadata md;
+	md.id = pluginId;
 	md.icon = QIcon(":/icons/logo");
 	md.name = "Base Integration";
 	md.description = "Provides fallback desktop environment integration";

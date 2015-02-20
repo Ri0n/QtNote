@@ -36,6 +36,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+static const QLatin1String pluginId("spellchecker");
+
 static HighlighterExtension::Ptr hlExt;
 
 class SpellCheckHighlighterExtension : public HighlighterExtension
@@ -79,6 +81,7 @@ int SpellCheckPlugin::metadataVersion() const
 PluginMetadata SpellCheckPlugin::metadata()
 {
 	PluginMetadata md;
+	md.id = pluginId;
 	md.icon = QIcon(":/icons/spellcheck-logo");
 	md.name = "Spell check";
 	md.description = "Realtime spell check.";

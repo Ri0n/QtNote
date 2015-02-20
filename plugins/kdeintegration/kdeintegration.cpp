@@ -9,6 +9,7 @@
 
 namespace QtNote {
 
+static const QLatin1String pluginId("kde_de");
 
 //------------------------------------------------------------
 // KDEIntegration
@@ -26,6 +27,7 @@ int KDEIntegration::metadataVersion() const
 PluginMetadata KDEIntegration::metadata()
 {
 	PluginMetadata md;
+	md.id = pluginId;
 	md.icon = QIcon(":/icons/kde-logo");
 	md.name = "KDE Integration";
 	md.description = "Provide native look and feel for KDE users";
