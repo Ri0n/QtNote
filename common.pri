@@ -2,6 +2,7 @@
 
 QT *= core
 
+CONFIG += c++11
 APPNAME = qtnote
 DEFINES += APPNAME=\\\"$$APPNAME\\\"
 
@@ -39,8 +40,6 @@ unix {
 	DEFINES += LIBDIR=\\\"$$LIBDIR\\\" \
 		DATADIR=\\\"$$DATADIR\\\" \
 		TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\"
-	
-	!mac:QMAKE_CXXFLAGS *= -std=c++11
 }
 
 devel {

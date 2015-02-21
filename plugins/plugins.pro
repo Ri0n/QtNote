@@ -2,11 +2,12 @@ include(../common.pri)
 
 TEMPLATE = subdirs
 
-SUBDIRS += baseintegration \
-    spellchecker
+SUBDIRS += baseintegration
+
 exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
-!noubuntu:SUBDIRS += ubuntu
+unix:!mac:!noubuntu:SUBDIRS += ubuntu
 !notomboy:SUBDIRS += tomboy
+!nospellcheker: SUBDIRS += spellchecker
 
 #!nocrypt:SUBDIRS += crypt
 
