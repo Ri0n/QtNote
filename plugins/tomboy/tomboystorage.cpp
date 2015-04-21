@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "tomboystorage.h"
 #include "tomboydata.h"
+#include "utils.h"
 
 namespace QtNote {
 
@@ -36,20 +37,10 @@ TomboyStorage::TomboyStorage(QObject *parent)
 {
 	fileExt = "note";
 	QStringList tomboyDirs;
-	QString orgName = QCoreApplication::organizationName();
-	QString appName = QCoreApplication::applicationName();
-	QCoreApplication::setOrganizationName("");
-	QCoreApplication::setApplicationName("");
 
-#if QT_VERSION >= 0x050000
-	QString dataLocation = QDir::cleanPath(
-				QStandardPaths::writableLocation(QStandardPaths::DataLocation) );
-#else
-	QString dataLocation = QDir::cleanPath(
-			QDesktopServices::storageLocation(QDesktopServices::DataLocation) );
-#endif
+    QString dataLocation = QDir::cleanPath(Utils::genericDataDir());
 #ifdef Q_OS_UNIX
-	tomboyDirs<<((dataLocation.endsWith("/data")?dataLocation.left(dataLocation.length()-5) : dataLocation)+"/tomboy");
+    tomboyDirs<<(dataLocation + QLatin1String("/tomboy"));
 	tomboyDirs<<(QDir::home().path()+"/.tomboy");
 #elif defined(Q_OS_MAC)
 	tomboyDirs<<(dataLocation + "/Tomboy");
@@ -66,8 +57,6 @@ TomboyStorage::TomboyStorage(QObject *parent)
 			break;
 		}
 	}
-	QCoreApplication::setOrganizationName(orgName);
-	QCoreApplication::setApplicationName(appName);
 }
 
 bool TomboyStorage::isAccessible() const

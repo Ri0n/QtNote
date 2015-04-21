@@ -31,12 +31,13 @@ class Utils
 public:
     Utils();
 
-	static QString cuttedDots(const QString &, int);
+    static QString cuttedDots(const QString &, int);
 
-	static const QString &localDataDir();
+    static const QString genericDataDir();
+    static const QString &qtnoteDataDir();
 
-	static QColor perceptiveColor(const QColor &against);
-	static QColor mergeColors(const QColor &a, const QColor &b);
+    static QColor perceptiveColor(const QColor &against);
+    static QColor mergeColors(const QColor &a, const QColor &b);
 };
 
 #endif // UTILS_H

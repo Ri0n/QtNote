@@ -45,38 +45,42 @@ QString Utils::cuttedDots(const QString &src, int length)
 	return src;
 }
 
-const QString &Utils::localDataDir()
+const QString Utils::genericDataDir()
+{
+#ifdef Q_OS_WIN
+    // Force Roaming
+    wchar_t path[MAX_PATH];
+    typedef HRESULT (WINAPI*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
+    SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
+    if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
+        return QDir::fromNativeSeparators(QString::fromWCharArray(path));
+    } else {
+        return QString();
+    }
+#else
+# if QT_VERSION >= 0x050000
+    QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+# else
+#  if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
+    QString dataDir = qgetenv("XDG_DATA_HOME");
+    if (dataDir.isEmpty()) {
+        dataDir = QDir::homePath() + "/.local/share";
+    }
+    return dataDir;
+#  else
+    return QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+#  endif
+# endif
+#endif
+}
+
+const QString &Utils::qtnoteDataDir()
 {
 	static QString dataDir;
 	if (dataDir.isEmpty()) {
-		QSettings s;
-#ifdef Q_OS_WIN
-		wchar_t path[MAX_PATH];
-		typedef HRESULT (WINAPI*SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
-		SHGetFolderPathWFunc SHGetFolderPathW = (SHGetFolderPathWFunc) QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
-		if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
-			dataDir = QDir::fromNativeSeparators(QString::fromWCharArray(path)) +
-					QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
-		} else {
-#endif
-#if QT_VERSION >= 0x050000
-		dataDir = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-#else
-# if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
-		dataDir = qgetenv("XDG_DATA_HOME");
-		if (dataDir.isEmpty()) {
-			dataDir = QDir::homePath() + "/.local/share";
-		}
-		dataDir += QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
-# else
-		dataDir = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-# endif
-#endif
-#ifdef Q_OS_WIN
-		}
-#endif
-	}
-
+        QSettings s;
+        dataDir = genericDataDir() + QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
+    }
 	return dataDir;
 }
 

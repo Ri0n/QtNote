@@ -44,7 +44,7 @@ PTFStorage::PTFStorage(QObject *parent)
 	QSettings s;
 	notesDir = s.value("storage.ptf.path").toString();
 	if (notesDir.isEmpty()) {
-		notesDir = Utils::localDataDir() + QLatin1Char('/') + systemName();
+		notesDir = Utils::qtnoteDataDir() + QLatin1Char('/') + systemName();
 	}
 	initNotesDir();
 }

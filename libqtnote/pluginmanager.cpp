@@ -241,7 +241,7 @@ bool PluginManager::ensureLoaded(PluginData::Ptr pd)
 
 QString PluginManager::iconsCacheDir() const
 {
-    return Utils::localDataDir() + "/plugin-icons/";
+    return Utils::qtnoteDataDir() + "/plugin-icons/";
 }
 
 void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPolicy lp)
