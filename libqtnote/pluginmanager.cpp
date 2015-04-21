@@ -51,7 +51,7 @@ public:
 		qDebug() << "Plugins dirs: " << pluginsDirs;
 #else
 
-		pluginsDirs << Utils::localDataDir() + "/plugins";
+        pluginsDirs << Utils::qtnoteDataDir() + "/plugins";
 # if defined(Q_OS_UNIX) && ! defined(Q_OS_MAC)
 		pluginsDirs << LIBDIR "/" APPNAME;		
 # elif defined(Q_OS_WIN)
