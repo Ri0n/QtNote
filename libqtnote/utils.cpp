@@ -59,7 +59,7 @@ const QString Utils::genericDataDir()
     }
 #else
 # if QT_VERSION >= 0x050000
-    QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
 # else
 #  if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
     QString dataDir = qgetenv("XDG_DATA_HOME");

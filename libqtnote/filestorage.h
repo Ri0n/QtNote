@@ -30,15 +30,15 @@ namespace QtNote {
 class FileStorage : public NoteStorage
 {
 public:
-	FileStorage(QObject *parent);
-	QString createNote(const QString &text);
-	void deleteNote(const QString &noteId);
-	virtual void putToCache(const NoteListItem &note);
+    FileStorage(QObject *parent);
+    QString createNote(const QString &text);
+    void deleteNote(const QString &noteId);
+    virtual void putToCache(const NoteListItem &note);
 
 protected:
-	QString fileExt;
-	QHash<QString, NoteListItem> cache;
-	QString notesDir;
+    QString fileExt;
+    QHash<QString, NoteListItem> cache;
+    QString notesDir;
 };
 
 }

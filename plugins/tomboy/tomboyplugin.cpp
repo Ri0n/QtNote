@@ -28,42 +28,53 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 static const QLatin1String pluginId("tomboy_storge");
+static NoteStorage::Ptr storage;
 
 //------------------------------------------------------------
 // TomboyPlugin
 //------------------------------------------------------------
 TomboyPlugin::TomboyPlugin(QObject *parent) :
-	QObject(parent)
+    QObject(parent),
+    qtnote(0)
 {
+}
+
+TomboyPlugin::~TomboyPlugin()
+{
+    if (qtnote) {
+        qtnote->unregisterStorage(storage);
+        storage.reset();
+    }
 }
 
 int TomboyPlugin::metadataVersion() const
 {
-	return MetadataVerion;
+    return MetadataVerion;
 }
 
 PluginMetadata TomboyPlugin::metadata()
 {
-	PluginMetadata md;
-	md.id = pluginId;
-	md.icon = QIcon(":/icons/tomboy");
-	md.name = "Tomboy Storage";
-	md.description = "Allows read and write tomboy notes";
-	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-	md.minVersion = 0x020300; // minimum compatible version of QtNote
-	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.homepage = QUrl("http://ri0n.github.io/QtNote");
-	return md;
+    PluginMetadata md;
+    md.id = pluginId;
+    md.icon = QIcon(":/icons/tomboy");
+    md.name = "Tomboy Storage";
+    md.description = "Allows read and write tomboy notes";
+    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
+    md.minVersion = 0x020300; // minimum compatible version of QtNote
+    md.maxVersion = 0x030000; // maximum compatible version of QtNote
+    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    return md;
 }
 
 bool TomboyPlugin::init(Main *qtnote)
 {
-	auto storage = NoteStorage::Ptr(new TomboyStorage(this));
-	if (!qtnote->registerStorage(storage)) {
-		return false;
-	}
-	return true;
+    this->qtnote = qtnote;
+    storage = NoteStorage::Ptr(new TomboyStorage(this));
+    if (!qtnote->registerStorage(storage)) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace QtNote

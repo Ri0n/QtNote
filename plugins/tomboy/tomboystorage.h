@@ -31,19 +31,19 @@ namespace QtNote {
 
 class TomboyStorage : public FileStorage
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(TomboyStorage)
+    Q_OBJECT
+    Q_DISABLE_COPY(TomboyStorage)
 public:
-	TomboyStorage(QObject *parent);
-	bool isAccessible() const;
-	const QString systemName() const;
-	const QString titleName() const;
-	QIcon storageIcon() const;
-	QIcon noteIcon() const;
-	QList<NoteListItem> noteList();
-	Note get(const QString &id);
-	void saveNote(const QString &noteId, const QString &text);
-	bool isRichTextAllowed() const;
+    TomboyStorage(QObject *parent);
+    bool isAccessible() const;
+    const QString systemName() const;
+    const QString titleName() const;
+    QIcon storageIcon() const;
+    QIcon noteIcon() const;
+    QList<NoteListItem> noteList();
+    Note get(const QString &id);
+    void saveNote(const QString &noteId, const QString &text);
+    bool isRichTextAllowed() const;
 };
 
 } // namespace

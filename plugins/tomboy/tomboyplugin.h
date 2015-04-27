@@ -30,17 +30,20 @@ namespace QtNote {
 
 class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface
 {
-	Q_OBJECT
+    Q_OBJECT
 #if QT_VERSION >= 0x050000
-	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.tomboy")
+    Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.tomboy")
 #endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface)
-public:
-	explicit TomboyPlugin(QObject *parent = 0);
 
-	int metadataVersion() const;
-	virtual PluginMetadata metadata();
-	bool init(Main *qtnote);
+    Main *qtnote;
+public:
+    explicit TomboyPlugin(QObject *parent = 0);
+    ~TomboyPlugin();
+
+    int metadataVersion() const;
+    virtual PluginMetadata metadata();
+    bool init(Main *qtnote);
 };
 
 } // namespace QtNote

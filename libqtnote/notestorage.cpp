@@ -24,12 +24,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 bool noteListItemModifyComparer(const NoteListItem &a,
-								const NoteListItem &b) {
-	return a.lastModify > b.lastModify; //backward order
+                                const NoteListItem &b) {
+    return a.lastModify > b.lastModify; //backward order
 }
 
 NoteStorage::NoteStorage(QObject *parent)
-	: QObject(parent)
+    : QObject(parent)
 {
 
 }

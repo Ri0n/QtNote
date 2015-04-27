@@ -40,52 +40,53 @@ class NoteListItem;
 
 class Main : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit Main(QObject *parent = 0);
+    explicit Main(QObject *parent = 0);
     ~Main();
     inline bool isOperable() const { return _inited; }
-	void parseAppArguments(const QStringList &args);
+    void parseAppArguments(const QStringList &args);
 
-	NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
-	void notifyError(const QString &);
-	void activateWidget(QWidget *w) const;
-	inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
-	inline PluginManager* pluginManager() const { return _pluginManager; }
+    NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
+    void notifyError(const QString &);
+    void activateWidget(QWidget *w) const;
+    inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
+    inline PluginManager* pluginManager() const { return _pluginManager; }
 
-	void setTrayImpl(TrayImpl *tray);
-	void setDesktopImpl(DEIntegrationInterface *de);
-	void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
-	bool registerStorage(NoteStorage::Ptr &storage);
+    void setTrayImpl(TrayImpl *tray);
+    void setDesktopImpl(DEIntegrationInterface *de);
+    void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
+    bool registerStorage(NoteStorage::Ptr &storage);
+    void unregisterStorage(NoteStorage::Ptr &storage);
 
 signals:
-	void noteWidgetCreated(QWidget*);
-	void noteWidgetInitiated(QWidget*);
-	void settingsUpdated();
+    void noteWidgetCreated(QWidget*);
+    void noteWidgetInitiated(QWidget*);
+    void settingsUpdated();
 
 public slots:
-	void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
+    void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 
 private slots:
     void exitQtNote();
-	void showAbout();
-	void showNoteManager();
-	void showOptions();
-	void createNewNote();
-	void createNewNoteFromSelection();
-	void appMessageReceived(const QByteArray &msg);	
-	void note_trashRequested();
-	void note_saveRequested();
-	void note_invalidated();
-	void note_removed(const NoteListItem &noteItem);
+    void showAbout();
+    void showNoteManager();
+    void showOptions();
+    void createNewNote();
+    void createNewNoteFromSelection();
+    void appMessageReceived(const QByteArray &msg);
+    void note_trashRequested();
+    void note_saveRequested();
+    void note_invalidated();
+    void note_removed(const NoteListItem &noteItem);
 
 private:
-	class Private;
-	Private *d;
+    class Private;
+    Private *d;
 
-	bool _inited;
-	ShortcutsManager* _shortcutsManager;
-	PluginManager *_pluginManager;
+    bool _inited;
+    ShortcutsManager* _shortcutsManager;
+    PluginManager *_pluginManager;
 
 };
 

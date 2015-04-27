@@ -30,41 +30,43 @@ namespace QtNote {
 
 class NoteManager : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	static NoteManager *instance();
-	void registerStorage(NoteStorage::Ptr storage, quint16 priority = 0);
-	bool loadAll();
+    static NoteManager *instance();
+    void registerStorage(NoteStorage::Ptr storage, quint16 priority = 0);
+    void unregisterStorage(NoteStorage::Ptr storage);
+    bool loadAll();
 
-	QList<NoteListItem> noteList(int count = -1) const;
+    QList<NoteListItem> noteList(int count = -1) const;
 
-	Note getNote(const QString &storageId, const QString &noteId);
+    Note getNote(const QString &storageId, const QString &noteId);
 
-	const QMap<QString, NoteStorage::Ptr> storages() const;
+    const QMap<QString, NoteStorage::Ptr> storages() const;
 
-	inline const QMap<quint16, NoteStorage::Ptr> prioritizedStorages() const
-	{ return _prioritizedStorages; }
+    inline const QMap<quint16, NoteStorage::Ptr> prioritizedStorages() const
+    { return _prioritizedStorages; }
 
-	NoteStorage::Ptr storage(const QString &storageId) const;
-	inline NoteStorage::Ptr defaultStorage() const
-	{ return _prioritizedStorages.constBegin().value(); }
+    NoteStorage::Ptr storage(const QString &storageId) const;
+    inline NoteStorage::Ptr defaultStorage() const
+    { return _prioritizedStorages.constBegin().value(); }
 
-	void updatePriorities(const QStringList &storageCodes);
+    void updatePriorities(const QStringList &storageCodes);
 
 signals:
-	void storageAdded(NoteStorage::Ptr);
-	void storageRemoved(NoteStorage::Ptr);
-	void storageChanged(NoteStorage::Ptr);
+    void storageAdded(NoteStorage::Ptr);
+    void storageAboutToBeRemoved(NoteStorage::Ptr);
+    void storageRemoved(NoteStorage::Ptr);
+    void storageChanged(NoteStorage::Ptr);
 
 private slots:
-	void storageChanged();
+    void storageChanged();
 
 private:
-	NoteManager(QObject *parent);
+    NoteManager(QObject *parent);
 
-	static NoteManager *_instance;
-	QMap<QString, NoteStorage::Ptr> _storages;
-	QMap<quint16, NoteStorage::Ptr> _prioritizedStorages;
+    static NoteManager *_instance;
+    QMap<QString, NoteStorage::Ptr> _storages;
+    QMap<quint16, NoteStorage::Ptr> _prioritizedStorages;
 };
 
 }

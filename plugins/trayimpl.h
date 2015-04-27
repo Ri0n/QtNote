@@ -9,19 +9,19 @@ namespace QtNote {
 
 class TrayImpl : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	inline TrayImpl(QObject *parent = 0) : QObject(parent) {}
-	virtual void notifyError(const QString &message) = 0;
+    inline TrayImpl(QObject *parent = 0) : QObject(parent) {}
+    virtual void notifyError(const QString &message) = 0;
 
 signals:
-	void exitTriggered();
-	void newNoteTriggered();
-	void noteManagerTriggered();
-	void optionsTriggered();
-	void aboutTriggered();
-	void showNoteTriggered(const QString &storageId, const QString &noteId);
+    void exitTriggered();
+    void newNoteTriggered();
+    void noteManagerTriggered();
+    void optionsTriggered();
+    void aboutTriggered();
+    void showNoteTriggered(const QString &storageId, const QString &noteId);
 };
 
 } // namespace QtNote
