@@ -45,12 +45,12 @@ SOURCES += notedialog.cpp \
 	aboutdlg.cpp \
 	optionsdlg.cpp \
 	filestorage.cpp \
+	filestoragesettingswidget.cpp \
 	utils.cpp \
 	notesmodel.cpp \
 	notemanagerdlg.cpp \
 	notemanagerview.cpp \
 	noteedit.cpp \
-	ptfstoragesettingswidget.cpp \
 	qtnote.cpp \
 	typeaheadfind.cpp \
 	shortcutedit.cpp \
@@ -59,7 +59,7 @@ SOURCES += notedialog.cpp \
 	pluginmanager.cpp \
     optionsplugins.cpp \
     notehighlighter.cpp \
-    colorbutton.cpp
+	colorbutton.cpp
 
 HEADERS += notedialog.h \
 	note.h \
@@ -69,6 +69,7 @@ HEADERS += notedialog.h \
 	ptfdata.h \
 	notedata.h \
 	filenotedata.h \
+	filestoragesettingswidget.h \
 	aboutdlg.h \
 	optionsdlg.h \
 	filestorage.h \
@@ -77,7 +78,6 @@ HEADERS += notedialog.h \
 	notemanagerdlg.h \
 	notemanagerview.h \
 	noteedit.h \
-	ptfstoragesettingswidget.h \
 	qtnote.h \
 	typeaheadfind.h \
 	shortcutedit.h \
@@ -94,7 +94,7 @@ FORMS += notedialog.ui \
 	aboutdlg.ui \
 	optionsdlg.ui \
 	notemanagerdlg.ui \
-	ptfstoragesettingswidget.ui \
+	filestoragesettingswidget.ui \
 	notewidget.ui \
     optionsplugins.ui
 

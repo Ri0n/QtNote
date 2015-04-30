@@ -22,8 +22,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QUuid>
 #include <QFile>
 #include <QDir>
+#include <QSettings>
 
 #include "filestorage.h"
+#include "filestoragesettingswidget.h"
 
 namespace QtNote {
 
@@ -63,6 +65,23 @@ void FileStorage::putToCache(const NoteListItem &note)
 	} else {
 		emit noteAdded(note);
 	}
+}
+
+QWidget *FileStorage::settingsWidget()
+{
+    FileStorageSettingsWidget *w = new FileStorageSettingsWidget(
+                QSettings().value(QString("storage.%1.path").arg(systemName())).toString(), this);
+    connect(w, SIGNAL(apply()), SLOT(settingsApplied()));
+    return w;
+}
+
+void FileStorage::settingsApplied()
+{
+    FileStorageSettingsWidget *w = qobject_cast<FileStorageSettingsWidget *>(sender());
+    notesDir = w->path();
+    QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir()? "" : notesDir);
+    cache.clear();
+    emit invalidated();
 }
 
 } // namespace QtNote

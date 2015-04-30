@@ -29,11 +29,17 @@ namespace QtNote {
 
 class FileStorage : public NoteStorage
 {
+    Q_OBJECT
 public:
     FileStorage(QObject *parent);
     QString createNote(const QString &text);
     void deleteNote(const QString &noteId);
     virtual void putToCache(const NoteListItem &note);
+    virtual QString findStorageDir() const = 0;
+    QWidget *settingsWidget();
+
+protected slots:
+    void settingsApplied();
 
 protected:
     QString fileExt;

@@ -22,9 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDir>
 #include <QCoreApplication>
 #include <QDesktopServices>
-#ifdef Q_OS_WIN
 #include <QSettings>
-#endif
 
 #include "tomboystorage.h"
 #include "tomboydata.h"
@@ -32,31 +30,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-TomboyStorage::TomboyStorage(QObject *parent)
-	: FileStorage(parent)
+TomboyStorage::TomboyStorage(QObject *parent) :
+    FileStorage(parent)
 {
-	fileExt = "note";
-	QStringList tomboyDirs;
-
-    QString dataLocation = QDir::cleanPath(Utils::genericDataDir());
-#ifdef Q_OS_UNIX
-    tomboyDirs<<(dataLocation + QLatin1String("/tomboy"));
-	tomboyDirs<<(QDir::home().path()+"/.tomboy");
-#elif defined(Q_OS_MAC)
-	tomboyDirs<<(dataLocation + "/Tomboy");
-	tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
-#elif defined(Q_OS_WIN)
-	QSettings ini(QSettings::IniFormat, QSettings::UserScope, "", "");
-	dataLocation = QFileInfo(ini.fileName()).absolutePath();
-	tomboyDirs<<(dataLocation + "/Tomboy/notes");
-	tomboyDirs<<(dataLocation + "/tomboy");
-#endif
-	foreach (notesDir, tomboyDirs) {
-		if (QDir(notesDir).isReadable()) {
-			//qDebug("found tomboy dir: %s", qPrintable(notesDir));
-			break;
-		}
-	}
+    fileExt = "note";
+    QSettings s;
+    QString notesDir = s.value("storage.tomboy.path").toString();
+    if (notesDir.isEmpty() || !QDir(notesDir).isReadable()) {
+        notesDir = findStorageDir();
+    }
 }
 
 bool TomboyStorage::isAccessible() const
@@ -126,6 +108,31 @@ void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 bool TomboyStorage::isRichTextAllowed() const
 {
 	return true;
+}
+
+QString TomboyStorage::findStorageDir() const
+{
+    QStringList tomboyDirs;
+
+    QString dataLocation = QDir::cleanPath(Utils::genericDataDir());
+#ifdef Q_OS_UNIX
+    tomboyDirs<<(dataLocation + QLatin1String("/tomboy"));
+    tomboyDirs<<(QDir::home().path()+"/.tomboy");
+#elif defined(Q_OS_MAC)
+    tomboyDirs<<(dataLocation + "/Tomboy");
+    tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
+#elif defined(Q_OS_WIN)
+    QSettings ini(QSettings::IniFormat, QSettings::UserScope, "", "");
+    dataLocation = QFileInfo(ini.fileName()).absolutePath();
+    tomboyDirs<<(dataLocation + "/Tomboy/notes");
+    tomboyDirs<<(dataLocation + "/tomboy");
+#endif
+    foreach (const QString &d, tomboyDirs) {
+        if (QDir(d).isReadable()) {
+            return d;
+        }
+    }
+    return QString();
 }
 
 } // namespace QtNote

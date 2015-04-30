@@ -32,7 +32,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "ptfstorage.h"
 #include "ptfdata.h"
-#include "ptfstoragesettingswidget.h"
 #include "utils.h"
 
 namespace QtNote {
@@ -44,7 +43,7 @@ PTFStorage::PTFStorage(QObject *parent)
 	QSettings s;
 	notesDir = s.value("storage.ptf.path").toString();
 	if (notesDir.isEmpty()) {
-		notesDir = Utils::qtnoteDataDir() + QLatin1Char('/') + systemName();
+        notesDir = findStorageDir();
 	}
 	initNotesDir();
 }
@@ -126,23 +125,12 @@ void PTFStorage::saveNote(const QString &noteId, const QString & text)
 
 bool PTFStorage::isRichTextAllowed() const
 {
-	return false;
+    return false;
 }
 
-QWidget *PTFStorage::settingsWidget() const
+QString PTFStorage::findStorageDir() const
 {
-	PTFStorageSettingsWidget *w = new PTFStorageSettingsWidget(notesDir);
-	connect(w, SIGNAL(apply()), SLOT(settingsApplied()));
-	return w;
-}
-
-void PTFStorage::settingsApplied()
-{
-	PTFStorageSettingsWidget *w = reinterpret_cast<PTFStorageSettingsWidget *>(sender());
-	notesDir = w->path();
-	QSettings().setValue(QLatin1String("storage.ptf.path"), notesDir);
-	initNotesDir();
-	emit invalidated();
+    return Utils::qtnoteDataDir() + QLatin1Char('/') + systemName();
 }
 
 } // namespace QtNote
