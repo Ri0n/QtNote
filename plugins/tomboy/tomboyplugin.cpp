@@ -43,7 +43,7 @@ TomboyPlugin::~TomboyPlugin()
 {
     if (qtnote) {
         qtnote->unregisterStorage(storage);
-        storage.reset();
+        storage.clear();
     }
 }
 
