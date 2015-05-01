@@ -468,6 +468,11 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::SpellCheckPlugin</name>
     <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="88"/>
+        <source>Realtime spell check.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="125"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation type="unfinished"></translation>

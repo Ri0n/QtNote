@@ -85,7 +85,7 @@ PluginMetadata SpellCheckPlugin::metadata()
 	md.id = pluginId;
 	md.icon = QIcon(":/icons/spellcheck-logo");
 	md.name = "Spell check";
-	md.description = "Realtime spell check.";
+    md.description = tr("Realtime spell check.");
 	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
 	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
 	md.minVersion = 0x020300; // minimum compatible version of QtNote

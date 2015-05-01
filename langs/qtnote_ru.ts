@@ -476,6 +476,11 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::SpellCheckPlugin</name>
     <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="88"/>
+        <source>Realtime spell check.</source>
+        <translation>Проверка орфографии в реальном времени.</translation>
+    </message>
+    <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="125"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Загруженные словари:&lt;/b&gt;</translation>
