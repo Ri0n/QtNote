@@ -50,6 +50,29 @@ Vietnamese:
     </message>
 </context>
 <context>
+    <name>FileStorageSettingsWidget</name>
+    <message>
+        <location filename="../libqtnote/filestoragesettingswidget.ui" line="17"/>
+        <source>Storage Location</source>
+        <translation>Расположение хранилища</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/filestoragesettingswidget.ui" line="23"/>
+        <source>Custom Path</source>
+        <translation>Свой каталог</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/filestoragesettingswidget.ui" line="39"/>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/filestoragesettingswidget.cpp" line="31"/>
+        <source>Choose storage directory</source>
+        <translation>Выберите каталог хранилища</translation>
+    </message>
+</context>
+<context>
     <name>NoteManagerDlg</name>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="69"/>
@@ -85,18 +108,23 @@ Vietnamese:
         <translation>Запускать вместе с системой</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.ui" line="105"/>
-        <location filename="../libqtnote/optionsdlg.ui" line="111"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="69"/>
+        <source>Title highlight color</source>
+        <translation>Цвет подсветки заголовка</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsdlg.ui" line="132"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="138"/>
         <source>Shortcuts</source>
         <translation>Горячие клавиши</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.ui" line="124"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="151"/>
         <source>Plugins</source>
         <translation>Плагины</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.ui" line="69"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="96"/>
         <source>Amount of notes to show in the tray menu</source>
         <translation>Количество заметок в меню трея</translation>
     </message>
@@ -130,27 +158,9 @@ Vietnamese:
     </message>
 </context>
 <context>
-    <name>PTFStorageSettingsWidget</name>
-    <message>
-        <location filename="../libqtnote/ptfstoragesettingswidget.ui" line="17"/>
-        <source>Storage path</source>
-        <translation>Путь к хранилищу</translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/ptfstoragesettingswidget.ui" line="27"/>
-        <source>Browse</source>
-        <translation>Обзор</translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/ptfstoragesettingswidget.cpp" line="48"/>
-        <source>Choose storage directory</source>
-        <translation>Выберите каталог хранилища</translation>
-    </message>
-</context>
-<context>
     <name>QObject</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="148"/>
+        <location filename="../libqtnote/qtnote.cpp" line="130"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -158,62 +168,62 @@ Vietnamese:
 <context>
     <name>QtNote</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="32"/>
+        <location filename="../libqtnote/notewidget.cpp" line="51"/>
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="32"/>
+        <location filename="../libqtnote/notewidget.cpp" line="51"/>
         <source>Save note to file</source>
         <translation>Сохранить заметку в файл</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="33"/>
+        <location filename="../libqtnote/notewidget.cpp" line="52"/>
         <source>Copy</source>
         <translation>Копировать</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="33"/>
+        <location filename="../libqtnote/notewidget.cpp" line="52"/>
         <source>Copy note to clipboard</source>
         <translation>Скопировать заметку в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="34"/>
+        <location filename="../libqtnote/notewidget.cpp" line="53"/>
         <source>Print</source>
         <translation>Распечатать</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="34"/>
+        <location filename="../libqtnote/notewidget.cpp" line="53"/>
         <source>Print note</source>
         <translation>Распечатать заметку</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="35"/>
+        <location filename="../libqtnote/notewidget.cpp" line="54"/>
         <source>Find</source>
         <translation>Найти</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="35"/>
+        <location filename="../libqtnote/notewidget.cpp" line="54"/>
         <source>Find text in note</source>
         <translation>Найти текст в заметке</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="36"/>
+        <location filename="../libqtnote/notewidget.cpp" line="55"/>
         <source>Replace</source>
         <translation>Заменить</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="36"/>
+        <location filename="../libqtnote/notewidget.cpp" line="55"/>
         <source>Replace text in note</source>
         <translation>Заменить текст в заметке</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="37"/>
+        <location filename="../libqtnote/notewidget.cpp" line="56"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="37"/>
+        <location filename="../libqtnote/notewidget.cpp" line="56"/>
         <source>Delete note</source>
         <translation>Удалить заметку</translation>
     </message>
@@ -254,7 +264,7 @@ Vietnamese:
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="56"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="57"/>
         <source>New note from selection</source>
         <translation>Новая заметка из выделения</translation>
     </message>
@@ -290,32 +300,32 @@ Vietnamese:
 <context>
     <name>QtNote::Main</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="107"/>
+        <location filename="../libqtnote/qtnote.cpp" line="111"/>
         <source>Desktop integration plugin is not loaded</source>
         <translation>Не загружен плагин интеграции с рабочим столом</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="109"/>
+        <location filename="../libqtnote/qtnote.cpp" line="113"/>
         <source>Tray icon is not initialized</source>
         <translation>Иконка в трее не инициализирована</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="113"/>
+        <location filename="../libqtnote/qtnote.cpp" line="117"/>
         <source>Initialization Error</source>
         <translation>Ошибка инициализации</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="113"/>
+        <location filename="../libqtnote/qtnote.cpp" line="117"/>
         <source>Enable a plugin with required functionality and restart QtNote</source>
         <translation>Включите плагин с требуемой функциональностью и перезапустите QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="191"/>
+        <location filename="../libqtnote/qtnote.cpp" line="173"/>
         <source>First Start</source>
         <translation>Первый запуск</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="192"/>
+        <location filename="../libqtnote/qtnote.cpp" line="174"/>
         <source>This is your first start of QtNote note-taking application.
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
@@ -361,17 +371,17 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="240"/>
+        <location filename="../libqtnote/notewidget.cpp" line="270"/>
         <source>Save Note As</source>
         <translation>Сохранить заметку как</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="273"/>
+        <location filename="../libqtnote/notewidget.cpp" line="303"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="274"/>
+        <location filename="../libqtnote/notewidget.cpp" line="304"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
@@ -379,15 +389,28 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::OptionsDlg</name>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="172"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="176"/>
         <source>Failed to update shortcut for &quot;%1&quot;</source>
         <translation>Не удалось обновить комбинацию клавиш для &quot;%1&quot; </translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsdlg.cpp" line="228"/>
+        <source>%1: Settings</source>
+        <translation>%1: Настройки</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::OptionsPlugins</name>
+    <message>
+        <location filename="../libqtnote/optionsplugins.cpp" line="296"/>
+        <source>: Settings</source>
+        <translation>: Настройки</translation>
     </message>
 </context>
 <context>
     <name>QtNote::PTFStorage</name>
     <message>
-        <location filename="../libqtnote/ptfstorage.cpp" line="74"/>
+        <location filename="../libqtnote/ptfstorage.cpp" line="73"/>
         <source>Plain Text Storage</source>
         <translation>Хранилище текстовых файлов</translation>
     </message>
@@ -395,42 +418,48 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::PluginsModel</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="73"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="168"/>
         <source>ABI mismatch</source>
         <translation>Двоичный интерфейс не совпадает</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="74"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="169"/>
+        <source>Incompatible metadata</source>
+        <translation>Несовместимые метаданные</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsplugins.cpp" line="170"/>
         <source>Incompatible version</source>
         <translation>Несовместимая версия</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="75"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="171"/>
         <source>Loaded</source>
         <translation>Загружен</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="76"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="172"/>
+        <source>Initialized</source>
+        <translation>Инициализирован</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsplugins.cpp" line="173"/>
         <source>Not a plugin</source>
         <translation>Не плагин</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="77"/>
-        <source>Undefined</source>
-        <translation>Неизвестно</translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="78"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="174"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="175"/>
         <source>Not loaded</source>
         <translation>Не загружен</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="80"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="178"/>
         <source>&lt;b&gt;Filename:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Имя файла:&lt;/b&gt; %1</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="81"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="179"/>
         <source>&lt;b&gt;Status:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Статус:&lt;/b&gt; %1</translation>
     </message>
@@ -447,7 +476,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::SpellCheckPlugin</name>
     <message>
-        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="87"/>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="125"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Загруженные словари:&lt;/b&gt;</translation>
     </message>
@@ -455,7 +484,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::TomboyStorage</name>
     <message>
-        <location filename="../libqtnote/tomboystorage.cpp" line="85"/>
+        <location filename="../plugins/tomboy/tomboystorage.cpp" line="56"/>
         <source>Tomboy Storage</source>
         <translation>Хранилище Tomboy</translation>
     </message>
@@ -501,6 +530,14 @@ Notes will be automatically saved to special storage, so you should not worry ab
         <location filename="../plugins/ubuntu/ubuntutray.cpp" line="87"/>
         <source>Notes</source>
         <translation>Заметки</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsDlg</name>
+    <message>
+        <location filename="../plugins/spellchecker/settingsdlg.ui" line="17"/>
+        <source>Preferred languages</source>
+        <translation>Предпочтительные языки</translation>
     </message>
 </context>
 <context>
