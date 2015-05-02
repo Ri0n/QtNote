@@ -229,6 +229,14 @@ Vietnamese:
     </message>
 </context>
 <context>
+    <name>QtNote::BaseIntegration</name>
+    <message>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="31"/>
+        <source>Provides fallback desktop environment integration</source>
+        <translation>Резервная интеграция с окружением рабочего стола</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::BaseIntegrationTray</name>
     <message>
         <location filename="../plugins/baseintegration/baseintegrationtray.cpp" line="18"/>
@@ -263,6 +271,11 @@ Vietnamese:
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
+        <source>Provide native look and feel for KDE users</source>
+        <translation>Естественный вид для пользователей KDE</translation>
+    </message>
     <message>
         <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="57"/>
         <source>New note from selection</source>
@@ -487,11 +500,27 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
 </context>
 <context>
+    <name>QtNote::TomboyPlugin</name>
+    <message>
+        <location filename="../plugins/tomboy/tomboyplugin.cpp" line="61"/>
+        <source>Allows read and write tomboy notes</source>
+        <translation>Позволяет читать и писать заметки Tomboy</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::TomboyStorage</name>
     <message>
         <location filename="../plugins/tomboy/tomboystorage.cpp" line="56"/>
         <source>Tomboy Storage</source>
         <translation>Хранилище Tomboy</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::UbuntuPlugin</name>
+    <message>
+        <location filename="../plugins/ubuntu/ubuntu.cpp" line="54"/>
+        <source>Integrtion with ubuntu-only features</source>
+        <translation>Интеграция с Ubuntu/Unity функциональностью</translation>
     </message>
 </context>
 <context>

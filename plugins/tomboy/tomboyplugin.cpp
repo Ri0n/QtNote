@@ -58,7 +58,7 @@ PluginMetadata TomboyPlugin::metadata()
     md.id = pluginId;
     md.icon = QIcon(":/icons/tomboy");
     md.name = "Tomboy Storage";
-    md.description = "Allows read and write tomboy notes";
+    md.description = tr("Allows read and write tomboy notes");
     md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
     md.version = 0x010000;	// plugin's version 0xXXYYZZPP
     md.minVersion = 0x020300; // minimum compatible version of QtNote

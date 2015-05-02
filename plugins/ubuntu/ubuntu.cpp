@@ -36,55 +36,55 @@ static const QLatin1String pluginId("ubuntu_de");
 // UbuntuPlugin
 //------------------------------------------------------------
 UbuntuPlugin::UbuntuPlugin(QObject *parent) :
-	QObject(parent)
+    QObject(parent)
 {
 }
 
 int UbuntuPlugin::metadataVersion() const
 {
-	 return MetadataVerion;
+    return MetadataVerion;
 }
 
 PluginMetadata UbuntuPlugin::metadata()
 {
-	PluginMetadata md;
-	md.id = pluginId;
-	md.icon = QIcon(":/icons/ubuntu-logo");
-	md.name = "Ubuntu Integration";
-	md.description = "Integrtion with ubuntu-only features";
-	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-	md.minVersion = 0x020300; // minimum compatible version of QtNote
-	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.homepage = QUrl("http://ri0n.github.io/QtNote");
-	md.extra.insert("de", QStringList() << "ubuntu");
-	return md;
+    PluginMetadata md;
+    md.id = pluginId;
+    md.icon = QIcon(":/icons/ubuntu-logo");
+    md.name = "Ubuntu Integration";
+    md.description = tr("Integrtion with ubuntu-only features");
+    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
+    md.minVersion = 0x020300; // minimum compatible version of QtNote
+    md.maxVersion = 0x030000; // maximum compatible version of QtNote
+    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    md.extra.insert("de", QStringList() << "ubuntu");
+    return md;
 }
 
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
-	return new UbuntuTray(qtnote, this);
+    return new UbuntuTray(qtnote, this);
 }
 
 void UbuntuPlugin::activateWidget(QWidget *w)
 {
-	QTimer *timer = new QTimer(this);
-	timer->setSingleShot(true);
-	connect(timer, SIGNAL(timeout()), SLOT(activator()));
-	timer->setProperty("widget", QVariant::fromValue<QWidget*>(w));
-	timer->start(100);
+    QTimer *timer = new QTimer(this);
+    timer->setSingleShot(true);
+    connect(timer, SIGNAL(timeout()), SLOT(activator()));
+    timer->setProperty("widget", QVariant::fromValue<QWidget*>(w));
+    timer->start(100);
 }
 
 
 void UbuntuPlugin::activator()
 {
-	QTimer *timer = (QTimer*)sender();
-	QWidget *w = sender()->property("widget").value<QWidget*>();
+    QTimer *timer = (QTimer*)sender();
+    QWidget *w = sender()->property("widget").value<QWidget*>();
 
-	/*w->activateWindow();
-	w->raise();*/
-	X11Util::forceActivateWindow(w->winId());
-	timer->deleteLater();
+    /*w->activateWindow();
+    w->raise();*/
+    X11Util::forceActivateWindow(w->winId());
+    timer->deleteLater();
 }
 
 } // namespace QtNote

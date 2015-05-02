@@ -15,7 +15,7 @@ static const QLatin1String pluginId("kde_de");
 // KDEIntegration
 //------------------------------------------------------------
 KDEIntegration::KDEIntegration(QObject *parent) :
-	QObject(parent)
+    QObject(parent)
 {
 }
 
@@ -26,41 +26,41 @@ int KDEIntegration::metadataVersion() const
 
 PluginMetadata KDEIntegration::metadata()
 {
-	PluginMetadata md;
-	md.id = pluginId;
-	md.icon = QIcon(":/icons/kde-logo");
-	md.name = "KDE Integration";
-	md.description = "Provide native look and feel for KDE users";
-	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-	md.minVersion = 0x020300; // minimum compatible version of QtNote
-	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.homepage = QUrl("http://ri0n.github.io/QtNote");
-	md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma");
-	return md;
+    PluginMetadata md;
+    md.id = pluginId;
+    md.icon = QIcon(":/icons/kde-logo");
+    md.name = "KDE Integration";
+    md.description = tr("Provide native look and feel for KDE users");
+    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
+    md.minVersion = 0x020300; // minimum compatible version of QtNote
+    md.maxVersion = 0x030000; // maximum compatible version of QtNote
+    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma");
+    return md;
 }
 
 TrayImpl *KDEIntegration::initTray(Main *qtnote)
 {
-	return new KDEIntegrationTray(qtnote, this);
+    return new KDEIntegrationTray(qtnote, this);
 }
 
 void KDEIntegration::activateWidget(QWidget *w)
 {
-	KWindowSystem::forceActiveWindow(w->winId(), 0); // just activateWindow doesn't work when started from tray
+    KWindowSystem::forceActiveWindow(w->winId(), 0); // just activateWindow doesn't work when started from tray
 }
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
 {
-	KAction *act = _shortcuts.value(id);
-	if (!act) {
-		act = new KAction(tr("New note from selection"), this);
-		act->setObjectName(id);
-		_shortcuts.insert(id, act);
-	}
-	act->setGlobalShortcut(KShortcut(key));
-	connect(act, SIGNAL(triggered()), receiver, slot, Qt::UniqueConnection);
-	return true;
+    KAction *act = _shortcuts.value(id);
+    if (!act) {
+        act = new KAction(tr("New note from selection"), this);
+        act->setObjectName(id);
+        _shortcuts.insert(id, act);
+    }
+    act->setGlobalShortcut(KShortcut(key));
+    connect(act, SIGNAL(triggered()), receiver, slot, Qt::UniqueConnection);
+    return true;
 }
 
 } // namespace QtNote

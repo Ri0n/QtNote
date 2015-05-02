@@ -43,138 +43,138 @@ static HighlighterExtension::Ptr hlExt;
 
 class SpellCheckHighlighterExtension : public HighlighterExtension
 {
-	SpellEngineInterface *sei;
+    SpellEngineInterface *sei;
 
 public:
-	SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei) {}
+    SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei) {}
 
-	void highlight(NoteHighlighter *nh, const QString &text)
-	{
-		QTextCharFormat myClassFormat;
-		myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
-		QString pattern = "\\b\\w{2,}\\b";
+    void highlight(NoteHighlighter *nh, const QString &text)
+    {
+        QTextCharFormat myClassFormat;
+        myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+        QString pattern = "\\b\\w{2,}\\b";
 
-		QRegExp expression(pattern);
-		int index = text.indexOf(expression);
-		while (index >= 0) {
-			int length = expression.matchedLength();
-			if (sei->spell(expression.capturedTexts()[0]) == 0) {
-				nh->addFormat(index, length, myClassFormat);
-			}
-			index = text.indexOf(expression, index + length);
-		}
-	}
+        QRegExp expression(pattern);
+        int index = text.indexOf(expression);
+        while (index >= 0) {
+            int length = expression.matchedLength();
+            if (sei->spell(expression.capturedTexts()[0]) == 0) {
+                nh->addFormat(index, length, myClassFormat);
+            }
+            index = text.indexOf(expression, index + length);
+        }
+    }
 };
 
 //------------------------------------------------------------
 // SpellCheckPlugin
 //------------------------------------------------------------
 SpellCheckPlugin::SpellCheckPlugin(QObject *parent) :
-	QObject(parent)
+    QObject(parent)
 {
 }
 
 int SpellCheckPlugin::metadataVersion() const
 {
-	 return MetadataVerion;
+    return MetadataVerion;
 }
 
 PluginMetadata SpellCheckPlugin::metadata()
 {
-	PluginMetadata md;
-	md.id = pluginId;
-	md.icon = QIcon(":/icons/spellcheck-logo");
-	md.name = "Spell check";
+    PluginMetadata md;
+    md.id = pluginId;
+    md.icon = QIcon(":/icons/spellcheck-logo");
+    md.name = "Spell check";
     md.description = tr("Realtime spell check.");
-	md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-	md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-	md.minVersion = 0x020300; // minimum compatible version of QtNote
-	md.maxVersion = 0x030000; // maximum compatible version of QtNote
-	md.homepage = QUrl("http://ri0n.github.io/QtNote");
-	return md;
+    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
+    md.minVersion = 0x020300; // minimum compatible version of QtNote
+    md.maxVersion = 0x030000; // maximum compatible version of QtNote
+    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    return md;
 }
 
 bool SpellCheckPlugin::init(Main *qtnote)
 {
-	sei = new HunspellEngine();
-	foreach (auto &l, preferredLanguages()) {
-		sei->addLanguage(l);
-	}
-	hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
-	connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
-	return true;
+    sei = new HunspellEngine();
+    foreach (auto &l, preferredLanguages()) {
+        sei->addLanguage(l);
+    }
+    hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
+    connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
+    return true;
 }
 
 QString SpellCheckPlugin::tooltip() const
 {
-	QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
-	QStringList ret;
-	foreach (auto &d, dicts) {
-		QLocale locale(d.language, d.country);
-		QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (") +
-				locale.nativeCountryName() + QLatin1Char(')');
-		if (!d.filename.isEmpty()) {
-			l += QLatin1String(":</i> ");
-			l += d.filename;
-		} else {
-			l += QLatin1String("</i>");
-		}
-		ret.append(l);
-	}
+    QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
+    QStringList ret;
+    foreach (auto &d, dicts) {
+        QLocale locale(d.language, d.country);
+        QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (") +
+                locale.nativeCountryName() + QLatin1Char(')');
+        if (!d.filename.isEmpty()) {
+            l += QLatin1String(":</i> ");
+            l += d.filename;
+        } else {
+            l += QLatin1String("</i>");
+        }
+        ret.append(l);
+    }
 
-	return tr("<b>Loaded dictionaries:</b> ") + ret.join("<br/>  ");
+    return tr("<b>Loaded dictionaries:</b> ") + ret.join("<br/>  ");
 }
 
 QDialog *SpellCheckPlugin::optionsDialog()
 {
-	auto s = new SettingsDlg(this);
-	connect(s, SIGNAL(accepted()), SLOT(settingsAccepted()));
-	return s;
+    auto s = new SettingsDlg(this);
+    connect(s, SIGNAL(accepted()), SLOT(settingsAccepted()));
+    return s;
 }
 
 QList<QLocale> SpellCheckPlugin::preferredLanguages() const
 {
-	QSettings s;
-	s.beginGroup("plugins");
-	s.beginGroup(pluginId);
-	if (!s.contains("langs")) {
-		QStringList codes;
-		QLocale systemLocale = QLocale::system();
-		QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
-		codes.append(systemLocale.bcp47Name());
-		if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
-			codes.append(enLocale.bcp47Name());
-		}
-		s.setValue("langs", codes);
-	}
-	QList<QLocale> ret;
-	foreach (const QString &code, s.value("langs").toStringList()) {
-		QLocale locale(code);
-		if (locale != QLocale::c()) {
-			ret.append(locale);
-		}
-	}
-	return ret;
+    QSettings s;
+    s.beginGroup("plugins");
+    s.beginGroup(pluginId);
+    if (!s.contains("langs")) {
+        QStringList codes;
+        QLocale systemLocale = QLocale::system();
+        QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
+        codes.append(systemLocale.bcp47Name());
+        if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
+            codes.append(enLocale.bcp47Name());
+        }
+        s.setValue("langs", codes);
+    }
+    QList<QLocale> ret;
+    foreach (const QString &code, s.value("langs").toStringList()) {
+        QLocale locale(code);
+        if (locale != QLocale::c()) {
+            ret.append(locale);
+        }
+    }
+    return ret;
 }
 
 void SpellCheckPlugin::settingsAccepted()
 {
-	auto dlg = (SettingsDlg*)sender();
-	auto ret = dlg->preferredList();
-	QSettings s;
-	s.beginGroup("plugins");
-	s.beginGroup(pluginId);
-	QStringList langs;
-	foreach (const QLocale &locale, ret) {
-		langs.append(locale.bcp47Name());
-	}
-	s.setValue("langs", langs);
+    auto dlg = (SettingsDlg*)sender();
+    auto ret = dlg->preferredList();
+    QSettings s;
+    s.beginGroup("plugins");
+    s.beginGroup(pluginId);
+    QStringList langs;
+    foreach (const QLocale &locale, ret) {
+        langs.append(locale.bcp47Name());
+    }
+    s.setValue("langs", langs);
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
-	NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
-	nw->highlighter()->addExtension(hlExt);
+    NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
+    nw->highlighter()->addExtension(hlExt);
 }
 
 } // namespace QtNote
