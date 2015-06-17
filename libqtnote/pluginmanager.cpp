@@ -29,9 +29,19 @@ public:
     PluginsIterator()
     {
 #ifdef DEVEL
-        QDir pluginsDir = QDir(qApp->applicationDirPath());
+		QDir pluginsDir = QDir(qApp->applicationDirPath());
+
+# if defined(Q_OS_WIN)
+		QString dbgSubdir = pluginsDir.dirName();
+		if (!(dbgSubdir.toLower() == "debug" || dbgSubdir.toLower() == "release")) {
+			dbgSubdir.clear();
+		}
+# else
+		QString dbgSubdir;
+# endif
+
 #if defined(Q_OS_WIN)
-        if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
+		if (!dbgSubdir.isEmpty())
             pluginsDir.cdUp();
 #elif defined(Q_OS_MAC)
         if (pluginsDir.dirName() == "MacOS") {
@@ -45,8 +55,17 @@ public:
         }
         pluginsDir.cd("plugins");
 
-        foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs)) {
+		foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+# ifdef DEVEL
+			QDir d(pluginsDir);
+			d.cd(dirName);
+			if (!dbgSubdir.isEmpty()) {
+				d.cd(dbgSubdir);
+			}
+			pluginsDirs << d.path();
+# else
             pluginsDirs << pluginsDir.absoluteFilePath(dirName);
+# endif
         }
         qDebug() << "Plugins dirs: " << pluginsDirs;
 #else

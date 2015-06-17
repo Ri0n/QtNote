@@ -5,7 +5,7 @@
 #include <QDir>
 #include <QLibraryInfo>
 #include <QTextCodec>
-#include <QDebug>
+#include <QCoreApplication>
 #include <hunspell/hunspell.hxx>
 
 namespace QtNote {
@@ -18,7 +18,7 @@ static QStringList dictPaths()
 		QString pathFromEnv = QString::fromLocal8Bit(qgetenv("MYSPELL_DICT_DIR"));
 		if (!pathFromEnv.isEmpty())
 			dictPathSet << pathFromEnv;
-#if defined(Q_WS_WIN)
+#if defined(Q_OS_WIN)
 		dictPathSet << QCoreApplication::applicationDirPath() + QLatin1String("/myspell/dicts");
 		dictPathSet << QLibraryInfo::location(QLibraryInfo::DataPath) + QLatin1String("/myspell/dicts");
 #elif defined(Q_OS_MAC)
@@ -81,7 +81,7 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
 	QFileInfo aff, dic;
 	if (scanDictPaths(language, aff, dic)) {
 		LangItem li;
-		qDebug() << "Add hunspell:" << aff.absoluteFilePath() << dic.absoluteFilePath();
+		//qDebug() << "Add hunspell:" << aff.absoluteFilePath() << dic.absoluteFilePath();
 		li.hunspell = new Hunspell(aff.absoluteFilePath().toLocal8Bit(),
 						  dic.absoluteFilePath().toLocal8Bit());
 		li.codec = QTextCodec::codecForName(QByteArray(li.hunspell->get_dic_encoding()));
