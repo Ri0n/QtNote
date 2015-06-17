@@ -4,7 +4,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += baseintegration
 
-exists(/usr/include/KDE):!nokde:SUBDIRS += kdeintegration
+exists(/usr/include/KDE):!win32:!nokde:SUBDIRS += kdeintegration
 unix:!mac:!noubuntu:SUBDIRS += ubuntu
 !notomboy:SUBDIRS += tomboy
 !nospellcheker: SUBDIRS += spellchecker

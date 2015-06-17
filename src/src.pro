@@ -33,7 +33,8 @@ SOURCES += $$PWD/main.cpp
 
 HEADERS += 
 
-LIBS += -L$$OUT_PWD/../libqtnote -lqtnote
+LIBS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR -lqtnote
 INCLUDEPATH += $$PWD/../libqtnote
+DEPENDPATH += $$PWD/../libqtnote
 
 include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)

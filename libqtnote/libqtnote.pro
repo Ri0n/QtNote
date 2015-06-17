@@ -25,8 +25,9 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= printsupport
     QT *= widgets
     greaterThan(QT_MAJOR_VERSION, 5)|greaterThan(QT_MINOR_VERSION, 0) {
-	unix:!mac:QT += x11extras
+		unix:!mac:QT += x11extras
     }
+	win32:CONFIG += skip_target_version_ext
 }
 
 unix {

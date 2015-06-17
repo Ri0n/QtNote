@@ -6,8 +6,10 @@
 #include <QtGlobal>
 
 #ifdef Q_OS_WIN
-#define WINVER _WIN32_WINNT_WIN2K
+#ifndef WINVER
+#define WINVER _WIN32_WINNT_VISTA
 #define NOMINMAX
+#endif
 #include <WinSock2.h>
 #include <Windows.h>
 #include <WinUser.h>

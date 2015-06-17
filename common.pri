@@ -50,6 +50,13 @@ devel {
 	DEFINES += DEVEL
 }
 
+win32 {
+	CONFIG(debug, debug|release):DBG_SUBDIR = /debug
+	CONFIG(release, debug|release):DBG_SUBDIR = /release
+} else {
+	DBG_SUBDIR =
+}
+
 CONFIG += precompile_header
 PRECOMPILED_HEADER = $$PWD/config.h
 
