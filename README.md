@@ -20,3 +20,12 @@ You can try to start qmake in development mode.
   qmake CONFIG+=devel
 
 this mode forces plugins loader to use application directory to load plugins.
+
+Deployment:
+Look at common.pri. It contains some variables you may need to redefine, like PREFIX, LIBDIR and others.
+So just pass this variables to qmake:
+
+  qmake PREFIX=/usr
+  
+For windows we have another useful variable WININST_PREFIX.
+When it's set "make install" will recreate directory/files structure in given prefix suitable for distribution.

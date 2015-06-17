@@ -26,6 +26,11 @@ unix {
     INSTALLS += target
 }
 
+win32:!isEmpty(WININST_PREFIX) {
+	target.path = $$WININST_PREFIX
+	INSTALLS += target
+}
+
 RC_FILE = win/$${TARGET}.rc
 
 

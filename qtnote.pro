@@ -28,9 +28,10 @@ TRANSLATIONS += \
 
 include(common.pri)
 
+LANGS = en fr ru vi
+for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
+
 unix {
-	LANGS = en fr ru vi
-	for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
 	translations.path = $$TRANSLATIONSDIR
 	DISTFILES += $$translations
 
@@ -56,4 +57,18 @@ unix {
 	man.path = $$MANDIR
 
 	INSTALLS += translations desktop $$pixmaps pixmap_svg man
+}
+
+win32:!isEmpty(WININST_PREFIX) {
+	translations.path = $$WININST_PREFIX/langs
+	INSTALLS += translations
+
+	greaterThan(QT_MAJOR_VERSION, 4) {
+		qtlibs.files = $$[QT_INSTALL_BINS]/Qt5Core.dll $$[QT_INSTALL_BINS]/Qt5Gui.dll $$[QT_INSTALL_BINS]/Qt5Xml.dll
+	} else {
+		qtlibs.files = $$[QT_INSTALL_BINS]/QtCore4.dll $$[QT_INSTALL_BINS]/QtGui4.dll $$[QT_INSTALL_BINS]/QtXml4.dll
+	}
+	qtlibs.path = $$WININST_PREFIX
+
+	INSTALLS += qtlibs
 }
