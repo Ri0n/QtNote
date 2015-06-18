@@ -59,7 +59,7 @@ unix {
 	INSTALLS += translations desktop $$pixmaps pixmap_svg man
 }
 
-win32:!isEmpty(WININST_PREFIX) {
+win32 {
 	translations.path = $$WININST_PREFIX/langs
 	INSTALLS += translations
 

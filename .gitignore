@@ -8,3 +8,5 @@ qtnote.pro.user*
 moc_*.cpp
 *.o
 *.so
+.inst
+setup.exe

@@ -3,7 +3,7 @@
 !define QTBINDIR "C:\Qt\5.4\mingw491_32\bin"
 !define QTLIBPREF "Qt5"
 !define QTLIBEXT ""
-!define QTNOTEBINDIR "C:\projects\qtnote_inst"
+!define QTNOTEBINDIR ".inst"
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "QtNote"
@@ -19,7 +19,7 @@
 
 ; MUI Settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "win\pen64.ico"
+!define MUI_ICON "src\win\pen64.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 
 ; Language Selection Dialog Settings
@@ -112,10 +112,8 @@ Section Uninstall
   Delete "$INSTDIR\Changelog"
   Delete "$INSTDIR\langs\qtnote_*.qm"
   Delete "$INSTDIR\qtnote.exe"
-  Delete "$INSTDIR\QtCore4.dll"
-  Delete "$INSTDIR\QtGui4.dll"
-  Delete "$INSTDIR\QtXml4.dll"
-
+  Delete "$INSTDIR\Qt*.dll"
+  
   Delete "$SMPROGRAMS\QtNote\Uninstall.lnk"
   Delete "$SMPROGRAMS\QtNote\Website.lnk"
   Delete "$DESKTOP\QtNote.lnk"

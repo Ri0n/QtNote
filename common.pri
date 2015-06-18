@@ -50,11 +50,11 @@ devel {
 	DEFINES += DEVEL
 }
 
+DBG_SUBDIR =
 win32 {
-	CONFIG(debug, debug|release):DBG_SUBDIR = /debug
-	CONFIG(release, debug|release):DBG_SUBDIR = /release
-} else {
-	DBG_SUBDIR =
+	CONFIG(debug, debug|release):DBG_SUBDIR = $${QMAKE_DIR_SEP}debug
+	CONFIG(release, debug|release):DBG_SUBDIR = $${QMAKE_DIR_SEP}release
+	isEmpty(WININST_PREFIX):WININST_PREFIX = $$PWD$${QMAKE_DIR_SEP}.inst
 }
 
 CONFIG += precompile_header

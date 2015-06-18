@@ -26,7 +26,7 @@ unix {
     INSTALLS += target
 }
 
-win32:!isEmpty(WININST_PREFIX) {
+win32 {
 	target.path = $$WININST_PREFIX
 	INSTALLS += target
 }
