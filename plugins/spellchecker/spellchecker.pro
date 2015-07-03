@@ -5,9 +5,15 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= widgets
 }
 
-CONFIG += link_pkgconfig
+unix {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += hunspell
+}
 
-PKGCONFIG += hunspell
+win32 {
+    LIBS += -L$$HUNSPELL_DIR/lib -lhunspell
+    INCLUDEPATH += $$HUNSPELL_DIR/include
+}
 
 SOURCES = \
     spellcheckplugin.cpp \
