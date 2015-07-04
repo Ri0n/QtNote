@@ -28,20 +28,20 @@ namespace QtNote {
 
 class PTFStorage : public FileStorage
 {
-	Q_OBJECT
-	Q_DISABLE_COPY(PTFStorage)
-	void initNotesDir();
+    Q_OBJECT
+    Q_DISABLE_COPY(PTFStorage)
+    void initNotesDir();
 public:
-	PTFStorage(QObject *parent = 0);
-	bool isAccessible() const;
-	const QString systemName() const;
-	const QString titleName() const;
-	QIcon storageIcon() const;
-	QIcon noteIcon() const;
-	QList<NoteListItem> noteList();
-	Note get(const QString &noteId);
-	void saveNote(const QString &noteId, const QString &text);
-	bool isRichTextAllowed() const;
+    PTFStorage(QObject *parent = 0);
+    bool isAccessible() const;
+    const QString systemName() const;
+    const QString titleName() const;
+    QIcon storageIcon() const;
+    QIcon noteIcon() const;
+    QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
+    Note get(const QString &noteId);
+    void saveNote(const QString &noteId, const QString &text);
+    bool isRichTextAllowed() const;
     QString findStorageDir() const;
 };
 

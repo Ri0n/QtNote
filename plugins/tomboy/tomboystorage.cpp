@@ -43,71 +43,66 @@ TomboyStorage::TomboyStorage(QObject *parent) :
 
 bool TomboyStorage::isAccessible() const
 {
-	return QDir(notesDir).isReadable();
+    return QDir(notesDir).isReadable();
 }
 
 const QString TomboyStorage::systemName() const
 {
-	return "tomboy";
+    return "tomboy";
 }
 
 const QString TomboyStorage::titleName() const
 {
-	return tr("Tomboy Storage");
+    return tr("Tomboy Storage");
 }
 
 QIcon TomboyStorage::storageIcon() const
 {
-	return QIcon(":/icons/tomboy");
+    return QIcon(":/icons/tomboy");
 }
 
 QIcon TomboyStorage::noteIcon() const
 {
-	return QIcon(":/icons/tomboynote");
+    return QIcon(":/icons/tomboynote");
 }
 
-QList<NoteListItem> TomboyStorage::noteList()
+QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
 {
-	QList<NoteListItem> ret = cache.values();
-	if (ret.count() == 0) {
-		QFileInfoList files = QDir(notesDir).entryInfoList(QStringList(QString("*.")
-									+ fileExt), QDir::Files | QDir::NoDotAndDotDot);
-		foreach (QFileInfo fi, files) {
-			TomboyData note;
-			if (note.fromFile(fi.canonicalFilePath())) {
-				NoteListItem li(note.uid(), systemName(), note.title(),
-								note.modifyTime());
-				ret.append(li);
-				cache.insert(note.uid(), li);
-			}
-		}
-	}
-	return ret;
+    QList<NoteListItem> ret;
+    foreach (QFileInfo fi, files) {
+        TomboyData note;
+        if (note.fromFile(fi.canonicalFilePath())) {
+            NoteListItem li(note.uid(), systemName(), note.title(),
+                            note.modifyTime());
+            ret.append(li);
+        }
+    }
+    return ret;
 }
 
 Note TomboyStorage::get(const QString &id)
 {
-	QString fileName = QDir(notesDir).absoluteFilePath(
-			QString("%1.%2").arg(id).arg(fileExt) );
-	TomboyData *noteData = new TomboyData;
-	noteData->fromFile(fileName);
-	return Note(noteData);
+    QString fileName = QDir(notesDir).absoluteFilePath(
+            QString("%1.%2").arg(id).arg(fileExt) );
+    TomboyData *noteData = new TomboyData;
+    noteData->fromFile(fileName);
+    return Note(noteData);
 }
 
 void TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
-	TomboyData note;
-	note.setText(text);
-	if (note.saveToFile( QDir(notesDir).absoluteFilePath(
-			QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-		NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
-		putToCache(item);
-	}
+    TomboyData note;
+    note.setText(text);
+    if (note.saveToFile( QDir(notesDir).absoluteFilePath(
+            QString("%1.%2").arg(noteId).arg(fileExt)) )) {
+        NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
+        putToCache(item);
+    }
 }
 
 bool TomboyStorage::isRichTextAllowed() const
 {
-	return true;
+    return true;
 }
 
 QString TomboyStorage::findStorageDir() const

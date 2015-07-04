@@ -30,41 +30,41 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent)
-	: NoteStorage(parent)
+    : NoteStorage(parent)
 {
 
 }
 
 QString FileStorage::createNote(const QString &text)
 {
-	QString uid = QUuid::createUuid().toString();
-	uid = uid.mid(1, uid.length()-2);
-	saveNote(uid, text);
-	return uid;
+    QString uid = QUuid::createUuid().toString();
+    uid = uid.mid(1, uid.length()-2);
+    saveNote(uid, text);
+    return uid;
 }
 
 void FileStorage::deleteNote(const QString &noteId)
 {
-	QHash<QString, NoteListItem>::const_iterator r = cache.find(noteId);
-	if (r != cache.end()) {
-		if (QFile::remove( QDir(notesDir).absoluteFilePath(
-				QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-			NoteListItem item = r.value();
-			cache.remove(r.key());
-			emit noteRemoved(item);
-		}
-	}
+    QHash<QString, NoteListItem>::const_iterator r = cache.find(noteId);
+    if (r != cache.end()) {
+        if (QFile::remove( QDir(notesDir).absoluteFilePath(
+                QString("%1.%2").arg(noteId).arg(fileExt)) )) {
+            NoteListItem item = r.value();
+            cache.remove(r.key());
+            emit noteRemoved(item);
+        }
+    }
 }
 
 void FileStorage::putToCache(const NoteListItem &note)
 {
-	bool isModify = cache.contains(note.id);
-	cache.insert(note.id, note);
-	if (isModify) {
-		emit noteModified(note);
-	} else {
-		emit noteAdded(note);
-	}
+    bool isModify = cache.contains(note.id);
+    cache.insert(note.id, note);
+    if (isModify) {
+        emit noteModified(note);
+    } else {
+        emit noteAdded(note);
+    }
 }
 
 QWidget *FileStorage::settingsWidget()
@@ -82,6 +82,20 @@ void FileStorage::settingsApplied()
     QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir()? "" : notesDir);
     cache.clear();
     emit invalidated();
+}
+
+QList<NoteListItem> FileStorage::noteList()
+{
+    QList<NoteListItem> ret = cache.values();
+    if (ret.count() == 0) {
+        QFileInfoList files = QDir(notesDir).entryInfoList(QStringList(QString("*.")
+                                    + fileExt), QDir::Files, QDir::Time);
+        ret = noteListFromInfoList(files);
+        for (auto n: ret) {
+            cache.insert(n.id, n);
+        }
+    }
+    return ret;
 }
 
 } // namespace QtNote

@@ -22,8 +22,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef FILESTORAGE_H
 #define FILESTORAGE_H
 
-#include "notestorage.h"
+#include <QFileInfoList>
 #include <QHash>
+
+#include "notestorage.h"
 
 namespace QtNote {
 
@@ -36,7 +38,9 @@ public:
     void deleteNote(const QString &noteId);
     virtual void putToCache(const NoteListItem &note);
     virtual QString findStorageDir() const = 0;
-    QWidget *settingsWidget();
+    QWidget *settingsWidget();    
+    QList<NoteListItem> noteList();
+    virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
 protected slots:
     void settingsApplied();
