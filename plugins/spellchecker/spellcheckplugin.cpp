@@ -174,7 +174,7 @@ void SpellCheckPlugin::settingsAccepted()
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
     NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
-    nw->highlighter()->addExtension(hlExt);
+    nw->highlighter()->addExtension(hlExt, NoteHighlighter::SpellCheck);
 }
 
 } // namespace QtNote

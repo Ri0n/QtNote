@@ -13,11 +13,15 @@ NoteHighlighter::NoteHighlighter(NoteEdit *nde) :
 void NoteHighlighter::highlightBlock(const QString &text)
 {
 	formats.clear();
-	QMutableListIterator<QWeakPointer<HighlighterExtension>> it(extensions);
+    QMutableListIterator<ExtItem> it(extensions);
 	while (it.hasNext()) {
-		HighlighterExtension::Ptr ext = it.next().toStrongRef();
+        ExtItem item = it.next();
+        if (!item.active) {
+            continue;
+        }
+        HighlighterExtension::Ptr ext = item.ext.toStrongRef();
 		if (ext) {
-			ext->highlight(this, text);
+            ext->highlight(this, text);
 		} else {
 			it.remove();
 		}
@@ -45,7 +49,25 @@ void NoteHighlighter::highlightBlock(const QString &text)
 		if (merged) {
 			setFormat(bpl[i], count, format);
 		}
-	}
+    }
+}
+
+void NoteHighlighter::disableExtension(NoteHighlighter::ExtType type)
+{
+    for (int i = 0; i < extensions.count(); i++) {
+        if (extensions[i].type == type) {
+            extensions[i].active = false;
+        }
+    }
+}
+
+void NoteHighlighter::enableExtension(NoteHighlighter::ExtType type)
+{
+    for (int i = 0; i < extensions.count(); i++) {
+        if (extensions[i].type == type) {
+            extensions[i].active = true;
+        }
+    }
 }
 
 void NoteHighlighter::addFormat(int start, int count, const QTextCharFormat &format)

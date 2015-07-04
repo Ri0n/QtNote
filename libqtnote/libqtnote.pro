@@ -21,6 +21,8 @@ include(../common.pri)
 TARGET = $$APPNAME
 TEMPLATE = lib
 
+#QMAKE_CXXFLAGS += -Winvalid-pch
+
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= printsupport
     QT *= widgets
