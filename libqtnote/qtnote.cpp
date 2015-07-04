@@ -129,8 +129,9 @@ Main::Main(QObject *parent) :
     if (!NoteManager::instance()->loadAll()) {
         QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
                                                        "storages is accessible. can't continue.."));
-        return;
+        return; // TODO review removing this
     }
+    NoteManager::instance()->updatePriorities(settings.value("storage.priority", QStringList()).toStringList());
 
     _shortcutsManager = new ShortcutsManager(d->globalShortcuts, this);
 

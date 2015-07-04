@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notemanager.h"
 #include <QApplication>
 #include <QStringList>
+#include <QLinkedList>
 
 namespace QtNote {
 
@@ -105,10 +106,29 @@ NoteStorage::Ptr NoteManager::storage(const QString &storageId) const
 void NoteManager::updatePriorities(const QStringList &storageCodes)
 {
     QMap<quint16, NoteStorage::Ptr> p;
+    QLinkedList<NoteStorage::Ptr> sorted;
+    auto storages = _storages;
 
-    for (quint16 i=0; i<storageCodes.count(); i++) {
-        p[i] = _storages[storageCodes[i]];
+    for (auto code: storageCodes) {
+        auto storage = storages.take(code);
+        if (storage) {
+            sorted.append(storage);
+        }
     }
+
+    for (auto storage: storages) {
+        if (storage->systemName() == QLatin1String("ptf")) {
+            sorted.prepend(storage); /* make ptf high priority is priority is not set */
+        } else {
+            sorted.append(storage);
+        }
+    }
+
+    for (auto storage: sorted) {
+        p[p.count()] = storage;
+    }
+
+
     _prioritizedStorages = p;
 }
 

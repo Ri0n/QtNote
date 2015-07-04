@@ -50,6 +50,10 @@ public:
     inline NoteStorage::Ptr defaultStorage() const
     { return _prioritizedStorages.constBegin().value(); }
 
+    /*
+     * Accepts storages identifiers. the first one is in higher priority.
+     * Pass empty list for defaults
+     */
     void updatePriorities(const QStringList &storageCodes);
 
 signals:
