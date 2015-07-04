@@ -53,8 +53,7 @@ void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
 	QList<NoteListItem> notes = NoteManager::instance()->noteList(
 								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
-		menu.addAction(menu.style()->standardIcon(
-			QStyle::SP_MessageBoxInformation),
+        menu.addAction(NoteManager::instance()->storage(notes[i].storageId)->noteIcon(),
 			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
 		)->setData(i);
 	}

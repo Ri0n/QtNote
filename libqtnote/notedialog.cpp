@@ -45,7 +45,6 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) :
 	m_ui->setupUi(this);
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName("noteDlg");
-	setWindowIcon(QIcon(":/icons/trayicon"));
 
 	QHBoxLayout *l = new QHBoxLayout;
 	l->setMargin(2);

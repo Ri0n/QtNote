@@ -80,8 +80,7 @@ QIcon PTFStorage::storageIcon() const
 
 QIcon PTFStorage::noteIcon() const
 {
-	return QApplication::style()->standardIcon(
-				QStyle::SP_MessageBoxInformation);
+    return QIcon(":/icons/trayicon");
 }
 
 QList<NoteListItem> PTFStorage::noteList()

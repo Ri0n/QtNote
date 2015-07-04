@@ -88,8 +88,7 @@ void UbuntuTray::rebuildMenu()
 	contextMenu->addAction(actNew);
 	contextMenu->addSeparator();
 	for (int i=0; i<notes.count(); i++) {
-		QAction *act = contextMenu->addAction(contextMenu->style()->standardIcon(
-			QStyle::SP_MessageBoxInformation),
+        QAction *act = contextMenu->addAction(NoteManager::instance()->storage(notes[i].storageId)->noteIcon(),
 			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
 		);
 		QVariant v;
