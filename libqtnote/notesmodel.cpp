@@ -82,8 +82,8 @@ NotesModel::NotesModel(QObject *parent)
 		storages.append(new NMMItem(s));
 		setStorageSignalHandlers(s);
 	}
-	connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), SLOT(storageAdded(StorageItem)));
-	connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), SLOT(storageRemoved(StorageItem)));
+	connect(NoteManager::instance(), SIGNAL(storageAdded(NoteStorage::Ptr)), SLOT(storageAdded(NoteStorage::Ptr)));
+	connect(NoteManager::instance(), SIGNAL(storageRemoved(NoteStorage::Ptr)), SLOT(storageRemoved(NoteStorage::Ptr)));
 }
 
 NotesModel::~NotesModel()

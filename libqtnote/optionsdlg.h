@@ -38,7 +38,7 @@ class Main;
 class OptionsDlg : public QDialog {
     Q_OBJECT
 public:
-	OptionsDlg(Main *qtnote = 0);
+    OptionsDlg(Main *qtnote = 0);
     ~OptionsDlg();
 
 protected:
@@ -46,14 +46,14 @@ protected:
 
 private:
     Ui::OptionsDlg *ui;
-	Main *qtnote;
-	class PriorityModel;
-	PriorityModel *priorityModel;
+    Main *qtnote;
+    class PriorityModel;
+    PriorityModel *priorityModel;
 
 public slots:
-	void accept();
+    void accept();
 private slots:
-	void storage_doubleClicked(const QModelIndex &index);
+    void storage_doubleClicked(const QModelIndex &index);
 };
 
 } // namespace QtNote

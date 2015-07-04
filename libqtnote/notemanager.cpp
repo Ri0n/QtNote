@@ -19,26 +19,32 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "notemanager.h"
 #include <QApplication>
 #include <QStringList>
 #include <QLinkedList>
+#include <QSettings>
+
+#include "notemanager.h"
 
 namespace QtNote {
 
 NoteManager::NoteManager(QObject *parent)
     : QObject(parent)
 {
-
+    _priorities = QSettings().value("storage.priority").toStringList();
 }
 
-void NoteManager::registerStorage(NoteStorage::Ptr storage, quint16 priority)
+void NoteManager::registerStorage(NoteStorage::Ptr storage)
 {
+    _prioCache.clear();
     _storages.insert(storage->systemName(), storage);
-    while (_prioritizedStorages.contains(priority)) {
-        priority++;
+    if (!_priorities.contains(storage->systemName())) {
+        if (storage->systemName() == QLatin1String("ptf")) {
+            _priorities.prepend(storage->systemName()); // highest priority for ptf if not set
+        } else {
+            _priorities.append(storage->systemName()); // lowest priority if not set
+        }
     }
-    _prioritizedStorages.insert(priority, storage);
 
     connect(storage.data(), SIGNAL(invalidated()), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
@@ -51,8 +57,8 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage, quint16 priority)
 void NoteManager::unregisterStorage(NoteStorage::Ptr storage)
 {
     emit storageAboutToBeRemoved(storage);
+    _prioCache.clear();
     disconnect(storage.data());
-    _prioritizedStorages.remove(_prioritizedStorages.key(storage));
     _storages.remove(storage->systemName());
     emit storageRemoved(storage);
 }
@@ -97,39 +103,39 @@ const QMap<QString, NoteStorage::Ptr> NoteManager::storages() const
     return _storages;
 }
 
+const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages() const
+{
+    if (_prioCache.size()) {
+        return _prioCache;
+    }
+
+    auto storages = _storages;
+
+    for (auto code: _priorities) {
+        auto storage = storages.take(code);
+        if (storage) {
+            _prioCache.append(storage);
+        }
+    }
+
+    for (auto storage: storages) {
+        _prioCache.append(storage);
+    }
+
+    return _prioCache;
+}
+
 NoteStorage::Ptr NoteManager::storage(const QString &storageId) const
 {
     // returns 0 if doesn't exists (see default contstructor StorageItem)
     return _storages.value(storageId);
 }
 
-void NoteManager::updatePriorities(const QStringList &storageCodes)
+void NoteManager::setPriorities(const QStringList &storageCodes)
 {
-    QMap<quint16, NoteStorage::Ptr> p;
-    QLinkedList<NoteStorage::Ptr> sorted;
-    auto storages = _storages;
-
-    for (auto code: storageCodes) {
-        auto storage = storages.take(code);
-        if (storage) {
-            sorted.append(storage);
-        }
-    }
-
-    for (auto storage: storages) {
-        if (storage->systemName() == QLatin1String("ptf")) {
-            sorted.prepend(storage); /* make ptf high priority is priority is not set */
-        } else {
-            sorted.append(storage);
-        }
-    }
-
-    for (auto storage: sorted) {
-        p[p.count()] = storage;
-    }
-
-
-    _prioritizedStorages = p;
+    _prioCache.clear();
+    _priorities = storageCodes;
+    QSettings().setValue("storage.priority", _priorities);
 }
 
 /*int NoteManager::notesAmount(const QString &storage = QString()) const

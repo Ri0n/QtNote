@@ -131,7 +131,7 @@ Main::Main(QObject *parent) :
                                                        "storages is accessible. can't continue.."));
         return; // TODO review removing this
     }
-    NoteManager::instance()->updatePriorities(settings.value("storage.priority", QStringList()).toStringList());
+    NoteManager::instance()->setPriorities(settings.value("storage.priority", QStringList()).toStringList());
 
     _shortcutsManager = new ShortcutsManager(d->globalShortcuts, this);
 
@@ -301,13 +301,8 @@ void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
 
 bool Main::registerStorage(NoteStorage::Ptr &storage)
 {
-    static QStringList priorities = QSettings().value("storage.priority")
-            .toStringList();
-
     if (storage->isAccessible()) {
-        int priority = priorities.indexOf(storage->systemName());
-        NoteManager::instance()->registerStorage(storage,
-                                                 priority >= 0? priority:0);
+        NoteManager::instance()->registerStorage(storage);
         connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
         return true;
     }

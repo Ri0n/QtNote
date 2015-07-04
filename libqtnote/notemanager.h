@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 #include <QMap>
+#include <QLinkedList>
+
 #include "notestorage.h"
 
 namespace QtNote {
@@ -33,7 +35,7 @@ class NoteManager : public QObject
     Q_OBJECT
 public:
     static NoteManager *instance();
-    void registerStorage(NoteStorage::Ptr storage, quint16 priority = 0);
+    void registerStorage(NoteStorage::Ptr storage);
     void unregisterStorage(NoteStorage::Ptr storage);
     bool loadAll();
 
@@ -42,19 +44,18 @@ public:
     Note getNote(const QString &storageId, const QString &noteId);
 
     const QMap<QString, NoteStorage::Ptr> storages() const;
-
-    inline const QMap<quint16, NoteStorage::Ptr> prioritizedStorages() const
-    { return _prioritizedStorages; }
+    const QLinkedList<NoteStorage::Ptr> prioritizedStorages() const;
 
     NoteStorage::Ptr storage(const QString &storageId) const;
     inline NoteStorage::Ptr defaultStorage() const
-    { return _prioritizedStorages.constBegin().value(); }
+    { return prioritizedStorages().isEmpty()?
+                    NoteStorage::Ptr() : prioritizedStorages().first(); }
 
     /*
      * Accepts storages identifiers. the first one is in higher priority.
      * Pass empty list for defaults
      */
-    void updatePriorities(const QStringList &storageCodes);
+    void setPriorities(const QStringList &storageCodes);
 
 signals:
     void storageAdded(NoteStorage::Ptr);
@@ -69,8 +70,9 @@ private:
     NoteManager(QObject *parent);
 
     static NoteManager *_instance;
+    QStringList _priorities;
     QMap<QString, NoteStorage::Ptr> _storages;
-    QMap<quint16, NoteStorage::Ptr> _prioritizedStorages;
+    mutable QLinkedList<NoteStorage::Ptr> _prioCache;
 };
 
 }
