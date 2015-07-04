@@ -24,7 +24,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 NoteData::NoteData()
 	: QSharedData()
 {
-	sTitle = "(no name)";
 }
 
 QString NoteData::title() const
