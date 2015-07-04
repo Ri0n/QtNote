@@ -31,46 +31,48 @@ namespace QtNote {
 
 struct NoteListItem
 {
-	NoteListItem(const QString &id_, const QString &storageId_,
-				 const QString &title_,const QDateTime &lastModify_)
-		: id(id_)
-		, storageId(storageId_)
-		, title(title_)
-		, lastModify(lastModify_) { }
-	QString id;
-	QString storageId;
-	QString title;
-	QDateTime lastModify;
+    NoteListItem(const QString &id_, const QString &storageId_,
+                 const QString &title_,const QDateTime &lastModify_)
+        : id(id_)
+        , storageId(storageId_)
+        , title(title_)
+        , lastModify(lastModify_) { }
+    QString id;
+    QString storageId;
+    QString title;
+    QDateTime lastModify;
 };
 
 bool noteListItemModifyComparer(const NoteListItem &a,
-								const NoteListItem &b);
+                                const NoteListItem &b);
 
 class NoteStorage : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	typedef QSharedPointer<NoteStorage> Ptr;
+    typedef QSharedPointer<NoteStorage> Ptr;
 
-	NoteStorage(QObject *parent);
-	virtual const QString systemName() const = 0;
-	virtual const QString titleName() const = 0;
-	virtual QIcon storageIcon() const = 0;
-	virtual QIcon noteIcon() const = 0;
-	virtual bool isAccessible() const = 0;
-	virtual QList<NoteListItem> noteList() = 0;
-	virtual Note get(const QString &id) = 0;
-	virtual QString createNote(const QString &text) = 0;
-	virtual void saveNote(const QString &noteId, const QString &text) = 0;
-	virtual void deleteNote(const QString &noteId) = 0;
-	virtual bool isRichTextAllowed() const = 0;
+    NoteStorage(QObject *parent);
+    virtual const QString systemName() const = 0;
+    virtual const QString titleName() const = 0;
+    virtual QIcon storageIcon() const = 0;
+    virtual QIcon noteIcon() const = 0;
+    virtual bool isAccessible() const = 0;
+
+    /* 0 - not limit */
+    virtual QList<NoteListItem> noteList(int limit = 0) = 0;
+    virtual Note get(const QString &id) = 0;
+    virtual QString createNote(const QString &text) = 0;
+    virtual void saveNote(const QString &noteId, const QString &text) = 0;
+    virtual void deleteNote(const QString &noteId) = 0;
+    virtual bool isRichTextAllowed() const = 0;
     virtual QWidget* settingsWidget() { return 0; }
 
 signals:
-	void noteAdded(const NoteListItem &);
-	void noteModified(const NoteListItem &);
-	void noteRemoved(const NoteListItem &);
-	void invalidated();
+    void noteAdded(const NoteListItem &);
+    void noteModified(const NoteListItem &);
+    void noteRemoved(const NoteListItem &);
+    void invalidated();
 };
 
 

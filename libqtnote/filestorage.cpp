@@ -84,16 +84,19 @@ void FileStorage::settingsApplied()
     emit invalidated();
 }
 
-QList<NoteListItem> FileStorage::noteList()
+QList<NoteListItem> FileStorage::noteList(int limit)
 {
     QList<NoteListItem> ret = cache.values();
-    if (ret.count() == 0) {
+    // if cache is empty or fs may have more notes
+    if (ret.count() == 0 || (ret.count() == cacheLimit && (limit == 0 || limit > cacheLimit))) {
         QFileInfoList files = QDir(notesDir).entryInfoList(QStringList(QString("*.")
                                     + fileExt), QDir::Files, QDir::Time);
-        ret = noteListFromInfoList(files);
+        ret = noteListFromInfoList(files.mid(0, limit? limit : -1));
+        cache.clear();
         for (auto n: ret) {
             cache.insert(n.id, n);
         }
+        cacheLimit = limit;
     }
     return ret;
 }

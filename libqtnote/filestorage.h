@@ -39,7 +39,7 @@ public:
     virtual void putToCache(const NoteListItem &note);
     virtual QString findStorageDir() const = 0;
     QWidget *settingsWidget();    
-    QList<NoteListItem> noteList();
+    QList<NoteListItem> noteList(int limit = 0);
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
 protected slots:
@@ -48,6 +48,7 @@ protected slots:
 protected:
     QString fileExt;
     QHash<QString, NoteListItem> cache;
+    int cacheLimit; /* last limit passed to noteList() */
     QString notesDir;
 };
 

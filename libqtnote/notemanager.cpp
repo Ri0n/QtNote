@@ -79,13 +79,11 @@ void NoteManager::storageChanged()
 
 QList<NoteListItem> NoteManager::noteList(int count) const
 {
-    // TODO optimize
     QList<NoteListItem> ret;
     foreach (NoteStorage::Ptr storage, prioritizedStorages()) {
-        QList<NoteListItem> items = storage->noteList();
-        qSort(items.begin(), items.end(), noteListItemModifyComparer);
-        ret += items;
+        ret += storage->noteList(count);
     }
+    qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
     return ret.mid(0, count);
 }
 
