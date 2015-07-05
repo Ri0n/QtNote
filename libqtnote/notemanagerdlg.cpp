@@ -19,6 +19,8 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QItemSelection>
+
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
 #include "notesmodel.h"
@@ -44,7 +46,7 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 	}
 	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
-	connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
+    connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
 }
 
 NoteManagerDlg::~NoteManagerDlg()

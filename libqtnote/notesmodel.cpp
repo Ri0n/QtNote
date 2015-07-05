@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QStringList>
+#include <QMimeData>
 
 #include "notesmodel.h"
 #include "notemanager.h"
@@ -224,7 +225,20 @@ int NotesModel::columnCount( const QModelIndex &parent) const
 	if (parent.isValid() && static_cast<NMMItem *>(parent.internalPointer())->type == ItemNote) { // note has no children so 0 columns
 		return 0;
 	}
-	return 1;
+    return 1;
+}
+
+Qt::ItemFlags NotesModel::flags(const QModelIndex &index) const
+{
+    if (index.isValid()) {
+        NMMItem *parentItem = static_cast<NMMItem *>(index.internalPointer());
+        if (parentItem->type == ItemStorage) {
+            return Qt::ItemIsEnabled | Qt::ItemIsDropEnabled;
+        } else { // note
+            return Qt::ItemIsEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsSelectable;
+        }
+    }
+    return QAbstractItemModel::flags(index);
 }
 
 QVariant NotesModel::data( const QModelIndex & index, int role ) const
@@ -257,6 +271,10 @@ bool NotesModel::removeRows(int row, int count, const QModelIndex &parent)
 {
 	QList<NMMItem*> *source;
 	if (parent.isValid()) { // note
+        if (removeProtection == parent) {
+            removeProtection = QModelIndex();
+            return false;
+        }
 		NMMItem *storageItem = static_cast<NMMItem *>(parent.internalPointer());
 		source = &storageItem->children;
 	} else { //storage
@@ -274,7 +292,80 @@ bool NotesModel::removeRows(int row, int count, const QModelIndex &parent)
 		return true;
 	}
 
-	return false;
+    return false;
+}
+
+Qt::DropActions NotesModel::supportedDropActions() const
+{
+    return Qt::CopyAction;
+}
+
+QStringList NotesModel::mimeTypes() const
+{
+    return QStringList() << "application/qtnote.notes.list";
+}
+
+QMimeData *NotesModel::mimeData(const QModelIndexList &indexes) const
+{
+    QMimeData *mimeData = new QMimeData();
+    QByteArray encodedData;
+
+    QDataStream stream(&encodedData, QIODevice::WriteOnly);
+
+    foreach (const QModelIndex &index, indexes) {
+        if (index.isValid()) {
+            NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
+            // only note items are draggable, so do not check it here
+            stream << item->parent->id << item->id << item->title;
+        }
+    }
+
+    mimeData->setData("application/qtnote.notes.list", encodedData);
+    return mimeData;
+}
+
+bool NotesModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
+{
+    Q_UNUSED(row)
+
+    if (action == Qt::IgnoreAction)
+        return true;
+
+    if (!data->hasFormat("application/qtnote.notes.list"))
+        return false;
+
+    if (column > 0)
+        return false;
+
+    if (!parent.isValid())
+        return false;
+
+    NMMItem *dstStorageItem = static_cast<NMMItem *>(parent.internalPointer());
+    if (dstStorageItem->type != ItemStorage)
+        return false;
+    auto dstStorage = NoteManager::instance()->storage(dstStorageItem->id);
+    removeProtection = parent;
+
+    QByteArray encodedData = data->data("application/qtnote.notes.list");
+    QDataStream stream(&encodedData, QIODevice::ReadOnly);
+
+    while (!stream.atEnd()) {
+        QString storageId, noteId, title;
+        stream >> storageId >> noteId >> title;
+        if (dstStorageItem->id == storageId) {
+            continue;
+        }
+        auto srcStorage = NoteManager::instance()->storage(storageId);
+        Note note = srcStorage->note(noteId);
+        if (!note.text().isEmpty()) {
+            dstStorage->createNote(note.text());
+            srcStorage->deleteNote(noteId);
+            // FIXME consider rich text
+            // TODO copy timestamp as well
+        }
+    }
+
+    return true;
 }
 
 } // namespace QtNote

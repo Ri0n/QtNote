@@ -29,6 +29,8 @@ namespace Ui {
     class NoteManagerDlg;
 }
 
+class QItemSelection;
+
 namespace QtNote {
 
 class NotesModel;
@@ -51,7 +53,8 @@ protected:
 private slots:
 	void itemDoubleClicked(const QModelIndex &index);
 
-	void currentRowChanged(const QModelIndex &current, const QModelIndex &previous);
+    void currentRowChanged(const QModelIndex &current, const QModelIndex &previous);
+    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 private:
     Ui::NoteManagerDlg *ui;
 	NotesModel *model;

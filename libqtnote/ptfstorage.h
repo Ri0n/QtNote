@@ -39,7 +39,7 @@ public:
     QIcon storageIcon() const;
     QIcon noteIcon() const;
     QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
-    Note get(const QString &noteId);
+    Note note(const QString &noteId);
     void saveNote(const QString &noteId, const QString &text);
     bool isRichTextAllowed() const;
     QString findStorageDir() const;

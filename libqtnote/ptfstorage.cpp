@@ -97,7 +97,7 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
     return ret;
 }
 
-Note PTFStorage::get(const QString &noteId)
+Note PTFStorage::note(const QString &noteId)
 {
     QString fileName = QDir(notesDir).absoluteFilePath(
             QString("%1.%2").arg(noteId).arg(fileExt) );

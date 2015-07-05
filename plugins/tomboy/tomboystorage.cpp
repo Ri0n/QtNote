@@ -80,7 +80,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
     return ret;
 }
 
-Note TomboyStorage::get(const QString &id)
+Note TomboyStorage::note(const QString &id)
 {
     QString fileName = QDir(notesDir).absoluteFilePath(
             QString("%1.%2").arg(id).arg(fileExt) );

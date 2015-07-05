@@ -61,7 +61,7 @@ public:
 
     /* 0 - not limit */
     virtual QList<NoteListItem> noteList(int limit = 0) = 0;
-    virtual Note get(const QString &id) = 0;
+    virtual Note note(const QString &id) = 0;
     virtual QString createNote(const QString &text) = 0;
     virtual void saveNote(const QString &noteId, const QString &text) = 0;
     virtual void deleteNote(const QString &noteId) = 0;

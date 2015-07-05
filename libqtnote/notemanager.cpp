@@ -91,7 +91,7 @@ Note NoteManager::getNote(const QString &storageId, const QString &noteId)
 {
     NoteStorage::Ptr s = storage(storageId);
     if (s) {
-        return s->get(noteId);
+        return s->note(noteId);
     }
     return 0;
 }

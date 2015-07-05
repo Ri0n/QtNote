@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowIcon">
-   <iconset resource="../main.qrc">
+   <iconset resource="main.qrc">
     <normaloff>:/icons/trayicon</normaloff>:/icons/trayicon</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -33,8 +33,14 @@
         <height>0</height>
        </size>
       </property>
+      <property name="dragEnabled">
+       <bool>true</bool>
+      </property>
       <property name="dragDropMode">
-       <enum>QAbstractItemView::InternalMove</enum>
+       <enum>QAbstractItemView::DragDrop</enum>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::CopyAction</enum>
       </property>
       <property name="selectionMode">
        <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -82,7 +88,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../main.qrc"/>
+  <include location="main.qrc"/>
  </resources>
  <connections>
   <connection>

@@ -49,12 +49,19 @@ public:
 	~NotesModel();
 	void setStorageSignalHandlers(NoteStorage::Ptr s);
 
-	QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
+    QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;
 	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
 	int columnCount( const QModelIndex & parent = QModelIndex() ) const;
-	QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+    QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
 	bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
+
+    Qt::DropActions supportedDropActions() const;
+    QStringList mimeTypes() const;
+    QMimeData *mimeData(const QModelIndexList &indexes) const;
+    bool dropMimeData(const QMimeData *data,
+         Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
 signals:
 
@@ -74,6 +81,7 @@ private:
 
 private:
 	QList<NMMItem*> storages;
+    QModelIndex removeProtection;
 };
 
 } // namespace QtNote
