@@ -7,7 +7,14 @@ SUBDIRS += baseintegration
 exists(/usr/include/KDE):!win32:!nokde:SUBDIRS += kdeintegration
 unix:!mac:!noubuntu:SUBDIRS += ubuntu
 !notomboy:SUBDIRS += tomboy
-!nospellcheker: SUBDIRS += spellchecker
+
+!nospellcheker {
+	!win32|!isEmpty(HUNSPELL_DIR)|!isEmpty(HUNSPELL_LIB) {
+		SUBDIRS += spellchecker
+	} else {
+		warning( Pass HUNSPELL_DIR or HUNSPELL_LIB and HUNSPELL_INC to qmake to build spellchecker plugin. )
+	}
+}
 
 #!nocrypt:SUBDIRS += crypt
 
