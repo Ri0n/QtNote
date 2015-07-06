@@ -43,7 +43,7 @@ TomboyStorage::TomboyStorage(QObject *parent) :
 
 bool TomboyStorage::isAccessible() const
 {
-    return QDir(notesDir).isReadable();
+    return !notesDir.isEmpty() && QDir(notesDir).isReadable();
 }
 
 const QString TomboyStorage::systemName() const
