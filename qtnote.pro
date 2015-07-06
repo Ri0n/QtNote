@@ -64,10 +64,20 @@ win32 {
 	INSTALLS += translations
 
 	greaterThan(QT_MAJOR_VERSION, 4) {
-		qtlibs.files = $$[QT_INSTALL_BINS]/Qt5Core.dll $$[QT_INSTALL_BINS]/Qt5Gui.dll $$[QT_INSTALL_BINS]/Qt5Xml.dll
+		qtdlls = Qt5Core Qt5Gui Qt5Widgets Qt5Xml Qt5Network Qt5PrintSupport
 	} else {
-		qtlibs.files = $$[QT_INSTALL_BINS]/QtCore4.dll $$[QT_INSTALL_BINS]/QtGui4.dll $$[QT_INSTALL_BINS]/QtXml4.dll
+		qtdlls = QtCore4 QtGui4 QtXml4
 	}
+	for(lib, qtdlls) {
+		qtlibs.files += $$[QT_INSTALL_BINS]/$${lib}.dll
+	}
+
+	gccdlls = libgcc_s_dw2-1.dll libwinpthread-1.dll libstdc++-6.dll
+	for(lib, gccdlls) {
+		gccdll = $$system(g++ -print-file-name=$${lib})
+		!isEmpty(gccdll):exists($${gccdll}):qtlibs.files += $${gccdll}
+	}
+
 	qtlibs.path = $$WININST_PREFIX
 
 	INSTALLS += qtlibs

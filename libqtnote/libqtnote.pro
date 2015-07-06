@@ -37,6 +37,12 @@ unix {
     INSTALLS += target
 }
 
+win32 {
+	target.path = $$WININST_PREFIX
+	target.files = $$OUT_PWD/qtnote.dll
+	INSTALLS += target
+}
+
 SOURCES += notedialog.cpp \
 	note.cpp \
 	notemanager.cpp \
