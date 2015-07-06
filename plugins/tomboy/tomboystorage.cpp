@@ -35,7 +35,7 @@ TomboyStorage::TomboyStorage(QObject *parent) :
 {
     fileExt = "note";
     QSettings s;
-    QString notesDir = s.value("storage.tomboy.path").toString();
+    notesDir = s.value("storage.tomboy.path").toString();
     if (notesDir.isEmpty() || !QDir(notesDir).isReadable()) {
         notesDir = findStorageDir();
     }
@@ -117,13 +117,12 @@ QString TomboyStorage::findStorageDir() const
     tomboyDirs<<(dataLocation + "/Tomboy");
     tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
 #elif defined(Q_OS_WIN)
-    QSettings ini(QSettings::IniFormat, QSettings::UserScope, "", "");
-    dataLocation = QFileInfo(ini.fileName()).absolutePath();
     tomboyDirs<<(dataLocation + "/Tomboy/notes");
     tomboyDirs<<(dataLocation + "/tomboy");
 #endif
     foreach (const QString &d, tomboyDirs) {
-        if (QDir(d).isReadable()) {
+        QFileInfo fi(d);
+        if (fi.isDir() && fi.isWritable()) {
             return d;
         }
     }
