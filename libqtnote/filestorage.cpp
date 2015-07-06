@@ -75,6 +75,11 @@ QWidget *FileStorage::settingsWidget()
     return w;
 }
 
+QString FileStorage::tooltip()
+{
+    return QString("<b>%1:</b> %2").arg(tr("Storage path"), notesDir);
+}
+
 void FileStorage::settingsApplied()
 {
     FileStorageSettingsWidget *w = qobject_cast<FileStorageSettingsWidget *>(sender());

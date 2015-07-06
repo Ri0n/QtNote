@@ -92,10 +92,12 @@ public:
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
     {
-        if (index.isValid() && role == Qt::DecorationRole) {
-            QString storageId = titleMap.key(stringList()[index.row()]);
-            if (!storageId.isEmpty()) {
+        QString storageId = index.isValid()? titleMap.key(stringList()[index.row()]) : QString();
+        if (!storageId.isEmpty()) {
+            if (role == Qt::DecorationRole) {
                 return NoteManager::instance()->storage(storageId)->storageIcon();
+            } else if (role == Qt::ToolTipRole) {
+                return NoteManager::instance()->storage(storageId)->tooltip();
             }
         }
         return QStringListModel::data(index, role);

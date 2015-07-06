@@ -115,16 +115,6 @@
          </item>
         </layout>
        </item>
-       <item>
-        <widget class="QDialogButtonBox" name="buttonBox">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="standardButtons">
-          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="shortcuts">
@@ -152,6 +142,16 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4"/>
      </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
     </widget>
    </item>
   </layout>

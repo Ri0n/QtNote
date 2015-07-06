@@ -38,7 +38,8 @@ public:
     void deleteNote(const QString &noteId);
     virtual void putToCache(const NoteListItem &note);
     virtual QString findStorageDir() const = 0;
-    QWidget *settingsWidget();    
+    QWidget *settingsWidget();
+    QString tooltip();
     QList<NoteListItem> noteList(int limit = 0);
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
