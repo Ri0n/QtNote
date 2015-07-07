@@ -82,11 +82,17 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
 
 Note TomboyStorage::note(const QString &id)
 {
-    QString fileName = QDir(notesDir).absoluteFilePath(
-            QString("%1.%2").arg(id).arg(fileExt) );
-    TomboyData *noteData = new TomboyData;
-    noteData->fromFile(fileName);
-    return Note(noteData);
+    if (!id.isEmpty()) {
+        QString fileName = QDir(notesDir).absoluteFilePath(
+                QString("%1.%2").arg(id).arg(fileExt) );
+        QFileInfo fi(fileName);
+        if (fi.isWritable()) {
+            TomboyData *noteData = new TomboyData;
+            noteData->fromFile(fileName);
+            return Note(noteData);
+        }
+    }
+    return Note();
 }
 
 void TomboyStorage::saveNote(const QString &noteId, const QString &text)
