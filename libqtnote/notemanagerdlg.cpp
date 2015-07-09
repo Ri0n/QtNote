@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QItemSelection>
+#include <QPropertyAnimation>
 
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
@@ -29,6 +30,48 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+
+class SearchOptsAnim : public QObject {
+    Q_OBJECT
+
+    QWidget *focusWidget;
+    QWidget *animWidget;
+    QPropertyAnimation *animation;
+public:
+    SearchOptsAnim(QWidget *focusWidget, QWidget *animWidget, QObject *parent) :
+        QObject(parent),
+        focusWidget(focusWidget),
+        animWidget(animWidget)
+    {
+        focusWidget->installEventFilter(this);
+        animWidget->installEventFilter(this);
+        animation = new QPropertyAnimation(animWidget, "maximumHeight", this);
+        animation->setDuration(200);
+    }
+
+    bool eventFilter(QObject *obj, QEvent *event)
+    {
+        if (event->type() == QEvent::FocusIn || event->type() == QEvent::FocusOut) {
+            QWidget *w = QApplication::focusWidget();
+            if (focusWidget == w || animWidget == w) {
+                if (!animWidget->maximumHeight()) {
+                    animation->setStartValue(0);
+                    animation->setEndValue(animWidget->sizeHint().height());
+                    animation->start();
+                }
+            } else {
+                if (animWidget->maximumHeight()) {
+                    animation->setStartValue(animWidget->sizeHint().height());
+                    animation->setEndValue(0);
+                    animation->start();
+                }
+            }
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
+
+
 NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 	QDialog(0),
 	ui(new Ui::NoteManagerDlg),
@@ -37,6 +80,8 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
     ui->setupUi(this);
 	setWindowIcon(QIcon(":/icons/manager"));
 	setAttribute(Qt::WA_DeleteOnClose);
+    ui->ckSearchInText->setMaximumHeight(0);
+    new SearchOptsAnim(ui->leFilter, ui->ckSearchInText, this);
 
 	model = new NotesModel(this);
 	ui->notesTree->setModel(model);
@@ -95,3 +140,5 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
 }
 
 } // namespace QtNote
+
+#include "notemanagerdlg.moc"

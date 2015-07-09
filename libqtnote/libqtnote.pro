@@ -68,7 +68,8 @@ SOURCES += notedialog.cpp \
 	pluginmanager.cpp \
     optionsplugins.cpp \
     notehighlighter.cpp \
-	colorbutton.cpp
+	colorbutton.cpp \
+    notessearchmodel.cpp
 
 HEADERS += notedialog.h \
 	note.h \
@@ -97,7 +98,8 @@ HEADERS += notedialog.h \
     highlighterext.h \
     notehighlighter.h \
     colorbutton.h \
-    defaults.h
+    defaults.h \
+    notessearchmodel.h
 
 FORMS += notedialog.ui \
 	aboutdlg.ui \
