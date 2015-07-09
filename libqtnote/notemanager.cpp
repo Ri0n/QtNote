@@ -89,11 +89,13 @@ QList<NoteListItem> NoteManager::noteList(int count) const
 
 Note NoteManager::getNote(const QString &storageId, const QString &noteId)
 {
-    NoteStorage::Ptr s = storage(storageId);
-    if (s) {
-        return s->note(noteId);
+    if (!storageId.isEmpty() && !noteId.isEmpty()) {
+        NoteStorage::Ptr s = storage(storageId);
+        if (s) {
+            return s->note(noteId);
+        }
     }
-    return 0;
+    return Note();
 }
 
 const QMap<QString, NoteStorage::Ptr> NoteManager::storages() const

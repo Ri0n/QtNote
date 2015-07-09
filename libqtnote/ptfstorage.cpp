@@ -99,11 +99,17 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 
 Note PTFStorage::note(const QString &noteId)
 {
-    QString fileName = QDir(notesDir).absoluteFilePath(
-            QString("%1.%2").arg(noteId).arg(fileExt) );
-    PTFData *noteData = new PTFData;
-    noteData->fromFile(fileName);
-    return Note(noteData);
+    if (!noteId.isEmpty()) {
+        QString fileName = QDir(notesDir).absoluteFilePath(
+                QString("%1.%2").arg(noteId).arg(fileExt) );
+        QFileInfo fi(fileName);
+        if (fi.isWritable()) {
+            PTFData *noteData = new PTFData;
+            noteData->fromFile(fileName);
+            return Note(noteData);
+        }
+    }
+    return Note();
 }
 
 void PTFStorage::saveNote(const QString &noteId, const QString & text)
