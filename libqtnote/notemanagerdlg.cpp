@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notesmodel.h"
 #include "notewidget.h"
 #include "qtnote.h"
+#include "notessearchmodel.h"
 
 namespace QtNote {
 
@@ -84,7 +85,12 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
     new SearchOptsAnim(ui->leFilter, ui->ckSearchInText, this);
 
 	model = new NotesModel(this);
-	ui->notesTree->setModel(model);
+    searchModel = new NotesSearchModel(this);
+    searchModel->setSourceModel(model);
+    searchModel->setDynamicSortFilter(true);
+    searchModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+
+    ui->notesTree->setModel(searchModel);
 	int sumCount = 0;
 	for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
 		sumCount += model->rowCount(model->index(i, 0));
@@ -92,6 +98,8 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
     connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
+    connect(ui->leFilter, SIGNAL(textChanged(QString)), searchModel, SLOT(setFilterWildcard(QString)));
+    connect(ui->ckSearchInText, SIGNAL(clicked(bool)), searchModel, SLOT(setSearchInText(bool)));
 }
 
 NoteManagerDlg::~NoteManagerDlg()

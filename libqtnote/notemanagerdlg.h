@@ -34,6 +34,7 @@ class QItemSelection;
 namespace QtNote {
 
 class NotesModel;
+class NotesSearchModel;
 class Main;
 
 class NoteManagerDlg : public QDialog
@@ -56,6 +57,7 @@ private slots:
 private:
     Ui::NoteManagerDlg *ui;
 	NotesModel *model;
+    NotesSearchModel *searchModel;
 	Main *qtnote;
 };
 
