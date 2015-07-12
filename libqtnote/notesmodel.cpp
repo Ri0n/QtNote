@@ -97,7 +97,15 @@ void NotesModel::setStorageSignalHandlers(NoteStorage::Ptr s)
 	connect(s.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(noteAdded(NoteListItem)));
 	connect(s.data(), SIGNAL(noteModified(NoteListItem)), SLOT(noteModified(NoteListItem)));
 	connect(s.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(noteRemoved(NoteListItem)));
-	connect(s.data(), SIGNAL(invalidated()), SLOT(storageInvalidated()));
+    connect(s.data(), SIGNAL(invalidated()), SLOT(storageInvalidated()));
+}
+
+void NotesModel::invalidateNote(const QString &storageId, const QString &noteId)
+{
+    auto index = noteIndex(storageId, noteId);
+    if (index.isValid()) {
+        dataChanged(index, index);
+    }
 }
 
 QModelIndex NotesModel::storageIndex(const QString &storageId) const

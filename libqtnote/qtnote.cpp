@@ -230,7 +230,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
                          ->isRichTextAllowed());
     emit noteWidgetCreated(w);
     if (!noteId.isEmpty()) {
-        note = NoteManager::instance()->getNote(storageId, noteId);
+        note = NoteManager::instance()->note(storageId, noteId);
         if (note.isNull()) {
             qWarning("failed to load note: %s", qPrintable(noteId));
             return 0;
@@ -419,7 +419,7 @@ void Main::note_saveRequested()
         noteId = storage->createNote(text);
         nw->setNoteId(noteId);
     } else {
-        if (NoteManager::instance()->getNote(storageId, noteId).text() != text) {
+        if (NoteManager::instance()->note(storageId, noteId).text() != text) {
             storage->saveNote(noteId, text);
         }
     }
@@ -428,7 +428,7 @@ void Main::note_saveRequested()
 void Main::note_invalidated()
 {
     NoteWidget *nw = static_cast<NoteWidget *>(sender());
-    Note note = NoteManager::instance()->getNote(nw->storageId(), nw->noteId());
+    Note note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
     if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
         if (note.text().startsWith(note.title())) {
             nw->setText(note.text());

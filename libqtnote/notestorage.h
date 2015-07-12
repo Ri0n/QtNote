@@ -29,6 +29,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+class NoteStorage;
+class NoteFinder;
+
 struct NoteListItem
 {
     NoteListItem(const QString &id_, const QString &storageId_,
@@ -70,6 +73,7 @@ public:
     virtual void saveNote(const QString &noteId, const QString &text) = 0;
     virtual void deleteNote(const QString &noteId) = 0;
     virtual bool isRichTextAllowed() const = 0;
+    virtual NoteFinder* search();
 
     virtual QWidget* settingsWidget() { return 0; }
     virtual QString tooltip() { return QString(); }
@@ -80,6 +84,34 @@ signals:
     void noteRemoved(const NoteListItem &);
     void invalidated();
 };
+
+/**
+ * @brief Notes search class.
+ * Search object is owned by storage and self-destroyed on search-end
+ */
+class NoteFinder : public QObject
+{
+    Q_OBJECT
+
+protected:
+    NoteStorage *_storage;
+
+public:
+    NoteFinder(NoteStorage *storage) :
+        QObject(storage),
+        _storage(storage) {}
+
+    inline NoteStorage *storage() const { return _storage; }
+
+signals:
+    void found(const QString &noteId);
+    void completed();
+
+public slots:
+    virtual void start(const QString &text);
+    virtual void abort();
+};
+
 
 
 } // namespace QtNote

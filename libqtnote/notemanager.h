@@ -24,24 +24,49 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 #include <QMap>
+#include <QSet>
 #include <QLinkedList>
+#include <QPointer>
 
 #include "notestorage.h"
 
 namespace QtNote {
+
+class GlobalNoteFinder : public QObject
+{
+    Q_OBJECT
+
+    QHash<NoteFinder*,QPointer<NoteFinder> >  searchers;
+
+public:
+    GlobalNoteFinder(QObject *parent = 0);
+
+    void start(const QString &text);
+    void abort();
+
+signals:
+    void found(const QString &storageId, const QString &noteId);
+    void completed();
+
+private slots:
+    void noteFound(const QString &noteId);
+    void searcherFinished();
+};
 
 class NoteManager : public QObject
 {
     Q_OBJECT
 public:
     static NoteManager *instance();
+    static GlobalNoteFinder *search() { return new GlobalNoteFinder(instance()); }
+
     void registerStorage(NoteStorage::Ptr storage);
     void unregisterStorage(NoteStorage::Ptr storage);
     bool loadAll();
 
     QList<NoteListItem> noteList(int count = -1) const;
 
-    Note getNote(const QString &storageId, const QString &noteId);
+    Note note(const QString &storageId, const QString &noteId);
 
     const QMap<QString, NoteStorage::Ptr> storages() const;
     const QLinkedList<NoteStorage::Ptr> prioritizedStorages() const;

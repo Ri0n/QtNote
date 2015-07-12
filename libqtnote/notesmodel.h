@@ -48,6 +48,7 @@ public:
 	explicit NotesModel(QObject *parent = 0);
 	~NotesModel();
 	void setStorageSignalHandlers(NoteStorage::Ptr s);
+    void invalidateNote(const QString &storageId, const QString &noteId);
 
     QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
 	QModelIndex parent( const QModelIndex & index ) const;

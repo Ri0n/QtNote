@@ -28,6 +28,54 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+
+GlobalNoteFinder::GlobalNoteFinder(QObject *parent) :
+    QObject(parent)
+{
+
+}
+
+void GlobalNoteFinder::start(const QString &text)
+{
+    abort();
+    for (auto storage : NoteManager::instance()->storages()) {
+        auto so = storage->search();
+        connect(so, SIGNAL(found(QString)), SLOT(noteFound(QString)));
+        connect(so, SIGNAL(completed()), SLOT(searcherFinished()));
+        searchers.insert(so, so);
+        so->start(text);
+    }
+}
+
+void GlobalNoteFinder::abort()
+{
+    for (auto s : searchers) {
+        if (s) {
+            s->abort();
+        }
+    }
+    searchers.clear();
+}
+
+void GlobalNoteFinder::noteFound(const QString &noteId)
+{
+    NoteFinder *nf = dynamic_cast<NoteFinder *>(sender());
+    emit found(nf->storage()->systemName(), noteId);
+}
+
+void GlobalNoteFinder::searcherFinished()
+{
+    NoteFinder *nf = dynamic_cast<NoteFinder *>(sender());
+    searchers.remove(nf);
+    nf->disconnect(this);
+    if (!searchers.count()) {
+        emit completed();
+    }
+}
+
+/************************************************************************************
+ * NoteManager                                                                      *
+ ************************************************************************************/
 NoteManager::NoteManager(QObject *parent)
     : QObject(parent)
 {
@@ -87,7 +135,7 @@ QList<NoteListItem> NoteManager::noteList(int count) const
     return ret.mid(0, count);
 }
 
-Note NoteManager::getNote(const QString &storageId, const QString &noteId)
+Note NoteManager::note(const QString &storageId, const QString &noteId)
 {
     if (!storageId.isEmpty() && !noteId.isEmpty()) {
         NoteStorage::Ptr s = storage(storageId);
@@ -160,5 +208,6 @@ NoteManager *NoteManager::instance()
 }
 
 NoteManager* NoteManager::_instance = NULL;
+
 
 } // namespace QtNote

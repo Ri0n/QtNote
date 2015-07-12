@@ -98,8 +98,8 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
     connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
-    connect(ui->leFilter, SIGNAL(textChanged(QString)), searchModel, SLOT(setFilterWildcard(QString)));
-    connect(ui->ckSearchInText, SIGNAL(clicked(bool)), searchModel, SLOT(setSearchInText(bool)));
+    connect(ui->leFilter, SIGNAL(textChanged(QString)), searchModel, SLOT(setSearchText(QString)));
+    connect(ui->ckSearchInText, SIGNAL(clicked(bool)), searchModel, SLOT(setSearchInBody(bool)));
 }
 
 NoteManagerDlg::~NoteManagerDlg()

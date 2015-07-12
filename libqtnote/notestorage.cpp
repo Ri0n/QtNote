@@ -19,6 +19,8 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QTimer>
+
 #include "notestorage.h"
 
 namespace QtNote {
@@ -30,6 +32,30 @@ bool noteListItemModifyComparer(const NoteListItem &a,
 
 NoteStorage::NoteStorage(QObject *parent)
     : QObject(parent)
+{
+
+}
+
+NoteFinder *NoteStorage::search()
+{
+    return new NoteFinder(this);
+}
+
+void NoteFinder::start(const QString &text)
+{
+    auto nl = _storage->noteList();
+    for (auto n : nl) {
+        // text always returns plain text
+        if (_storage->note(n.id).text().contains(text)) {
+            emit found(n.id);
+        }
+    }
+
+    emit completed();
+    deleteLater();
+}
+
+void NoteFinder::abort()
 {
 
 }
