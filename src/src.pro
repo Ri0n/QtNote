@@ -43,5 +43,5 @@ INCLUDEPATH += $$PWD/../libqtnote
 DEPENDPATH += $$PWD/../libqtnote
 
 win32:CONFIG += bundled_singleapp
-bundled_singleapp||CONFIG+=qtsingleapplication
+!bundled_singleapp:CONFIG+=qtsingleapplication
 bundled_singleapp:include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)

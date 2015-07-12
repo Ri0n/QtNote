@@ -107,5 +107,3 @@ QList<NoteListItem> FileStorage::noteList(int limit)
 }
 
 } // namespace QtNote
-
-#include "filestorage.moc"

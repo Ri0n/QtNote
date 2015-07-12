@@ -39,7 +39,7 @@
 ****************************************************************************/
 
 
-#include "qtsingleapplication.h"
+#include "qtsingleapplication_.h"
 #include "qtlocalpeer.h"
 #include <QWidget>
 
