@@ -43,11 +43,8 @@ int main(int argc, char *argv[])
 	if (a.isRunning()) {
 		QStringList args = a.arguments();
 		if (args.size() > 1) {
-			args.pop_front();
-			QByteArray buffer;
-			QDataStream stream(&buffer, QIODevice::ReadWrite);
-			stream << args;
-			a.sendMessage(dynamic_cast<QBuffer*>(stream.device())->data());
+            args.pop_front();
+            a.sendMessage(args.join("!qtnote_argdelim!"));
 		}
 		return 0;
 	}
@@ -61,7 +58,7 @@ int main(int argc, char *argv[])
 
 	QtNote::Main qtnote;
 	if (qtnote.isOperable()) {
-		QtSingleApplication::instance()->connect(QtSingleApplication::instance(), SIGNAL(messageReceived(const QByteArray &)), &qtnote, SLOT(appMessageReceived(const QByteArray &)));
+        QtSingleApplication::instance()->connect(QtSingleApplication::instance(), SIGNAL(messageReceived(QString)), &qtnote, SLOT(appMessageReceived(QString)));
 		qtnote.parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
 		return a.exec();
 	}

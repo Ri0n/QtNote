@@ -189,12 +189,9 @@ void Main::exitQtNote()
     QApplication::quit();
 }
 
-void Main::appMessageReceived(const QByteArray &msg)
+void Main::appMessageReceived(const QString &msg)
 {
-    QDataStream stream(msg);
-    QStringList params;
-    stream >> params;
-    parseAppArguments(params);
+    parseAppArguments(msg.split(QLatin1String("!qtnote_argdelim!")));
 }
 
 void Main::showAbout()

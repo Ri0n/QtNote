@@ -42,4 +42,6 @@ LIBS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR -lqtnote
 INCLUDEPATH += $$PWD/../libqtnote
 DEPENDPATH += $$PWD/../libqtnote
 
-include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)
+win32:CONFIG += bundled_singleapp
+bundled_singleapp||CONFIG+=qtsingleapplication
+bundled_singleapp:include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)

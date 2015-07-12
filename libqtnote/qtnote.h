@@ -74,7 +74,7 @@ private slots:
     void showOptions();
     void createNewNote();
     void createNewNoteFromSelection();
-    void appMessageReceived(const QByteArray &msg);
+    void appMessageReceived(const QString &msg);
     void note_trashRequested();
     void note_saveRequested();
     void note_invalidated();

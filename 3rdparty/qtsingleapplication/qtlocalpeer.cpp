@@ -41,8 +41,8 @@
 
 #include "qtlocalpeer.h"
 #include <QCoreApplication>
-#include <QTime>
 #include <QDataStream>
+#include <QTime>
 
 #if defined(Q_OS_WIN)
 #include <QLibrary>
@@ -133,7 +133,7 @@ bool QtLocalPeer::isClient()
 }
 
 
-bool QtLocalPeer::sendMessage(const QByteArray &message, int timeout)
+bool QtLocalPeer::sendMessage(const QString &message, int timeout)
 {
     if (!isClient())
         return false;
@@ -157,8 +157,9 @@ bool QtLocalPeer::sendMessage(const QByteArray &message, int timeout)
     if (!connOk)
         return false;
 
+    QByteArray uMsg(message.toUtf8());
     QDataStream ds(&socket);
-	ds.writeBytes(message.constData(), message.size());
+    ds.writeBytes(uMsg.constData(), uMsg.size());
     bool res = socket.waitForBytesWritten(timeout);
     if (res) {
         res &= socket.waitForReadyRead(timeout);   // wait for ack
@@ -194,9 +195,10 @@ void QtLocalPeer::receiveConnection()
         delete socket;
         return;
     }
+    QString message(QString::fromUtf8(uMsg));
     socket->write(ack, qstrlen(ack));
     socket->waitForBytesWritten(1000);
     socket->waitForDisconnected(1000); // make sure client reads ack
     delete socket;
-	emit messageReceived(uMsg); //### (might take a long time to return)
+    emit messageReceived(message); //### (might take a long time to return)
 }
