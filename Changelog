@@ -1,3 +1,9 @@
+2015-07-13 QtNote-3.0.0 Release
++ Plugins support
++ Notes search
+* Multiple ui improvements
+* Better support for various desktop environments
+
 2013-08-12 QtNote-0.2.3.1 Release
 + Note from selection + hotkey feature
 + Print feature
