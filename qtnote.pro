@@ -57,6 +57,14 @@ unix {
 	man.path = $$MANDIR
 
 	INSTALLS += translations desktop $$pixmaps pixmap_svg man
+
+	commonconfig.input = install_common.pri.in
+	commonconfig.output = tmp/common.pri
+	QMAKE_SUBSTITUTES += commonconfig
+
+	cc_inst.path = $$DATADIR/$$APPNAME
+	cc_inst.files = $OUT_PWD/tmp/common.pri
+	INSTALLS += cc_inst
 }
 
 win32 {
@@ -83,4 +91,4 @@ win32 {
 	INSTALLS += qtlibs
 }
 
-OTHER_FILES += version
+OTHER_FILES += version install_common.pri.in

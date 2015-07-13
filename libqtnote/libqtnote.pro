@@ -119,3 +119,9 @@ macx {
 }
 
 RESOURCES += main.qrc
+
+unix {
+	incinstall.path = $$PREFIX/include/$$APPNAME
+	incinstall.files = $$HEADERS
+	INSTALLS += incinstall
+}

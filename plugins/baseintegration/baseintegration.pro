@@ -13,8 +13,7 @@ SOURCES += \
 
 HEADERS += \
 	baseintegration.h \
-	baseintegrationtray.h \
-	../trayinterface.h
+	baseintegrationtray.h
 
 RESOURCES += \
     baseintegration.qrc

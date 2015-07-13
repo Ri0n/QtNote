@@ -23,3 +23,16 @@ HEADERS += qtnoteplugininterface.h \
 	trayinterface.h \
 	globalshortcutsinterface.h \
 	pluginoptionsinterface.h
+
+
+OTHER_FILES += plugins_common.pri.in
+
+unix {
+	incinstall.path = $$PREFIX/include/$$APPNAME
+	incinstall.files = $$HEADERS
+	INSTALLS += incinstall
+
+	proinst.path = $$DATADIR/$$APPNAME/plugins
+	proinst.files = plugin.pri
+	INSTALLS += proinst
+}
