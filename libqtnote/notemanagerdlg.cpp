@@ -21,6 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QItemSelection>
 #include <QPropertyAnimation>
+#include <QSettings>
 
 #include "notemanagerdlg.h"
 #include "ui_notemanagerdlg.h"
@@ -92,8 +93,20 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 
     ui->notesTree->setModel(searchModel);
 	int sumCount = 0;
+    QSettings s;
+    bool expandAll = false;
+    QStringList expanded;
+    if (!s.contains("nm-expanded")) {
+        expandAll = true;
+    } else {
+        expanded = QSettings().value("nm-expanded").toStringList();
+    }
 	for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
-		sumCount += model->rowCount(model->index(i, 0));
+        auto index = model->index(i, 0);
+        sumCount += model->rowCount(index);
+        if (expandAll || expanded.contains(model->data(index, NotesModel::StorageIdRole).toString())) {
+            ui->notesTree->setExpanded(searchModel->mapFromSource(index), true);
+        }
 	}
 	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
@@ -104,6 +117,15 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
 
 NoteManagerDlg::~NoteManagerDlg()
 {
+    QSettings s;
+    QStringList expanded;
+    for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
+        auto index = model->index(i, 0);
+        if (ui->notesTree->isExpanded(searchModel->mapFromSource(index))) {
+            expanded << model->data(index, NotesModel::StorageIdRole).toString();
+        }
+    }
+    s.setValue("nm-expanded", expanded);
     delete ui;
 }
 
