@@ -92,7 +92,7 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
     searchModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
 
     ui->notesTree->setModel(searchModel);
-	int sumCount = 0;
+
     QSettings s;
     bool expandAll = false;
     QStringList expanded;
@@ -103,16 +103,17 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) :
     }
 	for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
         auto index = model->index(i, 0);
-        sumCount += model->rowCount(index);
         if (expandAll || expanded.contains(model->data(index, NotesModel::StorageIdRole).toString())) {
             ui->notesTree->setExpanded(searchModel->mapFromSource(index), true);
         }
 	}
-	setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
+
+    updateStats();
 	connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
     connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex,QModelIndex)), SLOT(currentRowChanged(QModelIndex,QModelIndex)));
     connect(ui->leFilter, SIGNAL(textChanged(QString)), searchModel, SLOT(setSearchText(QString)));
     connect(ui->ckSearchInText, SIGNAL(clicked(bool)), searchModel, SLOT(setSearchInBody(bool)));
+    connect(model, SIGNAL(statsChanged()), SLOT(updateStats()));
 }
 
 NoteManagerDlg::~NoteManagerDlg()
@@ -127,6 +128,15 @@ NoteManagerDlg::~NoteManagerDlg()
     }
     s.setValue("nm-expanded", expanded);
     delete ui;
+}
+
+void NoteManagerDlg::updateStats()
+{
+    int sumCount = 0;
+    for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
+        sumCount += model->rowCount(model->index(i, 0));
+    }
+    setWindowTitle(tr("Note Manager (%1)").arg(tr("%n notes", 0, sumCount)));
 }
 
 void NoteManagerDlg::changeEvent(QEvent *e)

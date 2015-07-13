@@ -54,6 +54,8 @@ protected:
 private slots:
 	void itemDoubleClicked(const QModelIndex &index);
     void currentRowChanged(const QModelIndex &current, const QModelIndex &previous);
+    void updateStats();
+
 private:
     Ui::NoteManagerDlg *ui;
 	NotesModel *model;

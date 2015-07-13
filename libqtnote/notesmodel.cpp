@@ -138,12 +138,14 @@ QModelIndex NotesModel::noteIndex(const QString &storageId, const QString &noteI
 
 void NotesModel::storageAdded(const NoteStorage::Ptr &)
 {
-
+    // TODO implement
+    emit statsChanged();
 }
 
 void NotesModel::storageRemoved(const NoteStorage::Ptr &)
 {
-
+    // TODO implement
+    emit statsChanged();
 }
 
 void NotesModel::storageInvalidated()
@@ -162,6 +164,7 @@ void NotesModel::noteAdded(const NoteListItem &item)
 		beginInsertRows(parentIndex, len, len);
 		storage->children.append(new NMMItem(item, storage));
 		endInsertRows();
+        emit statsChanged();
 	}
 }
 
@@ -180,7 +183,8 @@ void NotesModel::noteRemoved(const NoteListItem &item)
 	QModelIndex index = noteIndex(item.storageId, item.id);
 	if (index.isValid()) {
 		removeRow(index.row(), index.parent());
-	}
+        emit statsChanged();
+    }
 }
 
 

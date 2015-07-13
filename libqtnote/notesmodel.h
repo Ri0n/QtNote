@@ -65,6 +65,7 @@ public:
          Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
 signals:
+    void statsChanged(); // emit on note added/removed, storage added/removed
 
 public slots:
 
