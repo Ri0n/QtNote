@@ -18,7 +18,7 @@ Some features:
 Compilation:
 qmake && make && make install is usually enough.
 but if anything went wrong there are some qmake options supported:
-
+<pre>
 CONFIG+=
   bundled_singleapp - use bundled qsingleappliction instead of system one
   devel - build in developerment mode
@@ -36,6 +36,7 @@ HUNSPELL_DIR=<dir> installation prefix of hunspell (useful on windows)
 HUNSPELL_LIB=<dir> lib directory of hunspell in case HUNSPELL_DIR does not suite (useful on windows)
 HUNSPELL_INC=<dir> include directory of hunspell in case HUNSPELL_DIR does not suite (useful on windows)
 WININST_PREFIX=<dir> installation prefix on windows (ready to pack as portable or for installer)
+</pre>
 
 Development:
 You can try to start qmake in development mode.
