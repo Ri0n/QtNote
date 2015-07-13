@@ -143,9 +143,10 @@ void NoteManagerDlg::changeEvent(QEvent *e)
 
 void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 {
-	QString noteId = model->data(index, NotesModel::NoteIdRole).toString();
+    auto srcIndex = searchModel->mapToSource(index);
+    QString noteId = model->data(srcIndex, NotesModel::NoteIdRole).toString();
 	if (!noteId.isEmpty()) {
-		emit showNoteRequested(model->data(index, NotesModel::StorageIdRole).toString(), noteId);
+        emit showNoteRequested(model->data(srcIndex, NotesModel::StorageIdRole).toString(), noteId);
 	}
 }
 
@@ -153,11 +154,12 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
 {
 	// TODO save previous?
 	Q_UNUSED(previous)
-	if (current.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
+    auto srcCurrent = searchModel->mapToSource(current);
+    if (srcCurrent.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
 		return;
 	}
-	NoteWidget *nw = qtnote->noteWidget(current.data(NotesModel::StorageIdRole).toString(),
-										current.data(NotesModel::NoteIdRole).toString());
+    NoteWidget *nw = qtnote->noteWidget(srcCurrent.data(NotesModel::StorageIdRole).toString(),
+                                        srcCurrent.data(NotesModel::NoteIdRole).toString());
 
 	if (ui->splitter->count() > 1) {
 		delete ui->splitter->widget(ui->splitter->count() - 1);
