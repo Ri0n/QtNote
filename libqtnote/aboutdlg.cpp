@@ -27,6 +27,7 @@ AboutDlg::AboutDlg(QWidget *parent) :
     ui(new Ui::AboutDlg)
 {
     ui->setupUi(this);
+    ui->lblVersion->setText(QTNOTE_VERSION_STR);
 }
 
 AboutDlg::~AboutDlg()

@@ -14,7 +14,7 @@
    <string>About QtNote</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../main.qrc">
+   <iconset resource="main.qrc">
     <normaloff>:/icons/trayicon</normaloff>:/icons/trayicon</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -22,22 +22,51 @@
     <enum>QLayout::SetFixedSize</enum>
    </property>
    <item>
-    <widget class="QLabel" name="label">
-     <property name="font">
-      <font>
-       <pointsize>15</pointsize>
-       <weight>75</weight>
-       <italic>true</italic>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string notr="true">QtNote</string>
-     </property>
-     <property name="margin">
-      <number>5</number>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="font">
+        <font>
+         <pointsize>15</pointsize>
+         <weight>75</weight>
+         <italic>true</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string notr="true">QtNote</string>
+       </property>
+       <property name="margin">
+        <number>5</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="lblVersion">
+       <property name="font">
+        <font>
+         <pointsize>15</pointsize>
+         <weight>75</weight>
+         <italic>true</italic>
+         <bold>true</bold>
+        </font>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QTabWidget" name="tabWidget">
@@ -152,7 +181,7 @@ Vietnamese:
   </layout>
  </widget>
  <resources>
-  <include location="../main.qrc"/>
+  <include location="main.qrc"/>
  </resources>
  <connections>
   <connection>

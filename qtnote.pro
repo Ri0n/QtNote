@@ -82,3 +82,5 @@ win32 {
 
 	INSTALLS += qtlibs
 }
+
+OTHER_FILES += version
