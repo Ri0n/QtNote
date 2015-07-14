@@ -27,9 +27,9 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT *= printsupport
     QT *= widgets
     greaterThan(QT_MAJOR_VERSION, 5)|greaterThan(QT_MINOR_VERSION, 0) {
-		unix:!mac:QT += x11extras
+        unix:!mac:QT += x11extras
     }
-	win32:CONFIG += skip_target_version_ext
+    win32:CONFIG += skip_target_version_ext
 }
 
 unix {
@@ -38,62 +38,62 @@ unix {
 }
 
 win32 {
-	target.path = $$WININST_PREFIX
-	target.files = $$OUT_PWD/qtnote.dll
-	INSTALLS += target
+    target.path = $$WININST_PREFIX
+    target.files = $$OUT_PWD$${DBG_SUBDIR}/qtnote.dll
+    INSTALLS += target
 }
 
 SOURCES += notedialog.cpp \
-	note.cpp \
-	notemanager.cpp \
-	notestorage.cpp \
-	ptfstorage.cpp \
-	ptfdata.cpp \
-	notedata.cpp \
-	filenotedata.cpp \
-	aboutdlg.cpp \
-	optionsdlg.cpp \
-	filestorage.cpp \
-	filestoragesettingswidget.cpp \
-	utils.cpp \
-	notesmodel.cpp \
-	notemanagerdlg.cpp \
-	notemanagerview.cpp \
-	noteedit.cpp \
-	qtnote.cpp \
-	typeaheadfind.cpp \
-	shortcutedit.cpp \
-	shortcutsmanager.cpp \
-	notewidget.cpp \
-	pluginmanager.cpp \
+    note.cpp \
+    notemanager.cpp \
+    notestorage.cpp \
+    ptfstorage.cpp \
+    ptfdata.cpp \
+    notedata.cpp \
+    filenotedata.cpp \
+    aboutdlg.cpp \
+    optionsdlg.cpp \
+    filestorage.cpp \
+    filestoragesettingswidget.cpp \
+    utils.cpp \
+    notesmodel.cpp \
+    notemanagerdlg.cpp \
+    notemanagerview.cpp \
+    noteedit.cpp \
+    qtnote.cpp \
+    typeaheadfind.cpp \
+    shortcutedit.cpp \
+    shortcutsmanager.cpp \
+    notewidget.cpp \
+    pluginmanager.cpp \
     optionsplugins.cpp \
     notehighlighter.cpp \
-	colorbutton.cpp \
+    colorbutton.cpp \
     notessearchmodel.cpp
 
 HEADERS += notedialog.h \
-	note.h \
-	notemanager.h \
-	notestorage.h \
-	ptfstorage.h \
-	ptfdata.h \
-	notedata.h \
-	filenotedata.h \
-	filestoragesettingswidget.h \
-	aboutdlg.h \
-	optionsdlg.h \
-	filestorage.h \
-	utils.h \
-	notesmodel.h \
-	notemanagerdlg.h \
-	notemanagerview.h \
-	noteedit.h \
-	qtnote.h \
-	typeaheadfind.h \
-	shortcutedit.h \
-	shortcutsmanager.h \
-	notewidget.h \
-	pluginmanager.h \
+    note.h \
+    notemanager.h \
+    notestorage.h \
+    ptfstorage.h \
+    ptfdata.h \
+    notedata.h \
+    filenotedata.h \
+    filestoragesettingswidget.h \
+    aboutdlg.h \
+    optionsdlg.h \
+    filestorage.h \
+    utils.h \
+    notesmodel.h \
+    notemanagerdlg.h \
+    notemanagerview.h \
+    noteedit.h \
+    qtnote.h \
+    typeaheadfind.h \
+    shortcutedit.h \
+    shortcutsmanager.h \
+    notewidget.h \
+    pluginmanager.h \
     optionsplugins.h \
     highlighterext.h \
     notehighlighter.h \
@@ -102,11 +102,11 @@ HEADERS += notedialog.h \
     notessearchmodel.h
 
 FORMS += notedialog.ui \
-	aboutdlg.ui \
-	optionsdlg.ui \
-	notemanagerdlg.ui \
-	filestoragesettingswidget.ui \
-	notewidget.ui \
+    aboutdlg.ui \
+    optionsdlg.ui \
+    notemanagerdlg.ui \
+    filestoragesettingswidget.ui \
+    notewidget.ui \
     optionsplugins.ui
 
 INCLUDEPATH += $$PWD $$PWD/../plugins
@@ -121,7 +121,7 @@ macx {
 RESOURCES += main.qrc
 
 unix {
-	incinstall.path = $$PREFIX/include/$$APPNAME
-	incinstall.files = $$HEADERS
-	INSTALLS += incinstall
+    incinstall.path = $$PREFIX/include/$$APPNAME
+    incinstall.files = $$HEADERS
+    INSTALLS += incinstall
 }

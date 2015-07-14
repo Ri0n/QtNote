@@ -68,27 +68,41 @@ unix {
 }
 
 win32 {
-	translations.path = $$WININST_PREFIX/langs
-	INSTALLS += translations
+    translations.path = $$WININST_PREFIX/langs
+    INSTALLS += translations
 
-	greaterThan(QT_MAJOR_VERSION, 4) {
-		qtdlls = Qt5Core Qt5Gui Qt5Widgets Qt5Xml Qt5Network Qt5PrintSupport
-	} else {
-		qtdlls = QtCore4 QtGui4 QtXml4
-	}
-	for(lib, qtdlls) {
-		qtlibs.files += $$[QT_INSTALL_BINS]/$${lib}.dll
-	}
+    qtlibs.path = $$WININST_PREFIX
+    greaterThan(QT_MAJOR_VERSION, 4) {
+        qtdlls = Qt5Core Qt5Gui Qt5Widgets Qt5Xml Qt5Network Qt5PrintSupport
+    } else {
+        qtdlls = QtCore4 QtGui4 QtXml4
+    }
+    for(lib, qtdlls) {
+        qtlibs.files += $$[QT_INSTALL_BINS]/$${lib}.dll
+    }
 
-	gccdlls = libgcc_s_dw2-1.dll libwinpthread-1.dll libstdc++-6.dll
-	for(lib, gccdlls) {
-		gccdll = $$system(g++ -print-file-name=$${lib})
-		!isEmpty(gccdll):exists($${gccdll}):qtlibs.files += $${gccdll}
-	}
+    gccdlls = libgcc_s_dw2-1.dll libwinpthread-1.dll
+    for(lib, gccdlls) {
+        gccdll = $$system(g++ -print-file-name=$${lib})
+        !isEmpty(gccdll):exists($${gccdll}):qtlibs.files += $${gccdll}
+    }
 
-	qtlibs.path = $$WININST_PREFIX
+    # workaround for QTBUG-16372 (still broken in qt-5.5.0)
+    # move libstdc++-6.dll to the list above when fixed
+    qtlibs.depends += copy_libstdcpp
+    copy_libstdcpp.target = copy_libstdcpp
+    gccdll = $$system(g++ -print-file-name=libstdc++-6.dll)
+    copy_libstdcpp.commands = $(COPY) \"$$shell_path($${gccdll})\" \"$$shell_path($${qtlibs.path})\"
+    QMAKE_EXTRA_TARGETS += copy_libstdcpp
+    # end of workaround
 
-	INSTALLS += qtlibs
+    qtplatform.path = $$WININST_PREFIX/plugins/platforms
+    qtplugins = qminimal.dll qoffscreen.dll qwindows.dll
+    for(lib, qtplugins) {
+        qtplatform.files += $$[QT_INSTALL_PLUGINS]/platforms/$${lib}.dll
+    }
+
+    INSTALLS += qtlibs qtplatform
 }
 
 OTHER_FILES += version install_common.pri.in
