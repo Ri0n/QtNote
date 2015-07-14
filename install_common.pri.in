@@ -7,7 +7,7 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 }
 
 APPNAME = $$APPNAME
-DEFINES += APPNAME=\\\"$$APPNAME\\\"
+DEFINES += APPNAME=\\\\\\\"$$APPNAME\\\\\\\"
 
 VERSION = $$VERSION
 
@@ -24,7 +24,7 @@ unix {
 	MANDIR = $$DATADIR/man/man1
 	TRANSLATIONSDIR = $$DATADIR/$$APPNAME
 
-	DEFINES += LIBDIR=\\\"$$LIBDIR\\\" \
-		DATADIR=\\\"$$DATADIR\\\" \
-		TRANSLATIONSDIR=\\\"$$TRANSLATIONSDIR\\\"
+	DEFINES += LIBDIR=\\\\\\\"$$LIBDIR\\\\\\\" \\
+		DATADIR=\\\\\\\"$$DATADIR\\\\\\\" \\
+		TRANSLATIONSDIR=\\\\\\\"$$TRANSLATIONSDIR\\\\\\\"
 }

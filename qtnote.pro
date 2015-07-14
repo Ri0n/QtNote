@@ -43,7 +43,7 @@ unix {
 	pixsizes = 16 22 24 32 48 64
 	for(size, pixsizes) {
 	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
-	extra = cp -f libqtnote/images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+	extra = cp -f $${PWD}/libqtnote/images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
 	eval(pix$${size}.path = $$path)
 	eval(pix$${size}.extra = $$extra)
 	eval(pixmaps += pix$${size})
@@ -63,7 +63,7 @@ unix {
 	QMAKE_SUBSTITUTES += commonconfig
 
 	cc_inst.path = $$DATADIR/$$APPNAME
-	cc_inst.files = $OUT_PWD/tmp/common.pri
+	cc_inst.files = tmp/common.pri
 	INSTALLS += cc_inst
 }
 
