@@ -97,7 +97,7 @@ win32 {
     # end of workaround
 
     qtplatform.path = $$WININST_PREFIX/plugins/platforms
-    qtplugins = qminimal.dll qoffscreen.dll qwindows.dll
+    qtplugins = qminimal qoffscreen qwindows
     for(lib, qtplugins) {
         qtplatform.files += $$[QT_INSTALL_PLUGINS]/platforms/$${lib}.dll
     }
