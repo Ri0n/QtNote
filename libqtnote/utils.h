@@ -24,9 +24,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QString>
 
+#include "qtnote_export.h"
+
 class QColor;
 
-class Utils
+class QTNOTE_EXPORT Utils
 {
 public:
     Utils();

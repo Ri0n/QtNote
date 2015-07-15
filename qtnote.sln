@@ -1,24 +1,42 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qtnote", "qtnote.vcproj", "{14870538-1A49-3F16-9717-C10516B6AB1D}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qtnote", "libqtnote\qtnote.vcxproj", "{8261953F-4355-399D-BFED-DE6BD8C3B3EF}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "QtNote Setup", "QtNote Setup\QtNote Setup.vdproj", "{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "baseintegration", "plugins\baseintegration\baseintegration.vcxproj", "{CDC82657-9966-3889-B402-17842F8F2C6F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF} = {8261953F-4355-399D-BFED-DE6BD8C3B3EF}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tomboy", "plugins\tomboy\tomboy.vcxproj", "{D857F85E-D220-3B99-B9AC-F492B50F0271}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF} = {8261953F-4355-399D-BFED-DE6BD8C3B3EF}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Win32 = Debug|Win32
-		Release|Win32 = Release|Win32
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{14870538-1A49-3F16-9717-C10516B6AB1D}.Debug|Win32.ActiveCfg = Debug|Win32
-		{14870538-1A49-3F16-9717-C10516B6AB1D}.Debug|Win32.Build.0 = Debug|Win32
-		{14870538-1A49-3F16-9717-C10516B6AB1D}.Release|Win32.ActiveCfg = Release|Win32
-		{14870538-1A49-3F16-9717-C10516B6AB1D}.Release|Win32.Build.0 = Release|Win32
-		{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}.Debug|Win32.ActiveCfg = Debug
-		{7B790E34-B7AC-487E-BEFF-7DA3AC16EF7F}.Release|Win32.ActiveCfg = Release
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF}.Debug|x64.ActiveCfg = Debug|x64
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF}.Debug|x64.Build.0 = Debug|x64
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF}.Release|x64.ActiveCfg = Release|x64
+		{8261953F-4355-399D-BFED-DE6BD8C3B3EF}.Release|x64.Build.0 = Release|x64
+		{CDC82657-9966-3889-B402-17842F8F2C6F}.Debug|x64.ActiveCfg = Debug|x64
+		{CDC82657-9966-3889-B402-17842F8F2C6F}.Debug|x64.Build.0 = Debug|x64
+		{CDC82657-9966-3889-B402-17842F8F2C6F}.Release|x64.ActiveCfg = Release|x64
+		{CDC82657-9966-3889-B402-17842F8F2C6F}.Release|x64.Build.0 = Release|x64
+		{D857F85E-D220-3B99-B9AC-F492B50F0271}.Debug|x64.ActiveCfg = Debug|x64
+		{D857F85E-D220-3B99-B9AC-F492B50F0271}.Debug|x64.Build.0 = Debug|x64
+		{D857F85E-D220-3B99-B9AC-F492B50F0271}.Release|x64.ActiveCfg = Release|x64
+		{D857F85E-D220-3B99-B9AC-F492B50F0271}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		Qt5Version = msvc2013_64
 	EndGlobalSection
 EndGlobal

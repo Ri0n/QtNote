@@ -10,3 +10,6 @@ moc_*.cpp
 *.so
 .inst
 setup.exe
+
+# vs
+GeneratedFiles

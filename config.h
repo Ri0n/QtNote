@@ -14,7 +14,6 @@
 #include <Windows.h>
 #include <WinUser.h>
 #endif
-
 #endif
 
 #define str_helper(s) #s

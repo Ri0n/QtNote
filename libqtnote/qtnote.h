@@ -36,9 +36,9 @@ class NoteWidget;
 class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
-class NoteListItem;
+struct NoteListItem;
 
-class Main : public QObject
+class QTNOTE_EXPORT Main : public QObject
 {
     Q_OBJECT
 public:

@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QPointer>
 
 #include "notestorage.h"
+#include "qtnote_export.h"
 
 namespace QtNote {
 
@@ -53,7 +54,7 @@ private slots:
     void searcherFinished();
 };
 
-class NoteManager : public QObject
+class QTNOTE_EXPORT NoteManager : public QObject
 {
     Q_OBJECT
 public:

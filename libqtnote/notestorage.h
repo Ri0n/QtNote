@@ -25,7 +25,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QObject> // just for compatibility with qt<4.6
 #include <QDateTime>
 #include <QIcon>
+
 #include "note.h"
+#include "qtnote_export.h"
 
 namespace QtNote {
 
@@ -49,7 +51,7 @@ struct NoteListItem
 bool noteListItemModifyComparer(const NoteListItem &a,
                                 const NoteListItem &b);
 
-class NoteStorage : public QObject
+class QTNOTE_EXPORT NoteStorage : public QObject
 {
     Q_OBJECT
 public:
