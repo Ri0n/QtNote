@@ -60,7 +60,7 @@
        </size>
       </property>
       <property name="text">
-       <string>TextLabel</string>
+       <string>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag'n'Drop and search your notes)</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
