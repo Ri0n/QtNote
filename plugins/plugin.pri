@@ -8,6 +8,7 @@ win32 {
 
 	target.path = $$WININST_PREFIX/plugins
 	INSTALLS += target
+	DEFINES += QTNOTE_IMPORT
 }
 
 unix {
@@ -21,4 +22,4 @@ HEADERS += $$PWD/deintegrationinterface.h \
 INCLUDEPATH *= $$PWD $$PWD/../libqtnote
 DEPENDPATH *= $$PWD $$PWD/../libqtnote
 
-DEFINES += QTNOTE_PLUGIN QTNOTE_IMPORT
+DEFINES += QTNOTE_PLUGIN

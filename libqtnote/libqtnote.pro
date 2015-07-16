@@ -121,10 +121,10 @@ macx {
 
 win32-ms* {
 	LIBS *= -lUser32
+	DEFINES += QTNOTE_EXPORT
 }
 
 RESOURCES += main.qrc
-DEFINES += QTNOTE_EXPORT
 
 unix {
     incinstall.path = $$PREFIX/include/$$APPNAME
