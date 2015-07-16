@@ -33,7 +33,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class GlobalNoteFinder : public QObject
+class QTNOTE_EXPORT GlobalNoteFinder : public QObject
 {
     Q_OBJECT
 

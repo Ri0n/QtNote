@@ -21,4 +21,4 @@ HEADERS += $$PWD/deintegrationinterface.h \
 INCLUDEPATH *= $$PWD $$PWD/../libqtnote
 DEPENDPATH *= $$PWD $$PWD/../libqtnote
 
-DEFINES += QTNOTE_PLUGIN
+DEFINES += QTNOTE_PLUGIN QTNOTE_IMPORT

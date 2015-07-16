@@ -41,6 +41,7 @@ HEADERS +=
 LIBS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR -lqtnote
 INCLUDEPATH += $$PWD/../libqtnote
 DEPENDPATH += $$PWD/../libqtnote
+DEFINES += QTNOTE_IMPORT
 
 win32:CONFIG += bundled_singleapp
 else:!bundled_singleapp {

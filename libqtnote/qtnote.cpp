@@ -70,6 +70,7 @@ Main::Main(QObject *parent) :
     d(new Private(this)),
     _inited(false)
 {
+    Q_INIT_RESOURCE(main);
     // loading localization
     QString langFile = APPNAME;
     QTranslator *translator = new QTranslator(qApp);

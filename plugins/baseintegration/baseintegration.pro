@@ -17,3 +17,5 @@ HEADERS += \
 
 RESOURCES += \
     baseintegration.qrc
+
+win32-ms*:LIBS += -lUser32

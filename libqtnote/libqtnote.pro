@@ -43,7 +43,8 @@ win32 {
     INSTALLS += target
 }
 
-SOURCES += notedialog.cpp \
+SOURCES += qtnote_export.h \
+	notedialog.cpp \
     note.cpp \
     notemanager.cpp \
     notestorage.cpp \
@@ -118,7 +119,12 @@ macx {
     LIBS = -framework ApplicationServices
 }
 
+win32-ms* {
+	LIBS *= -lUser32
+}
+
 RESOURCES += main.qrc
+DEFINES += QTNOTE_EXPORT
 
 unix {
     incinstall.path = $$PREFIX/include/$$APPNAME

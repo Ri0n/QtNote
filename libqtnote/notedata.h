@@ -25,7 +25,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSharedData>
 #include <QString>
 
-class NoteData : public QSharedData
+#include "qtnote_export.h"
+
+class QTNOTE_EXPORT NoteData : public QSharedData
 {
 public:
 	static const int TitleLength = 256;

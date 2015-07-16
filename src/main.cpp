@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	Q_INIT_RESOURCE(main);
+
 
 	QCoreApplication::setOrganizationName("R-Soft"); // get rid of useless dirs
 	QCoreApplication::setApplicationName("QtNote");
