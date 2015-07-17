@@ -38,7 +38,12 @@ SOURCES += $$PWD/main.cpp
 
 HEADERS += 
 
-LIBS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR -lqtnote
+LIBS += -lqtnote
+!greaterThan(QT_MAJOR_VERSION, 4):equals(QMAKE_LINK_SHLIB, g++)|equals(QMAKE_LINK_SHLIB, ld) {
+	QMAKE_LFLAGS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR
+} else {
+	LIBS += -L$$OUT_PWD/../libqtnote$$DBG_SUBDIR
+}
 INCLUDEPATH += $$PWD/../libqtnote
 DEPENDPATH += $$PWD/../libqtnote
 DEFINES += QTNOTE_IMPORT
