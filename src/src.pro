@@ -45,10 +45,10 @@ DEFINES += QTNOTE_IMPORT
 
 win32:CONFIG += bundled_singleapp
 else:!bundled_singleapp {
-	dirs=$$[QMAKE_MKSPECS]
-	dirs=$$split(dirs, ":")
-	qsa_found=0
-	for (d, dirs):exists($${d}/features/qtsingleapplication.prf):qsa_found=1
+	dirs = $$[QMAKE_MKSPECS]
+	dirs = $$split(dirs, ":")
+	qsa_found = 0
+	for(d, dirs):exists($${d}/features/qtsingleapplication.prf):qsa_found = 1
 	contains(qsa_found,0) {
 		warning( QtSingleApplication is not installed. Use bundled instead )
 		CONFIG += bundled_singleapp
