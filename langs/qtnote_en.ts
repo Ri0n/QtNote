@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.0" language="en_US">
+<TS version="2.1" language="en_US">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -9,32 +9,32 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="49"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="78"/>
         <source>About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="63"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="92"/>
         <source>Simpe and usable note taking application</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="75"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="104"/>
         <source>License: GPL-3</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="87"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="116"/>
         <source>Author: Il&apos;inykh Sergey</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="120"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="149"/>
         <source>Translations</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="132"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="161"/>
         <source>Russian:
   Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
 
@@ -70,7 +70,17 @@ Vietnamese:
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.ui" line="69"/>
+        <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
+        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
+        <source>Search in text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notemanagerdlg.ui" line="110"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -108,13 +118,13 @@ Vietnamese:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.ui" line="132"/>
-        <location filename="../libqtnote/optionsdlg.ui" line="138"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="122"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="128"/>
         <source>Shortcuts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.ui" line="151"/>
+        <location filename="../libqtnote/optionsdlg.ui" line="141"/>
         <source>Plugins</source>
         <translation type="unfinished"></translation>
     </message>
@@ -161,69 +171,6 @@ Vietnamese:
     </message>
 </context>
 <context>
-    <name>QtNote</name>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="51"/>
-        <source>Save</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="51"/>
-        <source>Save note to file</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="52"/>
-        <source>Copy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="52"/>
-        <source>Copy note to clipboard</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
-        <source>Print</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
-        <source>Print note</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
-        <source>Find</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
-        <source>Find text in note</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
-        <source>Replace</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
-        <source>Replace text in note</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
-        <source>Delete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
-        <source>Delete note</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>QtNote::BaseIntegration</name>
     <message>
         <location filename="../plugins/baseintegration/baseintegration.cpp" line="31"/>
@@ -261,6 +208,14 @@ Vietnamese:
     <message>
         <location filename="../plugins/baseintegration/baseintegrationtray.cpp" line="50"/>
         <source>Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::FileStorage</name>
+    <message>
+        <location filename="../libqtnote/filestorage.cpp" line="80"/>
+        <source>Storage path</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -328,12 +283,12 @@ Vietnamese:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="173"/>
+        <location filename="../libqtnote/qtnote.cpp" line="174"/>
         <source>First Start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="174"/>
+        <location filename="../libqtnote/qtnote.cpp" line="175"/>
         <source>This is your first start of QtNote note-taking application.
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
@@ -342,9 +297,72 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
 </context>
 <context>
+    <name>QtNote::MakeVSHappy</name>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <source>Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <source>Save note to file</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <source>Copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <source>Copy note to clipboard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <source>Print</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <source>Print note</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <source>Find</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <source>Find text in note</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <source>Replace</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <source>Replace text in note</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <source>Delete note</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>QtNote::NoteDialog</name>
     <message>
-        <location filename="../libqtnote/notedialog.cpp" line="131"/>
+        <location filename="../libqtnote/notedialog.cpp" line="130"/>
         <source>[No Title]</source>
         <translation type="unfinished"></translation>
     </message>
@@ -352,12 +370,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="45"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
         <source>Note Manager (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="45"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
         <source>%n notes</source>
         <translation type="unfinished">
             <numerusform>%n note</numerusform>
@@ -376,17 +394,17 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="270"/>
+        <location filename="../libqtnote/notewidget.cpp" line="292"/>
         <source>Save Note As</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="303"/>
+        <location filename="../libqtnote/notewidget.cpp" line="325"/>
         <source>Deletion confirmation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="304"/>
+        <location filename="../libqtnote/notewidget.cpp" line="326"/>
         <source>Are you sure want to delete this note?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -394,12 +412,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::OptionsDlg</name>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="176"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="178"/>
         <source>Failed to update shortcut for &quot;%1&quot;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="228"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="229"/>
         <source>%1: Settings</source>
         <translation type="unfinished"></translation>
     </message>
