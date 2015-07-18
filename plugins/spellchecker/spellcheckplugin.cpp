@@ -135,9 +135,9 @@ QDialog *SpellCheckPlugin::optionsDialog()
 QList<QLocale> SpellCheckPlugin::preferredLanguages() const
 {
     QSettings s;
-    s.beginGroup("plugins");
+    s.beginGroup(QLatin1String("plugins"));
     s.beginGroup(pluginId);
-    if (!s.contains("langs")) {
+    if (!s.contains(QLatin1String("langs"))) {
         QStringList codes;
         QLocale systemLocale = QLocale::system();
         QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
@@ -145,10 +145,10 @@ QList<QLocale> SpellCheckPlugin::preferredLanguages() const
         if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
             codes.append(enLocale.bcp47Name());
         }
-        s.setValue("langs", codes);
+        s.setValue(QLatin1String("langs"), codes);
     }
     QList<QLocale> ret;
-    foreach (const QString &code, s.value("langs").toStringList()) {
+    foreach (const QString &code, s.value(QLatin1String("langs")).toStringList()) {
         QLocale locale(code);
         if (locale != QLocale::c()) {
             ret.append(locale);
@@ -168,7 +168,7 @@ void SpellCheckPlugin::settingsAccepted()
     foreach (const QLocale &locale, ret) {
         langs.append(locale.bcp47Name());
     }
-    s.setValue("langs", langs);
+    s.setValue(QLatin1String("langs"), langs);
 }
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
