@@ -103,7 +103,7 @@ win32 {
     QMAKE_EXTRA_TARGETS += copy_libstdcpp
     # end of workaround
 
-    qtplatform.path = $$WININST_PREFIX/plugins/platforms
+    qtplatform.path = $$WININST_PREFIX/platforms
     qtplugins = qminimal qoffscreen qwindows
     for(lib, qtplugins) {
         qtplatform.files += $$[QT_INSTALL_PLUGINS]/platforms/$${lib}.dll
