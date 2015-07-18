@@ -88,20 +88,22 @@ win32 {
         qtlibs.files += $$[QT_INSTALL_BINS]/$${lib}.dll
     }
 
-    gccdlls = libgcc_s_dw2-1.dll libwinpthread-1.dll
-    for(lib, gccdlls) {
-        gccdll = $$system(g++ -print-file-name=$${lib})
-        !isEmpty(gccdll):exists($${gccdll}):qtlibs.files += $${gccdll}
-    }
+    win32-g++ {
+        gccdlls = libgcc_s_dw2-1.dll libwinpthread-1.dll
+        for(lib, gccdlls) {
+            gccdll = $$system(g++ -print-file-name=$${lib})
+            !isEmpty(gccdll):exists($${gccdll}):qtlibs.files += $${gccdll}
+        }
 
-    # workaround for QTBUG-16372 (still broken in qt-5.5.0)
-    # move libstdc++-6.dll to the list above when fixed
-    qtlibs.depends += copy_libstdcpp
-    copy_libstdcpp.target = copy_libstdcpp
-    gccdll = $$system(g++ -print-file-name=libstdc++-6.dll)
-    copy_libstdcpp.commands = $(COPY) \"$$shell_path($${gccdll})\" \"$$shell_path($${qtlibs.path})\"
-    QMAKE_EXTRA_TARGETS += copy_libstdcpp
-    # end of workaround
+        # workaround for QTBUG-16372 (still broken in qt-5.5.0)
+        # move libstdc++-6.dll to the list above when fixed
+        qtlibs.depends += copy_libstdcpp
+        copy_libstdcpp.target = copy_libstdcpp
+        gccdll = $$system(g++ -print-file-name=libstdc++-6.dll)
+        copy_libstdcpp.commands = $(COPY) \"$$shell_path($${gccdll})\" \"$$shell_path($${qtlibs.path})\"
+        QMAKE_EXTRA_TARGETS += copy_libstdcpp
+        # end of workaround
+    }
 
     qtplatform.path = $$WININST_PREFIX/platforms
     qtplugins = qminimal qoffscreen qwindows

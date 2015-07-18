@@ -16,6 +16,7 @@ unix {
 win32 {
     !isEmpty(HUNSPELL_LIB) {
         LIBS += $$HUNSPELL_LIB
+        DEFINES += HUNSPELL_STATIC
     } else {
         !isEmpty(HUNSPELL_DIR):LIBS += -L$$HUNSPELL_DIR/lib -lhunspell-1.3
     }
