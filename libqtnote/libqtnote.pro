@@ -119,10 +119,8 @@ macx {
     LIBS = -framework ApplicationServices
 }
 
-win32-ms* {
-	LIBS *= -lUser32
-	DEFINES += QTNOTE_EXPORT
-}
+win32-ms*:LIBS *= -lUser32
+win32:DEFINES += QTNOTE_EXPORT
 
 RESOURCES += main.qrc
 

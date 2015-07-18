@@ -75,15 +75,17 @@ Main::Main(QObject *parent) :
     QTranslator *translator = new QTranslator(qApp);
     QTranslator *qtTranslator = new QTranslator(qApp);
     QStringList langDirs;
-#ifdef Q_OS_UNIX
-    langDirs << TRANSLATIONSDIR;
-    QString qtLangDir = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    QStringList qtLangDirs;
+    QString dlTrDir = Utils::qtnoteDataDir() + "/langs"; // where translaations could be downloaded
+
+#if defined(DEVEL) || defined(Q_OS_UNIX)
+    langDirs << TRANSLATIONSDIR << dlTrDir; // in devel mode TRANSLATIONSDIR will refer to source/langs
+    qtLangDirs << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
 #else
-    QString appLangDir = qApp->applicationDirPath() + "/langs";
-    langDirs << appLangDir;
-    langDirs << QString("%1/langs").arg(QDir::currentPath());
-    QString qtLangDir = appLangDir;
+    langDirs << qApp->applicationDirPath() + "/langs" << dlTrDir;
+    qtLangDirs << langDirs;
 #endif
+
     QSettings settings;
     QString forcedLangName = settings.value("language").toString();
     bool autoLang = (forcedLangName.isEmpty() || forcedLangName == "auto");
@@ -97,8 +99,11 @@ Main::Main(QObject *parent) :
         }
     }
 
-    if (qtTranslator->load(locale, "qt", "_", qtLangDir)) {
-        qApp->installTranslator(qtTranslator);
+    foreach (const QString &langDir, qtLangDirs) {
+        if (qtTranslator->load(locale, "qt", "_", langDir)) {
+            qApp->installTranslator(qtTranslator);
+            break;
+        }
     }
 
     initResources();

@@ -4,13 +4,14 @@
 #include <QSyntaxHighlighter>
 #include <QList>
 
+#include "qtnote_export.h"
 #include "highlighterext.h"
 
 namespace QtNote {
 
 class NoteEdit;
 
-class NoteHighlighter : public QSyntaxHighlighter
+class QTNOTE_EXPORT NoteHighlighter : public QSyntaxHighlighter
 {
 	Q_OBJECT
 public:

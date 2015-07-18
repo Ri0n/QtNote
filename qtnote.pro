@@ -68,8 +68,15 @@ unix {
 }
 
 win32 {
+    qtplatform.path = $$WININST_PREFIX/langs
+    for(t, LANGS) {
+        qttranslations.files += "$$[QT_INSTALL_TRANSLATIONS]/qt_$${t}.qm"
+        qtmods = base script quick1 multimedia xmlpatterns
+        for(mod, qtmods):qttranslations.files += "$$[QT_INSTALL_TRANSLATIONS]/qt$${mod}_$${t}.qm"
+    }
+    qttranslations.path = $$WININST_PREFIX/langs
     translations.path = $$WININST_PREFIX/langs
-    INSTALLS += translations
+    INSTALLS += translations qttranslations
 
     qtlibs.path = $$WININST_PREFIX
     greaterThan(QT_MAJOR_VERSION, 4) {
