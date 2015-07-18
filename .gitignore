@@ -10,6 +10,7 @@ moc_*.cpp
 *.so
 .inst
 setup.exe
+QtNote-*-setup.exe
 
 # vs
 GeneratedFiles

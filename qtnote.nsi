@@ -4,12 +4,14 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "QtNote"
-!define PRODUCT_VERSION "0.2.2_pre51"
+!define /file PRODUCT_VERSION "version"
 !define PRODUCT_PUBLISHER "R-Soft"
 !define PRODUCT_WEB_SITE "http://qtnote.googlecode.com"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\qtnote.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define INSTDIR_REG_ROOT "${PRODUCT_UNINST_ROOT_KEY}"
+!define INSTDIR_REG_KEY "${PRODUCT_UNINST_KEY}"
 
 ; MUI 1.67 compatible ------
 !include "MUI.nsh"
@@ -46,85 +48,88 @@
 
 ; MUI end ------
 
+!include AdvUninstLog.nsh
+# Unattended uninstallation
+!insertmacro UNATTENDED_UNINSTALL
+
 !include "LogicLib.nsh"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "setup.exe"
+OutFile "${PRODUCT_NAME}-${PRODUCT_VERSION}-setup.exe"
 InstallDir "$PROGRAMFILES\QtNote"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
 
+LangString un_confirm_message ${LANG_ENGLISH} "Do you really want to remove $(^Name)?"
+LangString un_confirm_message ${LANG_RUSSIAN} "Вы уверены в том, что желаете удалить $(^Name)?"
+LangString un_finished_message ${LANG_ENGLISH} "Uninstallation of $(^Name) is successfully finished."
+LangString un_finished_message ${LANG_RUSSIAN} "Удаление программы $(^Name) было успешно завершено."
+
 Function .onInit
   !insertmacro MUI_LANGDLL_DISPLAY
+  !insertmacro UNINSTALL.LOG_PREPARE_INSTALL
 FunctionEnd
 
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
+  !insertmacro UNINSTALL.LOG_OPEN_INSTALL
+  
   SetOverwrite ifnewer
-  File "${QTNOTEBINDIR}\*"
+  File /r "${QTNOTEBINDIR}\*"
   CreateDirectory "$SMPROGRAMS\QtNote"
   CreateShortCut "$SMPROGRAMS\QtNote\QtNote.lnk" "$INSTDIR\qtnote.exe"
   CreateShortCut "$DESKTOP\QtNote.lnk" "$INSTDIR\qtnote.exe"
   File "Changelog"
   File "license.txt"
-  SetOutPath "$INSTDIR\langs"
-  File "langs\qtnote_*.qm"
-  SetOutPath "$INSTDIR\plugins"
-  File "${QTNOTEBINDIR}\plugins\*"
-  SetOutPath "$INSTDIR\plugins\platforms"
-  File "${QTNOTEBINDIR}\plugins\platforms\*"
-SectionEnd
-
-Section -AdditionalIcons
-  SetOutPath $INSTDIR
-  WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
-  CreateShortCut "$SMPROGRAMS\QtNote\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
-  CreateShortCut "$SMPROGRAMS\QtNote\Uninstall.lnk" "$INSTDIR\uninst.exe"
-SectionEnd
-
-Section -Post
-  WriteUninstaller "$INSTDIR\uninst.exe"
+  
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\qtnote.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\Uninstall.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\qtnote.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  
+  SetOutPath $INSTDIR
+  WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
+  CreateShortCut "$SMPROGRAMS\QtNote\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
+  CreateShortCut "$SMPROGRAMS\QtNote\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+  
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  
+  !insertmacro UNINSTALL.LOG_CLOSE_INSTALL
 SectionEnd
 
-
-Function un.onUninstSuccess
-  HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "Удаление программы $(^Name) было успешно завершено."
+Function .onInstSuccess
+  !insertmacro UNINSTALL.LOG_UPDATE_INSTALL
 FunctionEnd
 
 Function un.onInit
-!insertmacro MUI_UNGETLANGUAGE
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Вы уверены в том, что желаете удалить $(^Name)?" IDYES +2
+  !insertmacro MUI_UNGETLANGUAGE  
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(un_confirm_message)" IDYES +2
   Abort
+  !insertmacro UNINSTALL.LOG_BEGIN_UNINSTALL
 FunctionEnd
 
 Section Uninstall
-  Delete "$INSTDIR\${PRODUCT_NAME}.url"
-  Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\license.txt"
-  Delete "$INSTDIR\Changelog"
-  Delete "$INSTDIR\langs\qtnote_*.qm"
-  Delete "$INSTDIR\qtnote.exe"
-  Delete "$INSTDIR\Qt*.dll"
+  !insertmacro UNINSTALL.LOG_UNINSTALL "$INSTDIR"
+  Delete "$INSTDIR\Uninstall.exe"
+  !insertmacro UNINSTALL.LOG_END_UNINSTALL
   
+  Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$SMPROGRAMS\QtNote\Uninstall.lnk"
   Delete "$SMPROGRAMS\QtNote\Website.lnk"
   Delete "$DESKTOP\QtNote.lnk"
   Delete "$SMPROGRAMS\QtNote\QtNote.lnk"
-
   RMDir "$SMPROGRAMS\QtNote"
-  RMDir "$INSTDIR\langs"
-  RMDir "$INSTDIR"
-
+  
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
   SetAutoClose true
 SectionEnd
+
+Function un.onUninstSuccess
+  HideWindow  
+  MessageBox MB_ICONINFORMATION|MB_OK "$(un_finished_message)"
+FunctionEnd
