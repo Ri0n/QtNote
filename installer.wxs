@@ -177,9 +177,12 @@
             <ComponentRef Id="RU_RU.DIC" />
             <ComponentRef Id="StartMenuShortcuts" />
         </Feature>
+		<WixVariable Id="WixUILicenseRtf" Value="installer\wix\GPLv3.rtf" />
         <UI />
         <UIRef Id="WixUI_Minimal" />
         <Icon Id="DesktopIcon.exe" SourceFile="$(sys.CURRENTDIR)\.inst\qtnote.exe" />
         <Icon Id="StartMenuIcon.exe" SourceFile="$(sys.CURRENTDIR)\.inst\qtnote.exe" />
+		<Icon Id="icon.ico" SourceFile="src\win\pen64.ico"/>
+		<Property Id="ARPPRODUCTICON" Value="icon.ico" />
     </Product>
 </Wix>
