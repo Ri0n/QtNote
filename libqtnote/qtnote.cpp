@@ -35,6 +35,7 @@
 #include "deintegrationinterface.h"
 #include "trayimpl.h"
 #include "globalshortcutsinterface.h"
+#include "notificationinterface.h"
 #include "optionsplugins.h"
 
 void initResources()
@@ -53,12 +54,14 @@ public:
     DEIntegrationInterface *de;
     TrayImpl *tray;
     GlobalShortcutsInterface *globalShortcuts;
+    NotificationInterface *notifier;
 
     Private(Main *parent) :
         QObject(parent),
         q(parent),
         de(0),
-        globalShortcuts(0)
+        globalShortcuts(0),
+        notifier(0)
     {
 
     }
@@ -116,6 +119,8 @@ Main::Main(QObject *parent) :
         pluginError = tr("Desktop integration plugin is not loaded");
     } else if (!d->tray) {
         pluginError = tr("Tray icon is not initialized");
+    } else if (!d->notifier) {
+        pluginError = tr("Notifications plugin is not loaded");
     }
 
     if (!pluginError.isEmpty()) {
@@ -279,7 +284,7 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
 
 void Main::notifyError(const QString &text)
 {
-    d->tray->notifyError(text);
+    d->notifier->notifyError(text);
 }
 
 void Main::activateWidget(QWidget *w) const
@@ -300,6 +305,11 @@ void Main::setDesktopImpl(DEIntegrationInterface *de)
 void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
 {
     d->globalShortcuts = gs;
+}
+
+void Main::setNotificationImpl(NotificationInterface *notifier)
+{
+    d->notifier = notifier;
 }
 
 bool Main::registerStorage(NoteStorage::Ptr &storage)

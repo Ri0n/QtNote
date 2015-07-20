@@ -15,7 +15,6 @@ class KDEIntegrationTray : public TrayImpl
 	Q_OBJECT
 public:
 	explicit KDEIntegrationTray(Main *qtnote, QObject *parent);
-	void notifyError(const QString &message);
 
 signals:
 

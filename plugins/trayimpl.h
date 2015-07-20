@@ -13,7 +13,6 @@ class TrayImpl : public QObject
 
 public:
     inline TrayImpl(QObject *parent = 0) : QObject(parent) {}
-    virtual void notifyError(const QString &message) = 0;
 
 signals:
     void exitTriggered();

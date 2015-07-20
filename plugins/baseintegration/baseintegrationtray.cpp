@@ -45,11 +45,6 @@ BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, QObject *parent) :
 	connect(actAbout, SIGNAL(triggered()), SIGNAL(aboutTriggered()));
 }
 
-void BaseIntegrationTray::notifyError(const QString &message)
-{
-	tray->showMessage(tr("Error"), message, QSystemTrayIcon::Warning, 5000);
-}
-
 void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
 	if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {

@@ -22,7 +22,7 @@ namespace QtNote {
 UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) :
 	TrayImpl(parent),
 	qtnote(qtnote),
-	contextMenu(0)
+    contextMenu(0)
 {
 	menuUpdateTimer = new QTimer(this);
 	menuUpdateTimer->setInterval(1000);
@@ -62,11 +62,6 @@ UbuntuTray::~UbuntuTray()
 {
 	delete contextMenu;
 	delete advancedMenu;
-}
-
-void UbuntuTray::notifyError(const QString &message)
-{
-	sti->showMessage(tr("Error"), message, QSystemTrayIcon::Warning);
 }
 
 void UbuntuTray::rebuildMenu()

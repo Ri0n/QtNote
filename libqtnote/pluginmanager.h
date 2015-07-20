@@ -34,10 +34,13 @@ public:
     };
 
     enum PluginFeature {
-        RegularPlugin   = 0x1,
+        FirtFeature     = 0x1,
+        RegularPlugin   = FirtFeature,
         DEIntegration   = 0x2,
         TrayIcon        = 0x4,
-        GlobalShortcuts = 0x8
+        GlobalShortcuts = 0x8,
+        Notifications   = 010,
+        LastFeature  = 020
     };
     Q_DECLARE_FLAGS(PluginFeatures, PluginFeature)
 

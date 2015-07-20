@@ -1,11 +1,18 @@
-#include <KDE/KStatusNotifierItem>
-#include <KDE/KWindowSystem>
-#include <KDE/KAction>
+#include <KStatusNotifierItem>
+#include <KWindowSystem>
+#ifndef USE_KDE5
+#include <KAction>
+#else
+#include <QAction>
+#include <KGlobalAccel>
+#endif
+#include <KNotification>
 #include <QWidget>
 #include <QtPlugin>
 
 #include "kdeintegration.h"
 #include "kdeintegrationtray.h"
+
 
 namespace QtNote {
 
@@ -45,6 +52,12 @@ TrayImpl *KDEIntegration::initTray(Main *qtnote)
     return new KDEIntegrationTray(qtnote, this);
 }
 
+void KDEIntegration::notifyError(const QString &msg)
+{
+    KNotification *n = KNotification::event(KNotification::Error, tr("Error"), msg);
+    n->sendEvent();
+}
+
 void KDEIntegration::activateWidget(QWidget *w)
 {
     KWindowSystem::forceActiveWindow(w->winId(), 0); // just activateWindow doesn't work when started from tray
@@ -52,6 +65,16 @@ void KDEIntegration::activateWidget(QWidget *w)
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
 {
+#ifdef USE_KDE5
+    QAction *act = _shortcuts.value(id);
+    if (!act) {
+        act = new QAction(tr("New note from selection"), this);
+        act->setObjectName(id);
+        _shortcuts.insert(id, act);
+    }
+    KGlobalAccel::setGlobalShortcut(act, key);
+#else
+    //KGlobalAccel::setGlobalShortcut()
     KAction *act = _shortcuts.value(id);
     if (!act) {
         act = new KAction(tr("New note from selection"), this);
@@ -59,6 +82,7 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
         _shortcuts.insert(id, act);
     }
     act->setGlobalShortcut(KShortcut(key));
+#endif
     connect(act, SIGNAL(triggered()), receiver, slot, Qt::UniqueConnection);
     return true;
 }

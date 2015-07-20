@@ -15,6 +15,8 @@ class BaseIntegrationTray : public TrayImpl
 {
 	Q_OBJECT
 
+    friend class BaseIntegration;
+
 	Main *qtnote;
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;

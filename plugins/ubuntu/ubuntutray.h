@@ -17,8 +17,7 @@ class UbuntuTray : public TrayImpl
 	Q_OBJECT
 public:
 	explicit UbuntuTray(Main *qtnote, QObject *parent);
-	~UbuntuTray();
-	void notifyError(const QString &message);
+    ~UbuntuTray();
 
 signals:
 
@@ -29,6 +28,7 @@ private slots:
 	void noteSelected();
 
 private:
+    friend class UbuntuPlugin;
 	Main *qtnote;
 	QSystemTrayIcon *sti;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;

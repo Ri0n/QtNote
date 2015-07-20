@@ -17,6 +17,6 @@ public:
 } // namespace QtNote
 
 Q_DECLARE_INTERFACE(QtNote::TrayInterface,
-					 "com.rion-soft.QtNote.TrayInterface/1.0")
+                    "com.rion-soft.QtNote.TrayInterface/1.1")
 
 #endif // TRAYINTERFACE_H

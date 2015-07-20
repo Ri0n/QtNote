@@ -14,6 +14,7 @@
 #include "deintegrationinterface.h"
 #include "trayinterface.h"
 #include "globalshortcutsinterface.h"
+#include "notificationinterface.h"
 
 namespace QtNote {
 
@@ -184,23 +185,16 @@ void PluginManager::loadPlugins()
             continue;
         }
 
-        QList<PluginFeature> featureList;
-        if (pd->features & TrayIcon) {
-            featureList.append(TrayIcon);
-        }
-        if (pd->features & DEIntegration) {
-            featureList.append(DEIntegration);
-        }
-        if (pd->features & GlobalShortcuts) {
-            featureList.append(GlobalShortcuts);
-        }
-        foreach (PluginFeature f, featureList) {
-            FeaturedPlugin &fp = featurePriority[f];
-            if (native) {
-                fp.native.push_back(plugin);
-            } else {
-                fp.base.push_back(plugin);
+        for (PluginFeature f = FirtFeature; f < LastFeature; ) {
+            if (pd->features & f) {
+                FeaturedPlugin &fp = featurePriority[f];
+                if (native) {
+                    fp.native.push_back(plugin);
+                } else {
+                    fp.base.push_back(plugin);
+                }
             }
+            f = (PluginFeature)(f << 1);
         }
 
         if (pd->features & RegularPlugin) {
@@ -244,6 +238,18 @@ void PluginManager::loadPlugins()
             continue;
         }
         qtnote->setGlobalShortcutsImpl(qobject_cast<GlobalShortcutsInterface *>(pd->instance));
+        pd->loadStatus = LS_Initialized;
+        break;
+    }
+
+    /* set most desirable notifications plugin */
+    QStringList nPlugins = featurePriority[Notifications].native + featurePriority[Notifications].base;
+    foreach(const QString &plugin, nPlugins) {
+        auto pd = plugins[plugin];
+        if (!ensureLoaded(pd)) {
+            continue;
+        }
+        qtnote->setNotificationImpl(qobject_cast<NotificationInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
         break;
     }
@@ -412,6 +418,9 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
         }
         if (qobject_cast<GlobalShortcutsInterface*>(plugin)) {
             cache->features |= GlobalShortcuts;
+        }
+        if (qobject_cast<NotificationInterface*>(plugin)) {
+            cache->features |= Notifications;
         }
         if (qobject_cast<RegularPluginInterface*>(plugin)) {
             cache->features |= RegularPlugin;

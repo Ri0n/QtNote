@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtPlugin>
 #include <QProcess>
 #include <QTimer>
+#include <QSystemTrayIcon>
 
 #include "ubuntu.h"
 #include "ubuntutray.h"
@@ -36,7 +37,8 @@ static const QLatin1String pluginId("ubuntu_de");
 // UbuntuPlugin
 //------------------------------------------------------------
 UbuntuPlugin::UbuntuPlugin(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    _tray(0)
 {
 }
 
@@ -63,7 +65,16 @@ PluginMetadata UbuntuPlugin::metadata()
 
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
-    return new UbuntuTray(qtnote, this);
+    _tray = new UbuntuTray(qtnote, this);
+    return _tray;
+}
+
+void UbuntuPlugin::notifyError(const QString &msg)
+{
+    // TODO ue libnotify instead or what is ubuntu-way
+    if (_tray) {
+        _tray->sti->showMessage(tr("Error"), msg, QSystemTrayIcon::Warning);
+    }
 }
 
 void UbuntuPlugin::activateWidget(QWidget *w)

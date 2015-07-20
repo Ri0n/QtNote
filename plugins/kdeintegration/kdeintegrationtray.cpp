@@ -1,6 +1,10 @@
-#include <KDE/KMenu>
-#include <KDE/KNotification>
-#include <KDE/KStatusNotifierItem>
+#ifdef USE_KDE5
+#include <QMenu>
+#else
+#include <KMenu>
+#endif
+#include <KNotification>
+#include <KStatusNotifierItem>
 #include <QSettings>
 #include <QStyle>
 #include <QApplication>
@@ -13,6 +17,12 @@
 
 namespace QtNote {
 
+#ifdef USE_KDE5
+#define Menu QMenu
+#else
+#define Menu KMenu
+#endif
+
 KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
 	TrayImpl(parent),
 	qtnote(qtnote)
@@ -22,7 +32,7 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
 	sni->setStatus(KStatusNotifierItem::Active);
 	sni->setTitle("Notes");
 
-	KMenu *contextMenu = new KMenu;
+    auto *contextMenu = new Menu;
 	sni->setContextMenu(contextMenu);
 
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
@@ -37,16 +47,10 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) :
 	connect(sni, SIGNAL(secondaryActivateRequested(QPoint)), SIGNAL(newNoteTriggered()));
 }
 
-void KDEIntegrationTray::notifyError(const QString &message)
-{
-	KNotification *n = KNotification::event(KNotification::Error, tr("Error"), message);
-	n->sendEvent();
-}
-
 void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
 {
 	Q_UNUSED(active)
-	KMenu menu;
+    Menu menu;
 	menu.addAction(actNew);
 	menu.addSeparator();
 	QSettings s;

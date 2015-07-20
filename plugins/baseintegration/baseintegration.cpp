@@ -13,7 +13,8 @@ static const QLatin1String pluginId("base_de");
 // BaseIntegration
 //******************************************
 BaseIntegration::BaseIntegration(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    tray(0)
 {
 }
 
@@ -57,6 +58,13 @@ bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequen
     QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
     connect(gs, SIGNAL(activated()), receiver, slot);
     return true;
+}
+
+void BaseIntegration::notifyError(const QString &message)
+{
+    if (tray) {
+        ((BaseIntegrationTray*)tray)->tray->showMessage(tr("Error"), message, QSystemTrayIcon::Warning, 5000);
+    }
 }
 
 } // namespace QtNote

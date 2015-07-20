@@ -7,19 +7,20 @@
 #include "trayinterface.h"
 #include "qtnoteplugininterface.h"
 #include "globalshortcutsinterface.h"
+#include "notificationinterface.h"
 
 namespace QtNote {
 
 class Main;
 
 class BaseIntegration : public QObject, public PluginInterface, public DEIntegrationInterface,
-		public TrayInterface, public GlobalShortcutsInterface
+        public TrayInterface, public NotificationInterface, public GlobalShortcutsInterface
 {
 	Q_OBJECT
 #if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.BaseIntegration")
 #endif
-	Q_INTERFACES(QtNote::PluginInterface QtNote::DEIntegrationInterface QtNote::TrayInterface QtNote::GlobalShortcutsInterface)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::DEIntegrationInterface QtNote::TrayInterface QtNote::GlobalShortcutsInterface QtNote::NotificationInterface)
 public:
 	explicit BaseIntegration(QObject *parent = 0);
 
@@ -28,6 +29,7 @@ public:
 
 	void activateWidget(QWidget *w);
 	TrayImpl* initTray(Main *qtnote);
+    void notifyError(const QString &message);
 	bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot);
 
 public slots:

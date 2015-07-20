@@ -38,6 +38,7 @@ class NoteWidget;
 class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
+class NotificationInterface;
 struct NoteListItem;
 
 class QTNOTE_EXPORT Main : public QObject
@@ -58,6 +59,8 @@ public:
     void setTrayImpl(TrayImpl *tray);
     void setDesktopImpl(DEIntegrationInterface *de);
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
+    void setNotificationImpl(NotificationInterface *notifier);
+
     bool registerStorage(NoteStorage::Ptr &storage);
     void unregisterStorage(NoteStorage::Ptr &storage);
 

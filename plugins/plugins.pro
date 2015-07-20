@@ -4,7 +4,14 @@ TEMPLATE = subdirs
 
 SUBDIRS += baseintegration
 
-exists(/usr/include/KDE):!win32:!nokde:SUBDIRS += kdeintegration
+!win32:!nokde {
+	greaterThan(QT_MAJOR_VERSION, 4) {
+		KDE5INC=/usr/include/KF5
+		exists($${KDE5INC}/KNotifications):exists($${KDE5INC}/KWindowSystem):SUBDIRS += kdeintegration
+	} else {
+		exists(/usr/include/KDE):SUBDIRS += kdeintegration
+	}
+}
 unix:!mac:!noubuntu:SUBDIRS += ubuntu
 !notomboy:SUBDIRS += tomboy
 
@@ -22,7 +29,8 @@ HEADERS += qtnoteplugininterface.h \
 	deintegrationinterface.h \
 	trayinterface.h \
 	globalshortcutsinterface.h \
-	pluginoptionsinterface.h
+	pluginoptionsinterface.h \
+	notificationinterface.h
 
 
 OTHER_FILES += plugins_common.pri.in
