@@ -8,9 +8,10 @@ Moreover QtNote can work with Tomboy notes and it's not so hard add support of o
 
 Some features:
 * Quick access to notes from tray menu
-* Internal notes manager to handle multiple notes at once
+* Internal notes manager to handle multiple notes at once / search notes
 * Support for Tomboy notes
-* Create notes from selection by hotkey (X11 only)
+* Create notes from selection by hotkey
+* Spell checking
 * Crossplatform (tested on linux and windows with gcc and Visual C)
 * Other: configurable amount of notes in menu. configurable storage path, print note, save note dialog geometry
 
