@@ -288,22 +288,35 @@ void NoteWidget::onPrintClicked()
 
 void NoteWidget::onSaveClicked()
 {
+    enum Format {
+        Text,
+        RichText
+    };
+    static QMap<Format,QString> allFormats;
+    if (allFormats.isEmpty()) {
+        allFormats.insert(Text, tr("Text files (*.txt)"));
+        allFormats.insert(RichText, tr("HTML files (*.html)"));
+    }
+
     if (_extFileName.isEmpty() || !QFile::exists(_extFileName)) {
+        QStringList filters = QStringList() << allFormats[Text];
+        if (_features && RichText) {
+            filters << allFormats[RichText];
+        }
         _extFileName = QFileDialog::getSaveFileName(this, tr("Save Note As"),
 #if QT_VERSION < 0x050000
-            QDesktopServices::storageLocation(QDesktopServices::DesktopLocation)
+            QDesktopServices::storageLocation(QDesktopServices::DesktopLocation),
 #else
-            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)
+            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
 #endif
-                                                    );
+            filters.join(";;"), &_extSelecteFilter);
     }
     if (!_extFileName.isEmpty()) {
         QFile f(_extFileName);
         if (f.open(QIODevice::WriteOnly)) {
-            QFileInfo fi(_extFileName);
             QString text;
-            if ((QStringList() << "html" << "htm" << "xhtml" << "xml")
-                    .contains(fi.suffix().toLower())) {
+            Format format = allFormats.key(_extSelecteFilter);
+            if (format == RichText) {
                 text = ui->noteEdit->toHtml();
             } else {
                 text = ui->noteEdit->toPlainText();
