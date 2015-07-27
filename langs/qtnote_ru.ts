@@ -169,7 +169,7 @@ Vietnamese:
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="130"/>
+        <location filename="../libqtnote/qtnote.cpp" line="140"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
     </message>
@@ -228,9 +228,14 @@ Vietnamese:
 <context>
     <name>QtNote::BaseIntegration</name>
     <message>
-        <location filename="../plugins/baseintegration/baseintegration.cpp" line="31"/>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="32"/>
         <source>Provides fallback desktop environment integration</source>
         <translation>Резервная интеграция с окружением рабочего стола</translation>
+    </message>
+    <message>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="66"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
     </message>
 </context>
 <context>
@@ -261,15 +266,19 @@ Vietnamese:
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../plugins/baseintegration/baseintegrationtray.cpp" line="50"/>
         <source>Error</source>
-        <translation>Ошибка</translation>
+        <translation type="obsolete">Ошибка</translation>
     </message>
 </context>
 <context>
     <name>QtNote::FileStorage</name>
     <message>
-        <location filename="../libqtnote/filestorage.cpp" line="80"/>
+        <location filename="../libqtnote/filestorage.cpp" line="76"/>
+        <source>File system error for storage &quot;%1&quot;. Please check your settings.</source>
+        <translation>Ошибка файловой системы для хранилища &quot;%1&quot;. Проверьте ваши настройки.</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/filestorage.cpp" line="101"/>
         <source>Storage path</source>
         <translation>Путь до хранилища</translation>
     </message>
@@ -277,12 +286,18 @@ Vietnamese:
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="40"/>
         <source>Provide native look and feel for KDE users</source>
         <translation>Естественный вид для пользователей KDE</translation>
     </message>
     <message>
         <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="57"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="71"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="80"/>
         <source>New note from selection</source>
         <translation>Новая заметка из выделения</translation>
     </message>
@@ -290,60 +305,64 @@ Vietnamese:
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="28"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="38"/>
         <source>&amp;New</source>
         <translation>&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="41"/>
         <source>&amp;Note Manager</source>
         <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="32"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="42"/>
         <source>&amp;Options</source>
         <translation>Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="33"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="43"/>
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="42"/>
         <source>Error</source>
-        <translation>Ошибка</translation>
+        <translation type="obsolete">Ошибка</translation>
     </message>
 </context>
 <context>
     <name>QtNote::Main</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="111"/>
+        <location filename="../libqtnote/qtnote.cpp" line="119"/>
         <source>Desktop integration plugin is not loaded</source>
         <translation>Не загружен плагин интеграции с рабочим столом</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="113"/>
+        <location filename="../libqtnote/qtnote.cpp" line="121"/>
         <source>Tray icon is not initialized</source>
         <translation>Иконка в трее не инициализирована</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="117"/>
+        <location filename="../libqtnote/qtnote.cpp" line="123"/>
+        <source>Notifications plugin is not loaded</source>
+        <translation>Модуль нотификаций не загружен</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/qtnote.cpp" line="127"/>
         <source>Initialization Error</source>
         <translation>Ошибка инициализации</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="117"/>
+        <location filename="../libqtnote/qtnote.cpp" line="127"/>
         <source>Enable a plugin with required functionality and restart QtNote</source>
         <translation>Включите плагин с требуемой функциональностью и перезапустите QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="174"/>
+        <location filename="../libqtnote/qtnote.cpp" line="184"/>
         <source>First Start</source>
         <translation>Первый запуск</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="175"/>
+        <location filename="../libqtnote/qtnote.cpp" line="185"/>
         <source>This is your first start of QtNote note-taking application.
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
@@ -452,17 +471,27 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="292"/>
+        <location filename="../libqtnote/notewidget.cpp" line="297"/>
+        <source>Text files (*.txt)</source>
+        <translation>Текстовые файлы (*.txt)</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="298"/>
+        <source>HTML files (*.html)</source>
+        <translation>HTML файлы (*.html)</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="306"/>
         <source>Save Note As</source>
         <translation>Сохранить заметку как</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="325"/>
+        <location filename="../libqtnote/notewidget.cpp" line="338"/>
         <source>Deletion confirmation</source>
         <translation>Подтверждение удаления</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="326"/>
+        <location filename="../libqtnote/notewidget.cpp" line="339"/>
         <source>Are you sure want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
@@ -483,7 +512,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="296"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="297"/>
         <source>: Settings</source>
         <translation>: Настройки</translation>
     </message>
@@ -499,48 +528,48 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::PluginsModel</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="168"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="169"/>
         <source>ABI mismatch</source>
         <translation>Двоичный интерфейс не совпадает</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="169"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="170"/>
         <source>Incompatible metadata</source>
         <translation>Несовместимые метаданные</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="170"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="171"/>
         <source>Incompatible version</source>
         <translation>Несовместимая версия</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="171"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="172"/>
         <source>Loaded</source>
         <translation>Загружен</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="172"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="173"/>
         <source>Initialized</source>
         <translation>Инициализирован</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="173"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="174"/>
         <source>Not a plugin</source>
         <translation>Не плагин</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="174"/>
         <location filename="../libqtnote/optionsplugins.cpp" line="175"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="176"/>
         <source>Not loaded</source>
         <translation>Не загружен</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="178"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="179"/>
         <source>&lt;b&gt;Filename:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Имя файла:&lt;/b&gt; %1</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="179"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="180"/>
         <source>&lt;b&gt;Status:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Статус:&lt;/b&gt; %1</translation>
     </message>
@@ -586,9 +615,14 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::UbuntuPlugin</name>
     <message>
-        <location filename="../plugins/ubuntu/ubuntu.cpp" line="54"/>
+        <location filename="../plugins/ubuntu/ubuntu.cpp" line="56"/>
         <source>Integrtion with ubuntu-only features</source>
         <translation>Интеграция с Ubuntu/Unity функциональностью</translation>
+    </message>
+    <message>
+        <location filename="../plugins/ubuntu/ubuntu.cpp" line="76"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
     </message>
 </context>
 <context>
@@ -624,12 +658,11 @@ Notes will be automatically saved to special storage, so you should not worry ab
         <translation>Ещё..</translation>
     </message>
     <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="69"/>
         <source>Error</source>
-        <translation>Ошибка</translation>
+        <translation type="obsolete">Ошибка</translation>
     </message>
     <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="87"/>
+        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="82"/>
         <source>Notes</source>
         <translation>Заметки</translation>
     </message>
