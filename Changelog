@@ -1,3 +1,9 @@
+2015-07-27 QtNote-3.0.2 Release
++ File types in note save dialog
+* Fixed compilation wih kde5
+* Fixed print dialog on windows (missed qt plugin)
++ Notifications if something went wrong with storage (moved for example)
+
 2015-07-13 QtNote-3.0.0 Release
 + Plugins support
 + Notes search
