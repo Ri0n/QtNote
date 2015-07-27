@@ -57,7 +57,7 @@ PluginMetadata UbuntuPlugin::metadata()
     md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
     md.version = 0x010000;	// plugin's version 0xXXYYZZPP
     md.minVersion = 0x020300; // minimum compatible version of QtNote
-    md.maxVersion = 0x030000; // maximum compatible version of QtNote
+    md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage = QUrl("http://ri0n.github.io/QtNote");
     md.extra.insert("de", QStringList() << "ubuntu");
     return md;

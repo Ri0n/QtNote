@@ -398,7 +398,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
         if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
             loader.unload();
             qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));
-            loadStatus = LS_ErrVersion;
+            return LS_ErrVersion;
         }
 
         if (!cache) {
