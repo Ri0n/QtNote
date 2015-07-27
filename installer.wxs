@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-    <Product Id="E615AE00-0251-403F-BAB9-EBD9AB15DD49" Name="QtNote" Language="1033" Version="3.0.2" Manufacturer="R-Soft" UpgradeCode="E12D6C7A-8F57-479B-8AE9-49C411B82843">
+    <Product Id="D1C6A700-508C-45DB-9F27-E18F6809551E" Name="QtNote" Language="1033" Version="3.0.2" Manufacturer="R-Soft" UpgradeCode="E12D6C7A-8F57-479B-8AE9-49C411B82843">
         <Package Description="QtNote - note taking application" Comments="Simple test" InstallerVersion="405" Compressed="yes" Manufacturer="R-Soft" Platform="x64" />
         <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" />
         <Directory Id="TARGETDIR" Name="SourceDir">
@@ -184,5 +184,6 @@
         <Icon Id="StartMenuIcon.exe" SourceFile="$(sys.CURRENTDIR)\.inst\qtnote.exe" />
         <Icon Id="icon.ico" SourceFile="src\win\pen64.ico" />
         <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." Schedule="afterInstallInitialize" AllowSameVersionUpgrades="yes" />
     </Product>
 </Wix>
