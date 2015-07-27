@@ -51,7 +51,7 @@ const QString TomboyStorage::systemName() const
     return "tomboy";
 }
 
-const QString TomboyStorage::titleName() const
+const QString TomboyStorage::name() const
 {
     return tr("Tomboy Storage");
 }
@@ -91,19 +91,18 @@ Note TomboyStorage::note(const QString &id)
             noteData->fromFile(fileName);
             return Note(noteData);
         }
+        handleFSError();
     }
     return Note();
 }
 
-void TomboyStorage::saveNote(const QString &noteId, const QString &text)
+bool TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
     TomboyData note;
+    QString fileName = QDir(notesDir).absoluteFilePath(
+                QString("%1.%2").arg(noteId).arg(fileExt));
     note.setText(text);
-    if (note.saveToFile( QDir(notesDir).absoluteFilePath(
-            QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-        NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
-        putToCache(item);
-    }
+    return saveNoteToFile(note, fileName);
 }
 
 bool TomboyStorage::isRichTextAllowed() const

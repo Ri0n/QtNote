@@ -37,12 +37,12 @@ public:
     TomboyStorage(QObject *parent);
     bool isAccessible() const;
     const QString systemName() const;
-    const QString titleName() const;
+    const QString name() const;
     QIcon storageIcon() const;
     QIcon noteIcon() const;
     QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
     Note note(const QString &id);
-    void saveNote(const QString &noteId, const QString &text);
+    bool saveNote(const QString &noteId, const QString &text);
     bool isRichTextAllowed() const;
     QString findStorageDir() const;
 };

@@ -25,12 +25,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedata.h"
 #include <QDateTime>
 
+namespace QtNote {
+
 class QTNOTE_EXPORT FileNoteData : public NoteData
 {
 public:
     FileNoteData();
 	QString uid() const;
 	void setFile(QString fn);
+    virtual bool saveToFile(const QString &fileName) = 0;
 	QDateTime modifyTime() const;
 	qint64 lastChangeElapsed() const;
 	void toTrash();
@@ -41,5 +44,7 @@ protected:
 	QDateTime dtLastChange;
 	QDateTime dtCreate;
 };
+
+} // namespace QtNote
 
 #endif // FILENOTEDATA_H

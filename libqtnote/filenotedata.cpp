@@ -22,6 +22,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "filenotedata.h"
 #include <QFile>
 
+namespace QtNote {
+
 FileNoteData::FileNoteData()
 	: NoteData()
 {
@@ -59,3 +61,5 @@ void FileNoteData::toTrash()
 	QFile f(sFileName);
 	f.remove();
 }
+
+} // namespace QtNote

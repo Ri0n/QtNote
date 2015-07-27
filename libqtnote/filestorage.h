@@ -30,6 +30,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+class FileNoteData;
+
 class QTNOTE_EXPORT FileStorage : public NoteStorage
 {
     Q_OBJECT
@@ -43,6 +45,10 @@ public:
     QString tooltip();
     QList<NoteListItem> noteList(int limit = 0);
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
+
+protected:
+    bool saveNoteToFile(FileNoteData &note, const QString &fileName);
+    void handleFSError();
 
 protected slots:
     void settingsApplied();

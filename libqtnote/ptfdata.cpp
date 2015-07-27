@@ -23,6 +23,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QIcon>
 #include <QFileInfo>
 
+namespace QtNote {
+
 PTFData::PTFData()
 		: FileNoteData()
 {
@@ -55,3 +57,5 @@ bool PTFData::saveToFile(const QString &fileName)
 	dtLastChange = QFileInfo(file).lastModified();
 	return true;
 }
+
+} // namespace QtNote

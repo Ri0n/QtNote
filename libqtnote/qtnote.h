@@ -51,7 +51,6 @@ public:
     void parseAppArguments(const QStringList &args);
 
     NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
-    void notifyError(const QString &);
     void activateWidget(QWidget *w) const;
     inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
     inline PluginManager* pluginManager() const { return _pluginManager; }
@@ -70,6 +69,7 @@ signals:
     void settingsUpdated();
 
 public slots:
+    void notifyError(const QString &);
     void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
 
 private slots:

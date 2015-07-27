@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedata.h"
 #include <QString>
 
+namespace QtNote {
 
 Note::Note()
 {
@@ -63,3 +64,5 @@ qint64 Note::lastChangeElapsed() const
 {
 	return d->lastChangeElapsed();
 }
+
+} // namespace QtNote

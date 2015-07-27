@@ -27,6 +27,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDateTime>
 #include "filenotedata.h"
 
+namespace QtNote {
+
 class PTFData : public FileNoteData
 {
 public:
@@ -34,5 +36,7 @@ public:
 	bool fromFile(QString);
 	bool saveToFile(const QString &fileName);
 };
+
+}
 
 #endif // PTFDATA_H

@@ -59,7 +59,7 @@ public:
 
     NoteStorage(QObject *parent);
     virtual const QString systemName() const = 0;
-    virtual const QString titleName() const = 0;
+    virtual const QString name() const = 0;
     virtual QIcon storageIcon() const = 0;
     virtual QIcon noteIcon() const = 0;
     virtual bool isAccessible() const = 0;
@@ -72,7 +72,7 @@ public:
 
     /* returns note id */
     virtual QString createNote(const QString &text) = 0;
-    virtual void saveNote(const QString &noteId, const QString &text) = 0;
+    virtual bool saveNote(const QString &noteId, const QString &text) = 0;
     virtual void deleteNote(const QString &noteId) = 0;
     virtual bool isRichTextAllowed() const = 0;
     virtual NoteFinder* search();
@@ -85,6 +85,7 @@ signals:
     void noteModified(const NoteListItem &);
     void noteRemoved(const NoteListItem &);
     void invalidated();
+    void storageErorr(const QString &);
 };
 
 /**

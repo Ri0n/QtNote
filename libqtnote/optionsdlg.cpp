@@ -52,8 +52,8 @@ public:
 
         foreach(NoteStorage::Ptr storage,  NoteManager::instance()->prioritizedStorages())
         {
-            titleMap[storage->systemName()] = storage->titleName();
-            orderedNames.append(storage->titleName());
+            titleMap[storage->systemName()] = storage->name();
+            orderedNames.append(storage->name());
         }
         setStringList(orderedNames);
     }
@@ -226,7 +226,7 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     }
     QDialog *dlg = new QDialog(this);
     dlg->setWindowIcon(QIcon(":/icons/options"));
-    dlg->setWindowTitle(tr("%1: Settings").arg(NoteManager::instance()->storage(storageId)->titleName()));
+    dlg->setWindowTitle(tr("%1: Settings").arg(NoteManager::instance()->storage(storageId)->name()));
     dlg->resize(500, 30);
     QVBoxLayout *vl = new QVBoxLayout;
     QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok

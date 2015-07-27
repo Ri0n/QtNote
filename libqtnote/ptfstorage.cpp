@@ -68,7 +68,7 @@ const QString PTFStorage::systemName() const
     return "ptf";
 }
 
-const QString PTFStorage::titleName() const
+const QString PTFStorage::name() const
 {
     return tr("Plain Text Storage");
 }
@@ -108,19 +108,18 @@ Note PTFStorage::note(const QString &noteId)
             noteData->fromFile(fileName);
             return Note(noteData);
         }
+        handleFSError();
     }
     return Note();
 }
 
-void PTFStorage::saveNote(const QString &noteId, const QString & text)
+bool PTFStorage::saveNote(const QString &noteId, const QString & text)
 {
     PTFData note;
+    QString fileName = QDir(notesDir).absoluteFilePath(
+                QString("%1.%2").arg(noteId).arg(fileExt));
     note.setText(text);
-    if (note.saveToFile( QDir(notesDir).absoluteFilePath(
-            QString("%1.%2").arg(noteId).arg(fileExt)) )) {
-        NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
-        putToCache(item);
-    }
+    return saveNoteToFile(note, fileName);
 }
 
 bool PTFStorage::isRichTextAllowed() const

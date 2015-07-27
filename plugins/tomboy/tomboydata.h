@@ -28,7 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDateTime>
 #include "filenotedata.h"
 
-class TomboyData : public FileNoteData
+class TomboyData : public QtNote::FileNoteData
 {
 public:
 	TomboyData();

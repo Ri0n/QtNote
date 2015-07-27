@@ -34,7 +34,7 @@ public:
 	NMMItem(const NoteStorage::Ptr &storage)
 		: parent(0)
 		, type(NotesModel::ItemStorage)
-		, title(storage->titleName())
+		, title(storage->name())
 		, id(storage->systemName())
 	{
 		foreach (const NoteListItem &note, storage->noteList()) {

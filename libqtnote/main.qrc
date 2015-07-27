@@ -12,4 +12,7 @@
         <file alias="replace-text">images/replace24.png</file>
         <file alias="plugin">images/plugin22.png</file>
     </qresource>
+    <qresource prefix="/svg">
+        <file alias="qtnote">images/qtnote.svg</file>
+    </qresource>
 </RCC>

@@ -26,11 +26,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "filestorage.h"
 #include "filestoragesettingswidget.h"
+#include "filenotedata.h"
 
 namespace QtNote {
 
-FileStorage::FileStorage(QObject *parent)
-    : NoteStorage(parent)
+FileStorage::FileStorage(QObject *parent) :
+    NoteStorage(parent),
+    cacheLimit(0)
 {
 
 }
@@ -54,6 +56,25 @@ void FileStorage::deleteNote(const QString &noteId)
             emit noteRemoved(item);
         }
     }
+}
+
+bool FileStorage::saveNoteToFile(FileNoteData &note, const QString &fileName)
+{
+    if (note.saveToFile(fileName)) {
+        NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
+        putToCache(item);
+        return true;
+    }
+    handleFSError();
+    return false;
+}
+
+void FileStorage::handleFSError()
+{
+    cache.clear();
+    cacheLimit = 0;
+    emit storageErorr(tr("File system error for storage \"%1\". Please check your settings.").arg(name()));
+    invalidated();
 }
 
 void FileStorage::putToCache(const NoteListItem &note)
@@ -83,7 +104,15 @@ QString FileStorage::tooltip()
 void FileStorage::settingsApplied()
 {
     FileStorageSettingsWidget *w = qobject_cast<FileStorageSettingsWidget *>(sender());
-    notesDir = w->path();
+    QString p = w->path();
+    if (p.isEmpty()) { /* just to be sure all native file dialogs work the same way */
+        return;
+    }
+    QFileInfo fi(p);
+    if (!fi.isDir() || !fi.isWritable()) {
+        return;
+    }
+    notesDir = fi.absoluteFilePath();
     QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir()? "" : notesDir);
     cache.clear();
     emit invalidated();
@@ -94,14 +123,19 @@ QList<NoteListItem> FileStorage::noteList(int limit)
     QList<NoteListItem> ret = cache.values();
     // if cache is empty or fs may have more notes
     if (ret.count() == 0 || (ret.count() == cacheLimit && (limit == 0 || limit > cacheLimit))) {
-        QFileInfoList files = QDir(notesDir).entryInfoList(QStringList(QString("*.")
-                                    + fileExt), QDir::Files, QDir::Time);
-        ret = noteListFromInfoList(files.mid(0, limit? limit : -1));
-        cache.clear();
-        for (auto n: ret) {
-            cache.insert(n.id, n);
+        QDir d(notesDir);
+        if (d.isReadable()) {
+            QFileInfoList files = d.entryInfoList(QStringList(QString("*.")
+                                        + fileExt), QDir::Files, QDir::Time);
+            ret = noteListFromInfoList(files.mid(0, limit? limit : -1));
+            cache.clear();
+            for (auto n: ret) {
+                cache.insert(n.id, n);
+            }
+            cacheLimit = limit;
+        } else {
+            handleFSError();
         }
-        cacheLimit = limit;
     }
     return ret;
 }

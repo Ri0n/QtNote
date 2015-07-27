@@ -28,6 +28,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 //class NoteData;
 #include "notedata.h"
 
+namespace QtNote {
+
 class QTNOTE_EXPORT Note
 {
 public:
@@ -44,5 +46,7 @@ public:
 private:
 	QSharedPointer<NoteData> d;
 };
+
+} // namespace QtNote
 
 #endif // NOTE_H

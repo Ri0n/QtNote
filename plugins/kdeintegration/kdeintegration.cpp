@@ -54,7 +54,7 @@ TrayImpl *KDEIntegration::initTray(Main *qtnote)
 
 void KDEIntegration::notifyError(const QString &msg)
 {
-    KNotification *n = KNotification::event(KNotification::Error, tr("Error"), msg);
+    KNotification *n = KNotification::event(KNotification::Error, tr("Error"), msg, QPixmap(":/svg/qtnote"));
     n->sendEvent();
 }
 

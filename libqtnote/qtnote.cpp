@@ -317,6 +317,7 @@ bool Main::registerStorage(NoteStorage::Ptr &storage)
     if (storage->isAccessible()) {
         NoteManager::instance()->registerStorage(storage);
         connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
+        connect(storage.data(), SIGNAL(storageErorr(QString)), SLOT(notifyError(QString)));
         return true;
     }
     return false;
