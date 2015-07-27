@@ -110,8 +110,10 @@ win32 {
     for(lib, qtplugins) {
         qtplatform.files += $$[QT_INSTALL_PLUGINS]/platforms/$${lib}.dll
     }
+    qtprintsupport.path = $$WININST_PREFIX/printsupport
+    qtprintsupport.files += $$[QT_INSTALL_PLUGINS]/printsupport/windowsprintersupport.dll
 
-    INSTALLS += qtlibs qtplatform
+    INSTALLS += qtlibs qtplatform qtprintsupport
 }
 
 OTHER_FILES += version install_common.pri.in
