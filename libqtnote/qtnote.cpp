@@ -7,7 +7,6 @@
 #include <QStyle>
 #include <QSettings>
 #include <QMessageBox>
-#include <QDebug>
 #include <QProcess>
 #include <QClipboard>
 #include <QMenu>
@@ -37,6 +36,11 @@
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
 #include "optionsplugins.h"
+
+//#define MAIN_DEBUG
+#ifdef MAIN_DEBUG
+# include <QDebug>
+#endif
 
 void initResources()
 {
@@ -237,6 +241,9 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
                          ->isRichTextAllowed());
     emit noteWidgetCreated(w);
     if (!noteId.isEmpty()) {
+#ifdef MAIN_DEBUG
+        qDebug() << "Main::noteWidget";
+#endif
         note = NoteManager::instance()->note(storageId, noteId);
         if (note.isNull()) {
             qWarning("failed to load note: %s", qPrintable(noteId));
@@ -411,6 +418,9 @@ void Main::note_trashRequested()
     NoteWidget *nw = static_cast<NoteWidget *>(sender());
     auto storage = NoteManager::instance()->storage(nw->storageId());
     if (!nw->noteId().isEmpty()) {
+#ifdef MAIN_DEBUG
+        qDebug() << "Main::note_trashRequested";
+#endif
         storage->deleteNote(nw->noteId());
     }
 }
@@ -432,6 +442,9 @@ void Main::note_saveRequested()
         noteId = storage->createNote(text);
         nw->setNoteId(noteId);
     } else {
+#ifdef MAIN_DEBUG
+        qDebug() << "Main::note_saveRequested";
+#endif
         if (NoteManager::instance()->note(storageId, noteId).text() != text) {
             storage->saveNote(noteId, text);
         }
@@ -440,6 +453,9 @@ void Main::note_saveRequested()
 
 void Main::note_invalidated()
 {
+#ifdef MAIN_DEBUG
+    qDebug() << "Main::note_invalidated";
+#endif
     NoteWidget *nw = static_cast<NoteWidget *>(sender());
     Note note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
     if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
@@ -455,6 +471,9 @@ void Main::note_removed(const NoteListItem &noteItem)
 {
     NoteDialog *dlg = NoteDialog::findDialog(noteItem.storageId, noteItem.id);
     if (dlg) {
+#ifdef MAIN_DEBUG
+        qDebug() << "Main::note_removed";
+#endif
         dlg->trashRequested();
     }
 }

@@ -69,7 +69,8 @@ private slots:
     void onPrintClicked();
     void onSaveClicked();
     void onTrashClicked();
-    void updateFirstLineColor();
+    void updateFirstLineColor();    
+    void focusReceived();
 
 private:
     Ui::NoteWidget *ui;

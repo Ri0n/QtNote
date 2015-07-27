@@ -128,7 +128,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     _highlighter->addExtension(firstLineHighlighter, NoteHighlighter::Title);
 
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
-    connect(ui->noteEdit, SIGNAL(focusReceived()), SIGNAL(invalidated()), Qt::QueuedConnection);
+    connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
 #if QT_VERSION >= 0x050400
     connect(qGuiApp, &QGuiApplication::paletteChanged,
             [this](const QPalette &) { updateFirstLineColor(); });
@@ -202,6 +202,13 @@ void NoteWidget::autosave()
         save();
     } else {
         _autosaveTimer.stop(); // stop until next text change
+    }
+}
+
+void NoteWidget::focusReceived()
+{
+    if (!_trashRequested) {
+        emit invalidated();
     }
 }
 
