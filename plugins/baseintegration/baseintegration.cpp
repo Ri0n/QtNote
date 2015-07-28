@@ -60,6 +60,11 @@ bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequen
     return true;
 }
 
+bool BaseIntegration::updateGlobalShortcut(const QString &id, const QKeySequence &key)
+{
+    return false; // TODO
+}
+
 void BaseIntegration::notifyError(const QString &message)
 {
     if (tray) {

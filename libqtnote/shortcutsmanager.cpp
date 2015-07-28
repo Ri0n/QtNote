@@ -76,7 +76,9 @@ bool ShortcutsManager::setKey(const QString &option, const QKeySequence &seq)
 {
     QSettings s;
     s.setValue("shortcuts." + option, seq.toString());
-    // TODO check if it's global and reassign
+    if (globals.contains(option) && gs) {
+        return gs->updateGlobalShortcut(option, key(option));
+    }
     return true;
 }
 
@@ -100,7 +102,10 @@ bool ShortcutsManager::registerGlobal(const char *option, QObject *receiver, con
     if (gs) {
         QKeySequence ks = key(option);
         if (!ks.isEmpty()) {
-            return gs->registerGlobalShortcut(option, ks, receiver, slot);
+            if (gs->registerGlobalShortcut(option, ks, receiver, slot)) {
+                globals.append(QLatin1String(option));
+                return true;
+            }
         }
     }
     return false;

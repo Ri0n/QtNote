@@ -87,6 +87,11 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
     return true;
 }
 
+bool KDEIntegration::updateGlobalShortcut(const QString &id, const QKeySequence &key)
+{
+    return false; // TODO
+}
+
 } // namespace QtNote
 
 #if QT_VERSION < 0x050000

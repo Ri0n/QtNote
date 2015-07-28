@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QHash>
 #include <QKeySequence>
+#include <QStringList>
 
 class QAction;
 
@@ -38,11 +39,13 @@ public:
     bool registerGlobal(const char *option, QObject *receiver, const char *slot);
 
 signals:
+    void shortcutChanged(const QString &opt);
 
 public slots:
 
 private:
     GlobalShortcutsInterface *gs;
+    QStringList globals;
 };
 
 } // namespace QtNote
