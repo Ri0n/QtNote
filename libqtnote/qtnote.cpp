@@ -186,11 +186,11 @@ void Main::parseAppArguments(const QStringList &args)
     QSettings s;
     if (!argsHandled && !s.value("first-start").toBool()) {
         QMessageBox *mb = new QMessageBox(QMessageBox::Information, tr("First Start"),
-                                          tr(
-                                              "This is your first start of QtNote note-taking application.\n\n"
-                                              "To start using just click on pencil in the system tray and choose \"New\" item to create new note.\n"
-                                              "Notes will be automatically saved to special storage, so you should not worry about this."
-                                              ), QMessageBox::Ok);
+            tr(
+              "This is your first start of QtNote note-taking application.\n\n"
+              "To start using just click on pencil in the system tray and choose \"New\" item to create new note.\n"
+              "Notes will be automatically saved to special storage, so you should not worry about this."
+              ), QMessageBox::Ok);
         mb->setModal(false);
         mb->setAttribute(Qt::WA_DeleteOnClose);
         mb->show();

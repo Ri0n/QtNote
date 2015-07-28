@@ -24,33 +24,35 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "shortcutedit.h"
 
 ShortcutEdit::ShortcutEdit(QWidget *parent) :
-	QLineEdit(parent)
+    QLineEdit(parent)
 {
 }
 
 void ShortcutEdit::keyPressEvent(QKeyEvent *event)
 {
-	if (event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) {
-		setText("");
-		return;
-	}
-	QString grab;
-	int modifiers = event->modifiers();
-	if(modifiers & Qt::ControlModifier) {
-		grab.append("Ctrl+");
-	}
-	if(modifiers & Qt::ShiftModifier) {
-		grab.append("Shift+");
-	}
-	if(modifiers & Qt::AltModifier) {
-		grab.append("Alt+");
-	}
-	if(modifiers & Qt::MetaModifier) {
-		grab.append("Meta+");
-	}
-	QString key =  QKeySequence(event->key()).toString();
-	QKeySequence seq(grab + key);
-	bool mod = seq != _seq;
-	setSequence(QKeySequence(grab + key));
-	setModified(mod);
+    if (event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) {
+        setText("");
+        _seq = QKeySequence();
+        setModified(true);
+        return;
+    }
+    QString grab;
+    int modifiers = event->modifiers();
+    if(modifiers & Qt::ControlModifier) {
+        grab.append("Ctrl+");
+    }
+    if(modifiers & Qt::ShiftModifier) {
+        grab.append("Shift+");
+    }
+    if(modifiers & Qt::AltModifier) {
+        grab.append("Alt+");
+    }
+    if(modifiers & Qt::MetaModifier) {
+        grab.append("Meta+");
+    }
+    QString key =  QKeySequence(event->key()).toString();
+    QKeySequence seq(grab + key);
+    bool mod = seq != _seq;
+    setSequence(QKeySequence(grab + key));
+    setModified(mod);
 }
