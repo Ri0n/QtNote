@@ -146,7 +146,7 @@ QList<NoteListItem> FileStorage::noteList(int limit)
     QList<NoteListItem> ret = cache.values();
     qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
     // probably sort is unnecesary here if the only accessor is notemanager which also does sorting.
-    return ret.mid(0, limit);
+    return limit ? ret.mid(0, limit) : ret;
 }
 
 } // namespace QtNote
