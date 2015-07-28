@@ -32,7 +32,7 @@ namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent) :
     NoteStorage(parent),
-    cacheLimit(0)
+    _cacheValid(false)
 {
 
 }
@@ -72,13 +72,14 @@ bool FileStorage::saveNoteToFile(FileNoteData &note, const QString &fileName)
 void FileStorage::handleFSError()
 {
     cache.clear();
-    cacheLimit = 0;
+    _cacheValid = false;
     emit storageErorr(tr("File system error for storage \"%1\". Please check your settings.").arg(name()));
-    invalidated();
+    emit invalidated();
 }
 
 void FileStorage::putToCache(const NoteListItem &note)
 {
+    ensureChachePopulated();
     bool isModify = cache.contains(note.id);
     cache.insert(note.id, note);
     if (isModify) {
@@ -115,29 +116,37 @@ void FileStorage::settingsApplied()
     notesDir = fi.absoluteFilePath();
     QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir()? "" : notesDir);
     cache.clear();
+    _cacheValid = false;
     emit invalidated();
+}
+
+void FileStorage::ensureChachePopulated()
+{
+    if (_cacheValid) {
+        return;
+    }
+    QDir d(notesDir);
+    if (d.isReadable()) {
+        QFileInfoList files = d.entryInfoList(QStringList(QString("*.")
+                                    + fileExt), QDir::Files, QDir::Time);
+        auto ret = noteListFromInfoList(files);
+        cache.clear();
+        for (auto n: ret) {
+            cache.insert(n.id, n);
+        }
+        _cacheValid = true;
+    } else {
+        handleFSError();
+    }
 }
 
 QList<NoteListItem> FileStorage::noteList(int limit)
 {
+    ensureChachePopulated();
     QList<NoteListItem> ret = cache.values();
-    // if cache is empty or fs may have more notes
-    if (ret.count() == 0 || (ret.count() == cacheLimit && (limit == 0 || limit > cacheLimit))) {
-        QDir d(notesDir);
-        if (d.isReadable()) {
-            QFileInfoList files = d.entryInfoList(QStringList(QString("*.")
-                                        + fileExt), QDir::Files, QDir::Time);
-            ret = noteListFromInfoList(files.mid(0, limit? limit : -1));
-            cache.clear();
-            for (auto n: ret) {
-                cache.insert(n.id, n);
-            }
-            cacheLimit = limit;
-        } else {
-            handleFSError();
-        }
-    }
-    return ret;
+    qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
+    // probably sort is unnecesary here if the only accessor is notemanager which also does sorting.
+    return ret.mid(0, limit);
 }
 
 } // namespace QtNote

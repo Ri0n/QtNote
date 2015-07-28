@@ -50,7 +50,7 @@ public:
     inline bool isOperable() const { return _inited; }
     void parseAppArguments(const QStringList &args);
 
-    NoteWidget *noteWidget(const QString &storageId, const QString &noteId);
+    NoteWidget *noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString::null);
     void activateWidget(QWidget *w) const;
     inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
     inline PluginManager* pluginManager() const { return _pluginManager; }

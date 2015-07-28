@@ -49,6 +49,7 @@ public:
 protected:
     bool saveNoteToFile(FileNoteData &note, const QString &fileName);
     void handleFSError();
+    void ensureChachePopulated();
 
 protected slots:
     void settingsApplied();
@@ -56,7 +57,7 @@ protected slots:
 protected:
     QString fileExt;
     QHash<QString, NoteListItem> cache;
-    int cacheLimit; /* last limit passed to noteList() */
+    bool _cacheValid; /* last limit passed to noteList() */
     QString notesDir;
 };
 

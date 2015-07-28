@@ -233,14 +233,18 @@ void Main::showOptions()
     activateWidget(d);
 }
 
-NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId)
+NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId, const QString &contents)
 {
     Note note;
     NoteWidget *w = new NoteWidget(storageId, noteId);
     w->setAcceptRichText(NoteManager::instance()->storage(storageId)
                          ->isRichTextAllowed());
     emit noteWidgetCreated(w);
-    if (!noteId.isEmpty()) {
+    if (noteId.isEmpty()) {
+        if (!contents.isEmpty()) {
+            w->setText(contents);
+        }
+    } else {
 #ifdef MAIN_DEBUG
         qDebug() << "Main::noteWidget";
 #endif
@@ -275,14 +279,7 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
     }
 
     if (!dlg) {
-        NoteWidget *w = noteWidget(storageId, noteId);
-        if (!w) {
-            return;
-        }
-        if (noteId.isEmpty() && !contents.isEmpty()) {
-            w->setText(contents);
-        }
-        dlg = new NoteDialog(w);
+        dlg = new NoteDialog(noteWidget(storageId, noteId, contents));
         dlg->setWindowIcon(NoteManager::instance()->storage(storageId)->noteIcon());
     }
     dlg->show();
@@ -427,6 +424,9 @@ void Main::note_trashRequested()
 
 void Main::note_saveRequested()
 {
+#ifdef MAIN_DEBUG
+    qDebug() << "Main::note_saveRequested";
+#endif
     NoteWidget *nw = static_cast<NoteWidget *>(sender());
     QString storageId = nw->storageId();
     QString noteId = nw->noteId();
@@ -442,9 +442,6 @@ void Main::note_saveRequested()
         noteId = storage->createNote(text);
         nw->setNoteId(noteId);
     } else {
-#ifdef MAIN_DEBUG
-        qDebug() << "Main::note_saveRequested";
-#endif
         if (NoteManager::instance()->note(storageId, noteId).text() != text) {
             storage->saveNote(noteId, text);
         }

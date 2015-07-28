@@ -232,7 +232,7 @@ void NoteWidget::textChanged()
 void NoteWidget::setText(QString text)
 {
     ui->noteEdit->setPlainText(text);
-    _changed = false; // mark as unchanged since its not user input.
+    _changed = _noteId.isEmpty(); // force saving note if noteId is not set.
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
 }
