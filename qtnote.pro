@@ -18,7 +18,10 @@
 
 TEMPLATE = subdirs
 SUBDIRS += 3rdparty libqtnote src plugins
-CONFIG += ordered
+
+libqtnote.depends = 3rdparty
+src.depends = libqtnote
+plugins.depends = libqtnote
 
 TRANSLATIONS += \
 	langs/qtnote_en.ts \
