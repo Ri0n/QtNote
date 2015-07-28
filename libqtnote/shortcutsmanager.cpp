@@ -97,12 +97,12 @@ QString ShortcutsManager::friendlyName(const QString &option) const
     return shortcuts.value(option).name;
 }
 
-bool ShortcutsManager::registerGlobal(const char *option, QObject *receiver, const char *slot)
+bool ShortcutsManager::registerGlobal(const char *option, QAction *action)
 {
     if (gs) {
         QKeySequence ks = key(option);
         if (!ks.isEmpty()) {
-            if (gs->registerGlobalShortcut(option, ks, receiver, slot)) {
+            if (gs->registerGlobalShortcut(option, ks, action)) {
                 globals.append(QLatin1String(option));
                 return true;
             }

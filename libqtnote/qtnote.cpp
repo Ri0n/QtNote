@@ -157,7 +157,10 @@ Main::Main(QObject *parent) :
     connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
     connect(d->tray, SIGNAL(showNoteTriggered(QString,QString)), SLOT(showNoteDialog(QString,QString)));
 
-    _shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, this, SLOT(createNewNoteFromSelection()));
+    // TODO it's a little ugly. refactor
+    QAction *actNoteFromSel = new QAction(_shortcutsManager->friendlyName(ShortcutsManager::SKNoteFromSelection), this);
+    connect(actNoteFromSel, SIGNAL(triggered(bool)), SLOT(createNewNoteFromSelection()));
+    _shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, actNoteFromSel);
 }
 
 Main::~Main()

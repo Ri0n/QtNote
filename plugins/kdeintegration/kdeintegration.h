@@ -30,7 +30,7 @@ public:
     void notifyError(const QString &msg);
     void activateWidget(QWidget *w);
 
-    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot);
+    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action);
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key);
 
 signals:

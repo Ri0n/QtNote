@@ -36,7 +36,7 @@ public:
     QList<ShortcutInfo> all() const;
     QString friendlyName(const QString &option) const;
 
-    bool registerGlobal(const char *option, QObject *receiver, const char *slot);
+    bool registerGlobal(const char *option, QAction *action);
 
 signals:
     void shortcutChanged(const QString &opt);

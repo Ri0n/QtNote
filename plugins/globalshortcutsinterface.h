@@ -4,14 +4,14 @@
 class QKeySequence;
 class QObject;
 class QString;
+class QAction;
 
 namespace QtNote {
 
 class GlobalShortcutsInterface
 {
 public:
-    // TODO it's better to use QAction here instead of receiver/slot
-    virtual bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot) = 0;
+    virtual bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action) = 0;
     virtual bool updateGlobalShortcut(const QString &id, const QKeySequence &key) = 0;
     // TODO unregister. add string identifier
 };

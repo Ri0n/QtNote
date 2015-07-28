@@ -1,5 +1,6 @@
 #include <QWidget>
 #include <QtPlugin>
+#include <QAction>
 
 #include "baseintegration.h"
 #include "baseintegrationtray.h"
@@ -51,12 +52,12 @@ TrayImpl* BaseIntegration::initTray(Main *qtnote)
     return tray;
 }
 
-bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot)
+bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {
     // TODO remember id for future deregistration
     Q_UNUSED(id)
     QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
-    connect(gs, SIGNAL(activated()), receiver, slot);
+    connect(gs, SIGNAL(activated()), action, SLOT(trigger()));
     return true;
 }
 

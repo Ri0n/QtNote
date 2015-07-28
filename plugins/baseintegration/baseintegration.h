@@ -30,7 +30,7 @@ public:
     void activateWidget(QWidget *w);
     TrayImpl* initTray(Main *qtnote);
     void notifyError(const QString &message);
-    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QObject *receiver, const char *slot);
+    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action);
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key);
 
 public slots:
