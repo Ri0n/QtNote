@@ -1,3 +1,9 @@
+2015-07-29 QtNote-3.0.3 Release
++ Allow changing global shortcuts w/o restart
++ Set default shortcuts
+* Fixed note from selection is not saved until edited
+* Cache all notes and check cache validity when required
+
 2015-07-27 QtNote-3.0.2 Release
 + File types in note save dialog
 * Fixed compilation wih kde5
