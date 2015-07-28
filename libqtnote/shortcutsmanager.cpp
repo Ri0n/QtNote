@@ -111,5 +111,12 @@ bool ShortcutsManager::registerGlobal(const char *option, QAction *action)
     return false;
 }
 
+void ShortcutsManager::setShortcutEnable(const QString &option, bool enabled)
+{
+    if (globals.contains(option) && gs) {
+        return gs->setGlobalShortcutEnabled(option, enabled);
+    }
+}
+
 } // namespace QtNote
 

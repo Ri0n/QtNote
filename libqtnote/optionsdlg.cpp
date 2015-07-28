@@ -133,7 +133,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
     ui->wTitleColor->setColor(QPalette::Text, s.value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>());
 
     foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
-        ShortcutEdit *se = new ShortcutEdit;
+        ShortcutEdit *se = new ShortcutEdit(qtnote, si.option);
         se->setObjectName("shortcut-"+si.option);
         se->setSequence(si.key);
         ((QFormLayout*)ui->gbShortcuts->layout())->addRow(si.name, se);
@@ -174,6 +174,7 @@ void OptionsDlg::accept()
             continue;
         }
         QString option = w->objectName().mid(sizeof("shortcut-") - 1);
+        qtnote->shortcutsManager()->setShortcutEnable(option, true);
         if (!qtnote->shortcutsManager()->setKey(option, w->sequence())) {
             qtnote->notifyError(tr("Failed to update shortcut for \"%1\"").arg(qtnote->shortcutsManager()->friendlyName(option)));
         }

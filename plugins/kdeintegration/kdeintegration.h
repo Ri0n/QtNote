@@ -32,6 +32,7 @@ public:
 
     bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action);
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key);
+    void setGlobalShortcutEnabled(const QString &id, bool enabled = true);
 
 signals:
 

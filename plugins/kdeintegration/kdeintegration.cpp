@@ -90,16 +90,25 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
 
 bool KDEIntegration::updateGlobalShortcut(const QString &id, const QKeySequence &key)
 {
-#ifdef USE_KDE5
-    QAction *act = _shortcuts.value(id);
-    if (act) {
-        KGlobalAccel::setGlobalShortcut(act, key);
+    auto act = _shortcuts.value(id);
+    if (!act) {
+        return false;
     }
+#ifdef USE_KDE5
+    KGlobalAccel::setGlobalShortcut(act, key);
 #else
-    KAction *act = _shortcuts.value(id);
     act->setGlobalShortcut(KShortcut(key), KAction::ActiveShortcut | KAction::DefaultShortcut, KAction::NoAutoloading);
 #endif
-    return false; // TODO
+    return true;
+}
+
+void KDEIntegration::setGlobalShortcutEnabled(const QString &id, bool enabled)
+{
+    auto act = _shortcuts.value(id);
+    if (!act) {
+        return;
+    }
+    act->setEnabled(enabled);
 }
 
 } // namespace QtNote

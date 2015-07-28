@@ -37,6 +37,7 @@ public:
     QString friendlyName(const QString &option) const;
 
     bool registerGlobal(const char *option, QAction *action);
+    void setShortcutEnable(const QString &option, bool enabled = true);
 
 signals:
     void shortcutChanged(const QString &opt);

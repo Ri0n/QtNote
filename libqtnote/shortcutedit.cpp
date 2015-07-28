@@ -22,9 +22,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QKeyEvent>
 
 #include "shortcutedit.h"
+#include "qtnote.h"
+#include "shortcutsmanager.h"
 
-ShortcutEdit::ShortcutEdit(QWidget *parent) :
-    QLineEdit(parent)
+namespace QtNote {
+
+ShortcutEdit::ShortcutEdit(Main *qtnote, const QString &option, QWidget *parent) :
+    QLineEdit(parent),
+    qtnote(qtnote),
+    option(option)
 {
 }
 
@@ -55,4 +61,18 @@ void ShortcutEdit::keyPressEvent(QKeyEvent *event)
     bool mod = seq != _seq;
     setSequence(QKeySequence(grab + key));
     setModified(mod);
+}
+
+void ShortcutEdit::focusInEvent(QFocusEvent *ev)
+{
+    qtnote->shortcutsManager()->setShortcutEnable(option, false);
+    QLineEdit::focusInEvent(ev);
+}
+
+void ShortcutEdit::focusOutEvent(QFocusEvent *ev)
+{
+    qtnote->shortcutsManager()->setShortcutEnable(option, true);
+    QLineEdit::focusOutEvent(ev);
+}
+
 }

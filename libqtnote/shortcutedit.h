@@ -25,24 +25,33 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QLineEdit>
 #include <QKeySequence>
 
+namespace QtNote {
+
+class Main;
+
 class ShortcutEdit : public QLineEdit
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit ShortcutEdit(QWidget *parent = 0);
-	inline const QKeySequence &sequence() const { return _seq; }
-	inline void setSequence(const QKeySequence &seq) {
-		_seq = seq; setText(seq.toString(QKeySequence::PortableText));
-	}
+    explicit ShortcutEdit(Main *qtnote, const QString &option, QWidget *parent = 0);
+    inline const QKeySequence &sequence() const { return _seq; }
+    inline void setSequence(const QKeySequence &seq) {
+        _seq = seq; setText(seq.toString(QKeySequence::PortableText));
+    }
 protected:
-	void keyPressEvent(QKeyEvent *event);
+    void keyPressEvent(QKeyEvent *event);
+    void focusInEvent(QFocusEvent *ev);
+    void focusOutEvent(QFocusEvent *ev);
 signals:
-	
+
 public slots:
 
 private:
-	QKeySequence _seq;
-	
+    QKeySequence _seq;
+    Main *qtnote;
+    QString option;
 };
+
+} // namespace QtNote
 
 #endif // SHORTCUTEDIT_H

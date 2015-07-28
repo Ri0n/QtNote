@@ -32,8 +32,8 @@ PluginMetadata BaseIntegration::metadata()
     md.name = "Base Integration";
     md.description = tr("Provides fallback desktop environment integration");
     md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-    md.minVersion = 0x020301; // minimum compatible version of QtNote
+    md.version = 0x010100;    // plugin's version 0xXXYYZZPP
+    md.minVersion = 0x030002; // minimum compatible version of QtNote
     md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage = QUrl("http://ri0n.github.io/QtNote");
     //md.extra.insert("de", QStringList() << "KDE-4");
@@ -54,16 +54,30 @@ TrayImpl* BaseIntegration::initTray(Main *qtnote)
 
 bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {
-    // TODO remember id for future deregistration
-    Q_UNUSED(id)
-    QxtGlobalShortcut *gs = new QxtGlobalShortcut(key, this);
-    connect(gs, SIGNAL(activated()), action, SLOT(trigger()));
-    return true;
+    if (!_shortcuts.contains(id)) {
+        auto gs = new QxtGlobalShortcut(key, this);
+        _shortcuts.insert(id, gs);
+        connect(gs, SIGNAL(activated()), action, SLOT(trigger()));
+        return true;
+    }
+    return false;
 }
 
 bool BaseIntegration::updateGlobalShortcut(const QString &id, const QKeySequence &key)
 {
-    return false; // TODO
+    auto sc = _shortcuts.value(id);
+    if (sc) {
+        return sc->setShortcut(key);
+    }
+    return false;
+}
+
+void BaseIntegration::setGlobalShortcutEnabled(const QString &id, bool enabled)
+{
+    auto sc = _shortcuts.value(id);
+    if (sc) {
+        sc->setEnabled(enabled);
+    }
 }
 
 void BaseIntegration::notifyError(const QString &message)

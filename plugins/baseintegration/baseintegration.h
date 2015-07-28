@@ -9,6 +9,8 @@
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
 
+class QxtGlobalShortcut;
+
 namespace QtNote {
 
 class Main;
@@ -30,14 +32,16 @@ public:
     void activateWidget(QWidget *w);
     TrayImpl* initTray(Main *qtnote);
     void notifyError(const QString &message);
+
     bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action);
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key);
+    void setGlobalShortcutEnabled(const QString &id, bool enabled = true);
 
 public slots:
 
 private:
     TrayImpl *tray;
-
+    QHash<QString, QxtGlobalShortcut*> _shortcuts;
 };
 
 } // namespace QtNote
