@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-    <Product Id="209AE2EE-4738-48D8-9D7F-A243A1CE6044" Name="QtNote" Language="1033" Version="3.0.3" Manufacturer="R-Soft" UpgradeCode="E12D6C7A-8F57-479B-8AE9-49C411B82843">
+    <Product Id="2638A138-1A17-40AF-9414-9E5C9441C365" Name="QtNote" Language="1033" Version="3.0.3" Manufacturer="R-Soft" UpgradeCode="E12D6C7A-8F57-479B-8AE9-49C411B82843">
         <Package Description="QtNote - note taking application" Comments="Simple test" InstallerVersion="405" Compressed="yes" Manufacturer="R-Soft" Platform="x64" />
         <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" />
         <Directory Id="TARGETDIR" Name="SourceDir">
@@ -128,6 +128,11 @@
                     </Component>
                 </Directory>
             </Directory>
+            <Directory Id="PRINTSUPPORT" Name="printsupport">
+                <Component Id="WINDOWSPRINTERSUPPORT.DLL" Win64="yes" DiskId="1" Guid="2C0D7894-6FE3-4FC6-B8B7-587C64E203AE">
+                    <File Id="WINDOWSPRINTERSUPPORT.DLL" Name="windowsprintersupport.dll" Source="$(sys.CURRENTDIR)\.inst\printsupport\windowsprintersupport.dll" />
+                </Component>
+            </Directory>
             <Directory Id="DesktopFolder" />
             <Directory Id="ProgramMenuFolder">
                 <Directory Id="ProgramMenuDir" Name="QtNote">
@@ -168,6 +173,7 @@
             <ComponentRef Id="QMINIMAL.DLL" />
             <ComponentRef Id="QOFFSCREEN.DLL" />
             <ComponentRef Id="QWINDOWS.DLL" />
+            <ComponentRef Id="WINDOWSPRINTERSUPPORT.DLL" />
             <ComponentRef Id="BASEINTEGRATION.DLL" />
             <ComponentRef Id="SPELLCHECKER.DLL" />
             <ComponentRef Id="TOMBOY.DLL" />
