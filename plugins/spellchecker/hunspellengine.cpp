@@ -106,6 +106,20 @@ bool HunspellEngine::spell(const QString &word) const
     return false;
 }
 
+QList<QString> HunspellEngine::suggestions(const QString& word)
+{
+    QStringList qtResult;
+    foreach (const LangItem &li, languages) {
+        char **result;
+        int sugNum = li.hunspell->suggest(&result, li.codec->fromUnicode(word));
+        for (int i=0; i < sugNum; i++) {
+            qtResult << li.codec->toUnicode(result[i]);
+        }
+        li.hunspell->free_list(&result, sugNum);
+    }
+    return qtResult;
+}
+
 QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const
 {
     QList<DictInfo> ret;

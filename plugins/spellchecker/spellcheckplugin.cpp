@@ -26,6 +26,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSettings>
+#include <QDebug>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -137,15 +138,20 @@ QList<QLocale> SpellCheckPlugin::preferredLanguages() const
     QSettings s;
     s.beginGroup(QLatin1String("plugins"));
     s.beginGroup(pluginId);
+
     if (!s.contains(QLatin1String("langs"))) {
-        QStringList codes;
+        QHash<QString, QLocale> codes;
         QLocale systemLocale = QLocale::system();
-        QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
-        codes.append(systemLocale.bcp47Name());
-        if (enLocale.language() != systemLocale.language() || enLocale.country() != systemLocale.country()) {
-            codes.append(enLocale.bcp47Name());
+        codes.insert(systemLocale.bcp47Name(), systemLocale);
+
+        QStringList uiLangs = systemLocale.uiLanguages();
+        foreach (const QString &uiLang, uiLangs) {
+            codes.insert(uiLang, QLocale(uiLang));
         }
-        s.setValue(QLatin1String("langs"), codes);
+
+        QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
+        codes.insert(enLocale.bcp47Name(), enLocale);
+        s.setValue(QLatin1String("langs"), QStringList(codes.keys()));
     }
     QList<QLocale> ret;
     foreach (const QString &code, s.value(QLatin1String("langs")).toStringList()) {

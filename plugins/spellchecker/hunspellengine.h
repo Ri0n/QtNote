@@ -11,21 +11,21 @@ namespace QtNote {
 class HunspellEngine : public SpellEngineInterface
 {
 public:
-	struct LangItem {
-		DictInfo info;
-		Hunspell *hunspell;
-		QTextCodec *codec;
-	};
+    struct LangItem {
+        DictInfo info;
+        Hunspell *hunspell;
+        QTextCodec *codec;
+    };
 
-	HunspellEngine();
+    HunspellEngine();
 
-	QList<QLocale> supportedLanguages() const;
-	bool addLanguage(const QLocale &locale);
-	bool spell(const QString &word) const;
-	QList<DictInfo> loadedDicts() const;
-
+    QList<QLocale> supportedLanguages() const;
+    bool addLanguage(const QLocale &locale);
+    bool spell(const QString &word) const;
+    QList<QString> suggestions(const QString &word);
+    QList<DictInfo> loadedDicts() const;
 private:
-	QList<LangItem> languages;
+    QList<LangItem> languages;
 };
 
 } // namespace QtNote

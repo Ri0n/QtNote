@@ -36,31 +36,31 @@ class SpellEngineInterface;
 class SpellCheckPlugin : public QObject, public PluginInterface, public RegularPluginInterface,
         public PluginOptionsTooltipInterface, public PluginOptionsInterface
 {
-	Q_OBJECT
+    Q_OBJECT
 #if QT_VERSION >= 0x050000
-	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
+    Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
 #endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface
                  QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface)
 public:
-	explicit SpellCheckPlugin(QObject *parent = 0);
+    explicit SpellCheckPlugin(QObject *parent = 0);
 
-	int metadataVersion() const;
-	virtual PluginMetadata metadata();
-	bool init(Main *qtnote);
+    int metadataVersion() const;
+    virtual PluginMetadata metadata();
+    bool init(Main *qtnote);
 
-	QString tooltip() const;
+    QString tooltip() const;
 
-	QDialog* optionsDialog();
+    QDialog* optionsDialog();
 
-	inline SpellEngineInterface* engine() const { return sei; }
-	QList<QLocale> preferredLanguages() const;
+    inline SpellEngineInterface* engine() const { return sei; }
+    QList<QLocale> preferredLanguages() const;
 
 private slots:
-	void noteWidgetCreated(QWidget *w);
-	void settingsAccepted();
+    void noteWidgetCreated(QWidget *w);
+    void settingsAccepted();
 private:
-	SpellEngineInterface *sei;
+    SpellEngineInterface *sei;
 };
 
 } // namespace QtNote
