@@ -37,17 +37,21 @@ class NoteEdit : public QTextEdit
 
     QList<QPointer<QObject>> menuHandlers;
 
+    QString unparsedAnchorAt(const QPoint &pos);
+    void setLinkHighlightEnabled(bool state);
 public:
 	explicit NoteEdit(QWidget *parent = 0);
     void addContextMenuHandler(NoteContextMenuHandler *handler);
 
 protected:
 	void dropEvent(QDropEvent *e);
-	void focusReceived(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
 	void focusInEvent(QFocusEvent *);
-    void contextMenuEvent(QContextMenuEvent *event);
-
+    void contextMenuEvent(QContextMenuEvent *event);    
+    void mousePressEvent(QMouseEvent *e);
+    void mouseMoveEvent(QMouseEvent *e);
+    void keyPressEvent(QKeyEvent *e);
+    void keyReleaseEvent(QKeyEvent *e);
 signals:
 	void focusLost();
 	void focusReceived();

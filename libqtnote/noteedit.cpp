@@ -24,6 +24,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTextCursor>
 #include <QMimeData>
 #include <QMenu>
+#include <QApplication>
+#include <QDesktopServices>
+#include <QTextBlock>
+#include <QDebug>
 
 #include "noteedit.h"
 
@@ -37,6 +41,16 @@ NoteEdit::NoteEdit(QWidget *parent) :
 void NoteEdit::addContextMenuHandler(NoteContextMenuHandler *handler)
 {
     menuHandlers.append(dynamic_cast<QObject*>(handler));
+}
+
+void NoteEdit::setLinkHighlightEnabled(bool state)
+{
+    if (state) {
+        setMouseTracking(true);
+    } else {
+        viewport()->setCursor(Qt::IBeamCursor);
+        setMouseTracking(false);
+    }
 }
 
 void NoteEdit::dropEvent(QDropEvent *e)
@@ -89,8 +103,80 @@ void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
 
 void NoteEdit::focusOutEvent(QFocusEvent *e)
 {
+    setLinkHighlightEnabled(false);
 	emit focusLost();
 	QTextEdit::focusOutEvent(e);
+}
+
+QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
+{
+    auto cur = cursorForPosition(pos);
+    bool startFound = false;
+    bool endFound = false;
+    auto blockText = cur.block().text();
+    int startPos, endPos;
+    startPos = endPos = cur.positionInBlock();
+    if (!blockText.length() || blockText[startPos].isSpace()) {
+        return QString();
+    }
+    while (!(startFound && endFound)) {
+        if (!startFound) {
+            if (!startPos || blockText[startPos - 1].isSpace()) {
+                startFound = true;
+            } else {
+                startPos--;
+            }
+        }
+        if (!endFound) {
+            endPos++;
+            if (endPos >= blockText.length() || blockText[endPos].isSpace()) {
+                endFound  = true;
+            }
+        }
+    }
+    QString matched = blockText.mid(startPos, endPos - startPos);
+    if (matched.indexOf(QLatin1String("://")) > 0 || matched.startsWith("www.")) {
+        return matched;
+    }
+    return QString();
+}
+
+void NoteEdit::mousePressEvent(QMouseEvent *e)
+{
+    QString url;
+    if (e->modifiers() & Qt::ControlModifier && e->button() == Qt::LeftButton && !(url = unparsedAnchorAt(e->pos())).isEmpty()) {
+        e->accept();
+        QDesktopServices::openUrl(QUrl::fromUserInput(url));
+        return;
+    }
+    QTextEdit::mousePressEvent(e);
+}
+
+void NoteEdit::mouseMoveEvent(QMouseEvent *e)
+{
+    QString url;
+    if (!(url = unparsedAnchorAt(e->pos())).isEmpty()) {
+        viewport()->setCursor(Qt::PointingHandCursor);
+    } else {
+        viewport()->setCursor(Qt::IBeamCursor);
+    }
+    QTextEdit::mouseMoveEvent(e);
+}
+
+void NoteEdit::keyPressEvent(QKeyEvent *e)
+{
+    if (e->key() == Qt::Key_Control) {
+        setLinkHighlightEnabled(true);
+    }
+    QTextEdit::keyPressEvent(e);
+}
+
+void NoteEdit::keyReleaseEvent(QKeyEvent *e)
+{
+    if (e->key() == Qt::Key_Control) {
+        setLinkHighlightEnabled(false);
+    }
+    QTextEdit::keyPressEvent(e);
 }
 
 } // namespace QtNote
