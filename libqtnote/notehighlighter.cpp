@@ -52,6 +52,12 @@ void NoteHighlighter::highlightBlock(const QString &text)
     }
 }
 
+void NoteHighlighter::addExtension(HighlighterExtension::Ptr extension, NoteHighlighter::ExtType type)
+{
+    extensions.append(ExtItem{true, type, extension});
+    connect(extension.data(), SIGNAL(invalidated()), SLOT(rehighlight()));
+}
+
 void NoteHighlighter::disableExtension(NoteHighlighter::ExtType type)
 {
     for (int i = 0; i < extensions.count(); i++) {

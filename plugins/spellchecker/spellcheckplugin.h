@@ -28,30 +28,39 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "trayinterface.h"
 #include "deintegrationinterface.h"
 #include "pluginoptionsinterface.h"
+#include "notecontextmenuhandler.h"
 
 namespace QtNote {
 
 class SpellEngineInterface;
 
 class SpellCheckPlugin : public QObject, public PluginInterface, public RegularPluginInterface,
-        public PluginOptionsTooltipInterface, public PluginOptionsInterface
+        public PluginOptionsTooltipInterface, public PluginOptionsInterface, public NoteContextMenuHandler
 {
     Q_OBJECT
 #if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
 #endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface
-                 QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface)
+                 QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
 public:
     explicit SpellCheckPlugin(QObject *parent = 0);
 
+    // PluginInterface
     int metadataVersion() const;
     virtual PluginMetadata metadata();
+
+    // RegularPluginInterface
     bool init(Main *qtnote);
 
+    // PluginOptionsTooltipInterface
     QString tooltip() const;
 
+    // PluginOptionsInterface
     QDialog* optionsDialog();
+
+    // NoteContextMenuHandler
+    void populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu);
 
     inline SpellEngineInterface* engine() const { return sei; }
     QList<QLocale> preferredLanguages() const;

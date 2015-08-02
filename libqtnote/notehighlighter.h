@@ -37,8 +37,7 @@ public:
 	NoteHighlighter(NoteEdit *nde);
 	void highlightBlock(const QString &text);
 
-    inline void addExtension(HighlighterExtension::Ptr extension, ExtType type = Other)
-    { extensions.append(ExtItem{true, type, extension}); }
+    void addExtension(HighlighterExtension::Ptr extension, ExtType type = Other);
 
     void disableExtension(ExtType type);
     void enableExtension(ExtType type);

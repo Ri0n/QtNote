@@ -106,6 +106,14 @@ bool HunspellEngine::spell(const QString &word) const
     return false;
 }
 
+void HunspellEngine::addToDictionary(const QString &word)
+{
+    foreach (const LangItem &li, languages) {
+        li.hunspell->add(li.codec->fromUnicode(word));
+    }
+    // TODO keep internal list for saving to file
+}
+
 QList<QString> HunspellEngine::suggestions(const QString& word)
 {
     QStringList qtResult;

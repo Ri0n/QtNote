@@ -30,7 +30,8 @@ HEADERS += qtnoteplugininterface.h \
 	trayinterface.h \
 	globalshortcutsinterface.h \
 	pluginoptionsinterface.h \
-	notificationinterface.h
+	notificationinterface.h \
+	notecontextmenuhandler.h \
 
 
 OTHER_FILES += plugins_common.pri.in

@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QUrl>
 #include <QTextCursor>
 #include <QMimeData>
+#include <QMenu>
 
 #include "noteedit.h"
 
@@ -31,6 +32,11 @@ namespace QtNote {
 NoteEdit::NoteEdit(QWidget *parent) :
 	QTextEdit(parent)
 {
+}
+
+void NoteEdit::addContextMenuHandler(NoteContextMenuHandler *handler)
+{
+    menuHandlers.append(dynamic_cast<QObject*>(handler));
 }
 
 void NoteEdit::dropEvent(QDropEvent *e)
@@ -61,7 +67,24 @@ void NoteEdit::dropEvent(QDropEvent *e)
 void NoteEdit::focusInEvent(QFocusEvent *e)
 {
 	emit focusReceived();
-	QTextEdit::focusInEvent(e);
+    QTextEdit::focusInEvent(e);
+}
+
+void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu *menu = createStandardContextMenu();
+    QMutableListIterator<QPointer<QObject>> it(menuHandlers);
+    while (it.hasNext()) {
+        auto p = dynamic_cast<NoteContextMenuHandler*>(it.next().data());
+        if (p) {
+            p->populateNoteContextMenu(this, event, menu);
+        } else {
+            it.remove();
+        }
+    }
+
+    menu->exec(event->globalPos());
+    delete menu;
 }
 
 void NoteEdit::focusOutEvent(QFocusEvent *e)

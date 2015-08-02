@@ -23,6 +23,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTEEDIT_H
 
 #include <QTextEdit>
+#include <QPointer>
+
+#include "notecontextmenuhandler.h"
 
 class QDropEvent;
 
@@ -31,14 +34,19 @@ namespace QtNote {
 class NoteEdit : public QTextEdit
 {
 	Q_OBJECT
+
+    QList<QPointer<QObject>> menuHandlers;
+
 public:
 	explicit NoteEdit(QWidget *parent = 0);
+    void addContextMenuHandler(NoteContextMenuHandler *handler);
 
 protected:
 	void dropEvent(QDropEvent *e);
 	void focusReceived(QFocusEvent *event);
 	void focusOutEvent(QFocusEvent *event);
 	void focusInEvent(QFocusEvent *);
+    void contextMenuEvent(QContextMenuEvent *event);
 
 signals:
 	void focusLost();

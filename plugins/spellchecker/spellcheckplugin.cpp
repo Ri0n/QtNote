@@ -27,6 +27,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QPushButton>
 #include <QSettings>
 #include <QDebug>
+#include <QTextDocumentFragment>
+#include <QMenu>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -35,6 +37,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "highlighterext.h"
 #include "notehighlighter.h"
 #include "settingsdlg.h"
+#include "noteedit.h"
 
 namespace QtNote {
 
@@ -64,6 +67,67 @@ public:
             }
             index = text.indexOf(expression, index + length);
         }
+    }
+};
+
+class SpellContextMenu : public QObject
+{
+    Q_OBJECT
+
+    SpellEngineInterface *sei;
+    QTextEdit *te;
+    QTextCursor cursor;
+
+public:
+    SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor,
+                     QString wrongWord, QMenu *menu) :
+        QObject(menu),
+        sei(sei),
+        te(te),
+        cursor(cursor)
+    {
+        QList<QString> suggestions = sei->suggestions(wrongWord);
+        QList<QAction*> actions;
+        foreach(QString suggestion, suggestions) {
+            QAction* act_suggestion = new QAction(suggestion, menu);
+            actions.append(act_suggestion);
+            connect(act_suggestion,SIGNAL(triggered()),SLOT(applySuggestion()));
+        }
+        if (actions.count()) {
+            QAction *sep = new QAction(menu);
+            sep->setSeparator(true);
+            actions.append(sep);
+        }
+        QAction* act_add = new QAction(tr("Add to dictionary"), menu);
+        act_add->setData(wrongWord);
+        actions.append(act_add);
+        connect(act_add,SIGNAL(triggered()),SLOT(addToDictionary()));
+        QAction *sep = new QAction(menu);
+        sep->setSeparator(true);
+        actions.append(sep);
+        menu->insertActions(menu->actions().value(0), actions);
+    }
+
+private slots:
+    void applySuggestion()
+    {
+        QString word = ((QAction*)sender())->text();
+        int oldPos = te->textCursor().position();
+        int oldLength = cursor.position() - cursor.anchor();
+
+        cursor.insertText(word);
+        cursor.clearSelection();
+
+        // Put the cursor where it belongs
+        cursor.setPosition(oldPos - oldLength + word.length());
+        te->setTextCursor(cursor);
+    }
+
+    void addToDictionary()
+    {
+        QString word = ((QAction*)sender())->data().toString();
+        sei->addToDictionary(word);
+        hlExt->invalidate();
     }
 };
 
@@ -133,6 +197,22 @@ QDialog *SpellCheckPlugin::optionsDialog()
     return s;
 }
 
+void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu)
+{
+    auto last_click_ = event->pos();
+    if (!te->textCursor().selection().isEmpty()) {
+        return;
+    }
+    // Check if the word under the cursor is misspelled
+    QTextCursor cursor = te->cursorForPosition(last_click_);
+    cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
+    cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
+    QString wrongWord = cursor.selectedText();
+    if (!wrongWord.isEmpty() && !sei->spell(wrongWord)) {
+        new SpellContextMenu(sei, te, cursor, wrongWord, menu);
+    }
+}
+
 QList<QLocale> SpellCheckPlugin::preferredLanguages() const
 {
     QSettings s;
@@ -181,9 +261,12 @@ void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
     NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
     nw->highlighter()->addExtension(hlExt, NoteHighlighter::SpellCheck);
+    nw->editWidget()->addContextMenuHandler(this);
 }
 
 } // namespace QtNote
+
+#include "spellcheckplugin.moc"
 
 #if QT_VERSION < 0x050000
 Q_EXPORT_PLUGIN2(spellcheckplugin, QtNote::SpellCheckPlugin)

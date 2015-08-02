@@ -22,6 +22,7 @@ public:
     QList<QLocale> supportedLanguages() const;
     bool addLanguage(const QLocale &locale);
     bool spell(const QString &word) const;
+    void addToDictionary(const QString &word);
     QList<QString> suggestions(const QString &word);
     QList<DictInfo> loadedDicts() const;
 private:
