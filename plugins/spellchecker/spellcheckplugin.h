@@ -45,6 +45,7 @@ class SpellCheckPlugin : public QObject, public PluginInterface, public RegularP
                  QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
 public:
     explicit SpellCheckPlugin(QObject *parent = 0);
+    ~SpellCheckPlugin();
 
     // PluginInterface
     int metadataVersion() const;

@@ -135,8 +135,14 @@ private slots:
 // SpellCheckPlugin
 //------------------------------------------------------------
 SpellCheckPlugin::SpellCheckPlugin(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    sei(0)
 {
+}
+
+SpellCheckPlugin::~SpellCheckPlugin()
+{
+    delete sei;
 }
 
 int SpellCheckPlugin::metadataVersion() const

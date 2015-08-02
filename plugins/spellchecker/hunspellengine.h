@@ -1,6 +1,8 @@
 #ifndef HUNSPELLENGINE_H
 #define HUNSPELLENGINE_H
 
+#include <QSet>
+
 #include "engineinterface.h"
 
 class Hunspell;
@@ -18,6 +20,7 @@ public:
     };
 
     HunspellEngine();
+    ~HunspellEngine();
 
     QList<QLocale> supportedLanguages() const;
     bool addLanguage(const QLocale &locale);
@@ -27,6 +30,7 @@ public:
     QList<DictInfo> loadedDicts() const;
 private:
     QList<LangItem> languages;
+    QSet<QString> runtimeDict;
 };
 
 } // namespace QtNote

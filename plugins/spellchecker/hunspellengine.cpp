@@ -6,6 +6,7 @@
 #include <QLibraryInfo>
 #include <QTextCodec>
 #include <QCoreApplication>
+#include <QDataStream>
 #include <hunspell/hunspell.hxx>
 
 #include "utils.h"
@@ -56,7 +57,31 @@ static bool scanDictPaths(const QString &language, QFileInfo &aff , QFileInfo &d
 
 HunspellEngine::HunspellEngine()
 {
+    QFile f(Utils::qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
+    if (f.open(QIODevice::ReadOnly)) {
+        QDataStream in(&f);
+        QString w;
+        while (!in.atEnd()) {
+            in >> w;
+            runtimeDict << w;
+        }
+    }
+}
 
+HunspellEngine::~HunspellEngine()
+{
+    foreach (const LangItem &li, languages) {
+        delete li.hunspell;
+    }
+    QFile f(Utils::qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
+    if (f.open(QIODevice::WriteOnly)) {
+        QDataStream out(&f);
+        for(auto w : runtimeDict.values()) {
+            out << w;
+        }
+    } else {
+        qDebug("Failed to write runtime spellcheck dictionary");
+    }
 }
 
 QList<QLocale> HunspellEngine::supportedLanguages() const
@@ -98,6 +123,9 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
 
 bool HunspellEngine::spell(const QString &word) const
 {
+    if (runtimeDict.size() && runtimeDict.contains(word)) {
+        return true;
+    }
     foreach (const LangItem &li, languages) {
         if (li.hunspell->spell(li.codec->fromUnicode(word)) != 0) {
             return true;
@@ -108,10 +136,7 @@ bool HunspellEngine::spell(const QString &word) const
 
 void HunspellEngine::addToDictionary(const QString &word)
 {
-    foreach (const LangItem &li, languages) {
-        li.hunspell->add(li.codec->fromUnicode(word));
-    }
-    // TODO keep internal list for saving to file
+    runtimeDict.insert(word);
 }
 
 QList<QString> HunspellEngine::suggestions(const QString& word)

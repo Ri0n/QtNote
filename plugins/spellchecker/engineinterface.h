@@ -15,6 +15,8 @@ public:
         QString filename;
     };
 
+    virtual ~SpellEngineInterface() {}
+
     virtual QList<QLocale> supportedLanguages() const = 0;
     virtual bool addLanguage(const QLocale &locale) = 0;
 
