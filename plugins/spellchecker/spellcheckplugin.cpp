@@ -29,6 +29,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDebug>
 #include <QTextDocumentFragment>
 #include <QMenu>
+#include <QContextMenuEvent>
+#if QT_VERSION < 0x050000
+# include <QRegExp>
+#else
+# include <QRegularExpression>
+#endif
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -48,25 +54,47 @@ static HighlighterExtension::Ptr hlExt;
 class SpellCheckHighlighterExtension : public HighlighterExtension
 {
     SpellEngineInterface *sei;
+#if QT_VERSION < 0x050000
+    QRegExp expression;
+#else
+    QRegularExpression expression;
+#endif
 
 public:
-    SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei) {}
+    SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei)
+    {
+#if QT_VERSION < 0x050000
+        expression = QRegExp("\\b\\w{2,}\\b");
+#else
+        expression = QRegularExpression("[[:alpha:]]{2,}", QRegularExpression::UseUnicodePropertiesOption);
+#endif
+    }
 
     void highlight(NoteHighlighter *nh, const QString &text)
     {
         QTextCharFormat myClassFormat;
         myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
-        QString pattern = "\\b\\w{2,}\\b";
 
-        QRegExp expression(pattern);
+#if QT_VERSION < 0x050000
         int index = text.indexOf(expression);
         while (index >= 0) {
             int length = expression.matchedLength();
-            if (sei->spell(expression.capturedTexts()[0]) == 0) {
+            QString word = expression.capturedTexts()[0];
+            if (word[0].isLetter() && sei->spell(word) == 0) { // ignore words starting with digit.
                 nh->addFormat(index, length, myClassFormat);
             }
             index = text.indexOf(expression, index + length);
         }
+#else
+        QRegularExpressionMatchIterator i = expression.globalMatch(text);
+        while (i.hasNext()) {
+            QRegularExpressionMatch match = i.next();
+            qDebug() << match.captured();
+            if (!sei->spell(match.captured())) {
+                nh->addFormat(match.capturedStart(), match.capturedLength(), myClassFormat);
+            }
+        }
+#endif
     }
 };
 
