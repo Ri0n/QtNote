@@ -5,6 +5,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
+#include "highlighterext.h"
+
 namespace Ui {
 class NoteWidget;
 }
@@ -77,6 +79,7 @@ private:
 
     TypeAheadFindBar *findBar;
     NoteHighlighter* _highlighter;
+    HighlighterExtension::Ptr _linkHighlighter;
     QString _storageId;
     QString _noteId;
     QString _firstLine;

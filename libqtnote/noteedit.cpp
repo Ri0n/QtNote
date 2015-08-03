@@ -48,7 +48,10 @@ void NoteEdit::setLinkHighlightEnabled(bool state)
     if (state) {
         setMouseTracking(true);
     } else {
-        viewport()->setCursor(Qt::IBeamCursor);
+        if (viewport()->cursor().shape() == Qt::PointingHandCursor) {
+            viewport()->setCursor(Qt::IBeamCursor);
+            emit linkUnhovered();
+        }
         setMouseTracking(false);
     }
 }
@@ -134,7 +137,10 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
             }
         }
     }
-    QString matched = blockText.mid(startPos, endPos - startPos);
+    hlp.block = cur.block();
+    hlp.pos = startPos;
+    hlp.length = endPos - startPos;
+    QString matched = blockText.mid(startPos, hlp.length);
     if (matched.indexOf(QLatin1String("://")) > 0 || matched.startsWith("www.")) {
         return matched;
     }
@@ -157,8 +163,12 @@ void NoteEdit::mouseMoveEvent(QMouseEvent *e)
     QString url;
     if (!(url = unparsedAnchorAt(e->pos())).isEmpty()) {
         viewport()->setCursor(Qt::PointingHandCursor);
+        emit linkHovered();
     } else {
-        viewport()->setCursor(Qt::IBeamCursor);
+        if (viewport()->cursor().shape() == Qt::PointingHandCursor) {
+            viewport()->setCursor(Qt::IBeamCursor);
+            emit linkUnhovered();
+        }
     }
     QTextEdit::mouseMoveEvent(e);
 }

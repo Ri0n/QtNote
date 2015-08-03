@@ -21,9 +21,16 @@ public:
         Other
     };
 
+    enum Priority {
+        Low,
+        Normal,
+        High
+    };
+
     struct ExtItem {
         bool active;
         ExtType type;
+        Priority priority;
         QWeakPointer<HighlighterExtension> ext;
     };
 
@@ -37,7 +44,7 @@ public:
 	NoteHighlighter(NoteEdit *nde);
 	void highlightBlock(const QString &text);
 
-    void addExtension(HighlighterExtension::Ptr extension, ExtType type = Other);
+    void addExtension(HighlighterExtension::Ptr extension, ExtType type = Other, Priority prio = Normal);
 
     void disableExtension(ExtType type);
     void enableExtension(ExtType type);

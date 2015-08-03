@@ -44,18 +44,29 @@ public:
 
 class CurrentLinkHighlighter : public HighlighterExtension
 {
+    NoteWidget *noteWidget;
     QTextBlock currentBlock;
     int currentPos;
     int currentLength;
 
+    Q_OBJECT
+
 public:
-    void rehighlightLine(NoteHighlighter *nh, const QTextBlock &block, int pos, int length)
+    CurrentLinkHighlighter(NoteWidget *nw) :
+        noteWidget(nw)
+    {
+        connect(noteWidget->editWidget(), SIGNAL(linkHovered()), SLOT(onLinkHovered()));
+        connect(noteWidget->editWidget(), SIGNAL(linkUnhovered()), SLOT(onLinkUnhovered()));
+    }
+
+    void rehighlightLine(const QTextBlock &block = QTextBlock(), int pos = 0, int length = 0)
     {
         QTextBlock previousBlock = currentBlock;
         currentBlock = block;
         currentPos = pos;
         currentLength = length;
 
+        NoteHighlighter *nh = noteWidget->highlighter();
         if (previousBlock.isValid() && previousBlock != currentBlock) {
             nh->rehighlightBlock(previousBlock); // drop highlighting from previous
         }
@@ -66,12 +77,26 @@ public:
 
     void highlight(NoteHighlighter *nh, const QString &text)
     {
+        Q_UNUSED(text);
         if (nh->currentBlock() != currentBlock) {
             return;
         }
         QTextCharFormat linkHighlightFormat;
         linkHighlightFormat.setForeground(qApp->palette().color(QPalette::Link));
+        linkHighlightFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
         nh->addFormat(currentPos, currentLength, linkHighlightFormat);
+    }
+
+public slots:
+    void onLinkHovered()
+    {
+        auto &hlp = noteWidget->editWidget()->hoveredLinkPosition();
+        rehighlightLine(hlp.block, hlp.pos, hlp.length);
+    }
+
+    void onLinkUnhovered()
+    {
+        rehighlightLine();
     }
 };
 
@@ -159,6 +184,9 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     }
     _highlighter = new NoteHighlighter(ui->noteEdit);
     _highlighter->addExtension(firstLineHighlighter, NoteHighlighter::Title);
+
+    _linkHighlighter = HighlighterExtension::Ptr(new CurrentLinkHighlighter(this));
+    _highlighter->addExtension(_linkHighlighter, NoteHighlighter::Other, NoteHighlighter::Normal);
 
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
     connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
@@ -404,3 +432,5 @@ void NoteWidget::rereadSettings()
 }
 
 } // namespace QtNote
+
+#include "notewidget.moc"
