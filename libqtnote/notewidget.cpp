@@ -42,6 +42,39 @@ public:
     }
 };
 
+class CurrentLinkHighlighter : public HighlighterExtension
+{
+    QTextBlock currentBlock;
+    int currentPos;
+    int currentLength;
+
+public:
+    void rehighlightLine(NoteHighlighter *nh, const QTextBlock &block, int pos, int length)
+    {
+        QTextBlock previousBlock = currentBlock;
+        currentBlock = block;
+        currentPos = pos;
+        currentLength = length;
+
+        if (previousBlock.isValid() && previousBlock != currentBlock) {
+            nh->rehighlightBlock(previousBlock); // drop highlighting from previous
+        }
+        if (currentBlock.isValid()) {
+            nh->rehighlightBlock(currentBlock);
+        }
+    }
+
+    void highlight(NoteHighlighter *nh, const QString &text)
+    {
+        if (nh->currentBlock() != currentBlock) {
+            return;
+        }
+        QTextCharFormat linkHighlightFormat;
+        linkHighlightFormat.setForeground(qApp->palette().color(QPalette::Link));
+        nh->addFormat(currentPos, currentLength, linkHighlightFormat);
+    }
+};
+
 struct ActData {
     const char* icon;
     const char* text;
