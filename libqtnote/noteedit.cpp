@@ -27,7 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QDesktopServices>
 #include <QTextBlock>
-#include <QDebug>
+#include <QTextLayout>
 
 #include "noteedit.h"
 
@@ -119,7 +119,8 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
     auto blockText = cur.block().text();
     int startPos, endPos;
     startPos = endPos = cur.positionInBlock();
-    if (!blockText.length() || blockText[startPos].isSpace()) {
+    if (!blockText.length() || blockText[startPos].isSpace() || cursorRect(cur).right() + 5 < pos.x()) {
+        // +5 just to make it smooth in other case we will get kind of glitches while hovering a link
         return QString();
     }
     while (!(startFound && endFound)) {
