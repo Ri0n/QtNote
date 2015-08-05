@@ -31,6 +31,7 @@ class PTFStorage : public FileStorage
     Q_OBJECT
     Q_DISABLE_COPY(PTFStorage)
     void initNotesDir();
+    bool internalSave(QString &noteId, const QString &text);
 public:
     PTFStorage(QObject *parent = 0);
     bool isAccessible() const;
@@ -43,6 +44,7 @@ public:
     bool saveNote(const QString &noteId, const QString &text);
     bool isRichTextAllowed() const;
     QString findStorageDir() const;
+    QString createNote(const QString &text);
 };
 
 } // namespace QtNote

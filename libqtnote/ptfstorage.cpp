@@ -113,13 +113,45 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-bool PTFStorage::saveNote(const QString &noteId, const QString & text)
+bool PTFStorage::internalSave(QString &noteId, const QString &text)
 {
     PTFData note;
-    QString fileName = QDir(notesDir).absoluteFilePath(
-                QString("%1.%2").arg(noteId).arg(fileExt));
+    QDir d(notesDir);
+    QString fileName = QString("%1.%2").arg(noteId).arg(fileExt);
     note.setText(text);
-    return saveNoteToFile(note, fileName);
+
+    QString title = note.title();
+    QRegExp r("[<>:\"/\\\\|?*]");
+    title.replace(r, QChar('_'));
+    if (title != noteId) {
+        d.remove(fileName);
+
+        QString suf;
+        int ind = 0;
+
+        while (d.exists((fileName = QString("%1%2.%3").arg(title, suf, fileExt)))) {
+            ind++;
+            suf = QString::number(ind);
+        }
+        noteId = title + suf;
+    }
+
+    return saveNoteToFile(note, d.absoluteFilePath(fileName));
+}
+
+QString PTFStorage::createNote(const QString &text)
+{
+    QString noteId;
+    if (internalSave(noteId, text)) {
+        return noteId;
+    }
+    return QString();
+}
+
+bool PTFStorage::saveNote(const QString &noteId, const QString & text)
+{
+    QString idCopy = noteId;
+    return internalSave(idCopy, text);
 }
 
 bool PTFStorage::isRichTextAllowed() const
