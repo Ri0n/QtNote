@@ -31,6 +31,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 class FileNoteData;
+class FileNameProvider;
 
 class QTNOTE_EXPORT FileStorage : public NoteStorage
 {
@@ -59,6 +60,7 @@ protected:
     QHash<QString, NoteListItem> cache;
     bool _cacheValid; /* last limit passed to noteList() */
     QString notesDir;
+    FileNameProvider *nameProvder;
 };
 
 }

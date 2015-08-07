@@ -33,6 +33,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "ptfstorage.h"
 #include "ptfdata.h"
 #include "utils.h"
+#include "humanfilenameprovider.h"
 
 namespace QtNote {
 
@@ -45,6 +46,7 @@ PTFStorage::PTFStorage(QObject *parent)
     if (notesDir.isEmpty()) {
         notesDir = findStorageDir();
     }
+    nameProvder = new HumanFileNameProvider(notesDir, fileExt);
     initNotesDir();
 }
 
@@ -56,6 +58,7 @@ void PTFStorage::initNotesDir()
             qWarning("can't create storage dir: %s", qPrintable(notesDir));
         }
     }
+    nameProvder->setPath(notesDir);
 }
 
 bool PTFStorage::isAccessible() const
@@ -113,7 +116,7 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-bool PTFStorage::internalSave(QString &noteId, const QString &text)
+bool PTFStorage::internalSave(const QString &text, QString &noteId)
 {
     PTFData note;
     QDir d(notesDir);
@@ -142,7 +145,7 @@ bool PTFStorage::internalSave(QString &noteId, const QString &text)
 QString PTFStorage::createNote(const QString &text)
 {
     QString noteId;
-    if (internalSave(noteId, text)) {
+    if (internalSave(text, noteId)) {
         return noteId;
     }
     return QString();
@@ -151,7 +154,7 @@ QString PTFStorage::createNote(const QString &text)
 bool PTFStorage::saveNote(const QString &noteId, const QString & text)
 {
     QString idCopy = noteId;
-    return internalSave(idCopy, text);
+    return internalSave(text, idCopy);
 }
 
 bool PTFStorage::isRichTextAllowed() const

@@ -70,7 +70,10 @@ SOURCES += qtnote_export.h \
     optionsplugins.cpp \
     notehighlighter.cpp \
     colorbutton.cpp \
-    notessearchmodel.cpp
+    notessearchmodel.cpp \
+    filenameprovider.cpp \
+    humanfilenameprovider.cpp \
+    uuidfilenameprovider.cpp
 
 HEADERS += notedialog.h \
     note.h \
@@ -100,7 +103,10 @@ HEADERS += notedialog.h \
     notehighlighter.h \
     colorbutton.h \
     defaults.h \
-    notessearchmodel.h
+    notessearchmodel.h \
+    filenameprovider.h \
+    humanfilenameprovider.h \
+    uuidfilenameprovider.h
 
 FORMS += notedialog.ui \
     aboutdlg.ui \
