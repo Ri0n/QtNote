@@ -32,7 +32,8 @@ namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent) :
     NoteStorage(parent),
-    _cacheValid(false)
+    _cacheValid(false),
+    nameProvder(0)
 {
 
 }

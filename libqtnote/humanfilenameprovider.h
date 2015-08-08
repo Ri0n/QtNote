@@ -8,7 +8,8 @@ namespace QtNote {
 class HumanFileNameProvider : public FileNameProvider
 {
 public:
-    using FileNameProvider::FileNameProvider;
+    HumanFileNameProvider(const QString &path, const QString &fileExt) :
+        FileNameProvider(path, fileExt) {}
 
     QString newName(const Note &note, QString &noteId);
     QString updateName(const Note &note, QString &noteId);

@@ -37,8 +37,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-PTFStorage::PTFStorage(QObject *parent)
-    : FileStorage(parent)
+PTFStorage::PTFStorage(QObject *parent) :
+    FileStorage(parent)
 {
     fileExt = "txt";
     QSettings s;
@@ -46,7 +46,6 @@ PTFStorage::PTFStorage(QObject *parent)
     if (notesDir.isEmpty()) {
         notesDir = findStorageDir();
     }
-    nameProvder = new HumanFileNameProvider(notesDir, fileExt);
     initNotesDir();
 }
 
@@ -58,7 +57,11 @@ void PTFStorage::initNotesDir()
             qWarning("can't create storage dir: %s", qPrintable(notesDir));
         }
     }
-    nameProvder->setPath(notesDir);
+    if (!nameProvder) {
+        nameProvder = new HumanFileNameProvider(notesDir, fileExt);
+    } else {
+        nameProvder->setPath(notesDir);
+    }
 }
 
 bool PTFStorage::isAccessible() const
