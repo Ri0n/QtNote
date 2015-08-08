@@ -19,7 +19,7 @@ struct ActData;
 class NoteEdit;
 class NoteHighlighter;
 
-class NoteWidget : public QWidget
+class QTNOTE_EXPORT NoteWidget : public QWidget
 {
     Q_OBJECT
 

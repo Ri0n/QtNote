@@ -4,13 +4,15 @@
 #include <QSharedPointer>
 #include <QObject>
 
+#include "qtnote_export.h"
+
 class QString;
 
 namespace QtNote {
 
 class NoteHighlighter;
 
-class HighlighterExtension : public QObject
+class QTNOTE_EXPORT HighlighterExtension : public QObject
 {
     Q_OBJECT
 

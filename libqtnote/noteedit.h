@@ -27,12 +27,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QTextBlock>
 
 #include "notecontextmenuhandler.h"
+#include "qtnote_export.h"
 
 class QDropEvent;
 
 namespace QtNote {
 
-class NoteEdit : public QTextEdit
+class QTNOTE_EXPORT NoteEdit : public QTextEdit
 {
 public:
     struct HoveredLinkPosition
