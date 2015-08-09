@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "tomboystorage.h"
 #include "tomboydata.h"
 #include "utils.h"
+#include "uuidfilenameprovider.h"
 
 namespace QtNote {
 
@@ -39,6 +40,7 @@ TomboyStorage::TomboyStorage(QObject *parent) :
     if (notesDir.isEmpty() || !QDir(notesDir).isReadable()) {
         notesDir = findStorageDir();
     }
+    nameProvider = new UuidFileNameProvider(notesDir, fileExt);
 }
 
 bool TomboyStorage::isAccessible() const
@@ -72,7 +74,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
     foreach (QFileInfo fi, files) {
         TomboyData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(note.uid(), systemName(), note.title(),
+            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(),
                             note.modifyTime());
             ret.append(li);
         }
@@ -96,13 +98,26 @@ Note TomboyStorage::note(const QString &id)
     return Note();
 }
 
-bool TomboyStorage::saveNote(const QString &noteId, const QString &text)
+QString TomboyStorage::createNote(const QString &text)
 {
     TomboyData note;
-    QString fileName = QDir(notesDir).absoluteFilePath(
-                QString("%1.%2").arg(noteId).arg(fileExt));
     note.setText(text);
-    return saveNoteToFile(note, fileName);
+    QString noteId;
+    if (saveNoteToFile(note, nameProvider->newName(note, noteId))) {
+        return noteId;
+    }
+    return QString();
+}
+
+QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
+{
+    QString newNoteId = noteId;
+    TomboyData note;
+    note.setText(text);
+    if (saveNoteToFile(note, nameProvider->updateName(note, newNoteId))) {
+        return newNoteId;
+    }
+    return QString();
 }
 
 bool TomboyStorage::isRichTextAllowed() const

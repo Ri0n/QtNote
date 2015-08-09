@@ -1,11 +1,11 @@
 #include <QUuid>
 
 #include "uuidfilenameprovider.h"
-#include "note.h"
+#include "filenotedata.h"
 
 namespace QtNote {
 
-QString UuidFileNameProvider::newName(const Note &note, QString &noteId)
+QString UuidFileNameProvider::newName(const FileNoteData &note, QString &noteId)
 {
     Q_UNUSED(note)
     QString uid = QUuid::createUuid().toString();
@@ -13,7 +13,7 @@ QString UuidFileNameProvider::newName(const Note &note, QString &noteId)
     return dir.absoluteFilePath(QString("%1.%2").arg(noteId, fileExt));
 }
 
-QString UuidFileNameProvider::updateName(const Note &note, QString &noteId)
+QString UuidFileNameProvider::updateName(const FileNoteData &note, QString &noteId)
 {
     Q_UNUSED(note)
     return dir.absoluteFilePath(QString("%1.%2").arg(noteId, fileExt));

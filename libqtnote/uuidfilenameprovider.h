@@ -5,13 +5,15 @@
 
 namespace QtNote {
 
-class UuidFileNameProvider : public FileNameProvider
+class QTNOTE_EXPORT UuidFileNameProvider : public FileNameProvider
 {
 public:
-    using FileNameProvider::FileNameProvider;
+    //using FileNameProvider::FileNameProvider; // it's not supported with vs2013
+    inline UuidFileNameProvider(const QString &path, const QString &fileExt) :
+        FileNameProvider(path, fileExt) {}
 
-    QString newName(const Note &note, QString &noteId);
-    QString updateName(const Note &note, QString &noteId);
+    QString newName(const FileNoteData &note, QString &noteId);
+    QString updateName(const FileNoteData &note, QString &noteId);
 };
 
 } // namespace QtNote

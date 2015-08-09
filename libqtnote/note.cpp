@@ -42,7 +42,7 @@ bool Note::isNull()
 
 void Note::toTrash()
 {
-	d->toTrash();
+	d->remove();
 }
 
 QString Note::text() const

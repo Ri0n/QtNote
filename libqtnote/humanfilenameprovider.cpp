@@ -1,11 +1,11 @@
 #include <QString>
 
 #include "humanfilenameprovider.h"
-#include "note.h"
+#include "filenotedata.h"
 
 namespace QtNote {
 
-QString HumanFileNameProvider::fnSearch(const Note &note, QString &noteId)
+QString HumanFileNameProvider::fnSearch(const FileNoteData &note, QString &noteId)
 {
     QString fileName;
     QString title = note.title();
@@ -29,12 +29,12 @@ QString HumanFileNameProvider::fnSearch(const Note &note, QString &noteId)
     return fileName;
 }
 
-QString HumanFileNameProvider::newName(const Note &note, QString &noteId)
+QString HumanFileNameProvider::newName(const FileNoteData &note, QString &noteId)
 {
     return fnSearch(note, noteId);
 }
 
-QString HumanFileNameProvider::updateName(const Note &note, QString &noteId)
+QString HumanFileNameProvider::updateName(const FileNoteData &note, QString &noteId)
 {
     return fnSearch(note, noteId);
 }

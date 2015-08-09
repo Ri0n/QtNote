@@ -11,10 +11,10 @@ public:
     HumanFileNameProvider(const QString &path, const QString &fileExt) :
         FileNameProvider(path, fileExt) {}
 
-    QString newName(const Note &note, QString &noteId);
-    QString updateName(const Note &note, QString &noteId);
+    QString newName(const FileNoteData &note, QString &noteId);
+    QString updateName(const FileNoteData &note, QString &noteId);
 private:
-    QString fnSearch(const Note &note, QString &noteId);
+    QString fnSearch(const FileNoteData &note, QString &noteId);
 };
 
 } // namespace QtNote

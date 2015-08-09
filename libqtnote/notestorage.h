@@ -72,7 +72,8 @@ public:
 
     /* returns note id */
     virtual QString createNote(const QString &text) = 0;
-    virtual bool saveNote(const QString &noteId, const QString &text) = 0;
+    /* returns updated note id or the same */
+    virtual QString saveNote(const QString &noteId, const QString &text) = 0;
     virtual void deleteNote(const QString &noteId) = 0;
     virtual bool isRichTextAllowed() const = 0;
     virtual NoteFinder* search();

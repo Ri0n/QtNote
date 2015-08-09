@@ -42,7 +42,8 @@ public:
     QIcon noteIcon() const;
     QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
     Note note(const QString &id);
-    bool saveNote(const QString &noteId, const QString &text);
+    QString createNote(const QString &text);
+    QString saveNote(const QString &noteId, const QString &text);
     bool isRichTextAllowed() const;
     QString findStorageDir() const;
 };

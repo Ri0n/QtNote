@@ -446,7 +446,10 @@ void Main::note_saveRequested()
         nw->setNoteId(noteId);
     } else {
         if (NoteManager::instance()->note(storageId, noteId).text() != text) {
-            storage->saveNote(noteId, text);
+            QString newNoteId = storage->saveNote(noteId, text);
+            if (noteId != newNoteId) {
+                nw->setNoteId(newNoteId);
+            }
         }
     }
 }

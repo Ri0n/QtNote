@@ -4,11 +4,13 @@
 #include <QString>
 #include <QDir>
 
+#include "qtnote_export.h"
+
 namespace QtNote {
 
-class Note;
+class FileNoteData;
 
-class FileNameProvider
+class QTNOTE_EXPORT FileNameProvider
 {
 protected:
     QDir dir;
@@ -22,8 +24,9 @@ public:
     inline bool isValid() const { return valid && dir.exists(); }
     inline bool setPath(const QString &path) { dir = path; valid = !path.isEmpty() && dir.exists(); return valid; }
 
-    virtual QString newName(const Note &note, QString &noteId) = 0;
-    virtual QString updateName(const Note &note, QString &noteId) = 0;
+    virtual QString newName(const FileNoteData &note, QString &noteId) = 0;
+    virtual QString updateName(const FileNoteData &note, QString &noteId) = 0;
+    virtual QString uidForFileName(const QString &fileName);
 };
 
 } // namespace QtNote

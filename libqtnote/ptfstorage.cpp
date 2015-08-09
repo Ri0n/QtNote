@@ -57,10 +57,10 @@ void PTFStorage::initNotesDir()
             qWarning("can't create storage dir: %s", qPrintable(notesDir));
         }
     }
-    if (!nameProvder) {
-        nameProvder = new HumanFileNameProvider(notesDir, fileExt);
+    if (!nameProvider) {
+        nameProvider = new HumanFileNameProvider(notesDir, fileExt);
     } else {
-        nameProvder->setPath(notesDir);
+        nameProvider->setPath(notesDir);
     }
 }
 
@@ -95,7 +95,7 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
     foreach (QFileInfo fi, files) {
         PTFData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(note.uid(), systemName(), note.title(),
+            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(),
                             note.modifyTime());
             ret.append(li);
         }
@@ -119,45 +119,26 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-bool PTFStorage::internalSave(const QString &text, QString &noteId)
-{
-    PTFData note;
-    QDir d(notesDir);
-    QString fileName = QString("%1.%2").arg(noteId).arg(fileExt);
-    note.setText(text);
-
-    QString title = note.title();
-    QRegExp r("[<>:\"/\\\\|?*]");
-    title.replace(r, QChar('_'));
-    if (title != noteId) {
-        d.remove(fileName);
-
-        QString suf;
-        int ind = 0;
-
-        while (d.exists((fileName = QString("%1%2.%3").arg(title, suf, fileExt)))) {
-            ind++;
-            suf = QString::number(ind);
-        }
-        noteId = title + suf;
-    }
-
-    return saveNoteToFile(note, d.absoluteFilePath(fileName));
-}
-
 QString PTFStorage::createNote(const QString &text)
 {
+    PTFData note;
+    note.setText(text);
     QString noteId;
-    if (internalSave(text, noteId)) {
+    if (saveNoteToFile(note, nameProvider->newName(note, noteId))) {
         return noteId;
     }
     return QString();
 }
 
-bool PTFStorage::saveNote(const QString &noteId, const QString & text)
+QString PTFStorage::saveNote(const QString &noteId, const QString & text)
 {
-    QString idCopy = noteId;
-    return internalSave(text, idCopy);
+    QString newNoteId = noteId;
+    PTFData note;
+    note.setText(text);
+    if (saveNoteToFile(note, nameProvider->updateName(note, newNoteId))) {
+        return newNoteId;
+    }
+    return QString();
 }
 
 bool PTFStorage::isRichTextAllowed() const

@@ -36,7 +36,7 @@ public:
 
 	NoteData();
 	virtual ~NoteData() {}
-	virtual void toTrash() = 0;
+	virtual void remove() = 0;
 	virtual QString text() const;
 	virtual QString title() const;
 	virtual void setText(const QString &text);

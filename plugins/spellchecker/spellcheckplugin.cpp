@@ -89,7 +89,7 @@ public:
         QRegularExpressionMatchIterator i = expression.globalMatch(text);
         while (i.hasNext()) {
             QRegularExpressionMatch match = i.next();
-            qDebug() << match.captured();
+            //qDebug() << match.captured();
             if (!sei->spell(match.captured())) {
                 nh->addFormat(match.capturedStart(), match.capturedLength(), myClassFormat);
             }

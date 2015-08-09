@@ -23,27 +23,21 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFile>
 #include <QDir>
 #include <QSettings>
+#include <QDebug>
 
 #include "filestorage.h"
 #include "filestoragesettingswidget.h"
 #include "filenotedata.h"
+#include "filenameprovider.h"
 
 namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent) :
     NoteStorage(parent),
     _cacheValid(false),
-    nameProvder(0)
+    nameProvider(0)
 {
 
-}
-
-QString FileStorage::createNote(const QString &text)
-{
-    QString uid = QUuid::createUuid().toString();
-    uid = uid.mid(1, uid.length()-2);
-    saveNote(uid, text);
-    return uid;
 }
 
 void FileStorage::deleteNote(const QString &noteId)
@@ -61,8 +55,12 @@ void FileStorage::deleteNote(const QString &noteId)
 
 bool FileStorage::saveNoteToFile(FileNoteData &note, const QString &fileName)
 {
+    qDebug() << "save note to " << fileName;
     if (note.saveToFile(fileName)) {
-        NoteListItem item(note.uid(), systemName(), note.title(), note.modifyTime());
+        QString uid = nameProvider->uidForFileName(fileName);
+        qDebug() << "uid=" << uid;
+        NoteListItem item(uid, systemName(), note.title(), note.modifyTime());
+        // TODO remove old note from cache
         putToCache(item);
         return true;
     }

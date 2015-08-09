@@ -5,5 +5,11 @@
 
 namespace QtNote {
 
+QString FileNameProvider::uidForFileName(const QString &fileName)
+{
+    QFileInfo fi(fileName);
+    return fi.completeBaseName();
+}
+
 
 } // namespace QtNote

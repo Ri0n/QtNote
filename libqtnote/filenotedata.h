@@ -31,15 +31,13 @@ class QTNOTE_EXPORT FileNoteData : public NoteData
 {
 public:
     FileNoteData();
-	QString uid() const;
-	void setFile(QString fn);
+    inline void setFile(const QString &fn) { sFileName = fn; }
     virtual bool saveToFile(const QString &fileName) = 0;
 	QDateTime modifyTime() const;
 	qint64 lastChangeElapsed() const;
-	void toTrash();
+	void remove();
 
 protected:
-	QString sUid;
 	QString sFileName;
 	QDateTime dtLastChange;
 	QDateTime dtCreate;

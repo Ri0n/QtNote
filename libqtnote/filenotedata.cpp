@@ -30,21 +30,6 @@ FileNoteData::FileNoteData()
 
 }
 
-QString FileNoteData::uid() const
-{
-	return sUid;
-}
-
-void FileNoteData::setFile(QString fn)
-{
-	sFileName = fn;
-	int pos = fn.lastIndexOf('/');
-	if (pos != -1) {
-		fn = fn.mid(pos+1);
-	}
-	sUid = fn.section('.', 0, 0);
-}
-
 QDateTime FileNoteData::modifyTime() const
 {
 	return dtLastChange;
@@ -55,8 +40,7 @@ qint64 FileNoteData::lastChangeElapsed() const
 	return dtLastChange.msecsTo(QDateTime::currentDateTime());
 }
 
-
-void FileNoteData::toTrash()
+void FileNoteData::remove()
 {
 	QFile f(sFileName);
 	f.remove();

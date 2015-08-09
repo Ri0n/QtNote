@@ -38,7 +38,6 @@ class QTNOTE_EXPORT FileStorage : public NoteStorage
     Q_OBJECT
 public:
     FileStorage(QObject *parent);
-    QString createNote(const QString &text);
     void deleteNote(const QString &noteId);
     virtual void putToCache(const NoteListItem &note);
     virtual QString findStorageDir() const = 0;
@@ -60,7 +59,7 @@ protected:
     QHash<QString, NoteListItem> cache;
     bool _cacheValid; /* last limit passed to noteList() */
     QString notesDir;
-    FileNameProvider *nameProvder;
+    FileNameProvider *nameProvider;
 };
 
 }
