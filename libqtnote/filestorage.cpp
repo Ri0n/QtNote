@@ -63,21 +63,20 @@ QString FileStorage::saveNoteToFile(FileNoteData &note, const QString &text, con
     QString newNoteId = noteId;
     QString fileName;
 
+    note.setText(text);
     if (noteId.isEmpty()) {
         fileName = nameProvider->newName(note, newNoteId);
     } else {
         fileName = nameProvider->updateName(note, newNoteId);
     }
 
-    note.setText(text);
     if (note.saveToFile(fileName)) {
         if (!noteId.isEmpty() && noteId != newNoteId) {
-            // TODO get old filename and remove old file
+            QFile(nameProvider->fileNameForUid(noteId)).remove();
         }
 
-        QString uid = nameProvider->uidForFileName(fileName);
-        NoteListItem item(uid, systemName(), note.title(), note.modifyTime());
-        putToCache(item, noteId); // noteId is old one
+        NoteListItem item(newNoteId, systemName(), note.title(), note.modifyTime());
+        putToCache(item, noteId); // noteId is old one. new one is in item.id
         return newNoteId;
     }
     handleFSError();

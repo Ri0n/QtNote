@@ -27,6 +27,7 @@ public:
     virtual QString newName(const FileNoteData &note, QString &noteId) = 0;
     virtual QString updateName(const FileNoteData &note, QString &noteId) = 0;
     virtual QString uidForFileName(const QString &fileName);
+    virtual QString fileNameForUid(const QString &noteId);
 };
 
 } // namespace QtNote

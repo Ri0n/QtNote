@@ -98,7 +98,7 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     connect(storage.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteModified(NoteListItem)), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(storageChanged()));
-    // TODO noteIdChanged it not handled
+    connect(storage.data(), SIGNAL(noteIdChanged(NoteListItem,QString)), SLOT(storageChanged()));
 
     emit storageAdded(storage);
 }
