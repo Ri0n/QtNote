@@ -119,26 +119,10 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-QString PTFStorage::createNote(const QString &text)
-{
-    PTFData note;
-    note.setText(text);
-    QString noteId;
-    if (saveNoteToFile(note, nameProvider->newName(note, noteId))) {
-        return noteId;
-    }
-    return QString();
-}
-
 QString PTFStorage::saveNote(const QString &noteId, const QString & text)
 {
-    QString newNoteId = noteId;
     PTFData note;
-    note.setText(text);
-    if (saveNoteToFile(note, nameProvider->updateName(note, newNoteId))) {
-        return newNoteId;
-    }
-    return QString();
+    return saveNoteToFile(note, text, noteId);
 }
 
 bool PTFStorage::isRichTextAllowed() const

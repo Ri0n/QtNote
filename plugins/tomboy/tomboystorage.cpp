@@ -98,26 +98,10 @@ Note TomboyStorage::note(const QString &id)
     return Note();
 }
 
-QString TomboyStorage::createNote(const QString &text)
-{
-    TomboyData note;
-    note.setText(text);
-    QString noteId;
-    if (saveNoteToFile(note, nameProvider->newName(note, noteId))) {
-        return noteId;
-    }
-    return QString();
-}
-
 QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
-    QString newNoteId = noteId;
     TomboyData note;
-    note.setText(text);
-    if (saveNoteToFile(note, nameProvider->updateName(note, newNoteId))) {
-        return newNoteId;
-    }
-    return QString();
+    return saveNoteToFile(note, text, noteId);
 }
 
 bool TomboyStorage::isRichTextAllowed() const

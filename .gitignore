@@ -11,6 +11,7 @@ moc_*.cpp
 .inst
 setup.exe
 QtNote-*-setup.exe
+*.autosave
 
 # vs
 GeneratedFiles

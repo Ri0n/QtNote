@@ -40,6 +40,11 @@ FileStorage::FileStorage(QObject *parent) :
 
 }
 
+QString FileStorage::createNote(const QString &text)
+{
+    return saveNote(QString(), text);
+}
+
 void FileStorage::deleteNote(const QString &noteId)
 {
     QHash<QString, NoteListItem>::const_iterator r = cache.find(noteId);
@@ -53,19 +58,30 @@ void FileStorage::deleteNote(const QString &noteId)
     }
 }
 
-bool FileStorage::saveNoteToFile(FileNoteData &note, const QString &fileName)
+QString FileStorage::saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId)
 {
-    qDebug() << "save note to " << fileName;
+    QString newNoteId = noteId;
+    QString fileName;
+
+    if (noteId.isEmpty()) {
+        fileName = nameProvider->newName(note, newNoteId);
+    } else {
+        fileName = nameProvider->updateName(note, newNoteId);
+    }
+
+    note.setText(text);
     if (note.saveToFile(fileName)) {
+        if (!noteId.isEmpty() && noteId != newNoteId) {
+            // TODO get old filename and remove old file
+        }
+
         QString uid = nameProvider->uidForFileName(fileName);
-        qDebug() << "uid=" << uid;
         NoteListItem item(uid, systemName(), note.title(), note.modifyTime());
-        // TODO remove old note from cache
-        putToCache(item);
-        return true;
+        putToCache(item, noteId); // noteId is old one
+        return newNoteId;
     }
     handleFSError();
-    return false;
+    return QString::null;
 }
 
 void FileStorage::handleFSError()
@@ -76,12 +92,26 @@ void FileStorage::handleFSError()
     emit invalidated();
 }
 
-void FileStorage::putToCache(const NoteListItem &note)
+void FileStorage::putToCache(const NoteListItem &note, const QString &oldNoteId)
 {
+    bool isModify;
+    bool idChange = false;
+
     ensureChachePopulated();
-    bool isModify = cache.contains(note.id);
+
+    if (!oldNoteId.isEmpty() && oldNoteId != note.id) {
+        isModify = cache.contains(oldNoteId);
+        idChange = true;
+    } else {
+        isModify = cache.contains(note.id);
+    }
+
     cache.insert(note.id, note);
     if (isModify) {
+        if (idChange) {
+            cache.remove(oldNoteId);
+            emit noteIdChanged(note, oldNoteId);
+        }
         emit noteModified(note);
     } else {
         emit noteAdded(note);

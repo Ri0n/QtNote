@@ -85,6 +85,7 @@ signals:
     void noteAdded(const NoteListItem &);
     void noteModified(const NoteListItem &);
     void noteRemoved(const NoteListItem &);
+    void noteIdChanged(const NoteListItem &note, const QString &oldNoteId);
     void invalidated();
     void storageErorr(const QString &);
 };
