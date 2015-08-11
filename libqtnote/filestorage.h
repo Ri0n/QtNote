@@ -40,7 +40,7 @@ public:
     FileStorage(QObject *parent);
     QString createNote(const QString &text);
     void deleteNote(const QString &noteId);
-    virtual void putToCache(const NoteListItem &note);
+    virtual void putToCache(const NoteListItem &note, const QString &oldNoteId);
     virtual QString findStorageDir() const = 0;
     QWidget *settingsWidget();
     QString tooltip();
