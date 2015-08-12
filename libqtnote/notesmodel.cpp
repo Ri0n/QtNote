@@ -152,6 +152,8 @@ void NotesModel::storageInvalidated()
 {
 	/* just a hack. actually we should remove all items of this storage */
 	beginResetModel();
+    // FIXME it seems, it does not actually reset anything
+    // to reproduce try to delete note and than switch to it from manager
 	endResetModel();
 }
 

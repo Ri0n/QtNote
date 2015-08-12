@@ -171,6 +171,11 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
     NoteWidget *nw = qtnote->noteWidget(srcCurrent.data(NotesModel::StorageIdRole).toString(),
                                         srcCurrent.data(NotesModel::NoteIdRole).toString());
 
+    /* probably it's ok to just return if nw=0. stirage will be anyway invalidated on errors */
+    if (!nw) {
+        return;
+    }
+
 	if (ui->splitter->count() > 1) {
 		delete ui->splitter->widget(ui->splitter->count() - 1);
 	} else {

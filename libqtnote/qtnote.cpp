@@ -239,6 +239,14 @@ void Main::showOptions()
 NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId, const QString &contents)
 {
     Note note;
+    if (!noteId.isEmpty()) {
+        note = NoteManager::instance()->note(storageId, noteId);
+        if (note.isNull()) {
+            qWarning("failed to load note: %s", qPrintable(noteId));
+            return 0;
+        }
+    }
+
     NoteWidget *w = new NoteWidget(storageId, noteId);
     w->setAcceptRichText(NoteManager::instance()->storage(storageId)
                          ->isRichTextAllowed());
@@ -251,12 +259,6 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId, co
 #ifdef MAIN_DEBUG
         qDebug() << "Main::noteWidget";
 #endif
-        note = NoteManager::instance()->note(storageId, noteId);
-        if (note.isNull()) {
-            qWarning("failed to load note: %s", qPrintable(noteId));
-            return 0;
-        }
-
         if (note.text().startsWith(note.title())) {
             w->setText(note.text());
         } else {
@@ -282,7 +284,11 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
     }
 
     if (!dlg) {
-        dlg = new NoteDialog(noteWidget(storageId, noteId, contents));
+        auto nw = noteWidget(storageId, noteId, contents);
+        if (!nw) {
+            return;
+        }
+        dlg = new NoteDialog(nw);
         dlg->setWindowIcon(NoteManager::instance()->storage(storageId)->noteIcon());
     }
     dlg->show();
