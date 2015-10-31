@@ -31,6 +31,7 @@
 #include <QLayout>
 #include <QTextDocumentFragment>
 #include <QPainter>
+#include <QScrollBar>
 
 static const char* replaceIconName = ":/icons/replace-text";
 static QWeakPointer<QIcon> icnReplaceAll;
@@ -43,94 +44,102 @@ static QWeakPointer<QIcon> icnReplaceAll;
 class TypeAheadFindBar::Private
 {
 public:
-	// setup search and react to search results
-	void doFind(bool backward = false)
-	{
-		QTextDocument::FindFlags options;
+    // setup search and react to search results
+    void doFind(bool backward = false)
+    {
+        QTextDocument::FindFlags options;
 
-		if (caseSensitive)
-			options |= QTextDocument::FindCaseSensitively;
+        if (caseSensitive)
+            options |= QTextDocument::FindCaseSensitively;
 
-		if (backward) {
-			options |= QTextDocument::FindBackward;
+        if (backward) {
+            options |= QTextDocument::FindBackward;
 
-			// move cursor before currect selection
-			// to prevent finding the same occurence again
-			QTextCursor cursor = te->textCursor();
-			cursor.setPosition(cursor.selectionStart());
-			cursor.movePosition(QTextCursor::Left);
-			te->setTextCursor(cursor);
-		}
+            // move cursor before currect selection
+            // to prevent finding the same occurence again
+            QTextCursor cursor = te->textCursor();
+            cursor.setPosition(cursor.selectionStart());
+            cursor.movePosition(QTextCursor::Left);
+            te->setTextCursor(cursor);
+        }
 
-		if (find(options)) {
-			le_find->setStyleSheet("");
-		}
-		else {
-			le_find->setStyleSheet("QLineEdit { background: #ff6666; color: #ffffff }");
-		}
-	}
+        if (find(options)) {
+            le_find->setStyleSheet("");
+        }
+        else {
+            le_find->setStyleSheet("QLineEdit { background: #ff6666; color: #ffffff }");
+        }
+    }
 
-	// real search code
+    // real search code
 
-	bool find(QTextDocument::FindFlags options, QTextCursor::MoveOperation start = QTextCursor::NoMove)
-	{
-		if (start != QTextCursor::NoMove) {
-			QTextCursor cursor = te->textCursor();
-			cursor.movePosition(start);
-			te->setTextCursor(cursor);
-		}
+    bool find(QTextDocument::FindFlags options, QTextCursor::MoveOperation start = QTextCursor::NoMove)
+    {
+        int sv = te->verticalScrollBar()->value();
+        if (start != QTextCursor::NoMove) {
+            QTextCursor cursor = te->textCursor();
+            cursor.movePosition(start);
+            te->setTextCursor(cursor);
+        }
 
-		bool found = te->find(text, options);
-		if (!found) {
-			if (start == QTextCursor::NoMove)
-				return find(options, options & QTextDocument::FindBackward ? QTextCursor::End : QTextCursor::Start);
+        bool found = te->find(text, options);
+        if (!found) {
+            if (start == QTextCursor::NoMove) {
+                QTextCursor cursor = te->textCursor();
 
-			return false;
-		}
+                found = find(options, options & QTextDocument::FindBackward ? QTextCursor::End : QTextCursor::Start);
+                if (!found) {
+                    te->setTextCursor(cursor); /* Don't leave cursor on doc start/end */
+                    te->verticalScrollBar()->setValue(sv);
+                }
+                return found;
+            }
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	bool doReplace()
-	{
-		if (le_find->text().isEmpty()) {
-			return false;
-		}
+    bool doReplace()
+    {
+        if (le_find->text().isEmpty()) {
+            return false;
+        }
 
-		QTextDocument::FindFlags options;
-		QTextCursor cursor = te->textCursor();
-		QTextDocumentFragment selected = cursor.selection();
-		if (selected.isEmpty() || (selected.toPlainText() != le_find->text())) {
-			if (!find(options))
-				return false;
-		}
-		cursor.removeSelectedText();
-		cursor.insertText(le_replace->text());
-		return find(options);
-	}
+        QTextDocument::FindFlags options;
+        QTextCursor cursor = te->textCursor();
+        QTextDocumentFragment selected = cursor.selection();
+        if (selected.isEmpty() || (selected.toPlainText() != le_find->text())) {
+            if (!find(options))
+                return false;
+        }
+        cursor.removeSelectedText();
+        cursor.insertText(le_replace->text());
+        return find(options);
+    }
 
-	void doReplaceAll()
-	{
-		QTextCursor cur;
-		cur.setPosition(0);
-		te->setTextCursor(cur);
-		while (doReplace());
-	}
+    void doReplaceAll()
+    {
+        QTextCursor cur;
+        cur.setPosition(0);
+        te->setTextCursor(cur);
+        while (doReplace());
+    }
 
-	QString text;
-	bool caseSensitive;
-	TypeAheadFindBar::Mode mode;
+    QString text;
+    bool caseSensitive;
+    TypeAheadFindBar::Mode mode;
 
-	QTextEdit *te;
-	QLineEdit *le_find;
-	QLineEdit *le_replace;
-	QAction *act_next;
-	QAction *act_prev;
-	QAction *act_replace;
-	QAction *act_replace_all;
-	QAction *act_le_replace;
-	QCheckBox *cb_case;
-	QSharedPointer<QIcon> icnReplaceAll;
+    QTextEdit *te;
+    QLineEdit *le_find;
+    QLineEdit *le_replace;
+    QAction *act_next;
+    QAction *act_prev;
+    QAction *act_replace;
+    QAction *act_replace_all;
+    QAction *act_le_replace;
+    QCheckBox *cb_case;
+    QSharedPointer<QIcon> icnReplaceAll;
 };
 
 /**
@@ -142,84 +151,84 @@ public:
 TypeAheadFindBar::TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent)
 : QToolBar(title, parent)
 {
-	d = new Private();
-	d->te = textedit;
-	init();
+    d = new Private();
+    d->te = textedit;
+    init();
 }
 
 void TypeAheadFindBar::init()
 {
-	setIconSize(QSize(20,20));
-	setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+    setIconSize(QSize(20,20));
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
 
-	d->caseSensitive = false;
-	d->text = "";
+    d->caseSensitive = false;
+    d->text = "";
 
-	d->le_find = new QLineEdit(this);
-	d->le_find->setMaximumWidth(200);
-	d->le_find->setToolTip(tr("Search"));
-	connect(d->le_find, SIGNAL(textEdited(const QString &)), SLOT(textChanged(const QString &)));
-	addWidget(d->le_find);
+    d->le_find = new QLineEdit(this);
+    d->le_find->setMaximumWidth(200);
+    d->le_find->setToolTip(tr("Search"));
+    connect(d->le_find, SIGNAL(textEdited(const QString &)), SLOT(textChanged(const QString &)));
+    addWidget(d->le_find);
 
-	d->le_replace = new QLineEdit(this);
-	d->le_replace->setMaximumWidth(200);
-	d->le_replace->setToolTip(tr("Replace"));
-	d->act_le_replace = addWidget(d->le_replace);
+    d->le_replace = new QLineEdit(this);
+    d->le_replace->setMaximumWidth(200);
+    d->le_replace->setToolTip(tr("Replace"));
+    d->act_le_replace = addWidget(d->le_replace);
 
-	d->act_next = new QAction(QApplication::style()->standardIcon(QStyle::SP_ArrowDown), tr("Find next"), this);
-	d->act_next->setEnabled(false);
-	d->act_next->setToolTip(tr("Find next"));
-	connect(d->act_next, SIGNAL(triggered()), SLOT(findNext()));
-	addAction(d->act_next);
+    d->act_next = new QAction(QApplication::style()->standardIcon(QStyle::SP_ArrowDown), tr("Find next"), this);
+    d->act_next->setEnabled(false);
+    d->act_next->setToolTip(tr("Find next"));
+    connect(d->act_next, SIGNAL(triggered()), SLOT(findNext()));
+    addAction(d->act_next);
 
-	d->act_prev = new QAction(QApplication::style()->standardIcon(QStyle::SP_ArrowUp), tr("Find previous"), this);
-	d->act_prev->setEnabled(false);
-	d->act_prev->setToolTip(tr("Find previous"));
-	connect(d->act_prev, SIGNAL(triggered()), SLOT(findPrevious()));
-	addAction(d->act_prev);
+    d->act_prev = new QAction(QApplication::style()->standardIcon(QStyle::SP_ArrowUp), tr("Find previous"), this);
+    d->act_prev->setEnabled(false);
+    d->act_prev->setToolTip(tr("Find previous"));
+    connect(d->act_prev, SIGNAL(triggered()), SLOT(findPrevious()));
+    addAction(d->act_prev);
 
-	d->act_replace = new QAction(QIcon(replaceIconName), tr("Replace"), this);
-	d->act_replace->setToolTip(tr("Replace text"));
-	connect(d->act_replace, SIGNAL(triggered()), SLOT(replaceText()));
-	addAction(d->act_replace);
+    d->act_replace = new QAction(QIcon(replaceIconName), tr("Replace"), this);
+    d->act_replace->setToolTip(tr("Replace text"));
+    connect(d->act_replace, SIGNAL(triggered()), SLOT(replaceText()));
+    addAction(d->act_replace);
 
-	d->icnReplaceAll = icnReplaceAll.toStrongRef();
-	if (!d->icnReplaceAll) {
-		QPixmap replPix(replaceIconName);
-		QPainter p(&replPix);
-		int w = replPix.width() / 3.0 * 2.0;
-		int h = replPix.height() / 3.0 * 2.0;
-		p.drawPixmap(replPix.width() - w, replPix.height() - h, w, h,
-					 QApplication::style()->standardPixmap(QStyle::SP_BrowserReload)
-					 .scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-		d->icnReplaceAll = QSharedPointer<QIcon>(new QIcon(replPix));
-		icnReplaceAll = d->icnReplaceAll;
-	}
-	d->act_replace_all = new QAction(*d->icnReplaceAll, tr("Replace all"), this);
-	connect(d->act_replace_all, SIGNAL(triggered()), SLOT(replaceTextAll()));
-	addAction(d->act_replace_all);
+    d->icnReplaceAll = icnReplaceAll.toStrongRef();
+    if (!d->icnReplaceAll) {
+        QPixmap replPix(replaceIconName);
+        QPainter p(&replPix);
+        int w = replPix.width() / 3.0 * 2.0;
+        int h = replPix.height() / 3.0 * 2.0;
+        p.drawPixmap(replPix.width() - w, replPix.height() - h, w, h,
+                     QApplication::style()->standardPixmap(QStyle::SP_BrowserReload)
+                     .scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        d->icnReplaceAll = QSharedPointer<QIcon>(new QIcon(replPix));
+        icnReplaceAll = d->icnReplaceAll;
+    }
+    d->act_replace_all = new QAction(*d->icnReplaceAll, tr("Replace all"), this);
+    connect(d->act_replace_all, SIGNAL(triggered()), SLOT(replaceTextAll()));
+    addAction(d->act_replace_all);
 
-	d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
-	connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
-	addWidget(d->cb_case);
+    d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
+    connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
+    addWidget(d->cb_case);
 
-	optionsUpdate();
+    optionsUpdate();
 
-	setMode(Find);
-	hide();
+    setMode(Find);
+    hide();
 }
 
 void TypeAheadFindBar::setMode(TypeAheadFindBar::Mode mode)
 {
-	d->act_replace->setVisible(mode == Replace);
-	d->act_replace_all->setVisible(mode == Replace);
-	d->act_le_replace->setVisible(mode == Replace);
-	d->mode = mode;
+    d->act_replace->setVisible(mode == Replace);
+    d->act_replace_all->setVisible(mode == Replace);
+    d->act_le_replace->setVisible(mode == Replace);
+    d->mode = mode;
 }
 
 TypeAheadFindBar::Mode TypeAheadFindBar::mode() const
 {
-	return d->mode;
+    return d->mode;
 }
 
 /**
@@ -227,8 +236,8 @@ TypeAheadFindBar::Mode TypeAheadFindBar::mode() const
  */
 TypeAheadFindBar::~TypeAheadFindBar()
 {
-	delete d;
-	d = 0;
+    delete d;
+    d = 0;
 }
 
 /**
@@ -237,8 +246,8 @@ TypeAheadFindBar::~TypeAheadFindBar()
  */
 void TypeAheadFindBar::optionsUpdate()
 {
-	//d->act_next->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-next"));
-	//d->act_prev->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-prev"));
+    //d->act_next->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-next"));
+    //d->act_prev->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-prev"));
 }
 
 /**
@@ -246,10 +255,10 @@ void TypeAheadFindBar::optionsUpdate()
  */
 void TypeAheadFindBar::open()
 {
-	show();
-	d->le_find->setFocus();
-	d->le_find->selectAll();
-	emit visibilityChanged(true);
+    show();
+    d->le_find->setFocus();
+    d->le_find->selectAll();
+    emit visibilityChanged(true);
 }
 
 /**
@@ -257,8 +266,8 @@ void TypeAheadFindBar::open()
  */
 void TypeAheadFindBar::close()
 {
-	hide();
-	emit visibilityChanged(false);
+    hide();
+    emit visibilityChanged(false);
 }
 
 /**
@@ -266,11 +275,11 @@ void TypeAheadFindBar::close()
  */
 void TypeAheadFindBar::toggleVisibility()
 {
-	if (isVisible())
-		hide();
-	else
-		//show();
-		open();
+    if (isVisible())
+        hide();
+    else
+        //show();
+        open();
 }
 
 /**
@@ -278,28 +287,28 @@ void TypeAheadFindBar::toggleVisibility()
  */
 void TypeAheadFindBar::textChanged(const QString &str)
 {
-	QTextCursor cursor;
-	cursor = d->te->textCursor();
+    QTextCursor cursor;
+    cursor = d->te->textCursor();
 
-	if (str.isEmpty()) {
-		d->act_next->setEnabled(false);
-		d->act_prev->setEnabled(false);
-		d->le_find->setStyleSheet("");
-		cursor.clearSelection();
-		d->te->setTextCursor(cursor);
-		d->le_find->setStyleSheet("");
-	}
-	else {
-		d->act_next->setEnabled(true);
-		d->act_prev->setEnabled(true);
+    if (str.isEmpty()) {
+        d->act_next->setEnabled(false);
+        d->act_prev->setEnabled(false);
+        d->le_find->setStyleSheet("");
+        cursor.clearSelection();
+        d->te->setTextCursor(cursor);
+        d->le_find->setStyleSheet("");
+    }
+    else {
+        d->act_next->setEnabled(true);
+        d->act_prev->setEnabled(true);
 
-		// don't jump to next word occurence after appending new charater
-		cursor.setPosition(cursor.selectionStart());
-		d->te->setTextCursor(cursor);
+        // don't jump to next word occurence after appending new charater
+        cursor.setPosition(cursor.selectionStart());
+        d->te->setTextCursor(cursor);
 
-		d->text = str;
-		d->doFind();
-	}
+        d->text = str;
+        d->doFind();
+    }
 }
 
 /**
@@ -307,7 +316,7 @@ void TypeAheadFindBar::textChanged(const QString &str)
  */
 void TypeAheadFindBar::findNext()
 {
-	d->doFind();
+    d->doFind();
 }
 
 /**
@@ -315,7 +324,7 @@ void TypeAheadFindBar::findNext()
  */
 void TypeAheadFindBar::findPrevious()
 {
-	d->doFind(true);
+    d->doFind(true);
 }
 
 /**
@@ -323,7 +332,7 @@ void TypeAheadFindBar::findPrevious()
  */
 void TypeAheadFindBar::replaceText()
 {
-	d->doReplace();
+    d->doReplace();
 }
 
 /**
@@ -331,7 +340,7 @@ void TypeAheadFindBar::replaceText()
  */
 void TypeAheadFindBar::replaceTextAll()
 {
-	d->doReplaceAll();
+    d->doReplaceAll();
 }
 
 /**
@@ -339,5 +348,5 @@ void TypeAheadFindBar::replaceTextAll()
  */
 void TypeAheadFindBar::caseToggled(int state)
 {
-	d->caseSensitive = (state == Qt::Checked);
+    d->caseSensitive = (state == Qt::Checked);
 }

@@ -265,12 +265,12 @@ class MouseDisabler : public QObject
 public:
     MouseDisabler(QObject  *parent) : QObject(parent) {}
     bool eventFilter(QObject *obj, QEvent *event)
-     {
-         if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
-             return true;
-         }
-         return QObject::eventFilter(obj, event);
-     }
+    {
+        if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
+            return true;
+        }
+        return QObject::eventFilter(obj, event);
+    }
 };
 
 OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
