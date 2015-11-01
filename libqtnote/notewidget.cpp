@@ -234,7 +234,7 @@ void NoteWidget::keyPressEvent(QKeyEvent * event)
 void NoteWidget::onFindTriggered()
 {
     if (findBar->mode() == TypeAheadFindBar::Find) {
-        findBar->toggleVisibility();
+        findBar->searchTriggered(); /* just default */
     } else {
         findBar->setMode(TypeAheadFindBar::Find);
         findBar->open();
@@ -245,7 +245,7 @@ void NoteWidget::onFindTriggered()
 void NoteWidget::onReplaceTriggered()
 {
     if (findBar->mode() == TypeAheadFindBar::Replace) {
-        findBar->toggleVisibility();
+        findBar->searchTriggered(); /* just default */
     } else {
         findBar->setMode(TypeAheadFindBar::Replace);
         findBar->open();

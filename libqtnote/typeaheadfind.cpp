@@ -256,6 +256,10 @@ void TypeAheadFindBar::optionsUpdate()
 void TypeAheadFindBar::open()
 {
     show();
+    QString selectedText = d->te->textCursor().selection().toPlainText().trimmed();
+    if (!selectedText.isEmpty() && selectedText != d->le_find->text()) {
+        d->le_find->setText(selectedText);
+    }
     d->le_find->setFocus();
     d->le_find->selectAll();
     emit visibilityChanged(true);
@@ -280,6 +284,22 @@ void TypeAheadFindBar::toggleVisibility()
     else
         //show();
         open();
+}
+
+/**
+ * \brief For example for each Ctrl+F hit.
+ *        Almost the same toggleVisibility but doesn't hide if selection is changed and unempty
+ */
+void TypeAheadFindBar::searchTriggered()
+{
+    if (isVisible()) {
+        QString selectedText = d->te->textCursor().selection().toPlainText().trimmed();
+        if (selectedText.isEmpty() || selectedText == d->le_find->text()) {
+            hide();
+            return;
+        }
+    }
+    open();
 }
 
 /**

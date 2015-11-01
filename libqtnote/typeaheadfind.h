@@ -45,6 +45,7 @@ public slots:
 	void open();
 	void close();
 	void toggleVisibility();
+    void searchTriggered();
 	void optionsUpdate();
 
 signals:
