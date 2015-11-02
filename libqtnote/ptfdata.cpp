@@ -26,36 +26,38 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 PTFData::PTFData()
-		: FileNoteData()
+        : FileNoteData()
 {
 
 }
 
 bool PTFData::fromFile(QString fn)
 {
-	QFile file(fn);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-		return false;
-	setText(QString::fromUtf8(file.readAll()));
-	setFile(fn);
-	file.close();
-	QFileInfo fi(fn);
-	dtCreate = fi.created();
-	dtLastChange = fi.lastModified();
+    QFile file(fn);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    setText(QString::fromUtf8(file.readAll()));
+    setFile(fn);
+    file.close();
+    QFileInfo fi(fn);
+    dtCreate = fi.created();
+    dtLastChange = fi.lastModified();
 
-	return true;
+    return true;
 }
 
 bool PTFData::saveToFile(const QString &fileName)
 {
-	QFile file(fileName);
-	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-		return false;
-	file.write(sText.toUtf8());
-	setFile(fileName);
-	file.close();
-	dtLastChange = QFileInfo(file).lastModified();
-	return true;
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning("Failed to write: %s\n", qPrintable(file.errorString()));
+        return false;
+    }
+    file.write(sText.toUtf8());
+    setFile(fileName);
+    file.close();
+    dtLastChange = QFileInfo(file).lastModified();
+    return true;
 }
 
 } // namespace QtNote

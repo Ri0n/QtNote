@@ -7,22 +7,23 @@ namespace QtNote {
 
 QString HumanFileNameProvider::fnSearch(const FileNoteData &note, QString &noteId)
 {
+    QString pfix = QLatin1Char('.') + fileExt;
     QString fileName;
     QString title = note.title();
     QRegExp r("[<>:\"/\\\\|?*]");
-    title.replace(r, QChar('_'));
+    title = title.replace(r, QChar('_')).left(FN_MAX_LEN - pfix.size());
 
     if (title != noteId) { // filename shoud be changed or it's new note
-        //d.remove(fileName);
-
         QString suf;
         int ind = 0;
 
-        while (dir.exists((fileName = dir.absoluteFilePath(QString("%1%2.%3").arg(title, suf, fileExt))))) {
+        QString proposedId = title;
+        while (dir.exists((fileName = dir.absoluteFilePath(QString("%1%2").arg(proposedId, pfix))))) {
             ind++;
             suf = QString::number(ind);
+            proposedId = title.left(FN_MAX_LEN - suf.size() - pfix.size()) + suf;
         }
-        noteId = title + suf;
+        noteId = proposedId;
     } else {
         fileName = dir.absoluteFilePath(QString("%1.%3").arg(title, fileExt));
     }

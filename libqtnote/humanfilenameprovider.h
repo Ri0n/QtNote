@@ -7,6 +7,7 @@ namespace QtNote {
 
 class HumanFileNameProvider : public FileNameProvider
 {
+    static const int FN_MAX_LEN = 255;
 public:
     HumanFileNameProvider(const QString &path, const QString &fileExt) :
         FileNameProvider(path, fileExt) {}
