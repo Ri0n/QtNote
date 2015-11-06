@@ -69,8 +69,8 @@ public:
 
     Note note(const QString &storageId, const QString &noteId);
 
-    const QMap<QString, NoteStorage::Ptr> storages() const;
-    const QLinkedList<NoteStorage::Ptr> prioritizedStorages() const;
+    const QMap<QString, NoteStorage::Ptr> storages(bool withInvalid = false) const;
+    const QLinkedList<NoteStorage::Ptr> prioritizedStorages(bool withInvalid = false) const;
 
     NoteStorage::Ptr storage(const QString &storageId) const;
     inline NoteStorage::Ptr defaultStorage() const

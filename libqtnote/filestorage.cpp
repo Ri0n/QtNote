@@ -145,6 +145,7 @@ void FileStorage::settingsApplied()
     QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir()? "" : notesDir);
     cache.clear();
     _cacheValid = false;
+    init();
     emit invalidated();
 }
 

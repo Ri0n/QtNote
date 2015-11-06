@@ -50,7 +50,7 @@ public:
     {
         QStringList orderedNames;
 
-        foreach(NoteStorage::Ptr storage,  NoteManager::instance()->prioritizedStorages())
+        foreach(NoteStorage::Ptr storage,  NoteManager::instance()->prioritizedStorages(true))
         {
             titleMap[storage->systemName()] = storage->name();
             orderedNames.append(storage->name());
@@ -98,6 +98,12 @@ public:
                 return NoteManager::instance()->storage(storageId)->storageIcon();
             } else if (role == Qt::ToolTipRole) {
                 return NoteManager::instance()->storage(storageId)->tooltip();
+            } else if (role == Qt::ForegroundRole) {
+                QColor color = qApp->palette().color(QPalette::Foreground); // mey be not what we expect
+                if (!NoteManager::instance()->storage(storageId)->isAccessible()) {
+                    color.setAlpha(128);
+                }
+                return color;
             }
         }
         return QStringListModel::data(index, role);

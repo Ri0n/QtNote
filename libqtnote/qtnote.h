@@ -60,7 +60,7 @@ public:
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
     void setNotificationImpl(NotificationInterface *notifier);
 
-    bool registerStorage(NoteStorage::Ptr &storage);
+    void registerStorage(NoteStorage::Ptr &storage);
     void unregisterStorage(NoteStorage::Ptr &storage);
 
 signals:

@@ -147,31 +147,50 @@ Note NoteManager::note(const QString &storageId, const QString &noteId)
     return Note();
 }
 
-const QMap<QString, NoteStorage::Ptr> NoteManager::storages() const
+const QMap<QString, NoteStorage::Ptr> NoteManager::storages(bool withInvalid) const
 {
-    return _storages;
+    if (withInvalid) {
+        return _storages;
+    }
+    decltype(_storages) ret;
+    for (auto item : _storages) {
+        if (item->isAccessible()) {
+            ret.insert(item->systemName(), item);
+        }
+    }
+    return ret;
 }
 
-const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages() const
+const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withInvalid) const
 {
-    if (_prioCache.size()) {
-        return _prioCache;
-    }
+    if (!_prioCache.size()) {
 
-    auto storages = _storages;
+        auto storages = _storages;
 
-    for (auto code: _priorities) {
-        auto storage = storages.take(code);
-        if (storage) {
+        for (auto code: _priorities) {
+            auto storage = storages.take(code);
+            if (storage) {
+                _prioCache.append(storage);
+            }
+        }
+
+        for (auto storage: storages) {
             _prioCache.append(storage);
         }
     }
 
-    for (auto storage: storages) {
-        _prioCache.append(storage);
+    if (withInvalid) {
+        return _prioCache;
     }
 
-    return _prioCache;
+    decltype(_prioCache) ret;
+    for (auto storage : _prioCache) {
+        if (storage->isAccessible()) {
+            ret.append(storage);
+        }
+    }
+
+    return ret;
 }
 
 NoteStorage::Ptr NoteManager::storage(const QString &storageId) const

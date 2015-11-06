@@ -35,6 +35,7 @@ class TomboyStorage : public FileStorage
     Q_DISABLE_COPY(TomboyStorage)
 public:
     TomboyStorage(QObject *parent);
+    bool init();
     bool isAccessible() const;
     const QString systemName() const;
     const QString name() const;

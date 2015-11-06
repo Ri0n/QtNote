@@ -71,10 +71,8 @@ bool TomboyPlugin::init(Main *qtnote)
 {
     this->qtnote = qtnote;
     storage = NoteStorage::Ptr(new TomboyStorage(this));
-    if (!qtnote->registerStorage(storage)) {
-        return false;
-    }
-    return true;
+    qtnote->registerStorage(storage);
+    return storage->isAccessible();
 }
 
 } // namespace QtNote

@@ -35,12 +35,22 @@ TomboyStorage::TomboyStorage(QObject *parent) :
     FileStorage(parent)
 {
     fileExt = "note";
+    init();
+}
+
+bool TomboyStorage::init()
+{
     QSettings s;
     notesDir = s.value("storage.tomboy.path").toString();
     if (notesDir.isEmpty() || !QDir(notesDir).isReadable()) {
         notesDir = findStorageDir();
     }
-    nameProvider = new UuidFileNameProvider(notesDir, fileExt);
+    if (!nameProvider) {
+        nameProvider = new UuidFileNameProvider(notesDir, fileExt);
+    } else {
+        nameProvider->setPath(notesDir);
+    }
+    return isAccessible();
 }
 
 bool TomboyStorage::isAccessible() const

@@ -58,6 +58,7 @@ public:
     typedef QSharedPointer<NoteStorage> Ptr;
 
     NoteStorage(QObject *parent);
+    virtual bool init() = 0;
     virtual const QString systemName() const = 0;
     virtual const QString name() const = 0;
     virtual QIcon storageIcon() const = 0;

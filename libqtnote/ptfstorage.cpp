@@ -41,12 +41,18 @@ PTFStorage::PTFStorage(QObject *parent) :
     FileStorage(parent)
 {
     fileExt = "txt";
+    init();
+}
+
+bool PTFStorage::init()
+{
     QSettings s;
     notesDir = s.value("storage.ptf.path").toString();
     if (notesDir.isEmpty()) {
         notesDir = findStorageDir();
     }
     initNotesDir();
+    return isAccessible();
 }
 
 void PTFStorage::initNotesDir()

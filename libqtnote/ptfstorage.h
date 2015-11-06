@@ -34,6 +34,7 @@ class PTFStorage : public FileStorage
 
 public:
     PTFStorage(QObject *parent = 0);
+    bool init();
     bool isAccessible() const;
     const QString systemName() const;
     const QString name() const;
