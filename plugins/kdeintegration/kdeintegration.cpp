@@ -44,7 +44,7 @@ PluginMetadata KDEIntegration::metadata()
     md.minVersion = 0x020300; // minimum compatible version of QtNote
     md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage = QUrl("http://ri0n.github.io/QtNote");
-    md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma");
+    md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma" << "/usr/share/xsessions/plasma");
     return md;
 }
 
