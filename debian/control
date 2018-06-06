@@ -2,10 +2,10 @@ Source: qtnote
 Section: text
 Priority: optional
 Maintainer: Sergey Il'inykh <rion4ik@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), cdbs, qt5-qmake, qtbase5-dev
+Build-Depends: debhelper (>= 8.0.0), cdbs, qtchooser, qt5-qmake, qtbase5-dev, libqt5x11extras5-dev, libhunspell-dev, pkg-config
 Standards-Version: 3.9.3
 Homepage: http://ri0n.github.io/QtNote
-Vcs-Git: git://github.com/Ri0n/qtnote
+Vcs-Git: https://github.com/Ri0n/QtNote.git
 Vcs-Browser: https://github.com/Ri0n/qtnote
 
 Package: qtnote
