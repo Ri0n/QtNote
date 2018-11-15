@@ -185,7 +185,8 @@ void PluginManager::loadPlugins()
             continue;
         }
 
-        for (PluginFeature f = FirtFeature; f < LastFeature; ) {
+        auto f = FirstFeature;
+        while (f != LastFeature) {
             if (pd->features & f) {
                 FeaturedPlugin &fp = featurePriority[f];
                 if (native) {
@@ -194,7 +195,7 @@ void PluginManager::loadPlugins()
                     fp.base.push_back(plugin);
                 }
             }
-            f = (PluginFeature)(f << 1);
+            f = PluginFeature(f << 1);
         }
 
         if (pd->features & RegularPlugin) {

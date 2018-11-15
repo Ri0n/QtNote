@@ -34,8 +34,8 @@ public:
     };
 
     enum PluginFeature {
-        FirtFeature     = 0x1,
-        RegularPlugin   = FirtFeature,
+        FirstFeature    = 0x1,
+        RegularPlugin   = FirstFeature,
         DEIntegration   = 0x2,
         TrayIcon        = 0x4,
         GlobalShortcuts = 0x8,
