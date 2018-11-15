@@ -10,6 +10,7 @@
 #include <QToolButton>
 #include <QPalette>
 #include <QMenu>
+#include <QStyle>
 #if QT_VERSION >= 0x050400
 # include <QGuiApplication>
 #endif
@@ -118,10 +119,8 @@ static struct MakeVSHappy {
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     ui(new Ui::NoteWidget),
-    _highlighter(0),
     _storageId(storageId),
-    _noteId(noteId),
-    _trashRequested(false)
+    _noteId(noteId)
 {
     ui->setupUi(this);
 

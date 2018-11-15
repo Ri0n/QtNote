@@ -24,7 +24,7 @@ class ButtonDelegate : public QStyledItemDelegate
     QModelIndex sunken;
 
 public:
-    explicit ButtonDelegate(QObject *parent = 0) :
+    explicit ButtonDelegate(QObject *parent = nullptr) :
         QStyledItemDelegate(parent)
     {
     }
@@ -33,7 +33,7 @@ public:
     void paint(QPainter *painter,
                const QStyleOptionViewItem &option, const QModelIndex &index) const
     {
-        QStyleOptionViewItemV4 opt = option;
+        QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
         if (opt.icon.isNull()) {
             return;
@@ -150,6 +150,7 @@ public:
                 case PluginManager::LP_Enabled:
                     return Qt::Checked;
                 }
+                break;
             }
 
             case Qt::DisplayRole:

@@ -75,10 +75,10 @@ private slots:
     void focusReceived();
 
 private:
-    Ui::NoteWidget *ui;
+    Ui::NoteWidget *ui = nullptr;
 
-    TypeAheadFindBar *findBar;
-    NoteHighlighter* _highlighter;
+    TypeAheadFindBar *findBar = nullptr;
+    NoteHighlighter* _highlighter = nullptr;
     HighlighterExtension::Ptr _linkHighlighter;
     QString _storageId;
     QString _noteId;
@@ -88,8 +88,8 @@ private:
     QTimer _autosaveTimer;
     QElapsedTimer _lastChangeElapsed;
     Features _features;
-    bool _trashRequested;
-    bool _changed;
+    bool _trashRequested = false;
+    bool _changed = false;
 
     QAction *initAction(const ActData &name);
 };
