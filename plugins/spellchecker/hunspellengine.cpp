@@ -127,7 +127,8 @@ bool HunspellEngine::spell(const QString &word) const
         return true;
     }
     foreach (const LangItem &li, languages) {
-        if (li.hunspell->spell(li.codec->fromUnicode(word)) != 0) {
+        auto ba = li.codec->fromUnicode(word); // byte array in dict's encoding
+        if (li.hunspell->spell(std::string(ba.data(), size_t(ba.size()))) != 0) {
             return true;
         }
     }
@@ -143,12 +144,11 @@ QList<QString> HunspellEngine::suggestions(const QString& word)
 {
     QStringList qtResult;
     foreach (const LangItem &li, languages) {
-        char **result;
-        int sugNum = li.hunspell->suggest(&result, li.codec->fromUnicode(word));
-        for (int i=0; i < sugNum; i++) {
-            qtResult << li.codec->toUnicode(result[i]);
+        auto result = li.hunspell->suggest(std::string(li.codec->fromUnicode(word)));
+        for (auto &s : result) {
+            QByteArray ba(s.data(), int(s.size()));
+            qtResult << li.codec->toUnicode(ba);
         }
-        li.hunspell->free_list(&result, sugNum);
     }
     return qtResult;
 }
