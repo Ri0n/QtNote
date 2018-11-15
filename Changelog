@@ -1,3 +1,8 @@
+2018-11-16 QtNote-3.0.5 Release
+* Plasma integration fixes nd updates
+* New hunpell compatibility and encoding fixes
+* Fixed classification of plugins
+
 2015-07-29 QtNote-3.0.3 Release
 + Allow changing global shortcuts w/o restart
 + Set default shortcuts
