@@ -1,17 +1,24 @@
-.moc
-.obj
-.rcc
-.ui
+*.moc
+*.obj
+*.rcc
+ui_*.h
+qrc_*.cpp
+moc_*.h
+*.gch
 Makefile
 qtnote
 qtnote.pro.user*
 moc_*.cpp
 *.o
-*.so
+*.so*
 .inst
 setup.exe
 QtNote-*-setup.exe
 *.autosave
+*.swp
+tmp
+debian/files
+.qmake.stash
 
 # vs
 GeneratedFiles
