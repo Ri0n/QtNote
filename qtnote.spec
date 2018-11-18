@@ -1,4 +1,3 @@
-
 %if 0%{?fedora}
 %define _pkgconfig pkgconfig
 %define _qt5linguist qt5-linguist
@@ -32,6 +31,8 @@ BuildRequires:  kwindowsystem-devel
 BuildRequires:  knotifications-devel
 BuildRequires:  kglobalaccel-devel
 
+%debug_package
+
 %description
 Note-taking application written with Qt in mind.
 It's mostly Tomboy clone but with less features. So it's app
@@ -59,9 +60,6 @@ using libqtnote and also to build QtNote plugins.
 
 %install
 make install INSTALL_ROOT=%{buildroot}
-
-%post
-%postun
 
 %files
 %{_bindir}/%{name}
