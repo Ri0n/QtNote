@@ -9,4 +9,4 @@ else
   sudo yum install gcc-c++ pkgconfig qt5-linguist qt5-qtbase-devel hunspell-devel kwindowsystem-devel knotifications-devel kglobalaccel-devel
 fi
 
-gbp buildpackage-rpm --git-ignore-branc
+exec gbp buildpackage-rpm --git-ignore-branch

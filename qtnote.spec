@@ -51,9 +51,9 @@ using libqtnote and also to build QtNote plugins.
 
 %build
 %if 0%{?fedora}
-%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro CONFIG+="DISABLE_FFMPEG" QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}"
+%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}" CONFIG-=debug CONFIG+=release
 %else
-%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}"
+%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}" CONFIG-=debug CONFIG+=release
 %endif
 %make_build
 
