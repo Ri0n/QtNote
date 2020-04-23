@@ -1,3 +1,9 @@
+qtnote (3.0.6) eoan; urgency=medium
+
+  * Improved stability
+
+ -- Sergey Il'inykh <rion4ik@gmail.com>  Thu, 23 Apr 2020 15:02:53 +0300
+
 qtnote (3.0.5) bionic; urgency=medium
 
   * New release
