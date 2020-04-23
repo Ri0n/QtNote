@@ -190,7 +190,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
     connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
 #if QT_VERSION >= 0x050400
-    connect(qGuiApp, &QGuiApplication::paletteChanged,
+    connect(qGuiApp, &QGuiApplication::paletteChanged, this,
             [this](const QPalette &) { updateFirstLineColor(); });
 #endif
 }
