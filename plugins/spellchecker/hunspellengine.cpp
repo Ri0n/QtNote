@@ -7,7 +7,7 @@
 #include <QTextCodec>
 #include <QCoreApplication>
 #include <QDataStream>
-#include <hunspell/hunspell.hxx>
+#include <hunspell.hxx>
 
 #include "utils.h"
 

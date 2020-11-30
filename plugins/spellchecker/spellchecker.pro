@@ -9,6 +9,7 @@ DICTSUBDIR = /spellcheck/myspell
 DEFINES += DICTSUBDIR=$$DICTSUBDIR
 
 unix {
+    QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
     PKGCONFIG += hunspell
 }
