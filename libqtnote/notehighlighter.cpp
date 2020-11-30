@@ -19,8 +19,8 @@ void NoteHighlighter::highlightBlock(const QString &text)
         if (!item.active) {
             continue;
         }
-        HighlighterExtension::Ptr ext = item.ext.toStrongRef();
-		if (ext) {
+        auto ext = item.ext.lock();
+        if (ext) {
             ext->highlight(this, text);
 		} else {
 			it.remove();
@@ -52,14 +52,13 @@ void NoteHighlighter::highlightBlock(const QString &text)
     }
 }
 
-void NoteHighlighter::addExtension(HighlighterExtension::Ptr extension, NoteHighlighter::ExtType type, Priority prio)
+void NoteHighlighter::addExtension(std::shared_ptr<HighlighterExtension> extension, NoteHighlighter::ExtType type, Priority prio)
 {
     int pos = 0;
     while (pos < extensions.count() && prio > extensions[pos].priority) {
         pos++;
     }
     extensions.insert(pos, ExtItem{true, type, prio, extension});
-    connect(extension.data(), SIGNAL(invalidated()), SLOT(rehighlight()));
 }
 
 void NoteHighlighter::disableExtension(NoteHighlighter::ExtType type)

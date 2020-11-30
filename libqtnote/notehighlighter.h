@@ -3,6 +3,7 @@
 
 #include <QSyntaxHighlighter>
 #include <QList>
+#include <QPointer>
 
 #include "qtnote_export.h"
 #include "highlighterext.h"
@@ -31,7 +32,7 @@ public:
         bool active;
         ExtType type;
         Priority priority;
-        QWeakPointer<HighlighterExtension> ext;
+        std::weak_ptr<HighlighterExtension> ext;
     };
 
 	struct Format
@@ -44,13 +45,14 @@ public:
 	NoteHighlighter(NoteEdit *nde);
 	void highlightBlock(const QString &text);
 
-    void addExtension(HighlighterExtension::Ptr extension, ExtType type = Other, Priority prio = Normal);
+    // virtual for plugins
+    virtual void addExtension(std::shared_ptr<HighlighterExtension> extension, ExtType type = Other, Priority prio = Normal);
 
     void disableExtension(ExtType type);
     void enableExtension(ExtType type);
 
 	inline QTextBlock currentBlock() const { return QSyntaxHighlighter::currentBlock(); }
-	void addFormat(int start, int count, const QTextCharFormat &format);
+    virtual void addFormat(int start, int count, const QTextCharFormat &format);// virtual for plugins
 
 signals:
 

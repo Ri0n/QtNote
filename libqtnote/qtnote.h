@@ -51,7 +51,7 @@ public:
     void parseAppArguments(const QStringList &args);
 
     NoteWidget *noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString::null);
-    void activateWidget(QWidget *w) const;
+    virtual void activateWidget(QWidget *w) const; // virtual for plugins
     inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
     inline PluginManager* pluginManager() const { return _pluginManager; }
 

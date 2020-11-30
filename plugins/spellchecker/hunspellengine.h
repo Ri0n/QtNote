@@ -10,6 +10,8 @@ class QTextCodec;
 
 namespace QtNote {
 
+class PluginHostInterface;
+
 class HunspellEngine : public SpellEngineInterface
 {
 public:
@@ -19,7 +21,7 @@ public:
         QTextCodec *codec;
     };
 
-    HunspellEngine();
+    HunspellEngine(PluginHostInterface *host);
     ~HunspellEngine();
 
     QList<QLocale> supportedLanguages() const;
@@ -29,6 +31,7 @@ public:
     QList<QString> suggestions(const QString &word);
     QList<DictInfo> loadedDicts() const;
 private:
+    PluginHostInterface *host;
     QList<LangItem> languages;
     QSet<QString> runtimeDict;
 };

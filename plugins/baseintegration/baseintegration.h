@@ -28,6 +28,7 @@ public:
 
     int metadataVersion() const;
     PluginMetadata metadata();
+    void setHost(PluginHostInterface *host);
 
     void activateWidget(QWidget *w);
     TrayImpl* initTray(Main *qtnote);
@@ -40,6 +41,7 @@ public:
 public slots:
 
 private:
+    PluginHostInterface *host;
     TrayImpl *tray;
     QHash<QString, QxtGlobalShortcut*> _shortcuts;
 };

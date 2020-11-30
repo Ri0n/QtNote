@@ -11,6 +11,8 @@ class QAction;
 
 namespace QtNote {
 
+class PluginHostInterface;
+
 class BaseIntegrationTray : public TrayImpl
 {
 	Q_OBJECT
@@ -18,12 +20,13 @@ class BaseIntegrationTray : public TrayImpl
     friend class BaseIntegration;
 
 	Main *qtnote;
+    PluginHostInterface *host;
 	QSystemTrayIcon *tray;
 	QMenu *contextMenu;
 	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 
 public:
-	explicit BaseIntegrationTray(Main *qtnote, QObject *parent = 0);
+    explicit BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent = 0);
 	void notifyError(const QString &message);
 
 signals:

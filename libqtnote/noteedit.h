@@ -51,7 +51,7 @@ private:
 
 public:    
 	explicit NoteEdit(QWidget *parent = 0);
-    void addContextMenuHandler(NoteContextMenuHandler *handler);
+    virtual void addContextMenuHandler(NoteContextMenuHandler *handler);
     inline const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
 
 protected:

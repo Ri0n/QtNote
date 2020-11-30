@@ -48,6 +48,7 @@ SOURCES += qtnote_export.h \
     note.cpp \
     notemanager.cpp \
     notestorage.cpp \
+    pluginhost.cpp \
     ptfstorage.cpp \
     ptfdata.cpp \
     notedata.cpp \
@@ -79,6 +80,8 @@ HEADERS += notedialog.h \
     note.h \
     notemanager.h \
     notestorage.h \
+    pluginhostinterface.h \
+    pluginhost.h \
     ptfstorage.h \
     ptfdata.h \
     notedata.h \

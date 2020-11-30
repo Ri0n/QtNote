@@ -9,7 +9,8 @@
 #include <QDataStream>
 #include <hunspell.hxx>
 
-#include "utils.h"
+//#include "utils.h"
+#include "pluginhostinterface.h"
 
 namespace QtNote {
 
@@ -55,9 +56,10 @@ static bool scanDictPaths(const QString &language, QFileInfo &aff , QFileInfo &d
     return false;
 }
 
-HunspellEngine::HunspellEngine()
+HunspellEngine::HunspellEngine(PluginHostInterface *host)
+    : host(host)
 {
-    QFile f(Utils::qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
+    QFile f(host->qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
     if (f.open(QIODevice::ReadOnly)) {
         QDataStream in(&f);
         QString w;
@@ -73,7 +75,7 @@ HunspellEngine::~HunspellEngine()
     foreach (const LangItem &li, languages) {
         delete li.hunspell;
     }
-    QFile f(Utils::qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
+    QFile f(host->qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
     if (f.open(QIODevice::WriteOnly)) {
         QDataStream out(&f);
         for(auto w : runtimeDict.values()) {

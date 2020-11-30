@@ -6,6 +6,7 @@
 #include <QUrl>
 
 #include "qtnote.h"
+#include "pluginhostinterface.h"
 
 namespace QtNote {
 
@@ -30,6 +31,7 @@ class PluginInterface
 public:
 	virtual int metadataVersion() const = 0;
 	virtual PluginMetadata metadata() = 0;
+    virtual void setHost(PluginHostInterface *host) = 0;
 };
 
 class RegularPluginInterface
@@ -48,7 +50,7 @@ public:
 } // namespace QtNote
 
 Q_DECLARE_INTERFACE(QtNote::PluginInterface,
-					 "com.rion-soft.QtNote.PluginInterface/1.1")
+                     "com.rion-soft.QtNote.PluginInterface/2.0")
 
 Q_DECLARE_INTERFACE(QtNote::RegularPluginInterface,
                      "com.rion-soft.QtNote.RegularPluginInterface/1.0")

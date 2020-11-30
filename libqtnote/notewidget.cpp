@@ -24,12 +24,14 @@
 
 namespace QtNote {
 
-static HighlighterExtension::Ptr firstLineHighlighter;
+static std::shared_ptr<HighlighterExtension> firstLineHighlighter;
 static QColor firstLineColor;
 
 class FirstLineHighlighter : public HighlighterExtension
 {
 public:
+    using HighlighterExtension::HighlighterExtension;
+
     void highlight(NoteHighlighter *nh, const QString &text)
     {
         Q_UNUSED(text)
@@ -50,14 +52,28 @@ class CurrentLinkHighlighter : public HighlighterExtension
     int currentPos;
     int currentLength;
 
-    Q_OBJECT
-
 public:
     CurrentLinkHighlighter(NoteWidget *nw) :
         noteWidget(nw)
     {
-        connect(noteWidget->editWidget(), SIGNAL(linkHovered()), SLOT(onLinkHovered()));
-        connect(noteWidget->editWidget(), SIGNAL(linkUnhovered()), SLOT(onLinkUnhovered()));
+
+    }
+
+    void init()
+    {
+        auto ew = noteWidget->editWidget();
+        std::weak_ptr<CurrentLinkHighlighter> weak_self = std::dynamic_pointer_cast<CurrentLinkHighlighter>(shared_from_this());
+        QObject::connect(ew, &NoteEdit::linkHovered, [this, weak_self](){
+            auto self = weak_self.lock();
+            if (!self) return;
+            auto &hlp = noteWidget->editWidget()->hoveredLinkPosition();
+            rehighlightLine(hlp.block, hlp.pos, hlp.length);
+        });
+
+        QObject::connect(ew, &NoteEdit::linkUnhovered, [this, weak_self](){
+            auto self = weak_self.lock();
+            if (self) rehighlightLine();
+        });
     }
 
     void rehighlightLine(const QTextBlock &block = QTextBlock(), int pos = 0, int length = 0)
@@ -86,18 +102,6 @@ public:
         linkHighlightFormat.setForeground(qApp->palette().color(QPalette::Link));
         linkHighlightFormat.setUnderlineStyle(QTextCharFormat::SingleUnderline);
         nh->addFormat(currentPos, currentLength, linkHighlightFormat);
-    }
-
-public slots:
-    void onLinkHovered()
-    {
-        auto &hlp = noteWidget->editWidget()->hoveredLinkPosition();
-        rehighlightLine(hlp.block, hlp.pos, hlp.length);
-    }
-
-    void onLinkUnhovered()
-    {
-        rehighlightLine();
     }
 };
 
@@ -178,13 +182,14 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     ui->noteEdit->setText(""); // to force update event
 
     updateFirstLineColor();
-    if (firstLineHighlighter.isNull()) {
-        firstLineHighlighter = HighlighterExtension::Ptr(new FirstLineHighlighter());
+    if (!firstLineHighlighter) {
+        firstLineHighlighter = std::make_shared<FirstLineHighlighter>();
     }
     _highlighter = new NoteHighlighter(ui->noteEdit);
     _highlighter->addExtension(firstLineHighlighter, NoteHighlighter::Title);
 
-    _linkHighlighter = HighlighterExtension::Ptr(new CurrentLinkHighlighter(this));
+    _linkHighlighter = std::make_shared<CurrentLinkHighlighter>(this);
+    std::dynamic_pointer_cast<CurrentLinkHighlighter>(_linkHighlighter)->init();
     _highlighter->addExtension(_linkHighlighter, NoteHighlighter::Other, NoteHighlighter::Normal);
 
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
@@ -319,6 +324,11 @@ void NoteWidget::setNoteId(const QString &noteId)
     emit noteIdChanged(old, noteId);
 }
 
+void NoteWidget::rehighlight()
+{
+    _highlighter->rehighlight();
+}
+
 void NoteWidget::onCopyClicked()
 {
     QClipboard *clipboard = QApplication::clipboard();
@@ -432,4 +442,3 @@ void NoteWidget::rereadSettings()
 
 } // namespace QtNote
 
-#include "notewidget.moc"

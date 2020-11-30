@@ -36,7 +36,7 @@ public:
     QString text();
     inline const Features &features() const { return _features; }
     inline void setFeatures(const Features &features) { _features = features; }
-    NoteEdit* editWidget() const;
+    virtual NoteEdit* editWidget() const;
     inline NoteHighlighter* highlighter() const { return _highlighter; }
     void setAcceptRichText(bool state);
     inline QString storageId() const { return _storageId; }
@@ -46,6 +46,7 @@ public:
     inline qint64 lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
     inline bool isTrashRequested() const { return _trashRequested; }
     inline void setTrashRequested(bool state) { _trashRequested = state; }
+    void rehighlight();
 
 signals:
     void firstLineChanged();
@@ -79,7 +80,7 @@ private:
 
     TypeAheadFindBar *findBar = nullptr;
     NoteHighlighter* _highlighter = nullptr;
-    HighlighterExtension::Ptr _linkHighlighter;
+    std::shared_ptr<HighlighterExtension> _linkHighlighter;
     QString _storageId;
     QString _noteId;
     QString _firstLine;

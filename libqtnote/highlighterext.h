@@ -3,6 +3,7 @@
 
 #include <QSharedPointer>
 #include <QObject>
+#include <memory>
 
 #include "qtnote_export.h"
 
@@ -12,20 +13,10 @@ namespace QtNote {
 
 class NoteHighlighter;
 
-class QTNOTE_EXPORT HighlighterExtension : public QObject
+class QTNOTE_EXPORT HighlighterExtension : public std::enable_shared_from_this<HighlighterExtension>
 {
-    Q_OBJECT
-
 public:
-	typedef QSharedPointer<HighlighterExtension> Ptr;
-
-	virtual ~HighlighterExtension() {}
-
 	virtual void highlight(NoteHighlighter *, const QString &text) = 0;
-    virtual void invalidate() { emit invalidated(); }
-
-signals:
-    void invalidated();
 };
 
 } // namespace QtNote

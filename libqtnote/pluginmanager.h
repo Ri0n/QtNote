@@ -11,6 +11,8 @@
 
 namespace QtNote {
 
+class PluginHost;
+
 class PluginManager : public QObject
 {
     Q_OBJECT
@@ -102,6 +104,7 @@ public slots:
 
 private:
     Main *qtnote;
+    PluginHost *pluginHost = nullptr;
     QHash<QString, PluginData::Ptr> plugins;
 
     LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);

@@ -11,3 +11,4 @@ HEADERS += \
 	$$PWD/qxtglobalshortcut_p.h
 
 INCLUDEPATH += $$PWD
+mac:LIBS += -framework Carbon

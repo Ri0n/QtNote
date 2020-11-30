@@ -65,14 +65,14 @@ public:
     void unregisterStorage(NoteStorage::Ptr storage);
     bool loadAll();
 
-    QList<NoteListItem> noteList(int count = -1) const;
+    virtual QList<NoteListItem> noteList(int count = -1) const; // virtual for plugins
 
     Note note(const QString &storageId, const QString &noteId);
 
     const QMap<QString, NoteStorage::Ptr> storages(bool withInvalid = false) const;
     const QLinkedList<NoteStorage::Ptr> prioritizedStorages(bool withInvalid = false) const;
 
-    NoteStorage::Ptr storage(const QString &storageId) const;
+    virtual NoteStorage::Ptr storage(const QString &storageId) const; // virtual for plugins
     inline NoteStorage::Ptr defaultStorage() const
     { return prioritizedStorages().isEmpty()?
                     NoteStorage::Ptr() : prioritizedStorages().first(); }

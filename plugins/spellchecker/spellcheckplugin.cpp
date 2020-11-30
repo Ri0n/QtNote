@@ -35,6 +35,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #else
 # include <QRegularExpression>
 #endif
+#include <memory>
 
 #include "spellcheckplugin.h"
 #include "qtnote.h"
@@ -49,7 +50,7 @@ namespace QtNote {
 
 static const QLatin1String pluginId("spellchecker");
 
-static HighlighterExtension::Ptr hlExt;
+static std::shared_ptr<HighlighterExtension> hlExt;
 
 class SpellCheckHighlighterExtension : public HighlighterExtension
 {
@@ -136,6 +137,9 @@ public:
         menu->insertActions(menu->actions().value(0), actions);
     }
 
+signals:
+    void needRehighlight();
+
 private slots:
     void applySuggestion()
     {
@@ -155,7 +159,7 @@ private slots:
     {
         QString word = ((QAction*)sender())->data().toString();
         sei->addToDictionary(word);
-        hlExt->invalidate();
+        emit needRehighlight();
     }
 };
 
@@ -193,13 +197,18 @@ PluginMetadata SpellCheckPlugin::metadata()
     return md;
 }
 
+void SpellCheckPlugin::setHost(PluginHostInterface *host)
+{
+    this->host = host;
+}
+
 bool SpellCheckPlugin::init(Main *qtnote)
 {
-    sei = new HunspellEngine();
+    sei = new HunspellEngine(host);
     foreach (auto &l, preferredLanguages()) {
         sei->addLanguage(l);
     }
-    hlExt = HighlighterExtension::Ptr(new SpellCheckHighlighterExtension(sei));
+    hlExt = std::make_shared<SpellCheckHighlighterExtension>(sei);
     connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
     return true;
 }
@@ -243,7 +252,8 @@ void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent 
     cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
     QString wrongWord = cursor.selectedText();
     if (!wrongWord.isEmpty() && !sei->spell(wrongWord)) {
-        new SpellContextMenu(sei, te, cursor, wrongWord, menu);
+        auto cm = new SpellContextMenu(sei, te, cursor, wrongWord, menu);
+        connect(cm, &SpellContextMenu::needRehighlight, this, [this](){host->rehighlight();});
     }
 }
 
@@ -293,9 +303,8 @@ void SpellCheckPlugin::settingsAccepted()
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
-    NoteWidget *nw = dynamic_cast<NoteWidget*>(w);
-    nw->highlighter()->addExtension(hlExt, NoteHighlighter::SpellCheck);
-    nw->editWidget()->addContextMenuHandler(this);
+    host->addHighlightExtension(w, hlExt, int(NoteHighlighter::SpellCheck));
+    host->noteTextWidget(w)->addContextMenuHandler(this);
 }
 
 } // namespace QtNote

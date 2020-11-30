@@ -5,6 +5,7 @@
 #include "baseintegration.h"
 #include "baseintegrationtray.h"
 #include "qxtglobalshortcut.h"
+#include "pluginhostinterface.h"
 
 namespace QtNote {
 
@@ -40,6 +41,11 @@ PluginMetadata BaseIntegration::metadata()
     return md;
 }
 
+void BaseIntegration::setHost(PluginHostInterface *host)
+{
+    this->host = host;
+}
+
 void BaseIntegration::activateWidget(QWidget *w)
 {
     w->raise();
@@ -48,7 +54,7 @@ void BaseIntegration::activateWidget(QWidget *w)
 
 TrayImpl* BaseIntegration::initTray(Main *qtnote)
 {
-    tray = new BaseIntegrationTray(qtnote, this);
+    tray = new BaseIntegrationTray(qtnote, host, this);
     return tray;
 }
 

@@ -8,12 +8,14 @@
 #include "baseintegrationtray.h"
 #include "utils.h"
 #include "qtnote.h"
+#include "pluginhostinterface.h"
 
 namespace QtNote {
 
-BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, QObject *parent) :
+BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent) :
 	TrayImpl(parent),
-	qtnote(qtnote)
+    qtnote(qtnote),
+    host(host)
 {
 	actQuit = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
 	actNew = new QAction(QIcon(":/icons/new"), tr("&New"), this);
@@ -58,11 +60,11 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
 	menu.addAction(actNew);
 	menu.addSeparator();
 	QSettings s;
-	QList<NoteListItem> notes = NoteManager::instance()->noteList(
+    QList<NoteListItem> notes = host->noteManager()->noteList(
 								s.value("ui.menu-notes-amount", 15).toInt());
 	for (int i=0; i<notes.count(); i++) {
-        menu.addAction(NoteManager::instance()->storage(notes[i].storageId)->noteIcon(),
-			Utils::cuttedDots(notes[i].title, 48).replace('&', "&&")
+        menu.addAction(host->noteManager()->storage(notes[i].storageId)->noteIcon(),
+            host->utilsCuttedDots(notes[i].title, 48).replace('&', "&&")
 		)->setData(i);
 	}
 	menu.show();
