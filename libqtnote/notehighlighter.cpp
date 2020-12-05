@@ -31,8 +31,8 @@ void NoteHighlighter::highlightBlock(const QString &text)
         bps.insert(formats[i].start + formats[i].count);
     }
 
-    QList<int> bpl = bps.toList();
-    qSort(bpl);
+    auto bpl = QList<int>(bps.constBegin(), bps.constEnd());
+    std::sort(bpl.begin(), bpl.end());
     for (int i = 0; i < bpl.count() - 1; i++) {
         int             count = bpl[i + 1] - bpl[i];
         QTextCharFormat format;

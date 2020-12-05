@@ -56,6 +56,8 @@ PluginMetadata UbuntuPlugin::metadata()
     return md;
 }
 
+void UbuntuPlugin::setHost(PluginHostInterface *host) { this->host = host; }
+
 TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
 {
     _tray = new UbuntuTray(qtnote, this);

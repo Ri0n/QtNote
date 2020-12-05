@@ -13,6 +13,7 @@
 
 #include "kdeintegration.h"
 #include "kdeintegrationtray.h"
+#include "pluginhostinterface.h"
 
 namespace QtNote {
 
@@ -45,6 +46,8 @@ PluginMetadata KDEIntegration::metadata()
                                   << "/usr/share/xsessions/plasma5");
     return md;
 }
+
+void KDEIntegration::setHost(PluginHostInterface *) { }
 
 TrayImpl *KDEIntegration::initTray(Main *qtnote) { return new KDEIntegrationTray(qtnote, this); }
 

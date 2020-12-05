@@ -70,7 +70,7 @@ QString FileStorage::saveNoteToFile(FileNoteData &note, const QString &text, con
         return newNoteId;
     }
     handleFSError();
-    return QString::null;
+    return QString();
 }
 
 void FileStorage::handleFSError()
@@ -159,7 +159,7 @@ QList<NoteListItem> FileStorage::noteList(int limit)
 {
     ensureChachePopulated();
     QList<NoteListItem> ret = cache.values();
-    qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
+    std::sort(ret.begin(), ret.end(), noteListItemModifyComparer);
     // probably sort is unnecesary here if the only accessor is notemanager which also does sorting.
     return limit ? ret.mid(0, limit) : ret;
 }

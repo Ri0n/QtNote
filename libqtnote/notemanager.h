@@ -22,14 +22,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEMANAGER_H
 #define NOTEMANAGER_H
 
-#include <QLinkedList>
+#include "notestorage.h"
+#include "qtnote_export.h"
+
 #include <QMap>
 #include <QObject>
 #include <QPointer>
 #include <QSet>
 
-#include "notestorage.h"
-#include "qtnote_export.h"
+#include <list>
 
 namespace QtNote {
 
@@ -68,12 +69,12 @@ public:
     Note note(const QString &storageId, const QString &noteId);
 
     const QMap<QString, NoteStorage::Ptr> storages(bool withInvalid = false) const;
-    const QLinkedList<NoteStorage::Ptr>   prioritizedStorages(bool withInvalid = false) const;
+    const std::list<NoteStorage::Ptr>     prioritizedStorages(bool withInvalid = false) const;
 
     virtual NoteStorage::Ptr storage(const QString &storageId) const; // virtual for plugins
     inline NoteStorage::Ptr  defaultStorage() const
     {
-        return prioritizedStorages().isEmpty() ? NoteStorage::Ptr() : prioritizedStorages().first();
+        return prioritizedStorages().empty() ? NoteStorage::Ptr() : prioritizedStorages().front();
     }
 
     /*
@@ -94,10 +95,10 @@ private slots:
 private:
     NoteManager(QObject *parent);
 
-    static NoteManager *                  _instance;
-    QStringList                           _priorities;
-    QMap<QString, NoteStorage::Ptr>       _storages;
-    mutable QLinkedList<NoteStorage::Ptr> _prioCache;
+    static NoteManager *                _instance;
+    QStringList                         _priorities;
+    QMap<QString, NoteStorage::Ptr>     _storages;
+    mutable std::list<NoteStorage::Ptr> _prioCache;
 };
 
 }

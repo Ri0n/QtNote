@@ -11,6 +11,7 @@
 namespace QtNote {
 
 class UbuntuTray;
+class PluginHostInterface;
 
 class UbuntuPlugin : public QObject,
                      public PluginInterface,
@@ -28,6 +29,7 @@ public:
 
     int                    metadataVersion() const;
     virtual PluginMetadata metadata();
+    void                   setHost(PluginHostInterface *host);
 
     TrayImpl *initTray(Main *qtnote);
     void      notifyError(const QString &msg);
@@ -38,7 +40,8 @@ private slots:
     void activator();
 
 private:
-    UbuntuTray *_tray;
+    UbuntuTray *         _tray;
+    PluginHostInterface *host;
 };
 
 } // namespace QtNote

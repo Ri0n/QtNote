@@ -29,7 +29,7 @@ namespace QtNote {
 class NoteManagerView : public QTreeView {
     Q_OBJECT
 public:
-    explicit NoteManagerView(QWidget *parent = 0);
+    explicit NoteManagerView(QWidget *parent = nullptr);
 
 protected:
     // reimplemented

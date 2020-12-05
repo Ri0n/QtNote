@@ -18,7 +18,7 @@ class OptionsPlugins : public QWidget {
     Q_OBJECT
 
 public:
-    explicit OptionsPlugins(Main *qtnote, QWidget *parent = 0);
+    explicit OptionsPlugins(Main *qtnote, QWidget *parent = nullptr);
     ~OptionsPlugins();
 
 private slots:

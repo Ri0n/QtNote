@@ -128,7 +128,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     // ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 
     QHBoxLayout *hb3a = new QHBoxLayout();
-    findBar           = new TypeAheadFindBar(ui->noteEdit, QString::null, this);
+    findBar           = new TypeAheadFindBar(ui->noteEdit, QString(), this);
     hb3a->addWidget(findBar);
     ui->noteLayout->addLayout(hb3a);
 

@@ -13,6 +13,8 @@ class KAction;
 
 namespace QtNote {
 
+class PluginHostInterface;
+
 class KDEIntegration : public QObject,
                        public PluginInterface,
                        public NotificationInterface,
@@ -28,15 +30,17 @@ class KDEIntegration : public QObject,
 public:
     explicit KDEIntegration(QObject *parent = 0);
 
-    int                    metadataVersion() const;
-    virtual PluginMetadata metadata();
-    TrayImpl *             initTray(Main *qtnote);
-    void                   notifyError(const QString &msg);
-    void                   activateWidget(QWidget *w);
+    int                    metadataVersion() const override;
+    virtual PluginMetadata metadata() override;
+    void                   setHost(PluginHostInterface *host) override;
 
-    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action);
-    bool updateGlobalShortcut(const QString &id, const QKeySequence &key);
-    void setGlobalShortcutEnabled(const QString &id, bool enabled = true);
+    TrayImpl *initTray(Main *qtnote) override;
+    void      notifyError(const QString &msg) override;
+    void      activateWidget(QWidget *w) override;
+
+    bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action) override;
+    bool updateGlobalShortcut(const QString &id, const QKeySequence &key) override;
+    void setGlobalShortcutEnabled(const QString &id, bool enabled = true) override;
 
 signals:
 

@@ -19,12 +19,13 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include "notemanager.h"
+
 #include <QApplication>
-#include <QLinkedList>
 #include <QSettings>
 #include <QStringList>
 
-#include "notemanager.h"
+#include <list>
 
 namespace QtNote {
 
@@ -123,7 +124,7 @@ QList<NoteListItem> NoteManager::noteList(int count) const
     foreach (NoteStorage::Ptr storage, prioritizedStorages()) {
         ret += storage->noteList(count);
     }
-    qSort(ret.begin(), ret.end(), noteListItemModifyComparer);
+    std::sort(ret.begin(), ret.end(), noteListItemModifyComparer);
     return ret.mid(0, count);
 }
 
@@ -152,7 +153,7 @@ const QMap<QString, NoteStorage::Ptr> NoteManager::storages(bool withInvalid) co
     return ret;
 }
 
-const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withInvalid) const
+const std::list<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withInvalid) const
 {
     if (!_prioCache.size()) {
 
@@ -161,12 +162,12 @@ const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withIn
         for (auto code : _priorities) {
             auto storage = storages.take(code);
             if (storage) {
-                _prioCache.append(storage);
+                _prioCache.push_back(storage);
             }
         }
 
         for (auto storage : storages) {
-            _prioCache.append(storage);
+            _prioCache.push_back(storage);
         }
     }
 
@@ -177,7 +178,7 @@ const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withIn
     decltype(_prioCache) ret;
     for (auto storage : _prioCache) {
         if (storage->isAccessible()) {
-            ret.append(storage);
+            ret.push_back(storage);
         }
     }
 

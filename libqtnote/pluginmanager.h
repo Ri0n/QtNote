@@ -102,7 +102,8 @@ private:
     PluginHost *                    pluginHost = nullptr;
     QHash<QString, PluginData::Ptr> plugins;
 
-    LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache, QLibrary::LoadHints loadHints = 0);
+    LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache,
+                          QLibrary::LoadHints loadHints = QLibrary::LoadHints());
     void       updateMetadata();
     bool       ensureLoaded(PluginData::Ptr pd);
     QString    iconsCacheDir() const;

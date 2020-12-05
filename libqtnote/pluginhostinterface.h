@@ -22,6 +22,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef PLUGIN_HOST_INTERFACE_H
 #define PLUGIN_HOST_INTERFACE_H
 
+#include <QString>
+
+#include <memory>
+
 class QWidget;
 
 namespace QtNote {

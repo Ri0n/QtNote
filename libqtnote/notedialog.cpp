@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QHBoxLayout>
+#include <QRandomGenerator>
 #include <QSettings>
 
 #include "note.h"
@@ -55,8 +56,8 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     }
     if (rect.isEmpty()) {
         QSize avail = QApplication::desktop()->size() - sizeHint();
-        int   x     = avail.width() / 4 + (qrand() / (float)RAND_MAX) * avail.width() / 2;
-        int   y     = avail.height() / 4 + (qrand() / (float)RAND_MAX) * avail.height() / 2;
+        int   x = avail.width() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.width() / 2;
+        int   y = avail.height() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.height() / 2;
         move(x, y);
     } else {
         setGeometry(rect);

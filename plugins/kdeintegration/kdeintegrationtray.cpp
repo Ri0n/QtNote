@@ -7,6 +7,7 @@
 #include <KStatusNotifierItem>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QScreen>
 #include <QSettings>
 #include <QStyle>
 
@@ -60,7 +61,7 @@ void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
     }
     menu.show();
     qtnote->activateWidget(&menu);
-    QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
+    QRect dr = QGuiApplication::screenAt(QCursor::pos())->geometry();
     QRect mr = menu.geometry();
     mr.setSize(menu.sizeHint());
     QPoint mp = pos - QPoint(mr.width() / 2, 0);

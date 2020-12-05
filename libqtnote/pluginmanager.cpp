@@ -194,7 +194,9 @@ void PluginManager::loadPlugins()
         }
     }
 
-    prioritizedList += (plugins.keys().toSet() - prioritizedList.toSet()).toList();
+    auto pluginKeys     = QSet<QString>(plugins.keyBegin(), plugins.keyEnd());
+    auto prioritizedSet = pluginKeys - QSet<QString>(prioritizedList.constBegin(), prioritizedList.constEnd());
+    prioritizedList += QStringList(prioritizedSet.constBegin(), prioritizedSet.constEnd());
     s.setValue("plugins-priority", prioritizedList);
 
     /*

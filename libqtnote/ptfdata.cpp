@@ -36,7 +36,7 @@ bool PTFData::fromFile(QString fn)
     setFile(fn);
     file.close();
     QFileInfo fi(fn);
-    dtCreate     = fi.created();
+    dtCreate     = fi.birthTime();
     dtLastChange = fi.lastModified();
 
     return true;

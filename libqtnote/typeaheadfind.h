@@ -31,7 +31,7 @@ class TypeAheadFindBar : public QToolBar {
 public:
     enum Mode { Find, Replace };
 
-    TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent = 0);
+    TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent = nullptr);
     ~TypeAheadFindBar();
     void init();
     void setMode(Mode mode);

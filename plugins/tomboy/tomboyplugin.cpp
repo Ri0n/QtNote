@@ -21,6 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QtPlugin>
 
+#include "pluginhostinterface.h"
 #include "qtnote.h"
 #include "tomboyplugin.h"
 #include "tomboystorage.h"
@@ -44,6 +45,8 @@ TomboyPlugin::~TomboyPlugin()
 }
 
 int TomboyPlugin::metadataVersion() const { return MetadataVerion; }
+
+void TomboyPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 
 PluginMetadata TomboyPlugin::metadata()
 {

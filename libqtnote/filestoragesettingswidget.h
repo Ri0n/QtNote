@@ -15,7 +15,8 @@ class FileStorageSettingsWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit FileStorageSettingsWidget(const QString &customPath, QtNote::FileStorage *storage, QWidget *parent = 0);
+    explicit FileStorageSettingsWidget(const QString &customPath, QtNote::FileStorage *storage,
+                                       QWidget *parent = nullptr);
     ~FileStorageSettingsWidget();
     QString path() const;
 

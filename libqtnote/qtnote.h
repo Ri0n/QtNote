@@ -49,7 +49,7 @@ public:
     inline bool isOperable() const { return _inited; }
     void        parseAppArguments(const QStringList &args);
 
-    NoteWidget * noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString::null);
+    NoteWidget * noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString());
     virtual void activateWidget(QWidget *w) const; // virtual for plugins
     inline ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
     inline PluginManager *   pluginManager() const { return _pluginManager; }
@@ -69,8 +69,8 @@ signals:
 
 public slots:
     void notifyError(const QString &);
-    void showNoteDialog(const QString &storageId, const QString &noteId = QString::null,
-                        const QString &contents = QString::null);
+    void showNoteDialog(const QString &storageId, const QString &noteId = QString(),
+                        const QString &contents = QString());
 
 private slots:
     void exitQtNote();

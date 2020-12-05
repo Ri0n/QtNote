@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QMenu>
+#include <QScreen>
 #include <QSettings>
 #include <QStyle>
 
@@ -66,7 +67,7 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     }
     menu.show();
     qtnote->activateWidget(&menu);
-    QRect dr = QApplication::desktop()->availableGeometry(QCursor::pos());
+    QRect dr = QGuiApplication::screenAt(QCursor::pos())->geometry();
     QRect ir = tray->geometry();
     QRect mr = menu.geometry();
     if (ir.isEmpty()) { // O_O but with kde this happens...

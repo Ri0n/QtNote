@@ -31,7 +31,7 @@ class AboutDlg;
 class AboutDlg : public QDialog {
     Q_OBJECT
 public:
-    AboutDlg(QWidget *parent = 0);
+    AboutDlg(QWidget *parent = nullptr);
     ~AboutDlg();
 
 protected:

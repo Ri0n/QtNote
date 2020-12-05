@@ -22,7 +22,7 @@ public:
     inline bool isValid() const { return valid && dir.exists(); }
     inline bool setPath(const QString &path)
     {
-        dir   = path;
+        dir.setPath(path);
         valid = !path.isEmpty() && dir.exists();
         return valid;
     }

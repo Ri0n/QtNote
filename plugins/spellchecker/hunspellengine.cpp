@@ -31,7 +31,7 @@ static QStringList dictPaths()
         dictPathSet << QLatin1String("/usr/share/myspell") << QLatin1String("/usr/share/hunspell")
                     << QLatin1String("/usr/local/share/myspell") << QLatin1String("/usr/local/share/hunspell");
 #endif
-        dictPaths = dictPathSet.toList();
+        dictPaths = QStringList(dictPathSet.begin(), dictPathSet.end());
     }
     return dictPaths;
 }
@@ -145,7 +145,7 @@ bool HunspellEngine::spell(const QString &word) const
 
 void HunspellEngine::addToDictionary(const QString &word) { runtimeDict.insert(word); }
 
-QList<QString> HunspellEngine::suggestions(const QString &word)
+QList<QString> HunspellEngine::suggestions(const QString &word) const
 {
     QStringList qtResult;
     foreach (const LangItem &li, languages) {
@@ -155,7 +155,7 @@ QList<QString> HunspellEngine::suggestions(const QString &word)
             qtResult << li.codec->toUnicode(ba);
         }
     }
-    return qtResult;
+    return std::move(qtResult);
 }
 
 QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const

@@ -47,7 +47,7 @@ public:
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
 protected:
-    QString saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId = QString::null);
+    QString saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId = QString());
     void    handleFSError();
     void    ensureChachePopulated();
 
