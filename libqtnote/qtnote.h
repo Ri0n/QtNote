@@ -24,8 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 
-#include "qtnote_export.h"
 #include "notestorage.h"
+#include "qtnote_export.h"
 
 class QAction;
 class QMenu;
@@ -41,19 +41,18 @@ class GlobalShortcutsInterface;
 class NotificationInterface;
 struct NoteListItem;
 
-class QTNOTE_EXPORT Main : public QObject
-{
+class QTNOTE_EXPORT Main : public QObject {
     Q_OBJECT
 public:
     explicit Main(QObject *parent = 0);
     ~Main();
     inline bool isOperable() const { return _inited; }
-    void parseAppArguments(const QStringList &args);
+    void        parseAppArguments(const QStringList &args);
 
-    NoteWidget *noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString::null);
+    NoteWidget * noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString::null);
     virtual void activateWidget(QWidget *w) const; // virtual for plugins
-    inline ShortcutsManager* shortcutsManager() const { return _shortcutsManager; }
-    inline PluginManager* pluginManager() const { return _pluginManager; }
+    inline ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
+    inline PluginManager *   pluginManager() const { return _pluginManager; }
 
     void setTrayImpl(TrayImpl *tray);
     void setDesktopImpl(DEIntegrationInterface *de);
@@ -64,13 +63,14 @@ public:
     void unregisterStorage(NoteStorage::Ptr &storage);
 
 signals:
-    void noteWidgetCreated(QWidget*);
-    void noteWidgetInitiated(QWidget*);
+    void noteWidgetCreated(QWidget *);
+    void noteWidgetInitiated(QWidget *);
     void settingsUpdated();
 
 public slots:
     void notifyError(const QString &);
-    void showNoteDialog(const QString &storageId, const QString &noteId = QString::null, const QString &contents = QString::null);
+    void showNoteDialog(const QString &storageId, const QString &noteId = QString::null,
+                        const QString &contents = QString::null);
 
 private slots:
     void exitQtNote();
@@ -89,10 +89,9 @@ private:
     class Private;
     Private *d;
 
-    bool _inited;
-    ShortcutsManager* _shortcutsManager;
-    PluginManager *_pluginManager;
-
+    bool              _inited;
+    ShortcutsManager *_shortcutsManager;
+    PluginManager *   _pluginManager;
 };
 
 } // namespace QtNote

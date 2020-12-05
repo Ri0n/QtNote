@@ -19,26 +19,25 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QApplication>
 #include <QDesktopServices>
 #include <QDir>
-#include <QApplication>
-#include <QStyle>
 #include <QSettings>
+#include <QStyle>
 
 #ifdef Q_OS_WIN
 #include <QLibrary>
 #include <ShlObj.h>
 #endif // Q_OS_WIN
 
-#include "ptfstorage.h"
-#include "ptfdata.h"
-#include "utils.h"
 #include "humanfilenameprovider.h"
+#include "ptfdata.h"
+#include "ptfstorage.h"
+#include "utils.h"
 
 namespace QtNote {
 
-PTFStorage::PTFStorage(QObject *parent) :
-    FileStorage(parent)
+PTFStorage::PTFStorage(QObject *parent) : FileStorage(parent)
 {
     fileExt = "txt";
     init();
@@ -70,30 +69,15 @@ void PTFStorage::initNotesDir()
     }
 }
 
-bool PTFStorage::isAccessible() const
-{
-    return QDir(notesDir).isReadable();
-}
+bool PTFStorage::isAccessible() const { return QDir(notesDir).isReadable(); }
 
-const QString PTFStorage::systemName() const
-{
-    return "ptf";
-}
+const QString PTFStorage::systemName() const { return "ptf"; }
 
-const QString PTFStorage::name() const
-{
-    return tr("Plain Text Storage");
-}
+const QString PTFStorage::name() const { return tr("Plain Text Storage"); }
 
-QIcon PTFStorage::storageIcon() const
-{
-    return QIcon(":/icons/trayicon");
-}
+QIcon PTFStorage::storageIcon() const { return QIcon(":/icons/trayicon"); }
 
-QIcon PTFStorage::noteIcon() const
-{
-    return QIcon(":/icons/trayicon");
-}
+QIcon PTFStorage::noteIcon() const { return QIcon(":/icons/trayicon"); }
 
 QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 {
@@ -101,8 +85,7 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
     foreach (QFileInfo fi, files) {
         PTFData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(),
-                            note.modifyTime());
+            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(), note.modifyTime());
             ret.append(li);
         }
     }
@@ -112,8 +95,7 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 Note PTFStorage::note(const QString &noteId)
 {
     if (!noteId.isEmpty()) {
-        QString fileName = QDir(notesDir).absoluteFilePath(
-                QString("%1.%2").arg(noteId).arg(fileExt) );
+        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(fileExt));
         QFileInfo fi(fileName);
         if (fi.isWritable()) {
             PTFData *noteData = new PTFData;
@@ -125,20 +107,14 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-QString PTFStorage::saveNote(const QString &noteId, const QString & text)
+QString PTFStorage::saveNote(const QString &noteId, const QString &text)
 {
     PTFData note;
     return saveNoteToFile(note, text, noteId);
 }
 
-bool PTFStorage::isRichTextAllowed() const
-{
-    return false;
-}
+bool PTFStorage::isRichTextAllowed() const { return false; }
 
-QString PTFStorage::findStorageDir() const
-{
-    return Utils::qtnoteDataDir() + QLatin1Char('/') + systemName();
-}
+QString PTFStorage::findStorageDir() const { return Utils::qtnoteDataDir() + QLatin1Char('/') + systemName(); }
 
 } // namespace QtNote

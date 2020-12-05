@@ -25,21 +25,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-bool noteListItemModifyComparer(const NoteListItem &a,
-                                const NoteListItem &b) {
-    return a.lastModify > b.lastModify; //backward order
-}
-
-NoteStorage::NoteStorage(QObject *parent)
-    : QObject(parent)
+bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b)
 {
-
+    return a.lastModify > b.lastModify; // backward order
 }
 
-NoteFinder *NoteStorage::search()
-{
-    return new NoteFinder(this);
-}
+NoteStorage::NoteStorage(QObject *parent) : QObject(parent) { }
+
+NoteFinder *NoteStorage::search() { return new NoteFinder(this); }
 
 void NoteFinder::start(const QString &text)
 {
@@ -55,9 +48,6 @@ void NoteFinder::start(const QString &text)
     deleteLater();
 }
 
-void NoteFinder::abort()
-{
-
-}
+void NoteFinder::abort() { }
 
 } // namespace QtNote

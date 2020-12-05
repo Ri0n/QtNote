@@ -27,8 +27,8 @@ unix {
 }
 
 win32 {
-	target.path = $$WININST_PREFIX
-	INSTALLS += target
+    target.path = $$WININST_PREFIX
+    INSTALLS += target
 }
 
 RC_FILE = win/$${TARGET}.rc
@@ -36,13 +36,13 @@ RC_FILE = win/$${TARGET}.rc
 
 SOURCES += $$PWD/main.cpp
 
-HEADERS += 
+HEADERS +=
 
 QTNOTE_LIBDIR = $$OUT_PWD/../libqtnote$$DBG_SUBDIR
 !greaterThan(QT_MAJOR_VERSION, 4):equals(QMAKE_LINK_SHLIB, g++)|equals(QMAKE_LINK_SHLIB, ld) {
-	QMAKE_LFLAGS += -L$$QTNOTE_LIBDIR
+    QMAKE_LFLAGS += -L$$QTNOTE_LIBDIR
 } else {
-	LIBS += -L$$QTNOTE_LIBDIR
+    LIBS += -L$$QTNOTE_LIBDIR
 }
 LIBS += -lqtnote
 INCLUDEPATH += $$PWD/../libqtnote
@@ -52,14 +52,14 @@ unix:!mac:PRE_TARGETDEPS += $$QTNOTE_LIBDIR/libqtnote.so
 
 win32:CONFIG += bundled_singleapp
 else:!bundled_singleapp {
-	dirs = $$[QMAKE_MKSPECS]
-	dirs = $$split(dirs, ":")
-	qsa_found = 0
-	for(d, dirs):exists($${d}/features/qtsingleapplication.prf):qsa_found = 1
-	contains(qsa_found,0) {
-		warning( QtSingleApplication is not installed. Use bundled instead )
-		CONFIG += bundled_singleapp
-	}
+    dirs = $$[QMAKE_MKSPECS]
+    dirs = $$split(dirs, ":")
+    qsa_found = 0
+    for(d, dirs):exists($${d}/features/qtsingleapplication.prf):qsa_found = 1
+    contains(qsa_found,0) {
+        warning( QtSingleApplication is not installed. Use bundled instead )
+        CONFIG += bundled_singleapp
+    }
 }
 bundled_singleapp:include(../3rdparty/qtsingleapplication/qtsingleapplication.pri)
 else:CONFIG += qtsingleapplication

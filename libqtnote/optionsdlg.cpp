@@ -19,39 +19,35 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QStringListModel>
-#include <QSettings>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QDir>
+#include <QSettings>
+#include <QStringListModel>
 
-#include "optionsdlg.h"
-#include "ui_optionsdlg.h"
-#include "notemanager.h"
-#include "qtnote.h"
-#include "shortcutsmanager.h"
-#include "shortcutedit.h"
-#include "pluginmanager.h"
-#include "optionsplugins.h"
-#include "utils.h"
 #include "defaults.h"
+#include "notemanager.h"
+#include "optionsdlg.h"
+#include "optionsplugins.h"
+#include "pluginmanager.h"
+#include "qtnote.h"
+#include "shortcutedit.h"
+#include "shortcutsmanager.h"
+#include "ui_optionsdlg.h"
+#include "utils.h"
 
 namespace QtNote {
 
-class OptionsDlg::PriorityModel : public QStringListModel
-{
+class OptionsDlg::PriorityModel : public QStringListModel {
 private:
     QMap<QString, QString> titleMap;
 
 public:
-
-    PriorityModel(QObject *parent)
-        : QStringListModel(parent)
+    PriorityModel(QObject *parent) : QStringListModel(parent)
     {
         QStringList orderedNames;
 
-        foreach(NoteStorage::Ptr storage,  NoteManager::instance()->prioritizedStorages(true))
-        {
+        foreach (NoteStorage::Ptr storage, NoteManager::instance()->prioritizedStorages(true)) {
             titleMap[storage->systemName()] = storage->name();
             orderedNames.append(storage->name());
         }
@@ -85,14 +81,11 @@ public:
         }
     }
 
-    Qt::DropActions supportedDropActions() const
-    {
-        return Qt::MoveAction;
-    }
+    Qt::DropActions supportedDropActions() const { return Qt::MoveAction; }
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
     {
-        QString storageId = index.isValid()? titleMap.key(stringList()[index.row()]) : QString();
+        QString storageId = index.isValid() ? titleMap.key(stringList()[index.row()]) : QString();
         if (!storageId.isEmpty()) {
             if (role == Qt::DecorationRole) {
                 return NoteManager::instance()->storage(storageId)->storageIcon();
@@ -110,24 +103,21 @@ public:
     }
 };
 
-OptionsDlg::OptionsDlg(Main *qtnote) :
-    QDialog(0),
-    ui(new Ui::OptionsDlg),
-    qtnote(qtnote)
+OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnote(qtnote)
 {
     ui->setupUi(this);
 
 #ifdef Q_OS_LINUX
     QFile desktop(QDir::homePath() + "/.config/autostart/" APPNAME ".desktop");
-    if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll())
-        .contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
+    if (desktop.open(QIODevice::ReadOnly)
+        && QString(desktop.readAll()).contains(QRegExp("\\bhidden\\s*=\\s*false", Qt::CaseInsensitive))) {
         ui->ckAutostart->setChecked(true);
     }
 #elif defined(Q_OS_WIN)
     QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
-                  "CurrentVersion\\Run", QSettings::NativeFormat);
-    ui->ckAutostart->setChecked(
-            reg.contains(QCoreApplication::applicationName()));
+                  "CurrentVersion\\Run",
+                  QSettings::NativeFormat);
+    ui->ckAutostart->setChecked(reg.contains(QCoreApplication::applicationName()));
 #else
     ui->ckAutostart->setVisible(false);
 #endif
@@ -136,13 +126,14 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
     QSettings s;
     ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
     ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
-    ui->wTitleColor->setColor(QPalette::Text, s.value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>());
+    ui->wTitleColor->setColor(QPalette::Text,
+                              s.value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>());
 
     foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
         ShortcutEdit *se = new ShortcutEdit(qtnote, si.option);
-        se->setObjectName("shortcut-"+si.option);
+        se->setObjectName("shortcut-" + si.option);
         se->setSequence(si.key);
-        ((QFormLayout*)ui->gbShortcuts->layout())->addRow(si.name, se);
+        ((QFormLayout *)ui->gbShortcuts->layout())->addRow(si.name, se);
     }
 
     ui->plugins->layout()->addWidget(new OptionsPlugins(qtnote, this));
@@ -152,10 +143,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) :
     connect(ui->priorityView, SIGNAL(doubleClicked(QModelIndex)), SLOT(storage_doubleClicked(const QModelIndex &)));
 }
 
-OptionsDlg::~OptionsDlg()
-{
-    delete ui;
-}
+OptionsDlg::~OptionsDlg() { delete ui; }
 
 void OptionsDlg::changeEvent(QEvent *e)
 {
@@ -174,15 +162,16 @@ void OptionsDlg::accept()
     QStringList storageCodes = priorityModel->priorityList();
     NoteManager::instance()->setPriorities(storageCodes);
 
-    //const QMap<QString, QString> &shortcuts = qtnote->shortcutsManager()->all();
-    foreach(ShortcutEdit *w, ui->gbShortcuts->findChildren<ShortcutEdit*>()) {
+    // const QMap<QString, QString> &shortcuts = qtnote->shortcutsManager()->all();
+    foreach (ShortcutEdit *w, ui->gbShortcuts->findChildren<ShortcutEdit *>()) {
         if (!w->isModified()) {
             continue;
         }
         QString option = w->objectName().mid(sizeof("shortcut-") - 1);
         qtnote->shortcutsManager()->setShortcutEnable(option, true);
         if (!qtnote->shortcutsManager()->setKey(option, w->sequence())) {
-            qtnote->notifyError(tr("Failed to update shortcut for \"%1\"").arg(qtnote->shortcutsManager()->friendlyName(option)));
+            qtnote->notifyError(
+                tr("Failed to update shortcut for \"%1\"").arg(qtnote->shortcutsManager()->friendlyName(option)));
         }
     }
 
@@ -199,22 +188,20 @@ void OptionsDlg::accept()
     QFile desktopFile(DATADIR "/applications/" APPNAME ".desktop");
     if (desktopFile.open(QIODevice::ReadOnly)) {
         QByteArray contents = desktopFile.readAll();
-        QFile f(home.absolutePath() +
-                "/.config/autostart/" APPNAME ".desktop");
+        QFile      f(home.absolutePath() + "/.config/autostart/" APPNAME ".desktop");
 
         if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
             f.write(contents.trimmed());
-            f.write(QString("\nHidden=%1").arg(ui->ckAutostart->isChecked()?
-                                               "false\n":"true\n").toUtf8());
+            f.write(QString("\nHidden=%1").arg(ui->ckAutostart->isChecked() ? "false\n" : "true\n").toUtf8());
         }
     }
 #elif defined(Q_OS_WIN)
     QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
-                  "CurrentVersion\\Run", QSettings::NativeFormat);
-    if(ui->ckAutostart->isChecked())
-        reg.setValue(QCoreApplication::applicationName(), '"' +
-                     QDir::toNativeSeparators(QCoreApplication::
-                                              applicationFilePath()) + '"');
+                  "CurrentVersion\\Run",
+                  QSettings::NativeFormat);
+    if (ui->ckAutostart->isChecked())
+        reg.setValue(QCoreApplication::applicationName(),
+                     '"' + QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) + '"');
     else
         reg.remove(QCoreApplication::applicationName());
 #endif
@@ -235,9 +222,8 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     dlg->setWindowIcon(QIcon(":/icons/options"));
     dlg->setWindowTitle(tr("%1: Settings").arg(NoteManager::instance()->storage(storageId)->name()));
     dlg->resize(500, 30);
-    QVBoxLayout *vl = new QVBoxLayout;
-    QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok
-                                                 | QDialogButtonBox::Cancel);
+    QVBoxLayout *     vl  = new QVBoxLayout;
+    QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(dbb, SIGNAL(accepted()), w, SIGNAL(apply()));
     connect(dbb, SIGNAL(accepted()), dlg, SLOT(accept()));
     connect(dbb, SIGNAL(rejected()), dlg, SLOT(reject()));

@@ -3,17 +3,16 @@
 #ifndef USE_KDE5
 #include <KAction>
 #else
-#include <QAction>
 #include <KGlobalAccel>
+#include <QAction>
 #endif
 #include <KNotification>
+#include <QAction>
 #include <QWidget>
 #include <QtPlugin>
-#include <QAction>
 
 #include "kdeintegration.h"
 #include "kdeintegrationtray.h"
-
 
 namespace QtNote {
 
@@ -22,37 +21,32 @@ static const QLatin1String pluginId("kde_de");
 //------------------------------------------------------------
 // KDEIntegration
 //------------------------------------------------------------
-KDEIntegration::KDEIntegration(QObject *parent) :
-    QObject(parent)
-{
-}
+KDEIntegration::KDEIntegration(QObject *parent) : QObject(parent) { }
 
-int KDEIntegration::metadataVersion() const
-{
-    return MetadataVerion;
-}
+int KDEIntegration::metadataVersion() const { return MetadataVerion; }
 
 PluginMetadata KDEIntegration::metadata()
 {
     PluginMetadata md;
-    md.id = pluginId;
-    md.icon = QIcon(":/icons/kde-logo");
-    md.name = "KDE Integration";
+    md.id          = pluginId;
+    md.icon        = QIcon(":/icons/kde-logo");
+    md.name        = "KDE Integration";
     md.description = tr("Provide native look and feel for KDE users");
-    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-    md.minVersion = 0x020300; // minimum compatible version of QtNote
-    md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
-    md.homepage = QUrl("http://ri0n.github.io/QtNote");
-    md.extra.insert("de", QStringList() << "KDE-4" << "kde-plasma" << "/usr/share/xsessions/plasma"
-                    << "plasma" << "/usr/share/xsessions/plasma5");
+    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.minVersion  = 0x020300;       // minimum compatible version of QtNote
+    md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
+    md.homepage    = QUrl("http://ri0n.github.io/QtNote");
+    md.extra.insert("de",
+                    QStringList() << "KDE-4"
+                                  << "kde-plasma"
+                                  << "/usr/share/xsessions/plasma"
+                                  << "plasma"
+                                  << "/usr/share/xsessions/plasma5");
     return md;
 }
 
-TrayImpl *KDEIntegration::initTray(Main *qtnote)
-{
-    return new KDEIntegrationTray(qtnote, this);
-}
+TrayImpl *KDEIntegration::initTray(Main *qtnote) { return new KDEIntegrationTray(qtnote, this); }
 
 void KDEIntegration::notifyError(const QString &msg)
 {
@@ -76,7 +70,7 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
     }
     KGlobalAccel::setGlobalShortcut(act, key);
 #else
-    //KGlobalAccel::setGlobalShortcut()
+    // KGlobalAccel::setGlobalShortcut()
     KAction *act = _shortcuts.value(id);
     if (!act) {
         act = new KAction(action->text(), this);

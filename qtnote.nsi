@@ -74,7 +74,7 @@ FunctionEnd
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   !insertmacro UNINSTALL.LOG_OPEN_INSTALL
-  
+
   SetOverwrite ifnewer
   File /r "${QTNOTEBINDIR}\*"
   CreateDirectory "$SMPROGRAMS\QtNote"
@@ -82,7 +82,7 @@ Section "MainSection" SEC01
   CreateShortCut "$DESKTOP\QtNote.lnk" "$INSTDIR\qtnote.exe"
   File "Changelog"
   File "license.txt"
-  
+
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\qtnote.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\Uninstall.exe"
@@ -90,14 +90,14 @@ Section "MainSection" SEC01
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-  
+
   SetOutPath $INSTDIR
   WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
   CreateShortCut "$SMPROGRAMS\QtNote\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
   CreateShortCut "$SMPROGRAMS\QtNote\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-  
+
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  
+
   !insertmacro UNINSTALL.LOG_CLOSE_INSTALL
 SectionEnd
 
@@ -106,7 +106,7 @@ Function .onInstSuccess
 FunctionEnd
 
 Function un.onInit
-  !insertmacro MUI_UNGETLANGUAGE  
+  !insertmacro MUI_UNGETLANGUAGE
   MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(un_confirm_message)" IDYES +2
   Abort
   !insertmacro UNINSTALL.LOG_BEGIN_UNINSTALL
@@ -116,20 +116,20 @@ Section Uninstall
   !insertmacro UNINSTALL.LOG_UNINSTALL "$INSTDIR"
   Delete "$INSTDIR\Uninstall.exe"
   !insertmacro UNINSTALL.LOG_END_UNINSTALL
-  
+
   Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$SMPROGRAMS\QtNote\Uninstall.lnk"
   Delete "$SMPROGRAMS\QtNote\Website.lnk"
   Delete "$DESKTOP\QtNote.lnk"
   Delete "$SMPROGRAMS\QtNote\QtNote.lnk"
   RMDir "$SMPROGRAMS\QtNote"
-  
+
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
   SetAutoClose true
 SectionEnd
 
 Function un.onUninstSuccess
-  HideWindow  
+  HideWindow
   MessageBox MB_ICONINFORMATION|MB_OK "$(un_finished_message)"
 FunctionEnd

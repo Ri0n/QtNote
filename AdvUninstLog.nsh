@@ -3,7 +3,7 @@
      # Advanced Uninstall Log NSIS header
      # Version 1.0 2007-01-31
      # By Red Wine (http://nsis.sf.net/User:Red_Wine)
-     
+
      # Usage: See included examples Uninstall_Log_Default_UI.nsi - Uninstall_Log_Modern_UI.nsi
 
 !verbose push
@@ -118,21 +118,21 @@
 
    !define ID ${__LINE__}
 
-	${un.Locate} "${TargetDir}" "/L=F" "${UninstCallBackFunc}"
+    ${un.Locate} "${TargetDir}" "/L=F" "${UninstCallBackFunc}"
 
     loop_${ID}:
 
-	StrCpy $unlog_tmp_1 0
+        StrCpy $unlog_tmp_1 0
 
-	${un.Locate} "${TargetDir}" "/L=DE" "${UninstCallBackFunc}"
-	StrCmp $unlog_tmp_1 "0" 0 loop_${ID}
+        ${un.Locate} "${TargetDir}" "/L=DE" "${UninstCallBackFunc}"
+        StrCmp $unlog_tmp_1 "0" 0 loop_${ID}
 
         ${un.DirState} "${TargetDir}" $unlog_tmp_0
         StrCmp "$unlog_tmp_0" "0" 0 +2
         RmDir "${TargetDir}"
 
-	IfErrors 0 +2
-	MessageBox MB_ICONEXCLAMATION|MB_OK "${UNINSTALL_LOG} Log error" /SD IDOK
+        IfErrors 0 +2
+        MessageBox MB_ICONEXCLAMATION|MB_OK "${UNINSTALL_LOG} Log error" /SD IDOK
 
    !undef ID
 
@@ -143,7 +143,7 @@
 !macro INTERACTIVE_UNINSTALL
   !verbose push
      !verbose ${UNINST_LOG_VERBOSE}
-     
+
      !ifdef INTERACTIVE_UNINSTALL
         !error "INTERACTIVE_UNINSTALL is already defined"
      !endif
@@ -216,7 +216,7 @@
 
     isdir:
         RmDir "$R9"
-	IntOp $unlog_tmp_1 $unlog_tmp_1 + 1
+        IntOp $unlog_tmp_1 $unlog_tmp_1 + 1
         goto end
 
     nolog:
@@ -226,7 +226,7 @@
 
     end:
         FileSeek $unlog_tmp_2 0 SET
-	Push $unlog_tmp_0
+        Push $unlog_tmp_0
   FunctionEnd
 
 !macroend
@@ -251,24 +251,24 @@
 
     isdir:
         RmDir "$R9"
-	IntOp $unlog_tmp_1 $unlog_tmp_1 + 1
+        IntOp $unlog_tmp_1 $unlog_tmp_1 + 1
         goto end
 
     nolog:
         ClearErrors
-	FileSeek $unlog_tmp_4 0 SET
+        FileSeek $unlog_tmp_4 0 SET
     read:
         FileRead $unlog_tmp_4 "$unlog_tmp_3"
         ${un.TrimNewLines} "$unlog_tmp_3" "$unlog_tmp_3"
         StrCmp "$unlog_tmp_3" "$R9" end
         IfErrors +2
         goto read
-        ClearErrors 
+        ClearErrors
         StrCmp "$R9" "${UNINST_EXE}" isfile
         StrCmp "$R9" "${UNINST_DAT}" isfile
         IfFileExists "$R9\*.*" msgdir
 
-	MessageBox MB_ICONQUESTION|MB_YESNO \
+        MessageBox MB_ICONQUESTION|MB_YESNO \
         'Delete File "$R9"?' /SD IDNO IDYES isfile IDNO nodel
 
     msgdir:
@@ -276,12 +276,12 @@
         'Delete Directory "$R9"?' /SD IDNO IDYES isdir IDNO nodel
 
     nodel:
-	FileSeek $unlog_tmp_4 0 END
-	FileWrite $unlog_tmp_4 "$R9$\r$\n"
+        FileSeek $unlog_tmp_4 0 END
+        FileWrite $unlog_tmp_4 "$R9$\r$\n"
 
     end:
         FileSeek $unlog_tmp_2 0 SET
-	Push $unlog_tmp_0
+        Push $unlog_tmp_0
   FunctionEnd
 
 !macroend
@@ -301,9 +301,9 @@
         StrCmp "$R9" "$unlog_tmp_3" end
         goto loop
     next:
-	FileWrite $unlog_tmp_1 "$R9$\r$\n"
+        FileWrite $unlog_tmp_1 "$R9$\r$\n"
     end:
-	Push $unlog_tmp_0
+        Push $unlog_tmp_0
   FunctionEnd
 
 !macroend
@@ -375,19 +375,19 @@
   !verbose push
      !verbose ${UNINST_LOG_VERBOSE}
 
-	FileOpen $unlog_tmp_1 "${FileOpenWrite}" w
-	FileOpen $unlog_tmp_2 "${FileOpenRead}" r
+        FileOpen $unlog_tmp_1 "${FileOpenWrite}" w
+        FileOpen $unlog_tmp_2 "${FileOpenRead}" r
 
-	${Locate} "${TargetDir}" "/L=FD" "${UnLog_Install_Func_CallBack}"
+        ${Locate} "${TargetDir}" "/L=FD" "${UnLog_Install_Func_CallBack}"
 
         StrCmp $unlog_error "error" 0 +2
         ClearErrors
 
-	IfErrors 0 +2
-	MessageBox MB_ICONEXCLAMATION|MB_OK "Error creating ${UNINSTALL_LOG} Log." /SD IDOK
+        IfErrors 0 +2
+        MessageBox MB_ICONEXCLAMATION|MB_OK "Error creating ${UNINSTALL_LOG} Log." /SD IDOK
 
-	FileClose $unlog_tmp_1
-	FileClose $unlog_tmp_2
+        FileClose $unlog_tmp_1
+        FileClose $unlog_tmp_2
 
   !verbose pop
 !macroend
@@ -434,4 +434,3 @@
 
 !verbose pop
      ;_____________________________ HEADER FILE END ____________________________
-

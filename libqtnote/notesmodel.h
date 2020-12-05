@@ -22,47 +22,38 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTESMODEL_H
 #define NOTESMODEL_H
 
-#include <QAbstractItemModel>
 #include "notestorage.h"
+#include <QAbstractItemModel>
 
 namespace QtNote {
 
 class NMMItem;
 struct NoteListItem;
 
-class NotesModel : public QAbstractItemModel
-{
+class NotesModel : public QAbstractItemModel {
     Q_OBJECT
 public:
-	enum DataRole {
-		StorageIdRole = Qt::UserRole + 1,
-		NoteIdRole,
-		ItemTypeRole
-	};
+    enum DataRole { StorageIdRole = Qt::UserRole + 1, NoteIdRole, ItemTypeRole };
 
-	enum ItemType {
-		ItemStorage,
-		ItemNote
-	};
+    enum ItemType { ItemStorage, ItemNote };
 
-	explicit NotesModel(QObject *parent = 0);
-	~NotesModel();
-	void setStorageSignalHandlers(NoteStorage::Ptr s);
+    explicit NotesModel(QObject *parent = 0);
+    ~NotesModel();
+    void setStorageSignalHandlers(NoteStorage::Ptr s);
     void invalidateNote(const QString &storageId, const QString &noteId);
 
-    QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const;
-	QModelIndex parent( const QModelIndex & index ) const;
-	int rowCount( const QModelIndex & parent = QModelIndex() ) const;
-	int columnCount( const QModelIndex & parent = QModelIndex() ) const;
+    QModelIndex   index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
+    QModelIndex   parent(const QModelIndex &index) const;
+    int           rowCount(const QModelIndex &parent = QModelIndex()) const;
+    int           columnCount(const QModelIndex &parent = QModelIndex()) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
-    QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
-	bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    QVariant      data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+    bool          removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
 
     Qt::DropActions supportedDropActions() const;
-    QStringList mimeTypes() const;
-    QMimeData *mimeData(const QModelIndexList &indexes) const;
-    bool dropMimeData(const QMimeData *data,
-         Qt::DropAction action, int row, int column, const QModelIndex &parent);
+    QStringList     mimeTypes() const;
+    QMimeData *     mimeData(const QModelIndexList &indexes) const;
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
 signals:
     void statsChanged(); // emit on note added/removed, storage added/removed
@@ -70,20 +61,21 @@ signals:
 public slots:
 
 private slots:
-	void storageAdded(const NoteStorage::Ptr &);
-	void storageRemoved(const NoteStorage::Ptr &);
-	void noteAdded(const NoteListItem &);
-	void noteModified(const NoteListItem &);
-	void noteRemoved(const NoteListItem &);
+    void storageAdded(const NoteStorage::Ptr &);
+    void storageRemoved(const NoteStorage::Ptr &);
+    void noteAdded(const NoteListItem &);
+    void noteModified(const NoteListItem &);
+    void noteRemoved(const NoteListItem &);
 
-	void storageInvalidated();
-private:
-	QModelIndex storageIndex(const QString &) const;
-	QModelIndex noteIndex(const QString &, const QString &) const;
+    void storageInvalidated();
 
 private:
-	QList<NMMItem*> storages;
-    QModelIndex removeProtection;
+    QModelIndex storageIndex(const QString &) const;
+    QModelIndex noteIndex(const QString &, const QString &) const;
+
+private:
+    QList<NMMItem *> storages;
+    QModelIndex      removeProtection;
 };
 
 } // namespace QtNote

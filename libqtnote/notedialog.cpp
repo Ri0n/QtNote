@@ -21,70 +21,61 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QApplication>
 #include <QDesktopWidget>
-#include <QSettings>
 #include <QHBoxLayout>
+#include <QSettings>
 
-
-#include "utils.h"
-#include "typeaheadfind.h"
-#include "notedialog.h"
-#include "ui_notedialog.h"
 #include "note.h"
+#include "notedialog.h"
 #include "notewidget.h"
+#include "typeaheadfind.h"
+#include "ui_notedialog.h"
 #include "utils.h"
 
 namespace QtNote {
 
-NoteDialog::NoteDialog(NoteWidget *noteWidget) :
-	QDialog(0),
-	m_ui(new Ui::NoteDialog),
-	noteWidget(noteWidget)
+NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget)
 {
-	setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) |
-				   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
-	m_ui->setupUi(this);
-	setAttribute(Qt::WA_DeleteOnClose);
-	setObjectName("noteDlg");
+    setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) | Qt::WindowSystemMenuHint
+                   | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
+    m_ui->setupUi(this);
+    setAttribute(Qt::WA_DeleteOnClose);
+    setObjectName("noteDlg");
 
-	QHBoxLayout *l = new QHBoxLayout;
-	l->setMargin(2);
-	l->addWidget(noteWidget);
-	setLayout(l);
+    QHBoxLayout *l = new QHBoxLayout;
+    l->setMargin(2);
+    l->addWidget(noteWidget);
+    setLayout(l);
 
-	QRect rect;
-	if (!noteWidget->noteId().isEmpty()) {
-		rect = QSettings().value(QString("geometry.%1.%2")
-								 .arg(noteWidget->storageId(), noteWidget->noteId())).toRect();
+    QRect rect;
+    if (!noteWidget->noteId().isEmpty()) {
+        rect = QSettings().value(QString("geometry.%1.%2").arg(noteWidget->storageId(), noteWidget->noteId())).toRect();
 
-		Q_ASSERT(!NoteDialog::findDialog(noteWidget->storageId(), noteWidget->noteId()));
-		NoteDialog::dialogs.insert(QPair<QString,QString>(noteWidget->storageId(), noteWidget->noteId()), this);
-	}
-	if (rect.isEmpty()) {
-		QSize avail = QApplication::desktop()->size() - sizeHint();
-		int x = avail.width() / 4 + (qrand()/(float)RAND_MAX)*avail.width() / 2;
-		int y = avail.height() / 4 + (qrand()/(float)RAND_MAX)*avail.height() / 2;
-		move(x, y);
-	} else {
-		setGeometry(rect);
-	}
+        Q_ASSERT(!NoteDialog::findDialog(noteWidget->storageId(), noteWidget->noteId()));
+        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()), this);
+    }
+    if (rect.isEmpty()) {
+        QSize avail = QApplication::desktop()->size() - sizeHint();
+        int   x     = avail.width() / 4 + (qrand() / (float)RAND_MAX) * avail.width() / 2;
+        int   y     = avail.height() / 4 + (qrand() / (float)RAND_MAX) * avail.height() / 2;
+        move(x, y);
+    } else {
+        setGeometry(rect);
+    }
 
-	noteWidget->setFocus(Qt::OtherFocusReason);
+    noteWidget->setFocus(Qt::OtherFocusReason);
 
-	connect(noteWidget, SIGNAL(trashRequested()), SLOT(trashRequested()));
-	connect(noteWidget, SIGNAL(noteIdChanged(QString,QString)), SLOT(noteIdChanged(QString,QString)));
-	connect(noteWidget, SIGNAL(firstLineChanged()), SLOT(firstLineChanged()));
+    connect(noteWidget, SIGNAL(trashRequested()), SLOT(trashRequested()));
+    connect(noteWidget, SIGNAL(noteIdChanged(QString, QString)), SLOT(noteIdChanged(QString, QString)));
+    connect(noteWidget, SIGNAL(firstLineChanged()), SLOT(firstLineChanged()));
 
-	firstLineChanged();
+    firstLineChanged();
 }
 
-NoteDialog::~NoteDialog()
-{
-    delete m_ui;
-}
+NoteDialog::~NoteDialog() { delete m_ui; }
 
-NoteDialog* NoteDialog::findDialog(const QString &storageId, const QString &noteId)
+NoteDialog *NoteDialog::findDialog(const QString &storageId, const QString &noteId)
 {
-	return NoteDialog::dialogs.value(QPair<QString,QString>(storageId, noteId));
+    return NoteDialog::dialogs.value(QPair<QString, QString>(storageId, noteId));
 }
 
 void NoteDialog::changeEvent(QEvent *e)
@@ -95,49 +86,47 @@ void NoteDialog::changeEvent(QEvent *e)
         break;
     default:
         break;
-	}
+    }
 }
 
 void NoteDialog::trashRequested()
 {
-	noteWidget->setTrashRequested(true); // in case when called outside
-	close();
+    noteWidget->setTrashRequested(true); // in case when called outside
+    close();
 }
 
 void NoteDialog::done(int r)
 {
-	noteWidget->disconnect(this);
-	if (!noteWidget->isTrashRequested()) { // do it first to update noteWidget::noteId
-		noteWidget->save();
-	}
-	if (!noteWidget->noteId().isEmpty()) {
-		QSettings s;
-		QString key = QString("geometry.%1.%2")
-				.arg(noteWidget->storageId(), noteWidget->noteId());
-		if (noteWidget->isTrashRequested()) {
-			s.remove(key);
-		} else {
-			s.setValue(key, geometry());
-		}
-		NoteDialog::dialogs.remove(QPair<QString,QString>(noteWidget->storageId(), noteWidget->noteId()));
-	}
-	QDialog::done(r);
+    noteWidget->disconnect(this);
+    if (!noteWidget->isTrashRequested()) { // do it first to update noteWidget::noteId
+        noteWidget->save();
+    }
+    if (!noteWidget->noteId().isEmpty()) {
+        QSettings s;
+        QString   key = QString("geometry.%1.%2").arg(noteWidget->storageId(), noteWidget->noteId());
+        if (noteWidget->isTrashRequested()) {
+            s.remove(key);
+        } else {
+            s.setValue(key, geometry());
+        }
+        NoteDialog::dialogs.remove(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()));
+    }
+    QDialog::done(r);
 }
 
 void NoteDialog::firstLineChanged()
 {
-	QString l = noteWidget->firstLine().trimmed();
-	setWindowTitle(Utils::cuttedDots(l.isEmpty() ? tr("[No Title]") : l, 256));
+    QString l = noteWidget->firstLine().trimmed();
+    setWindowTitle(Utils::cuttedDots(l.isEmpty() ? tr("[No Title]") : l, 256));
 }
 
 void NoteDialog::noteIdChanged(const QString &oldId, const QString &newId)
 {
-	if (oldId.isEmpty() && !newId.isEmpty()) {
-		NoteDialog::dialogs.insert(QPair<QString,QString>(noteWidget->storageId(), newId), this);
-	}
+    if (oldId.isEmpty() && !newId.isEmpty()) {
+        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), newId), this);
+    }
 }
 
-
-QHash< QPair<QString,QString>, NoteDialog* > NoteDialog::dialogs;
+QHash<QPair<QString, QString>, NoteDialog *> NoteDialog::dialogs;
 
 } // namespace QtNote

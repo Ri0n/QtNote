@@ -25,7 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDialog>
 
 namespace Ui {
-    class NoteDialog;
+class NoteDialog;
 }
 
 namespace QtNote {
@@ -36,31 +36,27 @@ class NoteDialog : public QDialog {
     Q_OBJECT
     Q_DISABLE_COPY(NoteDialog)
 public:
-	explicit NoteDialog(NoteWidget *noteWidget);
+    explicit NoteDialog(NoteWidget *noteWidget);
     virtual ~NoteDialog();
 
-	static NoteDialog* findDialog(const QString &storageId, const QString &noteId);
+    static NoteDialog *findDialog(const QString &storageId, const QString &noteId);
 
 protected:
-	void changeEvent(QEvent *e);
+    void changeEvent(QEvent *e);
 
 private slots:
-	void noteIdChanged(const QString &oldId, const QString &newId);
-	void firstLineChanged();
+    void noteIdChanged(const QString &oldId, const QString &newId);
+    void firstLineChanged();
 
 private:
     Ui::NoteDialog *m_ui;
-	NoteWidget *noteWidget;
+    NoteWidget *    noteWidget;
 
-	static QHash< QPair<QString,QString>, NoteDialog* > dialogs;
-
-
+    static QHash<QPair<QString, QString>, NoteDialog *> dialogs;
 
 public slots:
-	void trashRequested();
-	void done(int r);
-
-
+    void trashRequested();
+    void done(int r);
 };
 
 } // namespace QtNote

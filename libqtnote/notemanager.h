@@ -22,22 +22,21 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEMANAGER_H
 #define NOTEMANAGER_H
 
-#include <QObject>
-#include <QMap>
-#include <QSet>
 #include <QLinkedList>
+#include <QMap>
+#include <QObject>
 #include <QPointer>
+#include <QSet>
 
 #include "notestorage.h"
 #include "qtnote_export.h"
 
 namespace QtNote {
 
-class QTNOTE_EXPORT GlobalNoteFinder : public QObject
-{
+class QTNOTE_EXPORT GlobalNoteFinder : public QObject {
     Q_OBJECT
 
-    QHash<NoteFinder*,QPointer<NoteFinder> >  searchers;
+    QHash<NoteFinder *, QPointer<NoteFinder>> searchers;
 
 public:
     GlobalNoteFinder(QObject *parent = 0);
@@ -54,11 +53,10 @@ private slots:
     void searcherFinished();
 };
 
-class QTNOTE_EXPORT NoteManager : public QObject
-{
+class QTNOTE_EXPORT NoteManager : public QObject {
     Q_OBJECT
 public:
-    static NoteManager *instance();
+    static NoteManager *     instance();
     static GlobalNoteFinder *search() { return new GlobalNoteFinder(instance()); }
 
     void registerStorage(NoteStorage::Ptr storage);
@@ -70,12 +68,13 @@ public:
     Note note(const QString &storageId, const QString &noteId);
 
     const QMap<QString, NoteStorage::Ptr> storages(bool withInvalid = false) const;
-    const QLinkedList<NoteStorage::Ptr> prioritizedStorages(bool withInvalid = false) const;
+    const QLinkedList<NoteStorage::Ptr>   prioritizedStorages(bool withInvalid = false) const;
 
     virtual NoteStorage::Ptr storage(const QString &storageId) const; // virtual for plugins
-    inline NoteStorage::Ptr defaultStorage() const
-    { return prioritizedStorages().isEmpty()?
-                    NoteStorage::Ptr() : prioritizedStorages().first(); }
+    inline NoteStorage::Ptr  defaultStorage() const
+    {
+        return prioritizedStorages().isEmpty() ? NoteStorage::Ptr() : prioritizedStorages().first();
+    }
 
     /*
      * Accepts storages identifiers. the first one is in higher priority.
@@ -95,9 +94,9 @@ private slots:
 private:
     NoteManager(QObject *parent);
 
-    static NoteManager *_instance;
-    QStringList _priorities;
-    QMap<QString, NoteStorage::Ptr> _storages;
+    static NoteManager *                  _instance;
+    QStringList                           _priorities;
+    QMap<QString, NoteStorage::Ptr>       _storages;
     mutable QLinkedList<NoteStorage::Ptr> _prioCache;
 };
 

@@ -5,15 +5,13 @@ class QDialog;
 
 namespace QtNote {
 
-class PluginOptionsInterface
-{
+class PluginOptionsInterface {
 public:
-	virtual QDialog* optionsDialog() = 0;
+    virtual QDialog *optionsDialog() = 0;
 };
 
 } // namespace QtNote
 
-Q_DECLARE_INTERFACE(QtNote::PluginOptionsInterface,
-					 "com.rion-soft.QtNote.PluginOptionsInterface/1.0")
+Q_DECLARE_INTERFACE(QtNote::PluginOptionsInterface, "com.rion-soft.QtNote.PluginOptionsInterface/1.0")
 
 #endif

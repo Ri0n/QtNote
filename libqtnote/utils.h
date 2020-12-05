@@ -28,14 +28,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class QColor;
 
-class QTNOTE_EXPORT Utils
-{
+class QTNOTE_EXPORT Utils {
 public:
     Utils();
 
     static QString cuttedDots(const QString &, int);
 
-    static const QString genericDataDir();
+    static const QString  genericDataDir();
     static const QString &qtnoteDataDir();
 
     static QColor perceptiveColor(const QColor &against);

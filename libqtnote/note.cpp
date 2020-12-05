@@ -25,44 +25,20 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-Note::Note()
-{
+Note::Note() { }
 
-}
+Note::Note(NoteData *data) { d = QSharedPointer<NoteData>(data); }
 
-Note::Note(NoteData *data)
-{
-	d = QSharedPointer<NoteData>(data);
-}
+bool Note::isNull() { return !d; }
 
-bool Note::isNull()
-{
-	return !d;
-}
+void Note::toTrash() { d->remove(); }
 
-void Note::toTrash()
-{
-	d->remove();
-}
+QString Note::text() const { return d->text(); }
 
-QString Note::text() const
-{
-	return d->text();
-}
+QString Note::title() const { return d->title(); }
 
-QString Note::title() const
-{
-	return d->title();
-}
+NoteData *Note::data() const { return d.data(); }
 
-NoteData* Note::data() const
-{
-	return d.data();
-}
-
-qint64 Note::lastChangeElapsed() const
-{
-	return d->lastChangeElapsed();
-}
+qint64 Note::lastChangeElapsed() const { return d->lastChangeElapsed(); }
 
 } // namespace QtNote

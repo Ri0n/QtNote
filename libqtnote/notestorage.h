@@ -22,9 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTESTORAGE_H
 #define NOTESTORAGE_H
 
-#include <QObject> // just for compatibility with qt<4.6
 #include <QDateTime>
 #include <QIcon>
+#include <QObject> // just for compatibility with qt<4.6
 
 #include "note.h"
 #include "qtnote_export.h"
@@ -34,36 +34,31 @@ namespace QtNote {
 class NoteStorage;
 class NoteFinder;
 
-struct NoteListItem
-{
-    NoteListItem(const QString &id_, const QString &storageId_,
-                 const QString &title_,const QDateTime &lastModify_)
-        : id(id_)
-        , storageId(storageId_)
-        , title(title_)
-        , lastModify(lastModify_) { }
-    QString id;
-    QString storageId;
-    QString title;
+struct NoteListItem {
+    NoteListItem(const QString &id_, const QString &storageId_, const QString &title_, const QDateTime &lastModify_) :
+        id(id_), storageId(storageId_), title(title_), lastModify(lastModify_)
+    {
+    }
+    QString   id;
+    QString   storageId;
+    QString   title;
     QDateTime lastModify;
 };
 
-bool noteListItemModifyComparer(const NoteListItem &a,
-                                const NoteListItem &b);
+bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b);
 
-class QTNOTE_EXPORT NoteStorage : public QObject
-{
+class QTNOTE_EXPORT NoteStorage : public QObject {
     Q_OBJECT
 public:
     typedef QSharedPointer<NoteStorage> Ptr;
 
     NoteStorage(QObject *parent);
-    virtual bool init() = 0;
-    virtual const QString systemName() const = 0;
-    virtual const QString name() const = 0;
-    virtual QIcon storageIcon() const = 0;
-    virtual QIcon noteIcon() const = 0;
-    virtual bool isAccessible() const = 0;
+    virtual bool          init()               = 0;
+    virtual const QString systemName() const   = 0;
+    virtual const QString name() const         = 0;
+    virtual QIcon         storageIcon() const  = 0;
+    virtual QIcon         noteIcon() const     = 0;
+    virtual bool          isAccessible() const = 0;
 
     /* 0 - not limit */
     virtual QList<NoteListItem> noteList(int limit = 0) = 0;
@@ -74,13 +69,13 @@ public:
     /* returns note id */
     virtual QString createNote(const QString &text) = 0;
     /* returns updated note id or the same */
-    virtual QString saveNote(const QString &noteId, const QString &text) = 0;
-    virtual void deleteNote(const QString &noteId) = 0;
-    virtual bool isRichTextAllowed() const = 0;
-    virtual NoteFinder* search();
+    virtual QString     saveNote(const QString &noteId, const QString &text) = 0;
+    virtual void        deleteNote(const QString &noteId)                    = 0;
+    virtual bool        isRichTextAllowed() const                            = 0;
+    virtual NoteFinder *search();
 
-    virtual QWidget* settingsWidget() { return 0; }
-    virtual QString tooltip() { return QString(); }
+    virtual QWidget *settingsWidget() { return 0; }
+    virtual QString  tooltip() { return QString(); }
 
 signals:
     void noteAdded(const NoteListItem &);
@@ -95,17 +90,14 @@ signals:
  * @brief Notes search class.
  * Search object is owned by storage and self-destroyed on search-end
  */
-class NoteFinder : public QObject
-{
+class NoteFinder : public QObject {
     Q_OBJECT
 
 protected:
     NoteStorage *_storage;
 
 public:
-    NoteFinder(NoteStorage *storage) :
-        QObject(storage),
-        _storage(storage) {}
+    NoteFinder(NoteStorage *storage) : QObject(storage), _storage(storage) { }
 
     inline NoteStorage *storage() const { return _storage; }
 
@@ -117,8 +109,6 @@ public slots:
     virtual void start(const QString &text);
     virtual void abort();
 };
-
-
 
 } // namespace QtNote
 

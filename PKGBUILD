@@ -5,7 +5,7 @@ pkgdesc="Note-taking application written with Qt in mind"
 arch=('i686' 'x86_64')
 url="http://ri0n.github.io/QtNote"
 license=('GPL3')
-depends=( 'qt5-base' 'qt5-tools' 'hunspell' 
+depends=( 'qt5-base' 'qt5-tools' 'hunspell'
           'kglobalaccel' 'kwindowsystem'
           'knotifications')
 makedepends=('tar')

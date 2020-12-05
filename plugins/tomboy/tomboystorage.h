@@ -29,23 +29,22 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class TomboyStorage : public FileStorage
-{
+class TomboyStorage : public FileStorage {
     Q_OBJECT
     Q_DISABLE_COPY(TomboyStorage)
 public:
     TomboyStorage(QObject *parent);
-    bool init();
-    bool isAccessible() const;
-    const QString systemName() const;
-    const QString name() const;
-    QIcon storageIcon() const;
-    QIcon noteIcon() const;
+    bool                init();
+    bool                isAccessible() const;
+    const QString       systemName() const;
+    const QString       name() const;
+    QIcon               storageIcon() const;
+    QIcon               noteIcon() const;
     QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
-    Note note(const QString &id);
-    QString saveNote(const QString &noteId, const QString &text);
-    bool isRichTextAllowed() const;
-    QString findStorageDir() const;
+    Note                note(const QString &id);
+    QString             saveNote(const QString &noteId, const QString &text);
+    bool                isRichTextAllowed() const;
+    QString             findStorageDir() const;
 };
 
 } // namespace

@@ -25,42 +25,41 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFileInfoList>
 #include <QHash>
 
-#include "qtnote_export.h"
 #include "notestorage.h"
+#include "qtnote_export.h"
 
 namespace QtNote {
 
 class FileNoteData;
 class FileNameProvider;
 
-class QTNOTE_EXPORT FileStorage : public NoteStorage
-{
+class QTNOTE_EXPORT FileStorage : public NoteStorage {
     Q_OBJECT
 public:
     FileStorage(QObject *parent);
-    QString createNote(const QString &text);
-    void deleteNote(const QString &noteId);
-    virtual void putToCache(const NoteListItem &note, const QString &oldNoteId);
-    virtual QString findStorageDir() const = 0;
-    QWidget *settingsWidget();
-    QString tooltip();
-    QList<NoteListItem> noteList(int limit = 0);
+    QString                     createNote(const QString &text);
+    void                        deleteNote(const QString &noteId);
+    virtual void                putToCache(const NoteListItem &note, const QString &oldNoteId);
+    virtual QString             findStorageDir() const = 0;
+    QWidget *                   settingsWidget();
+    QString                     tooltip();
+    QList<NoteListItem>         noteList(int limit = 0);
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
 protected:
     QString saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId = QString::null);
-    void handleFSError();
-    void ensureChachePopulated();
+    void    handleFSError();
+    void    ensureChachePopulated();
 
 protected slots:
     void settingsApplied();
 
 protected:
-    QString fileExt;
+    QString                      fileExt;
     QHash<QString, NoteListItem> cache;
-    bool _cacheValid; /* last limit passed to noteList() */
-    QString notesDir;
-    FileNameProvider *nameProvider;
+    bool                         _cacheValid; /* last limit passed to noteList() */
+    QString                      notesDir;
+    FileNameProvider *           nameProvider;
 };
 
 }

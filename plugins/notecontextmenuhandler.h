@@ -9,15 +9,13 @@ class QTextEdit;
 
 namespace QtNote {
 
-class NoteContextMenuHandler
-{
+class NoteContextMenuHandler {
 public:
     virtual void populateNoteContextMenu(QTextEdit *nw, QContextMenuEvent *event, QMenu *menu) = 0;
 };
 
 } // namespace QtNote
 
-Q_DECLARE_INTERFACE(QtNote::NoteContextMenuHandler,
-                    "com.rion-soft.QtNote.NobteContextMenuHandler/1.0")
+Q_DECLARE_INTERFACE(QtNote::NoteContextMenuHandler, "com.rion-soft.QtNote.NobteContextMenuHandler/1.0")
 
 #endif // NOTECONTEXTMENUHANDLER_H

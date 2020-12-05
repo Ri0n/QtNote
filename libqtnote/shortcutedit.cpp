@@ -21,16 +21,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QKeyEvent>
 
-#include "shortcutedit.h"
 #include "qtnote.h"
+#include "shortcutedit.h"
 #include "shortcutsmanager.h"
 
 namespace QtNote {
 
 ShortcutEdit::ShortcutEdit(Main *qtnote, const QString &option, QWidget *parent) :
-    QLineEdit(parent),
-    qtnote(qtnote),
-    option(option)
+    QLineEdit(parent), qtnote(qtnote), option(option)
 {
 }
 
@@ -43,22 +41,22 @@ void ShortcutEdit::keyPressEvent(QKeyEvent *event)
         return;
     }
     QString grab;
-    int modifiers = event->modifiers();
-    if(modifiers & Qt::ControlModifier) {
+    int     modifiers = event->modifiers();
+    if (modifiers & Qt::ControlModifier) {
         grab.append("Ctrl+");
     }
-    if(modifiers & Qt::ShiftModifier) {
+    if (modifiers & Qt::ShiftModifier) {
         grab.append("Shift+");
     }
-    if(modifiers & Qt::AltModifier) {
+    if (modifiers & Qt::AltModifier) {
         grab.append("Alt+");
     }
-    if(modifiers & Qt::MetaModifier) {
+    if (modifiers & Qt::MetaModifier) {
         grab.append("Meta+");
     }
-    QString key =  QKeySequence(event->key()).toString();
+    QString      key = QKeySequence(event->key()).toString();
     QKeySequence seq(grab + key);
-    bool mod = seq != _seq;
+    bool         mod = seq != _seq;
     setSequence(QKeySequence(grab + key));
     setModified(mod);
 }

@@ -25,7 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDialog>
 
 namespace Ui {
-    class AboutDlg;
+class AboutDlg;
 }
 
 class AboutDlg : public QDialog {

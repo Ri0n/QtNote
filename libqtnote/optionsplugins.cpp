@@ -1,37 +1,30 @@
 #include <QAbstractTableModel>
-#include <QStyledItemDelegate>
-#include <QPainter>
+#include <QDebug>
 #include <QDialog>
 #include <QMouseEvent>
-#include <QDebug>
+#include <QPainter>
+#include <QStyledItemDelegate>
 #include <QTransform>
 
 #include "optionsplugins.h"
-#include "ui_optionsplugins.h"
-#include "qtnote.h"
 #include "pluginmanager.h"
+#include "qtnote.h"
+#include "ui_optionsplugins.h"
 
 namespace QtNote {
 
-class ButtonDelegate : public QStyledItemDelegate
-{
+class ButtonDelegate : public QStyledItemDelegate {
     Q_OBJECT
 
-    enum ButtonRoles {
-        ButtonRole = Qt::UserRole + 1
-    };
+    enum ButtonRoles { ButtonRole = Qt::UserRole + 1 };
 
     QModelIndex sunken;
 
 public:
-    explicit ButtonDelegate(QObject *parent = nullptr) :
-        QStyledItemDelegate(parent)
-    {
-    }
+    explicit ButtonDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) { }
 
     // painting
-    void paint(QPainter *painter,
-               const QStyleOptionViewItem &option, const QModelIndex &index) const
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
     {
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
@@ -42,22 +35,20 @@ public:
         if (opt.state & QStyle::State_Selected) {
             painter->setPen(QPen(Qt::NoPen));
             if (opt.state & QStyle::State_Active) {
-              painter->setBrush(QBrush(QPalette().highlight()));
-            }
-            else {
-              painter->setBrush(QBrush(QPalette().color(QPalette::Inactive,
-                                                        QPalette::Highlight)));
+                painter->setBrush(QBrush(QPalette().highlight()));
+            } else {
+                painter->setBrush(QBrush(QPalette().color(QPalette::Inactive, QPalette::Highlight)));
             }
             painter->drawRect(opt.rect);
-          }
+        }
 
         QStyleOptionButton buttonOption;
-        buttonOption.icon = opt.icon;
+        buttonOption.icon     = opt.icon;
         buttonOption.iconSize = option.decorationSize;
-        buttonOption.text = opt.text;
+        buttonOption.text     = opt.text;
         buttonOption.features = QStyleOptionButton::Flat;
-        buttonOption.rect = opt.rect;
-        buttonOption.state = QStyle::State_Enabled;
+        buttonOption.rect     = opt.rect;
+        buttonOption.state    = QStyle::State_Enabled;
         if (index == sunken) {
             buttonOption.state |= QStyle::State_Sunken;
         }
@@ -65,46 +56,38 @@ public:
             buttonOption.state |= (QStyle::State_Active | QStyle::State_MouseOver);
         }
 
-        QApplication::style()->drawControl(QStyle::CE_PushButton,
-                                           &buttonOption,
-                                           painter);
+        QApplication::style()->drawControl(QStyle::CE_PushButton, &buttonOption, painter);
         painter->restore();
     }
 
-    bool editorEvent(QEvent *event,
-        QAbstractItemModel *model,
-        const QStyleOptionViewItem &option,
-        const QModelIndex &index)
+    bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option,
+                     const QModelIndex &index)
     {
         Q_UNUSED(model);
         Q_UNUSED(option);
 
-        if(!(event->type() == QEvent::MouseButtonPress ||
-            event->type() == QEvent::MouseButtonRelease)) {
+        if (!(event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease)) {
             return true;
         }
 
         sunken = QModelIndex();
 
-        if( event->type() == QEvent::MouseButtonPress) {
+        if (event->type() == QEvent::MouseButtonPress) {
             sunken = index;
         }
         return true;
     }
 };
 
-class PluginsModel : public QAbstractTableModel
-{
+class PluginsModel : public QAbstractTableModel {
     Q_OBJECT
 
-    Main *qtnote;
+    Main *      qtnote;
     QStringList pluginIds; // by priority
-    QIcon settingIcon;
+    QIcon       settingIcon;
 
 public:
-    PluginsModel(Main *qtnote, QObject *parent) :
-        QAbstractTableModel(parent),
-        qtnote(qtnote)
+    PluginsModel(Main *qtnote, QObject *parent) : QAbstractTableModel(parent), qtnote(qtnote)
     {
         pluginIds = qtnote->pluginManager()->pluginsIds();
         QPixmap pix(":/icons/options");
@@ -113,8 +96,7 @@ public:
         transform.rotate(45);
         pix.transformed(transform, Qt::SmoothTransformation);
 
-        settingIcon.addPixmap(pix.transformed(transform),
-                              QIcon::Active);
+        settingIcon.addPixmap(pix.transformed(transform), QIcon::Active);
     }
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const
@@ -138,11 +120,9 @@ public:
         QString pluginId = pluginIds[index.row()];
         if (index.column() == 0) {
             switch (role) {
-            case Qt::CheckStateRole:
-            {
+            case Qt::CheckStateRole: {
                 PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginId);
-                switch (lp)
-                {
+                switch (lp) {
                 case PluginManager::LP_Auto:
                     return Qt::PartiallyChecked;
                 case PluginManager::LP_Disabled:
@@ -156,16 +136,14 @@ public:
             case Qt::DisplayRole:
                 return qtnote->pluginManager()->metadata(pluginId).name;
 
-            case Qt::DecorationRole:
-            {
+            case Qt::DecorationRole: {
                 QIcon icon = qtnote->pluginManager()->metadata(pluginId).icon;
-                return icon.isNull()? QIcon(":/icons/plugin") : icon;
+                return icon.isNull() ? QIcon(":/icons/plugin") : icon;
             }
 
-            case Qt::ToolTipRole:
-            {
-                PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
-                static QMap<PluginManager::LoadStatus,QString> strStatus;
+            case Qt::ToolTipRole: {
+                PluginManager::LoadStatus                       status = qtnote->pluginManager()->loadStatus(pluginId);
+                static QMap<PluginManager::LoadStatus, QString> strStatus;
                 if (strStatus.isEmpty()) {
                     strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
                     strStatus.insert(PluginManager::LS_ErrMetadata, tr("Incompatible metadata"));
@@ -176,9 +154,9 @@ public:
                     strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
                     strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
                 }
-                QString ret = qtnote->pluginManager()->metadata(pluginId).description + QLatin1String("<br/><br/>") +
-                        tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginId)) + "<br/><br/>" +
-                        tr("<b>Status:</b> %1").arg(strStatus[status]);
+                QString ret = qtnote->pluginManager()->metadata(pluginId).description + QLatin1String("<br/><br/>")
+                    + tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginId)) + "<br/><br/>"
+                    + tr("<b>Status:</b> %1").arg(strStatus[status]);
                 if (status && status < PluginManager::LS_Errors) {
                     QString tooltip = qtnote->pluginManager()->tooltip(pluginId);
                     if (!tooltip.isEmpty()) {
@@ -189,9 +167,8 @@ public:
                 return ret;
             }
 
-            case Qt::FontRole:
-            {
-                QFont f; // application default font. may by not what we expect
+            case Qt::FontRole: {
+                QFont                     f; // application default font. may by not what we expect
                 PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
                 if (status == PluginManager::LS_Initialized) {
                     f.setBold(true);
@@ -199,8 +176,7 @@ public:
                 return f;
             }
 
-            case Qt::ForegroundRole:
-            {
+            case Qt::ForegroundRole: {
                 QColor color = qApp->palette().color(QPalette::Foreground); // mey be not what we expect
                 PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
                 if (!(status == PluginManager::LS_Initialized || status == PluginManager::LS_Initialized)) {
@@ -211,7 +187,7 @@ public:
             }
         } else if (index.column() == 1) { // version
             if (role == Qt::DisplayRole) {
-                auto version = qtnote->pluginManager()->metadata(pluginId).version;
+                auto        version = qtnote->pluginManager()->metadata(pluginId).version;
                 QStringList ret;
                 while (version) {
                     ret.append(QString::number((version & 0xff000000) >> 24));
@@ -238,9 +214,11 @@ public:
             if (data(index, role) == Qt::Unchecked) {
                 cs = Qt::PartiallyChecked;
             }
-            qtnote->pluginManager()->setLoadPolicy(pluginIds[index.row()],
-                        cs == Qt::PartiallyChecked? PluginManager::LP_Auto :
-                        (cs == Qt::Checked? PluginManager::LP_Enabled : PluginManager::LP_Disabled));
+            qtnote->pluginManager()->setLoadPolicy(
+                pluginIds[index.row()],
+                cs == Qt::PartiallyChecked
+                    ? PluginManager::LP_Auto
+                    : (cs == Qt::Checked ? PluginManager::LP_Enabled : PluginManager::LP_Disabled));
             emit dataChanged(index, index);
             return true;
         }
@@ -255,16 +233,12 @@ public:
         return QAbstractTableModel::flags(index);
     }
 
-    QString pluginId(int row) const
-    {
-        return pluginIds.at(row);
-    }
+    QString pluginId(int row) const { return pluginIds.at(row); }
 };
 
-class MouseDisabler : public QObject
-{
+class MouseDisabler : public QObject {
 public:
-    MouseDisabler(QObject  *parent) : QObject(parent) {}
+    MouseDisabler(QObject *parent) : QObject(parent) { }
     bool eventFilter(QObject *obj, QEvent *event)
     {
         if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
@@ -275,9 +249,7 @@ public:
 };
 
 OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::OptionsPlugins),
-    qtnote(qtnote)
+    QWidget(parent), ui(new Ui::OptionsPlugins), qtnote(qtnote)
 {
     ui->setupUi(this);
 
@@ -303,16 +275,13 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
     connect(ui->tblPlugins, SIGNAL(clicked(QModelIndex)), SLOT(pluginClicked(QModelIndex)));
 }
 
-OptionsPlugins::~OptionsPlugins()
-{
-    delete ui;
-}
+OptionsPlugins::~OptionsPlugins() { delete ui; }
 
 void OptionsPlugins::pluginClicked(const QModelIndex &index)
 {
-    if (index.column() == 2) {// settings
-        QString id = pluginsModel->pluginId(index.row());
-        QDialog *d = qtnote->pluginManager()->optionsDialog(id);
+    if (index.column() == 2) { // settings
+        QString  id = pluginsModel->pluginId(index.row());
+        QDialog *d  = qtnote->pluginManager()->optionsDialog(id);
         if (d) {
             auto &md = qtnote->pluginManager()->metadata(id);
             d->setWindowTitle(md.name + tr(": Settings"));

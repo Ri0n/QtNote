@@ -44,7 +44,7 @@ win32 {
 }
 
 SOURCES += qtnote_export.h \
-	notedialog.cpp \
+    notedialog.cpp \
     note.cpp \
     notemanager.cpp \
     notestorage.cpp \

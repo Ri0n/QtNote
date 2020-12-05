@@ -5,15 +5,15 @@
 
 namespace QtNote {
 
-class HumanFileNameProvider : public FileNameProvider
-{
+class HumanFileNameProvider : public FileNameProvider {
     static const int FN_MAX_LEN = 255;
+
 public:
-    HumanFileNameProvider(const QString &path, const QString &fileExt) :
-        FileNameProvider(path, fileExt) {}
+    HumanFileNameProvider(const QString &path, const QString &fileExt) : FileNameProvider(path, fileExt) { }
 
     QString newName(const FileNoteData &note, QString &noteId);
     QString updateName(const FileNoteData &note, QString &noteId);
+
 private:
     QString fnSearch(const FileNoteData &note, QString &noteId);
 };

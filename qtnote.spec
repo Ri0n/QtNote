@@ -21,7 +21,7 @@ Url:            http://ri0n.github.io/QtNote
 Source:         https://github.com/Ri0n/QtNote/releases/download/%{version}/%{name}-%{version}.tar.gz
 Requires:       libhunspell >= 1.6
 Requires:       libQt5Widgets
-BuildRequires:  gcc-c++ 
+BuildRequires:  gcc-c++
 BuildRequires:  %{_pkgconfig}
 BuildRequires:  %{_qt5linguist}
 BuildRequires:  %{_qt5basedevel}

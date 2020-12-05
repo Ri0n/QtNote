@@ -19,20 +19,19 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QDir>
 #include <QCoreApplication>
 #include <QDesktopServices>
+#include <QDir>
 #include <QSettings>
 
-#include "tomboystorage.h"
 #include "tomboydata.h"
+#include "tomboystorage.h"
 #include "utils.h"
 #include "uuidfilenameprovider.h"
 
 namespace QtNote {
 
-TomboyStorage::TomboyStorage(QObject *parent) :
-    FileStorage(parent)
+TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent)
 {
     fileExt = "note";
     init();
@@ -53,30 +52,15 @@ bool TomboyStorage::init()
     return isAccessible();
 }
 
-bool TomboyStorage::isAccessible() const
-{
-    return !notesDir.isEmpty() && QDir(notesDir).isReadable();
-}
+bool TomboyStorage::isAccessible() const { return !notesDir.isEmpty() && QDir(notesDir).isReadable(); }
 
-const QString TomboyStorage::systemName() const
-{
-    return "tomboy";
-}
+const QString TomboyStorage::systemName() const { return "tomboy"; }
 
-const QString TomboyStorage::name() const
-{
-    return tr("Tomboy Storage");
-}
+const QString TomboyStorage::name() const { return tr("Tomboy Storage"); }
 
-QIcon TomboyStorage::storageIcon() const
-{
-    return QIcon(":/icons/tomboy");
-}
+QIcon TomboyStorage::storageIcon() const { return QIcon(":/icons/tomboy"); }
 
-QIcon TomboyStorage::noteIcon() const
-{
-    return QIcon(":/icons/tomboynote");
-}
+QIcon TomboyStorage::noteIcon() const { return QIcon(":/icons/tomboynote"); }
 
 QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
 {
@@ -84,8 +68,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
     foreach (QFileInfo fi, files) {
         TomboyData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(),
-                            note.modifyTime());
+            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(), note.modifyTime());
             ret.append(li);
         }
     }
@@ -95,8 +78,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
 Note TomboyStorage::note(const QString &id)
 {
     if (!id.isEmpty()) {
-        QString fileName = QDir(notesDir).absoluteFilePath(
-                QString("%1.%2").arg(id).arg(fileExt) );
+        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(id).arg(fileExt));
         QFileInfo fi(fileName);
         if (fi.isWritable()) {
             TomboyData *noteData = new TomboyData;
@@ -114,10 +96,7 @@ QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
     return saveNoteToFile(note, text, noteId);
 }
 
-bool TomboyStorage::isRichTextAllowed() const
-{
-    return true;
-}
+bool TomboyStorage::isRichTextAllowed() const { return true; }
 
 QString TomboyStorage::findStorageDir() const
 {
@@ -125,14 +104,14 @@ QString TomboyStorage::findStorageDir() const
 
     QString dataLocation = QDir::cleanPath(Utils::genericDataDir());
 #ifdef Q_OS_UNIX
-    tomboyDirs<<(dataLocation + QLatin1String("/tomboy"));
-    tomboyDirs<<(QDir::home().path()+"/.tomboy");
+    tomboyDirs << (dataLocation + QLatin1String("/tomboy"));
+    tomboyDirs << (QDir::home().path() + "/.tomboy");
 #elif defined(Q_OS_MAC)
-    tomboyDirs<<(dataLocation + "/Tomboy");
-    tomboyDirs<<(QDir::homePath() + "/.config/tomboy/");
+    tomboyDirs << (dataLocation + "/Tomboy");
+    tomboyDirs << (QDir::homePath() + "/.config/tomboy/");
 #elif defined(Q_OS_WIN)
-    tomboyDirs<<(dataLocation + "/Tomboy/notes");
-    tomboyDirs<<(dataLocation + "/tomboy");
+    tomboyDirs << (dataLocation + "/Tomboy/notes");
+    tomboyDirs << (dataLocation + "/tomboy");
 #endif
     foreach (const QString &d, tomboyDirs) {
         QFileInfo fi(d);

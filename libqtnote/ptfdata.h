@@ -22,19 +22,18 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef PTFDATA_H
 #define PTFDATA_H
 
+#include "filenotedata.h"
+#include <QDateTime>
 #include <QFile>
 #include <QPointer>
-#include <QDateTime>
-#include "filenotedata.h"
 
 namespace QtNote {
 
-class PTFData : public FileNoteData
-{
+class PTFData : public FileNoteData {
 public:
-	PTFData();
-	bool fromFile(QString);
-	bool saveToFile(const QString &fileName);
+    PTFData();
+    bool fromFile(QString);
+    bool saveToFile(const QString &fileName);
 };
 
 }

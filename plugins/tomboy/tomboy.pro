@@ -7,14 +7,14 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 }
 
 SOURCES = \
-	tomboydata.cpp \
-	tomboyplugin.cpp \
-	tomboystorage.cpp
+    tomboydata.cpp \
+    tomboyplugin.cpp \
+    tomboystorage.cpp
 
 HEADERS += \
-	tomboydata.h \
-	tomboyplugin.h \
-	tomboystorage.h
+    tomboydata.h \
+    tomboyplugin.h \
+    tomboystorage.h
 
 RESOURCES += \
     tomboy.qrc

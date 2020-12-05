@@ -1,12 +1,12 @@
-#include <QSettings>
 #include <QList>
+#include <QSettings>
 
-#include "shortcutsmanager.h"
 #include "globalshortcutsinterface.h"
+#include "shortcutsmanager.h"
 
 namespace QtNote {
 
-const char* ShortcutsManager::SKNoteFromSelection = "note-from-selection";
+const char *ShortcutsManager::SKNoteFromSelection = "note-from-selection";
 
 struct BaseInfo {
     QString name;
@@ -15,11 +15,9 @@ struct BaseInfo {
 
 static QHash<QString, BaseInfo> shortcuts;
 
-ShortcutsManager::ShortcutsManager(GlobalShortcutsInterface *gs, QObject *parent) :
-    QObject(parent),
-    gs(gs)
+ShortcutsManager::ShortcutsManager(GlobalShortcutsInterface *gs, QObject *parent) : QObject(parent), gs(gs)
 {
-    shortcuts.insert(QLatin1String(SKNoteFromSelection), {tr("Note From Selection"), QLatin1String("Ctrl+Alt+M")});
+    shortcuts.insert(QLatin1String(SKNoteFromSelection), { tr("Note From Selection"), QLatin1String("Ctrl+Alt+M") });
 }
 
 #if 0
@@ -45,9 +43,9 @@ QAction* ShortcutsManager::shortcut(const QLatin1String &option)
 #endif
 QKeySequence ShortcutsManager::key(const QString &option) const
 {
-    QSettings s;
-    QString opt = QLatin1String("shortcuts.") + option;
-    static QHash<QString,QKeySequence> defaults;
+    QSettings                           s;
+    QString                             opt = QLatin1String("shortcuts.") + option;
+    static QHash<QString, QKeySequence> defaults;
     if (!s.contains(opt)) {
         if (defaults.isEmpty()) {
             defaults.insert(QLatin1String(SKNoteFromSelection), QKeySequence("Ctrl+Alt+M"));
@@ -84,18 +82,15 @@ bool ShortcutsManager::setKey(const QString &option, const QKeySequence &seq)
 
 QList<ShortcutsManager::ShortcutInfo> ShortcutsManager::all() const
 {
-    QSettings s;
+    QSettings           s;
     QList<ShortcutInfo> ret;
     foreach (const QString &option, shortcuts.keys()) {
-        ret.append({option, shortcuts[option].name, key(option)});
+        ret.append({ option, shortcuts[option].name, key(option) });
     }
     return ret;
 }
 
-QString ShortcutsManager::friendlyName(const QString &option) const
-{
-    return shortcuts.value(option).name;
-}
+QString ShortcutsManager::friendlyName(const QString &option) const { return shortcuts.value(option).name; }
 
 bool ShortcutsManager::registerGlobal(const char *option, QAction *action)
 {
@@ -119,4 +114,3 @@ void ShortcutsManager::setShortcutEnable(const QString &option, bool enabled)
 }
 
 } // namespace QtNote
-

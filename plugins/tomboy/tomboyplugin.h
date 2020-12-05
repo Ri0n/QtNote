@@ -28,8 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface
-{
+class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface {
     Q_OBJECT
 #if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.tomboy")
@@ -37,13 +36,14 @@ class TomboyPlugin : public QObject, public PluginInterface, public RegularPlugi
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface)
 
     Main *qtnote;
+
 public:
     explicit TomboyPlugin(QObject *parent = 0);
     ~TomboyPlugin();
 
-    int metadataVersion() const;
+    int                    metadataVersion() const;
     virtual PluginMetadata metadata();
-    bool init(Main *qtnote);
+    bool                   init(Main *qtnote);
 };
 
 } // namespace QtNote

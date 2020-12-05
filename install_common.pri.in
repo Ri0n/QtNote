@@ -1,9 +1,9 @@
 QT *= core
 
 greaterThan(QT_MAJOR_VERSION, 4) {
-	CONFIG += c++11
+    CONFIG += c++11
 } else {
-	QMAKE_CXXFLAGS += -std=c++11
+    QMAKE_CXXFLAGS += -std=c++11
 }
 
 APPNAME = $$APPNAME
@@ -18,13 +18,13 @@ DEFINES += QTNOTE_VERSION_MINOR=$$member(VERSIONS_FULL, 1)
 DEFINES += QTNOTE_VERSION_PATCH=$$member(VERSIONS_FULL, 2)
 
 unix {
-	PREFIX = $$PREFIX
-	DATADIR = $$PREFIX/share
-	LIBDIR = $$PREFIX/lib
-	MANDIR = $$DATADIR/man/man1
-	TRANSLATIONSDIR = $$DATADIR/$$APPNAME
+    PREFIX = $$PREFIX
+    DATADIR = $$PREFIX/share
+    LIBDIR = $$PREFIX/lib
+    MANDIR = $$DATADIR/man/man1
+    TRANSLATIONSDIR = $$DATADIR/$$APPNAME
 
-	DEFINES += LIBDIR=\\\\\\\"$$LIBDIR\\\\\\\" \\
-		DATADIR=\\\\\\\"$$DATADIR\\\\\\\" \\
-		TRANSLATIONSDIR=\\\\\\\"$$TRANSLATIONSDIR\\\\\\\"
+    DEFINES += LIBDIR=\\\\\\\"$$LIBDIR\\\\\\\" \\
+        DATADIR=\\\\\\\"$$DATADIR\\\\\\\" \\
+        TRANSLATIONSDIR=\\\\\\\"$$TRANSLATIONSDIR\\\\\\\"
 }

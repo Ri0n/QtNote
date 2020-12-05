@@ -26,7 +26,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMap>
 
 namespace Ui {
-    class OptionsDlg;
+class OptionsDlg;
 }
 
 class QModelIndex;
@@ -46,7 +46,7 @@ protected:
 
 private:
     Ui::OptionsDlg *ui;
-    Main *qtnote;
+    Main *          qtnote;
     class PriorityModel;
     PriorityModel *priorityModel;
 

@@ -12,11 +12,10 @@ namespace QtNote {
 
 class Main;
 
-class UbuntuTray : public TrayImpl
-{
-	Q_OBJECT
+class UbuntuTray : public TrayImpl {
+    Q_OBJECT
 public:
-	explicit UbuntuTray(Main *qtnote, QObject *parent);
+    explicit UbuntuTray(Main *qtnote, QObject *parent);
     ~UbuntuTray();
 
 signals:
@@ -24,18 +23,18 @@ signals:
 public slots:
 
 private slots:
-	void rebuildMenu();
-	void noteSelected();
+    void rebuildMenu();
+    void noteSelected();
 
 private:
     friend class UbuntuPlugin;
-	Main *qtnote;
-	QSystemTrayIcon *sti;
-	QAction *actQuit, *actNew, *actAbout, *actOptions, *actManager;
-	QTimer *menuUpdateTimer;
-	QMenu *contextMenu;
-	QMenu *advancedMenu;
-	uint menuUpdateHash;
+    Main *           qtnote;
+    QSystemTrayIcon *sti;
+    QAction *        actQuit, *actNew, *actAbout, *actOptions, *actManager;
+    QTimer *         menuUpdateTimer;
+    QMenu *          contextMenu;
+    QMenu *          advancedMenu;
+    uint             menuUpdateHash;
 };
 
 }

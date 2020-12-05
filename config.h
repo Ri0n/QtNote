@@ -11,8 +11,8 @@
 #define NOMINMAX
 #endif
 #include <WinSock2.h>
-#include <Windows.h>
 #include <WinUser.h>
+#include <Windows.h>
 #endif
 #endif
 
@@ -20,6 +20,7 @@
 #define stringify(s) str_helper(s)
 
 #define QTNOTE_VERSION (QTNOTE_VERSION_MAJOR << 16 | QTNOTE_VERSION_MINOR << 8 | QTNOTE_VERSION_PATCH)
-#define QTNOTE_VERSION_STR stringify(QTNOTE_VERSION_MAJOR) "." stringify(QTNOTE_VERSION_MINOR) "." stringify(QTNOTE_VERSION_PATCH)
+#define QTNOTE_VERSION_STR                                                                                             \
+    stringify(QTNOTE_VERSION_MAJOR) "." stringify(QTNOTE_VERSION_MINOR) "." stringify(QTNOTE_VERSION_PATCH)
 
 #endif // CONFIG_H

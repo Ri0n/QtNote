@@ -3,36 +3,39 @@
 
 #include <QObject>
 
-#include "qtnoteplugininterface.h"
-#include "trayinterface.h"
 #include "deintegrationinterface.h"
 #include "notificationinterface.h"
+#include "qtnoteplugininterface.h"
+#include "trayinterface.h"
 
 namespace QtNote {
 
 class UbuntuTray;
 
-class UbuntuPlugin : public QObject, public PluginInterface, public TrayInterface,
-        DEIntegrationInterface, public NotificationInterface
-{
-	Q_OBJECT
+class UbuntuPlugin : public QObject,
+                     public PluginInterface,
+                     public TrayInterface,
+                     DEIntegrationInterface,
+                     public NotificationInterface {
+    Q_OBJECT
 #if QT_VERSION >= 0x050000
-	Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Ubuntu")
+    Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Ubuntu")
 #endif
-    Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface)
+    Q_INTERFACES(
+        QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface)
 public:
-	explicit UbuntuPlugin(QObject *parent = 0);
+    explicit UbuntuPlugin(QObject *parent = 0);
 
-	int metadataVersion() const;
-	virtual PluginMetadata metadata();
+    int                    metadataVersion() const;
+    virtual PluginMetadata metadata();
 
-	TrayImpl* initTray(Main *qtnote);
-    void notifyError(const QString &msg);
+    TrayImpl *initTray(Main *qtnote);
+    void      notifyError(const QString &msg);
 
-	void activateWidget(QWidget *w);
+    void activateWidget(QWidget *w);
 
 private slots:
-	void activator();
+    void activator();
 
 private:
     UbuntuTray *_tray;

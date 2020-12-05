@@ -2,7 +2,7 @@ include(../plugin.pri)
 
 QT *= gui
 greaterThan(QT_MAJOR_VERSION, 4) {
-	unix:!mac:QT *= widgets x11extras
+    unix:!mac:QT *= widgets x11extras
 }
 
 SOURCES = \

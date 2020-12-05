@@ -20,47 +20,46 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QApplication>
-#include <QtSingleApplication>
-#include <QDataStream>
 #include <QBuffer>
+#include <QDataStream>
 #include <QStringList>
+#include <QtSingleApplication>
 #include <iostream>
 
 #include "qtnote.h"
 
 int main(int argc, char *argv[])
 {
-	for (int i = 1; i < argc; i++) {
-		QLatin1String v(argv[i]);
-		if (v == "-h" || v == "--help") {
-			std::cout << "QtNote - note taking application\n\n"
-					  << " -n [type] - Create new note from 'type'. 'selection' type is the only supported.\n\n";
-			return 0;
-		}
-	}
+    for (int i = 1; i < argc; i++) {
+        QLatin1String v(argv[i]);
+        if (v == "-h" || v == "--help") {
+            std::cout << "QtNote - note taking application\n\n"
+                      << " -n [type] - Create new note from 'type'. 'selection' type is the only supported.\n\n";
+            return 0;
+        }
+    }
 
-	QtSingleApplication a(argc, argv);
-	if (a.isRunning()) {
-		QStringList args = a.arguments();
-		if (args.size() > 1) {
+    QtSingleApplication a(argc, argv);
+    if (a.isRunning()) {
+        QStringList args = a.arguments();
+        if (args.size() > 1) {
             args.pop_front();
             a.sendMessage(args.join("!qtnote_argdelim!"));
-		}
-		return 0;
-	}
+        }
+        return 0;
+    }
 
+    QCoreApplication::setOrganizationName("R-Soft"); // get rid of useless dirs
+    QCoreApplication::setApplicationName("QtNote");
 
+    QApplication::setQuitOnLastWindowClosed(false);
 
-	QCoreApplication::setOrganizationName("R-Soft"); // get rid of useless dirs
-	QCoreApplication::setApplicationName("QtNote");
-
-	QApplication::setQuitOnLastWindowClosed(false);
-
-	QtNote::Main qtnote;
-	if (qtnote.isOperable()) {
-        QtSingleApplication::instance()->connect(QtSingleApplication::instance(), SIGNAL(messageReceived(QString)), &qtnote, SLOT(appMessageReceived(QString)));
-		qtnote.parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
-		return a.exec();
-	}
-	return 1;
+    QtNote::Main qtnote;
+    if (qtnote.isOperable()) {
+        QtSingleApplication::instance()->connect(QtSingleApplication::instance(), SIGNAL(messageReceived(QString)),
+                                                 &qtnote, SLOT(appMessageReceived(QString)));
+        qtnote.parseAppArguments(QtSingleApplication::instance()->arguments().mid(1));
+        return a.exec();
+    }
+    return 1;
 }

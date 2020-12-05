@@ -1,34 +1,33 @@
 #include <QClipboard>
-#include <QTextFragment>
-#include <QPrinter>
-#include <QPrintDialog>
-#include <QSettings>
-#include <QFileDialog>
 #include <QDesktopServices>
+#include <QFileDialog>
 #include <QKeyEvent>
-#include <QMessageBox>
-#include <QToolButton>
-#include <QPalette>
 #include <QMenu>
+#include <QMessageBox>
+#include <QPalette>
+#include <QPrintDialog>
+#include <QPrinter>
+#include <QSettings>
 #include <QStyle>
+#include <QTextFragment>
+#include <QToolButton>
 #if QT_VERSION >= 0x050400
-# include <QGuiApplication>
+#include <QGuiApplication>
 #endif
 
-#include "notewidget.h"
-#include "ui_notewidget.h"
-#include "typeaheadfind.h"
-#include "notehighlighter.h"
-#include "utils.h"
 #include "defaults.h"
+#include "notehighlighter.h"
+#include "notewidget.h"
+#include "typeaheadfind.h"
+#include "ui_notewidget.h"
+#include "utils.h"
 
 namespace QtNote {
 
 static std::shared_ptr<HighlighterExtension> firstLineHighlighter;
-static QColor firstLineColor;
+static QColor                                firstLineColor;
 
-class FirstLineHighlighter : public HighlighterExtension
-{
+class FirstLineHighlighter : public HighlighterExtension {
 public:
     using HighlighterExtension::HighlighterExtension;
 
@@ -45,43 +44,41 @@ public:
     }
 };
 
-class CurrentLinkHighlighter : public HighlighterExtension
-{
+class CurrentLinkHighlighter : public HighlighterExtension {
     NoteWidget *noteWidget;
-    QTextBlock currentBlock;
-    int currentPos;
-    int currentLength;
+    QTextBlock  currentBlock;
+    int         currentPos;
+    int         currentLength;
 
 public:
-    CurrentLinkHighlighter(NoteWidget *nw) :
-        noteWidget(nw)
-    {
-
-    }
+    CurrentLinkHighlighter(NoteWidget *nw) : noteWidget(nw) { }
 
     void init()
     {
-        auto ew = noteWidget->editWidget();
-        std::weak_ptr<CurrentLinkHighlighter> weak_self = std::dynamic_pointer_cast<CurrentLinkHighlighter>(shared_from_this());
-        QObject::connect(ew, &NoteEdit::linkHovered, [this, weak_self](){
+        auto                                  ew = noteWidget->editWidget();
+        std::weak_ptr<CurrentLinkHighlighter> weak_self
+            = std::dynamic_pointer_cast<CurrentLinkHighlighter>(shared_from_this());
+        QObject::connect(ew, &NoteEdit::linkHovered, [this, weak_self]() {
             auto self = weak_self.lock();
-            if (!self) return;
+            if (!self)
+                return;
             auto &hlp = noteWidget->editWidget()->hoveredLinkPosition();
             rehighlightLine(hlp.block, hlp.pos, hlp.length);
         });
 
-        QObject::connect(ew, &NoteEdit::linkUnhovered, [this, weak_self](){
+        QObject::connect(ew, &NoteEdit::linkUnhovered, [this, weak_self]() {
             auto self = weak_self.lock();
-            if (self) rehighlightLine();
+            if (self)
+                rehighlightLine();
         });
     }
 
     void rehighlightLine(const QTextBlock &block = QTextBlock(), int pos = 0, int length = 0)
     {
         QTextBlock previousBlock = currentBlock;
-        currentBlock = block;
-        currentPos = pos;
-        currentLength = length;
+        currentBlock             = block;
+        currentPos               = pos;
+        currentLength            = length;
 
         NoteHighlighter *nh = noteWidget->highlighter();
         if (previousBlock.isValid() && previousBlock != currentBlock) {
@@ -106,40 +103,39 @@ public:
 };
 
 struct ActData {
-    const char* icon;
-    const char* text;
-    const char* toolTip;
-    const char* shortcut;
+    const char *icon;
+    const char *text;
+    const char *toolTip;
+    const char *shortcut;
 };
 
 static struct MakeVSHappy {
-	ActData save =    ActData{ "", QT_TR_NOOP("Save"), QT_TR_NOOP("Save note to file"), "Ctrl+S" };
-	ActData copy =    ActData{ ":/icons/copy", QT_TR_NOOP("Copy"), QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C" };
-	ActData print =   ActData{ ":/icons/print", QT_TR_NOOP("Print"), QT_TR_NOOP("Print note"), "Ctrl+P" };
-	ActData find =    ActData{ ":/icons/find", QT_TR_NOOP("Find"), QT_TR_NOOP("Find text in note"), "Ctrl+F" };
-	ActData replace = ActData{ ":/icons/replace-text", QT_TR_NOOP("Replace"), QT_TR_NOOP("Replace text in note"), "Ctrl+R" };
-	ActData trash =   ActData{ ":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"), "Ctrl+D" };
+    ActData save = ActData { "", QT_TR_NOOP("Save"), QT_TR_NOOP("Save note to file"), "Ctrl+S" };
+    ActData copy = ActData { ":/icons/copy", QT_TR_NOOP("Copy"), QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C" };
+    ActData print = ActData { ":/icons/print", QT_TR_NOOP("Print"), QT_TR_NOOP("Print note"), "Ctrl+P" };
+    ActData find  = ActData { ":/icons/find", QT_TR_NOOP("Find"), QT_TR_NOOP("Find text in note"), "Ctrl+F" };
+    ActData replace
+        = ActData { ":/icons/replace-text", QT_TR_NOOP("Replace"), QT_TR_NOOP("Replace text in note"), "Ctrl+R" };
+    ActData trash = ActData { ":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"), "Ctrl+D" };
 } staticActData;
 
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
-    ui(new Ui::NoteWidget),
-    _storageId(storageId),
-    _noteId(noteId)
+    ui(new Ui::NoteWidget), _storageId(storageId), _noteId(noteId)
 {
     ui->setupUi(this);
 
     setFocusProxy(ui->noteEdit);
-    //ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+    // ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 
     QHBoxLayout *hb3a = new QHBoxLayout();
-    findBar = new TypeAheadFindBar(ui->noteEdit, QString::null, this);
+    findBar           = new TypeAheadFindBar(ui->noteEdit, QString::null, this);
     hb3a->addWidget(findBar);
     ui->noteLayout->addLayout(hb3a);
 
     _autosaveTimer.setInterval(10000);
     _lastChangeElapsed.start();
     connect(&_autosaveTimer, SIGNAL(timeout()), SLOT(autosave()));
-    //connect(parent, SIGNAL(destroyed()), SLOT(close()));
+    // connect(parent, SIGNAL(destroyed()), SLOT(close()));
 
     QToolBar *tbar = new QToolBar(this);
     ui->toolbarLayout->addWidget(tbar);
@@ -162,12 +158,11 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     act = initAction(staticActData.find);
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
-    QToolButton *findButton=
-        dynamic_cast<QToolButton*>(tbar->widgetForAction(act));
+    QToolButton *findButton = dynamic_cast<QToolButton *>(tbar->widgetForAction(act));
     findButton->setPopupMode(QToolButton::InstantPopup);
 
     act = initAction(staticActData.replace);
-    //tbar->addAction(act);
+    // tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
     findButton->addAction(act);
 
@@ -195,8 +190,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
     connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
 #if QT_VERSION >= 0x050400
-    connect(qGuiApp, &QGuiApplication::paletteChanged, this,
-            [this](const QPalette &) { updateFirstLineColor(); });
+    connect(qGuiApp, &QGuiApplication::paletteChanged, this, [this](const QPalette &) { updateFirstLineColor(); });
 #endif
 }
 
@@ -206,7 +200,7 @@ NoteWidget::~NoteWidget()
     delete ui;
 }
 
-QAction* NoteWidget::initAction(const ActData &actData)
+QAction *NoteWidget::initAction(const ActData &actData)
 {
     QAction *act = new QAction(QIcon(actData.icon), tr(actData.text), this);
     act->setToolTip(actData.toolTip);
@@ -226,7 +220,7 @@ void NoteWidget::changeEvent(QEvent *e)
     }
 }
 
-void NoteWidget::keyPressEvent(QKeyEvent * event)
+void NoteWidget::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape && findBar->isVisible()) {
         findBar->hide();
@@ -245,7 +239,6 @@ void NoteWidget::onFindTriggered()
     }
 }
 
-
 void NoteWidget::onReplaceTriggered()
 {
     if (findBar->mode() == TypeAheadFindBar::Replace) {
@@ -258,7 +251,11 @@ void NoteWidget::onReplaceTriggered()
 
 void NoteWidget::save()
 {
-     if (_changed) { _changed = false; emit saveRequested(); _lastChangeElapsed.restart(); }
+    if (_changed) {
+        _changed = false;
+        emit saveRequested();
+        _lastChangeElapsed.restart();
+    }
 }
 
 void NoteWidget::autosave()
@@ -284,8 +281,8 @@ void NoteWidget::textChanged()
         _autosaveTimer.start();
         _lastChangeElapsed.restart();
     }
-    QTextDocument *doc = ui->noteEdit->document();
-    QTextBlock firstBlock = doc->begin();
+    QTextDocument *doc        = ui->noteEdit->document();
+    QTextBlock     firstBlock = doc->begin();
 
     QString firstLine = firstBlock.text();
     if (firstLine != _firstLine || firstLine.isEmpty()) {
@@ -298,36 +295,24 @@ void NoteWidget::setText(QString text)
 {
     ui->noteEdit->setPlainText(text);
     _changed = _noteId.isEmpty(); // force saving note if noteId is not set.
-    _autosaveTimer.stop(); // timer not required atm
+    _autosaveTimer.stop();        // timer not required atm
     _lastChangeElapsed.restart();
 }
 
-QString NoteWidget::text()
-{
-    return ui->noteEdit->toPlainText().trimmed();
-}
+QString NoteWidget::text() { return ui->noteEdit->toPlainText().trimmed(); }
 
-NoteEdit* NoteWidget::editWidget() const
-{
-    return ui->noteEdit;
-}
+NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 
-void NoteWidget::setAcceptRichText(bool state)
-{
-    ui->noteEdit->setAcceptRichText(state);
-}
+void NoteWidget::setAcceptRichText(bool state) { ui->noteEdit->setAcceptRichText(state); }
 
 void NoteWidget::setNoteId(const QString &noteId)
 {
     QString old = _noteId;
-    _noteId = noteId;
+    _noteId     = noteId;
     emit noteIdChanged(old, noteId);
 }
 
-void NoteWidget::rehighlight()
-{
-    _highlighter->rehighlight();
-}
+void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
 
 void NoteWidget::onCopyClicked()
 {
@@ -338,9 +323,9 @@ void NoteWidget::onCopyClicked()
 void NoteWidget::onPrintClicked()
 {
     static QPrinter::OutputFormat lastFormat = QPrinter::NativeFormat;
-    static QString lastOutputFilename;
-    static QString lastPrinterName;
-    QPrinter printer;
+    static QString                lastOutputFilename;
+    static QString                lastPrinterName;
+    QPrinter                      printer;
 
     if (!text().isEmpty()) {
         if (lastPrinterName.size()) {
@@ -357,19 +342,16 @@ void NoteWidget::onPrintClicked()
             _highlighter->enableExtension(NoteHighlighter::SpellCheck);
             _highlighter->rehighlight();
             lastOutputFilename = printer.outputFileName();
-            lastFormat = printer.outputFormat();
-            lastPrinterName = printer.printerName();
+            lastFormat         = printer.outputFormat();
+            lastPrinterName    = printer.printerName();
         }
     }
 }
 
 void NoteWidget::onSaveClicked()
 {
-    enum Format {
-        Text,
-        RichText
-    };
-    static QMap<Format,QString> allFormats;
+    enum Format { Text, RichText };
+    static QMap<Format, QString> allFormats;
     if (allFormats.isEmpty()) {
         allFormats.insert(Text, tr("Text files (*.txt)"));
         allFormats.insert(RichText, tr("HTML files (*.html)"));
@@ -380,19 +362,20 @@ void NoteWidget::onSaveClicked()
         if (_features && RichText) {
             filters << allFormats[RichText];
         }
-        _extFileName = QFileDialog::getSaveFileName(this, tr("Save Note As"),
+        _extFileName
+            = QFileDialog::getSaveFileName(this, tr("Save Note As"),
 #if QT_VERSION < 0x050000
-            QDesktopServices::storageLocation(QDesktopServices::DesktopLocation),
+                                           QDesktopServices::storageLocation(QDesktopServices::DesktopLocation),
 #else
-            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+                                           QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
 #endif
-            filters.join(";;"), &_extSelecteFilter);
+                                           filters.join(";;"), &_extSelecteFilter);
     }
     if (!_extFileName.isEmpty()) {
         QFile f(_extFileName);
         if (f.open(QIODevice::WriteOnly)) {
             QString text;
-            Format format = allFormats.key(_extSelecteFilter);
+            Format  format = allFormats.key(_extSelecteFilter);
             if (format == RichText) {
                 text = ui->noteEdit->toHtml();
             } else {
@@ -411,22 +394,21 @@ void NoteWidget::onSaveClicked()
 void NoteWidget::onTrashClicked()
 {
     QSettings s;
-    if (!text().isEmpty() && s.value("ui.ask-on-delete", true).toBool() &&
-        QMessageBox::question(0, tr("Deletion confirmation"),
-                              tr("Are you sure want to delete this note?"),
-                              QMessageBox::Yes | QMessageBox::No) !=
-        QMessageBox::Yes) {
+    if (!text().isEmpty() && s.value("ui.ask-on-delete", true).toBool()
+        && QMessageBox::question(0, tr("Deletion confirmation"), tr("Are you sure want to delete this note?"),
+                                 QMessageBox::Yes | QMessageBox::No)
+            != QMessageBox::Yes) {
         return;
     }
-    _changed = false;
-    _trashRequested  = true;
+    _changed        = false;
+    _trashRequested = true;
     emit trashRequested();
 }
 
 void NoteWidget::updateFirstLineColor()
 {
     QColor hlColor = QSettings().value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>();
-    QColor merged = Utils::mergeColors(hlColor, palette().color(QPalette::Text));
+    QColor merged  = Utils::mergeColors(hlColor, palette().color(QPalette::Text));
     if (merged != firstLineColor) {
         firstLineColor = merged;
         if (_highlighter) {
@@ -435,10 +417,6 @@ void NoteWidget::updateFirstLineColor()
     }
 }
 
-void NoteWidget::rereadSettings()
-{
-    updateFirstLineColor();
-}
+void NoteWidget::rereadSettings() { updateFirstLineColor(); }
 
 } // namespace QtNote
-

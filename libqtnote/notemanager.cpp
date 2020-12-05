@@ -20,20 +20,15 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QApplication>
-#include <QStringList>
 #include <QLinkedList>
 #include <QSettings>
+#include <QStringList>
 
 #include "notemanager.h"
 
 namespace QtNote {
 
-
-GlobalNoteFinder::GlobalNoteFinder(QObject *parent) :
-    QObject(parent)
-{
-
-}
+GlobalNoteFinder::GlobalNoteFinder(QObject *parent) : QObject(parent) { }
 
 void GlobalNoteFinder::start(const QString &text)
 {
@@ -60,7 +55,7 @@ void GlobalNoteFinder::abort()
 void GlobalNoteFinder::noteFound(const QString &noteId)
 {
     NoteFinder *nf = dynamic_cast<NoteFinder *>(sender());
-    emit found(nf->storage()->systemName(), noteId);
+    emit        found(nf->storage()->systemName(), noteId);
 }
 
 void GlobalNoteFinder::searcherFinished()
@@ -76,8 +71,7 @@ void GlobalNoteFinder::searcherFinished()
 /************************************************************************************
  * NoteManager                                                                      *
  ************************************************************************************/
-NoteManager::NoteManager(QObject *parent)
-    : QObject(parent)
+NoteManager::NoteManager(QObject *parent) : QObject(parent)
 {
     _priorities = QSettings().value("storage.priority").toStringList();
 }
@@ -98,7 +92,7 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     connect(storage.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteModified(NoteListItem)), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteIdChanged(NoteListItem,QString)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteIdChanged(NoteListItem, QString)), SLOT(storageChanged()));
 
     emit storageAdded(storage);
 }
@@ -121,10 +115,7 @@ bool NoteManager::loadAll()
     return true;
 }
 
-void NoteManager::storageChanged()
-{
-    emit storageChanged(_storages[((NoteStorage*)sender())->systemName()]);
-}
+void NoteManager::storageChanged() { emit storageChanged(_storages[((NoteStorage *)sender())->systemName()]); }
 
 QList<NoteListItem> NoteManager::noteList(int count) const
 {
@@ -167,14 +158,14 @@ const QLinkedList<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withIn
 
         auto storages = _storages;
 
-        for (auto code: _priorities) {
+        for (auto code : _priorities) {
             auto storage = storages.take(code);
             if (storage) {
                 _prioCache.append(storage);
             }
         }
 
-        for (auto storage: storages) {
+        for (auto storage : storages) {
             _prioCache.append(storage);
         }
     }
@@ -227,7 +218,6 @@ NoteManager *NoteManager::instance()
     return NoteManager::_instance;
 }
 
-NoteManager* NoteManager::_instance = NULL;
-
+NoteManager *NoteManager::_instance = NULL;
 
 } // namespace QtNote

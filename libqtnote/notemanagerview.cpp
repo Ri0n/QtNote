@@ -19,41 +19,38 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QMenu>
 #include <QContextMenuEvent>
+#include <QMenu>
 
+#include "notemanager.h"
 #include "notemanagerview.h"
 #include "notesmodel.h"
-#include "notemanager.h"
 
 namespace QtNote {
 
-NoteManagerView::NoteManagerView(QWidget *parent) :
-    QTreeView(parent)
-{
-}
+NoteManagerView::NoteManagerView(QWidget *parent) : QTreeView(parent) { }
 
 void NoteManagerView::contextMenuEvent(QContextMenuEvent *e)
 {
-	QModelIndex index = currentIndex();
-	if (index.isValid() && index.parent().isValid()) { // note
-		e->accept();
-		QMenu m;
-		m.addAction(QIcon(":/icons/trash"), tr("Delete"), this, SLOT(removeSelected()));
-		m.exec(QCursor::pos());
-	}
+    QModelIndex index = currentIndex();
+    if (index.isValid() && index.parent().isValid()) { // note
+        e->accept();
+        QMenu m;
+        m.addAction(QIcon(":/icons/trash"), tr("Delete"), this, SLOT(removeSelected()));
+        m.exec(QCursor::pos());
+    }
 }
 
 void NoteManagerView::removeSelected()
 {
-	QModelIndexList indexes = selectedIndexes();
-	foreach (QModelIndex index, indexes) {
-		NoteStorage::Ptr storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
-		QString noteId = index.data(NotesModel::NoteIdRole).toString();
-		if (storage && !noteId.isEmpty()) {
-			storage->deleteNote(noteId);
-		}
-	}
+    QModelIndexList indexes = selectedIndexes();
+    foreach (QModelIndex index, indexes) {
+        NoteStorage::Ptr storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
+        QString          noteId  = index.data(NotesModel::NoteIdRole).toString();
+        if (storage && !noteId.isEmpty()) {
+            storage->deleteNote(noteId);
+        }
+    }
 }
 
 } // namespace QtNote

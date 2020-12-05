@@ -5,24 +5,24 @@
 
 namespace QtNote {
 
-class ColorButton : public QWidget
-{
-	Q_OBJECT
+class ColorButton : public QWidget {
+    Q_OBJECT
 public:
-	explicit ColorButton(QWidget *parent=0, Qt::WindowFlags f=0);
+    explicit ColorButton(QWidget *parent = 0, Qt::WindowFlags f = 0);
 
-	void setColor(QPalette::ColorRole role, const QColor &color);
-	inline QColor color() const { return _color; }
+    void          setColor(QPalette::ColorRole role, const QColor &color);
+    inline QColor color() const { return _color; }
 signals:
 
 public slots:
 
 protected:
-	void mousePressEvent(QMouseEvent *ev);
-	void paintEvent(QPaintEvent *);
+    void mousePressEvent(QMouseEvent *ev);
+    void paintEvent(QPaintEvent *);
+
 private:
-	QPalette::ColorRole _role;
-	QColor _color;
+    QPalette::ColorRole _role;
+    QColor              _color;
 };
 
 } // namespace QtNote

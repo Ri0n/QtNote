@@ -20,16 +20,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "ptfdata.h"
-#include <QIcon>
 #include <QFileInfo>
+#include <QIcon>
 
 namespace QtNote {
 
-PTFData::PTFData()
-        : FileNoteData()
-{
-
-}
+PTFData::PTFData() : FileNoteData() { }
 
 bool PTFData::fromFile(QString fn)
 {
@@ -40,7 +36,7 @@ bool PTFData::fromFile(QString fn)
     setFile(fn);
     file.close();
     QFileInfo fi(fn);
-    dtCreate = fi.created();
+    dtCreate     = fi.created();
     dtLastChange = fi.lastModified();
 
     return true;

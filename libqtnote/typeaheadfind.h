@@ -26,42 +26,38 @@
 class QTextEdit;
 class QString;
 
-class TypeAheadFindBar : public QToolBar
-{
-	Q_OBJECT
+class TypeAheadFindBar : public QToolBar {
+    Q_OBJECT
 public:
-	enum Mode {
-		Find,
-		Replace
-	};
+    enum Mode { Find, Replace };
 
-	TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent = 0);
-	~TypeAheadFindBar();
-	void init();
-	void setMode(Mode mode);
-	Mode mode() const;
+    TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent = 0);
+    ~TypeAheadFindBar();
+    void init();
+    void setMode(Mode mode);
+    Mode mode() const;
 
 public slots:
-	void open();
-	void close();
-	void toggleVisibility();
+    void open();
+    void close();
+    void toggleVisibility();
     void searchTriggered();
-	void optionsUpdate();
+    void optionsUpdate();
 
 signals:
-	void visibilityChanged(bool visible);
+    void visibilityChanged(bool visible);
 
 private slots:
-	void textChanged(const QString &);
-	void findNext();
-	void findPrevious();
-	void caseToggled(int);
-	void replaceText();
-	void replaceTextAll();
+    void textChanged(const QString &);
+    void findNext();
+    void findPrevious();
+    void caseToggled(int);
+    void replaceText();
+    void replaceTextAll();
 
 private:
-	class Private;
-	Private *d;
+    class Private;
+    Private *d;
 };
 
 #endif

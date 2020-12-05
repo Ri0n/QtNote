@@ -24,26 +24,16 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-FileNoteData::FileNoteData()
-	: NoteData()
-{
+FileNoteData::FileNoteData() : NoteData() { }
 
-}
+QDateTime FileNoteData::modifyTime() const { return dtLastChange; }
 
-QDateTime FileNoteData::modifyTime() const
-{
-	return dtLastChange;
-}
-
-qint64 FileNoteData::lastChangeElapsed() const
-{
-	return dtLastChange.msecsTo(QDateTime::currentDateTime());
-}
+qint64 FileNoteData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
 
 void FileNoteData::remove()
 {
-	QFile f(sFileName);
-	f.remove();
+    QFile f(sFileName);
+    f.remove();
 }
 
 } // namespace QtNote

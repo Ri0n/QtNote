@@ -19,28 +19,25 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QDropEvent>
-#include <QUrl>
-#include <QTextCursor>
-#include <QMimeData>
-#include <QMenu>
 #include <QApplication>
 #include <QDesktopServices>
+#include <QDropEvent>
+#include <QMenu>
+#include <QMimeData>
 #include <QTextBlock>
+#include <QTextCursor>
 #include <QTextLayout>
+#include <QUrl>
 
 #include "noteedit.h"
 
 namespace QtNote {
 
-NoteEdit::NoteEdit(QWidget *parent) :
-	QTextEdit(parent)
-{
-}
+NoteEdit::NoteEdit(QWidget *parent) : QTextEdit(parent) { }
 
 void NoteEdit::addContextMenuHandler(NoteContextMenuHandler *handler)
 {
-    menuHandlers.append(dynamic_cast<QObject*>(handler));
+    menuHandlers.append(dynamic_cast<QObject *>(handler));
 }
 
 void NoteEdit::setLinkHighlightEnabled(bool state)
@@ -58,41 +55,41 @@ void NoteEdit::setLinkHighlightEnabled(bool state)
 
 void NoteEdit::dropEvent(QDropEvent *e)
 {
-	bool useDefault = true;
-	foreach (const QUrl &url, e->mimeData()->urls()) {
-		QString fileName = url.toLocalFile();
-		if (fileName.isEmpty()) {
-			continue;
-		}
-		QFile file(fileName);
-		if (!file.open(QIODevice::ReadOnly)) {
-			continue;
-		}
-		useDefault = false;
-		QByteArray data = file.readAll();
-		file.close();
-		QString str = QString::fromLocal8Bit(data.constData(), data.size());
-		textCursor().insertText(str);
-	}
-	if (useDefault) {
-		QTextEdit::dropEvent(e);
-	} else {
-		e->accept();
-	}
+    bool useDefault = true;
+    foreach (const QUrl &url, e->mimeData()->urls()) {
+        QString fileName = url.toLocalFile();
+        if (fileName.isEmpty()) {
+            continue;
+        }
+        QFile file(fileName);
+        if (!file.open(QIODevice::ReadOnly)) {
+            continue;
+        }
+        useDefault      = false;
+        QByteArray data = file.readAll();
+        file.close();
+        QString str = QString::fromLocal8Bit(data.constData(), data.size());
+        textCursor().insertText(str);
+    }
+    if (useDefault) {
+        QTextEdit::dropEvent(e);
+    } else {
+        e->accept();
+    }
 }
 
 void NoteEdit::focusInEvent(QFocusEvent *e)
 {
-	emit focusReceived();
+    emit focusReceived();
     QTextEdit::focusInEvent(e);
 }
 
 void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
 {
-    QMenu *menu = createStandardContextMenu();
+    QMenu *                                 menu = createStandardContextMenu();
     QMutableListIterator<QPointer<QObject>> it(menuHandlers);
     while (it.hasNext()) {
-        auto p = dynamic_cast<NoteContextMenuHandler*>(it.next().data());
+        auto p = dynamic_cast<NoteContextMenuHandler *>(it.next().data());
         if (p) {
             p->populateNoteContextMenu(this, event, menu);
         } else {
@@ -107,17 +104,17 @@ void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
 void NoteEdit::focusOutEvent(QFocusEvent *e)
 {
     setLinkHighlightEnabled(false);
-	emit focusLost();
-	QTextEdit::focusOutEvent(e);
+    emit focusLost();
+    QTextEdit::focusOutEvent(e);
 }
 
 QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
 {
-    auto cur = cursorForPosition(pos);
+    auto cur        = cursorForPosition(pos);
     bool startFound = false;
-    bool endFound = false;
-    auto blockText = cur.block().text();
-    int startPos, endPos;
+    bool endFound   = false;
+    auto blockText  = cur.block().text();
+    int  startPos, endPos;
     startPos = endPos = cur.positionInBlock();
     if (!blockText.length() || blockText[startPos].isSpace() || cursorRect(cur).right() + 5 < pos.x()) {
         // +5 just to make it smooth in other case we will get kind of glitches while hovering a link
@@ -134,13 +131,13 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
         if (!endFound) {
             endPos++;
             if (endPos >= blockText.length() || blockText[endPos].isSpace()) {
-                endFound  = true;
+                endFound = true;
             }
         }
     }
-    hlp.block = cur.block();
-    hlp.pos = startPos;
-    hlp.length = endPos - startPos;
+    hlp.block       = cur.block();
+    hlp.pos         = startPos;
+    hlp.length      = endPos - startPos;
     QString matched = blockText.mid(startPos, hlp.length);
     if (matched.indexOf(QLatin1String("://")) > 0 || matched.startsWith("www.")) {
         return matched;
@@ -151,7 +148,8 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
 void NoteEdit::mousePressEvent(QMouseEvent *e)
 {
     QString url;
-    if (e->modifiers() & Qt::ControlModifier && e->button() == Qt::LeftButton && !(url = unparsedAnchorAt(e->pos())).isEmpty()) {
+    if (e->modifiers() & Qt::ControlModifier && e->button() == Qt::LeftButton
+        && !(url = unparsedAnchorAt(e->pos())).isEmpty()) {
         e->accept();
         QDesktopServices::openUrl(QUrl::fromUserInput(url));
         return;

@@ -11,18 +11,17 @@ namespace QtNote {
 
 class SpellCheckPlugin;
 
-class SettingsDlg : public QDialog
-{
-	Q_OBJECT
+class SettingsDlg : public QDialog {
+    Q_OBJECT
 
 public:
-	explicit SettingsDlg(SpellCheckPlugin *plugin, QWidget *parent = 0);
-	~SettingsDlg();
+    explicit SettingsDlg(SpellCheckPlugin *plugin, QWidget *parent = 0);
+    ~SettingsDlg();
 
-	QList<QLocale> preferredList() const;
+    QList<QLocale> preferredList() const;
 
 private:
-	Ui::SettingsDlg *ui;
+    Ui::SettingsDlg *ui;
 };
 
 }

@@ -10,11 +10,10 @@ namespace QtNote {
 
 class Main;
 
-class KDEIntegrationTray : public TrayImpl
-{
-	Q_OBJECT
+class KDEIntegrationTray : public TrayImpl {
+    Q_OBJECT
 public:
-	explicit KDEIntegrationTray(Main *qtnote, QObject *parent);
+    explicit KDEIntegrationTray(Main *qtnote, QObject *parent);
 
 signals:
 
@@ -22,10 +21,11 @@ public slots:
 
 private slots:
     void showNotes(bool active, const QPoint &pos);
+
 private:
-	Main *qtnote;
-	KStatusNotifierItem *sni;
-    QAction *actNew;
+    Main *               qtnote;
+    KStatusNotifierItem *sni;
+    QAction *            actNew;
 };
 
 }

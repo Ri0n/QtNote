@@ -27,20 +27,19 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class QTNOTE_EXPORT FileNoteData : public NoteData
-{
+class QTNOTE_EXPORT FileNoteData : public NoteData {
 public:
     FileNoteData();
-    inline void setFile(const QString &fn) { sFileName = fn; }
+    inline void  setFile(const QString &fn) { sFileName = fn; }
     virtual bool saveToFile(const QString &fileName) = 0;
-	QDateTime modifyTime() const;
-	qint64 lastChangeElapsed() const;
-	void remove();
+    QDateTime    modifyTime() const;
+    qint64       lastChangeElapsed() const;
+    void         remove();
 
 protected:
-	QString sFileName;
-	QDateTime dtLastChange;
-	QDateTime dtCreate;
+    QString   sFileName;
+    QDateTime dtLastChange;
+    QDateTime dtCreate;
 };
 
 } // namespace QtNote

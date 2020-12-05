@@ -4,13 +4,11 @@
 
 namespace QtNote {
 
-NotesSearchModel::NotesSearchModel(QObject *parent) :
-    QSortFilterProxyModel(parent),
-    _searchInBody(false)
+NotesSearchModel::NotesSearchModel(QObject *parent) : QSortFilterProxyModel(parent), _searchInBody(false)
 {
     _finder = NoteManager::search();
     _finder->setParent(this);
-    connect(_finder, SIGNAL(found(QString,QString)), SLOT(noteFound(QString,QString)));
+    connect(_finder, SIGNAL(found(QString, QString)), SLOT(noteFound(QString, QString)));
 }
 
 void NotesSearchModel::setSearchText(const QString &text)
@@ -23,15 +21,14 @@ void NotesSearchModel::setSearchText(const QString &text)
     setFilterFixedString(text);
 }
 
-bool NotesSearchModel::filterAcceptsRow(int sourceRow,
-                                        const QModelIndex &sourceParent) const
+bool NotesSearchModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     if (!sourceParent.isValid()) {
         return true; // include storages
     }
     if (_searchInBody) {
-        QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-        QString storageId = sourceModel()->data(index, NotesModel::StorageIdRole).toString();
+        QModelIndex index     = sourceModel()->index(sourceRow, 0, sourceParent);
+        QString     storageId = sourceModel()->data(index, NotesModel::StorageIdRole).toString();
         if (_foundCache.contains(storageId)) {
             QString noteId = sourceModel()->data(index, NotesModel::NoteIdRole).toString();
             if (_foundCache[storageId].contains(noteId)) {
@@ -63,8 +60,7 @@ void NotesSearchModel::noteFound(const QString &storageId, const QString &noteId
     } else {
         _foundCache[storageId] << noteId;
     }
-    static_cast<NotesModel*>(sourceModel())->invalidateNote(storageId, noteId);
+    static_cast<NotesModel *>(sourceModel())->invalidateNote(storageId, noteId);
 }
 
 } // namespace QtNote
-

@@ -30,15 +30,14 @@ class NoteManager;
 class NoteEdit;
 class HighlighterExtension;
 
-class PluginHostInterface
-{
+class PluginHostInterface {
 public:
-    virtual QString utilsCuttedDots(const QString &str, int n) = 0;
-    virtual NoteManager* noteManager() = 0;
-    virtual QString qtnoteDataDir() = 0;
-    virtual void rehighlight() = 0; // invalide syntax highligh for all open notes
-    virtual NoteEdit *noteTextWidget(QWidget *w) = 0;
-    virtual void addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type) = 0;
+    virtual QString      utilsCuttedDots(const QString &str, int n) = 0;
+    virtual NoteManager *noteManager()                              = 0;
+    virtual QString      qtnoteDataDir()                            = 0;
+    virtual void         rehighlight()                              = 0; // invalide syntax highligh for all open notes
+    virtual NoteEdit *   noteTextWidget(QWidget *w)                 = 0;
+    virtual void         addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type) = 0;
 };
 
 }

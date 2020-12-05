@@ -23,25 +23,16 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-NoteData::NoteData()
-	: QSharedData()
-{
-}
+NoteData::NoteData() : QSharedData() { }
 
-QString NoteData::title() const
-{
-	return sTitle;
-}
+QString NoteData::title() const { return sTitle; }
 
-QString NoteData::text() const
-{
-	return sText;
-}
+QString NoteData::text() const { return sText; }
 
 void NoteData::setText(const QString &text)
 {
-	sText = text.trimmed();
-	sTitle = sText.section('\n', 0, 0).trimmed().left(NoteData::TitleLength);
+    sText  = text.trimmed();
+    sTitle = sText.section('\n', 0, 0).trimmed().left(NoteData::TitleLength);
 }
 
 }

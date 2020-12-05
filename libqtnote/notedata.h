@@ -29,23 +29,21 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class QTNOTE_EXPORT NoteData : public QSharedData
-{
+class QTNOTE_EXPORT NoteData : public QSharedData {
 public:
-	static const int TitleLength = 256;
+    static const int TitleLength = 256;
 
-	NoteData();
-	virtual ~NoteData() {}
-	virtual void remove() = 0;
-	virtual QString text() const;
-	virtual QString title() const;
-	virtual void setText(const QString &text);
-	virtual qint64 lastChangeElapsed() const = 0;
+    NoteData();
+    virtual ~NoteData() { }
+    virtual void    remove() = 0;
+    virtual QString text() const;
+    virtual QString title() const;
+    virtual void    setText(const QString &text);
+    virtual qint64  lastChangeElapsed() const = 0;
 
 protected:
-	QString sTitle;
-	QString sText;
-
+    QString sTitle;
+    QString sText;
 };
 
 } // namespace QtNote

@@ -19,33 +19,32 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QSettings>
-#include <QStringList>
+#include <QApplication>
+#include <QDebug>
 #include <QDir>
 #include <QPluginLoader>
 #include <QSet>
-#include <QApplication>
-#include <QDebug>
+#include <QSettings>
+#include <QStringList>
 
+#include "notewidget.h"
+#include "pluginhost.h"
 #include "pluginmanager.h"
-#include "utils.h"
 #include "qtnote.h"
 #include "shortcutsmanager.h"
-#include "pluginhost.h"
-#include "notewidget.h"
+#include "utils.h"
 
 #include "deintegrationinterface.h"
-#include "trayinterface.h"
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
+#include "trayinterface.h"
 
 namespace QtNote {
 
-class PluginsIterator
-{
-    QDir currentDir;
-    QStringList pluginsDirs;
-    QStringList plugins;
+class PluginsIterator {
+    QDir                        currentDir;
+    QStringList                 pluginsDirs;
+    QStringList                 plugins;
     QStringList::const_iterator pluginsDirsIt;
     QStringList::const_iterator pluginsIt;
 
@@ -53,19 +52,19 @@ public:
     PluginsIterator()
     {
 #ifdef DEVEL
-		QDir pluginsDir = QDir(qApp->applicationDirPath());
-
-# if defined(Q_OS_WIN)
-		QString dbgSubdir = pluginsDir.dirName();
-		if (!(dbgSubdir.toLower() == "debug" || dbgSubdir.toLower() == "release")) {
-			dbgSubdir.clear();
-		}
-# else
-		QString dbgSubdir;
-# endif
+        QDir pluginsDir = QDir(qApp->applicationDirPath());
 
 #if defined(Q_OS_WIN)
-		if (!dbgSubdir.isEmpty())
+        QString dbgSubdir = pluginsDir.dirName();
+        if (!(dbgSubdir.toLower() == "debug" || dbgSubdir.toLower() == "release")) {
+            dbgSubdir.clear();
+        }
+#else
+        QString dbgSubdir;
+#endif
+
+#if defined(Q_OS_WIN)
+        if (!dbgSubdir.isEmpty())
             pluginsDir.cdUp();
 #elif defined(Q_OS_MAC)
         if (pluginsDir.dirName() == "MacOS") {
@@ -79,27 +78,27 @@ public:
         }
         pluginsDir.cd("plugins");
 
-		foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-# ifdef DEVEL
-			QDir d(pluginsDir);
-			d.cd(dirName);
-			if (!dbgSubdir.isEmpty()) {
-				d.cd(dbgSubdir);
-			}
-			pluginsDirs << d.path();
-# else
+        foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+#ifdef DEVEL
+            QDir d(pluginsDir);
+            d.cd(dirName);
+            if (!dbgSubdir.isEmpty()) {
+                d.cd(dbgSubdir);
+            }
+            pluginsDirs << d.path();
+#else
             pluginsDirs << pluginsDir.absoluteFilePath(dirName);
-# endif
+#endif
         }
         qDebug() << "Plugins dirs: " << pluginsDirs;
 #else
 
         pluginsDirs << Utils::qtnoteDataDir() + "/plugins";
-# if defined(Q_OS_UNIX) && ! defined(Q_OS_MAC)
+#if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
         pluginsDirs << LIBDIR "/" APPNAME;
-# elif defined(Q_OS_WIN)
+#elif defined(Q_OS_WIN)
         pluginsDirs << qApp->applicationDirPath() + "/plugins";
-# endif
+#endif
 #endif
         pluginsDirsIt = pluginsDirs.constBegin();
         findDirWithPlugins();
@@ -116,8 +115,10 @@ public:
         }
     }
 
-    inline bool isFinished() const { return pluginsIt == plugins.constEnd() &&
-                pluginsDirsIt == pluginsDirs.constEnd(); }
+    inline bool isFinished() const
+    {
+        return pluginsIt == plugins.constEnd() && pluginsDirsIt == pluginsDirs.constEnd();
+    }
 
     inline QString fileName() const
     {
@@ -134,7 +135,7 @@ private:
             currentDir = QDir(*pluginsDirsIt);
             if (currentDir.isReadable()) {
                 plugins.clear();
-                foreach(const QString &file, currentDir.entryList(QDir::Files)) {
+                foreach (const QString &file, currentDir.entryList(QDir::Files)) {
                     if (QLibrary::isLibrary(file)) {
                         plugins.append(file);
                     }
@@ -150,21 +151,16 @@ private:
     }
 };
 
-PluginManager::PluginManager(Main *parent) :
-    QObject(parent),
-    qtnote(parent),
-    pluginHost(new PluginHost(this))
+PluginManager::PluginManager(Main *parent) : QObject(parent), qtnote(parent), pluginHost(new PluginHost(this))
 {
     QSettings s;
 
     QDir(iconsCacheDir()).mkpath(QLatin1String("."));
     updateMetadata();
 
-    connect(qtnote, &Main::noteWidgetCreated, this, [this](QWidget *w){
+    connect(qtnote, &Main::noteWidgetCreated, this, [this](QWidget *w) {
         NoteWidget *nw = qobject_cast<NoteWidget *>(w);
-        connect(pluginHost, &PluginHost::rehightlight_requested, nw, [nw](){
-            nw->rehighlight();
-        });
+        connect(pluginHost, &PluginHost::rehightlight_requested, nw, [nw]() { nw->rehighlight(); });
     });
 }
 
@@ -186,11 +182,11 @@ void PluginManager::loadPlugins()
         QStringList base;
     };
 
-    QMap<PluginFeature,FeaturedPlugin> featurePriority;
-    QList<PluginData::Ptr> regularPlugins;
+    QMap<PluginFeature, FeaturedPlugin> featurePriority;
+    QList<PluginData::Ptr>              regularPlugins;
 
-    QSettings s;
-    QStringList prioritizedList = s.value("plugins-priority").toStringList();
+    QSettings                  s;
+    QStringList                prioritizedList = s.value("plugins-priority").toStringList();
     QMutableStringListIterator it(prioritizedList);
     while (it.hasNext()) {
         if (!plugins.contains(it.next())) {
@@ -206,11 +202,12 @@ void PluginManager::loadPlugins()
      * time to load the plugins. start from required unique features
      * like tray integration, global shortcuts integrtion etc.
      */
-    QString session = qgetenv("DESKTOP_SESSION"); // FIXME prefer XDG_CURRENT_DESKTOP or QGenericUnixServices::desktopEnvironment for qt5
+    QString session = qgetenv(
+        "DESKTOP_SESSION"); // FIXME prefer XDG_CURRENT_DESKTOP or QGenericUnixServices::desktopEnvironment for qt5
     foreach (const QString &plugin, prioritizedList) {
-        PluginData::Ptr pd = plugins[plugin];
-        QStringList deList = pd->metadata.extra["de"].toStringList();
-        bool native = deList.contains(session);
+        PluginData::Ptr pd     = plugins[plugin];
+        QStringList     deList = pd->metadata.extra["de"].toStringList();
+        bool            native = deList.contains(session);
 
         if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty())) {
             continue;
@@ -236,13 +233,13 @@ void PluginManager::loadPlugins()
 
     /* set most desirable tray implementation */
     QStringList trayPlugins = featurePriority[TrayIcon].native + featurePriority[TrayIcon].base;
-    foreach(const QString &plugin, trayPlugins) {
+    foreach (const QString &plugin, trayPlugins) {
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd)) {
             continue;
         }
-        TrayInterface *tp = qobject_cast<TrayInterface *>(pd->instance);
-        TrayImpl *tray = tp->initTray(qtnote);
+        TrayInterface *tp   = qobject_cast<TrayInterface *>(pd->instance);
+        TrayImpl *     tray = tp->initTray(qtnote);
         if (tray) {
             qtnote->setTrayImpl(tray);
             pd->loadStatus = LS_Initialized;
@@ -252,7 +249,7 @@ void PluginManager::loadPlugins()
 
     /* set most desirable desktop environment plugin */
     QStringList dePlugins = featurePriority[DEIntegration].native + featurePriority[DEIntegration].base;
-    foreach(const QString &plugin, dePlugins) {
+    foreach (const QString &plugin, dePlugins) {
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd)) {
             continue;
@@ -264,7 +261,7 @@ void PluginManager::loadPlugins()
 
     /* set most desirable global shortcuts plugin */
     QStringList gsPlugins = featurePriority[GlobalShortcuts].native + featurePriority[GlobalShortcuts].base;
-    foreach(const QString &plugin, gsPlugins) {
+    foreach (const QString &plugin, gsPlugins) {
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd)) {
             continue;
@@ -276,7 +273,7 @@ void PluginManager::loadPlugins()
 
     /* set most desirable notifications plugin */
     QStringList nPlugins = featurePriority[Notifications].native + featurePriority[Notifications].base;
-    foreach(const QString &plugin, nPlugins) {
+    foreach (const QString &plugin, nPlugins) {
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd)) {
             continue;
@@ -290,7 +287,7 @@ void PluginManager::loadPlugins()
         if (!ensureLoaded(pd)) {
             continue;
         }
-        if (qobject_cast<RegularPluginInterface*>(pd->instance)->init(qtnote)) {
+        if (qobject_cast<RegularPluginInterface *>(pd->instance)->init(qtnote)) {
             pd->loadStatus = LS_Initialized;
         }
     }
@@ -307,10 +304,7 @@ bool PluginManager::ensureLoaded(PluginData::Ptr pd)
     return true;
 }
 
-QString PluginManager::iconsCacheDir() const
-{
-    return Utils::qtnoteDataDir() + "/plugin-icons/";
-}
+QString PluginManager::iconsCacheDir() const { return Utils::qtnoteDataDir() + "/plugin-icons/"; }
 
 void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPolicy lp)
 {
@@ -321,17 +315,14 @@ void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPo
     s.setValue("loadPolicy", (int)lp);
 }
 
-QStringList PluginManager::pluginsIds() const
-{
-    return QSettings().value("plugins-priority").toStringList();
-}
+QStringList PluginManager::pluginsIds() const { return QSettings().value("plugins-priority").toStringList(); }
 
-QString PluginManager::tooltip(const QString &pluginId) const {
-    PluginData::Ptr pd = plugins[pluginId];
+QString PluginManager::tooltip(const QString &pluginId) const
+{
+    PluginData::Ptr                pd = plugins[pluginId];
     PluginOptionsTooltipInterface *plugin;
-    if ((pd->loadStatus && pd->loadStatus < LS_Errors) &&
-            (plugin = qobject_cast<PluginOptionsTooltipInterface*>(pd->instance)))
-    {
+    if ((pd->loadStatus && pd->loadStatus < LS_Errors)
+        && (plugin = qobject_cast<PluginOptionsTooltipInterface *>(pd->instance))) {
         return plugin->tooltip();
     }
     return QString();
@@ -339,8 +330,8 @@ QString PluginManager::tooltip(const QString &pluginId) const {
 
 void PluginManager::updateMetadata()
 {
-    QSettings s;
-    decltype(plugins) tmpPlugins;
+    QSettings                       s;
+    decltype(plugins)               tmpPlugins;
     QHash<QString, PluginData::Ptr> file2data;
 
     s.beginGroup("plugins");
@@ -352,33 +343,35 @@ void PluginManager::updateMetadata()
             continue;
         }
         PluginData::Ptr pd(new PluginData);
-        pd->fileName = s.value("filename").toString();
-        tmpPlugins[pluginId] = pd;
+        pd->fileName            = s.value("filename").toString();
+        tmpPlugins[pluginId]    = pd;
         file2data[pd->fileName] = pd;
-        pd->loadPolicy = (LoadPolicy)s.value("loadPolicy").toInt();
-        pd->loadStatus = LS_Undefined;
-        pd->modifyTime = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
-        pd->features = (PluginFeatures)s.value("features").toUInt();
-        pd->metadata.id = pluginId;
-        pd->metadata.name = s.value("name").toString();
+        pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy").toInt();
+        pd->loadStatus          = LS_Undefined;
+        pd->modifyTime
+            = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
+        pd->features             = (PluginFeatures)s.value("features").toUInt();
+        pd->metadata.id          = pluginId;
+        pd->metadata.name        = s.value("name").toString();
         pd->metadata.description = s.value("description").toString();
-        pd->metadata.author = s.value("author").toString();
-        pd->metadata.version = s.value("version").toUInt();
-        pd->metadata.minVersion = s.value("minVersion").toUInt();
-        pd->metadata.maxVersion = s.value("maxVersion").toUInt();
-        pd->metadata.extra = s.value("extra").toHash();
-        pd->metadata.icon = QIcon(iconsCacheDir() + pluginId + QLatin1String(".png"));
-        //pd->metadata.extra = s.value("extra").();
+        pd->metadata.author      = s.value("author").toString();
+        pd->metadata.version     = s.value("version").toUInt();
+        pd->metadata.minVersion  = s.value("minVersion").toUInt();
+        pd->metadata.maxVersion  = s.value("maxVersion").toUInt();
+        pd->metadata.extra       = s.value("extra").toHash();
+        pd->metadata.icon        = QIcon(iconsCacheDir() + pluginId + QLatin1String(".png"));
+        // pd->metadata.extra = s.value("extra").();
         s.endGroup();
     }
     s.endGroup();
 
     PluginsIterator it;
     while (!it.isFinished()) {
-        QString fileName = it.fileName();
-        PluginData::Ptr pd = file2data.value(fileName);
-        if (pd.isNull() || (!(pd->loadStatus && pd->loadStatus < LS_Errors) &&
-                            pd->modifyTime < QFileInfo(pd->fileName).lastModified())) { // have to update metadata cache
+        QString         fileName = it.fileName();
+        PluginData::Ptr pd       = file2data.value(fileName);
+        if (pd.isNull()
+            || (!(pd->loadStatus && pd->loadStatus < LS_Errors)
+                && pd->modifyTime < QFileInfo(pd->fileName).lastModified())) { // have to update metadata cache
 
             loadPlugin(fileName, pd, QLibrary::ExportExternalSymbolsHint);
             if (!pd.isNull()) { // new cache
@@ -394,8 +387,8 @@ void PluginManager::updateMetadata()
     plugins = tmpPlugins;
 }
 
-PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
-                                                    PluginData::Ptr &cache, QLibrary::LoadHints loadHints)
+PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, PluginData::Ptr &cache,
+                                                    QLibrary::LoadHints loadHints)
 {
 #ifdef DEVEL
     qDebug("Loading plugin: %s", qPrintable(fileName));
@@ -413,9 +406,8 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
             return LS_ErrAbi;
         }
 
-
-        PluginMetadata md = qnp->metadata();
-        bool metaVerMatch = (qnp->metadataVersion() == MetadataVerion);
+        PluginMetadata md           = qnp->metadata();
+        bool           metaVerMatch = (qnp->metadataVersion() == MetadataVerion);
         if (!metaVerMatch || md.id.isEmpty() || md.name.isEmpty()) {
             loader.unload();
             if (metaVerMatch) {
@@ -427,34 +419,34 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName,
         }
 
         LoadStatus loadStatus = LS_Loaded;
-        if ((QTNOTE_VERSION  < md.minVersion) || (QTNOTE_VERSION  > md.maxVersion)) {
+        if ((QTNOTE_VERSION < md.minVersion) || (QTNOTE_VERSION > md.maxVersion)) {
             loader.unload();
             qDebug("Incompatible version of qtnote plugin %s. ignore it", qPrintable(fileName));
             return LS_ErrVersion;
         }
 
         if (!cache) {
-            cache = PluginData::Ptr(new PluginData);
+            cache             = PluginData::Ptr(new PluginData);
             cache->loadPolicy = LP_Auto;
         }
-        cache->instance = loadStatus == LS_Loaded? plugin : 0;
-        cache->fileName = fileName;
+        cache->instance   = loadStatus == LS_Loaded ? plugin : 0;
+        cache->fileName   = fileName;
         cache->modifyTime = QFileInfo(fileName).lastModified();
-        cache->metadata = md;
+        cache->metadata   = md;
         cache->features &= 0;
-        if (qobject_cast<TrayInterface*>(plugin)) {
+        if (qobject_cast<TrayInterface *>(plugin)) {
             cache->features |= TrayIcon;
         }
-        if (qobject_cast<DEIntegrationInterface*>(plugin)) {
+        if (qobject_cast<DEIntegrationInterface *>(plugin)) {
             cache->features |= DEIntegration;
         }
-        if (qobject_cast<GlobalShortcutsInterface*>(plugin)) {
+        if (qobject_cast<GlobalShortcutsInterface *>(plugin)) {
             cache->features |= GlobalShortcuts;
         }
-        if (qobject_cast<NotificationInterface*>(plugin)) {
+        if (qobject_cast<NotificationInterface *>(plugin)) {
             cache->features |= Notifications;
         }
-        if (qobject_cast<RegularPluginInterface*>(plugin)) {
+        if (qobject_cast<RegularPluginInterface *>(plugin)) {
             cache->features |= RegularPlugin;
         }
         s.beginGroup(cache->metadata.id);

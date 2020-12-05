@@ -19,40 +19,28 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QStringList>
 #include <QMimeData>
+#include <QStringList>
 
-#include "notesmodel.h"
 #include "notemanager.h"
+#include "notesmodel.h"
 
 namespace QtNote {
 
-class NMMItem
-{
+class NMMItem {
 public:
-
-    NMMItem(const NoteStorage::Ptr &storage)
-        : parent(0)
-        , type(NotesModel::ItemStorage)
-        , title(storage->name())
-        , id(storage->systemName())
+    NMMItem(const NoteStorage::Ptr &storage) :
+        parent(0), type(NotesModel::ItemStorage), title(storage->name()), id(storage->systemName())
     {
         populateChildren();
     }
 
-    NMMItem(const NoteListItem &note, NMMItem *parent)
-        : parent(parent)
-        , type(NotesModel::ItemNote)
-        , title(note.title)
-        , id(note.id)
+    NMMItem(const NoteListItem &note, NMMItem *parent) :
+        parent(parent), type(NotesModel::ItemNote), title(note.title), id(note.id)
     {
-
     }
 
-    ~NMMItem()
-    {
-        qDeleteAll(children);
-    }
+    ~NMMItem() { qDeleteAll(children); }
 
     void populateChildren()
     {
@@ -72,20 +60,20 @@ public:
         return NoteManager::instance()->storage(parent->id)->noteIcon();
     }
 
-    NMMItem *parent;
+    NMMItem *            parent;
     NotesModel::ItemType type;
-    QList<NMMItem *> children;
-    QString title;
-    QString id;
+    QList<NMMItem *>     children;
+    QString              title;
+    QString              id;
 };
 
 void debug(const QString &prefix, NMMItem *item)
 {
-    qDebug("%s: %s(%s)", qPrintable(prefix), item->type == NotesModel::ItemStorage? "Storage":"Note", qPrintable(item->title));
+    qDebug("%s: %s(%s)", qPrintable(prefix), item->type == NotesModel::ItemStorage ? "Storage" : "Note",
+           qPrintable(item->title));
 }
 
-NotesModel::NotesModel(QObject *parent)
-    : QAbstractItemModel(parent)
+NotesModel::NotesModel(QObject *parent) : QAbstractItemModel(parent)
 {
     foreach (const NoteStorage::Ptr &s, NoteManager::instance()->storages()) {
         storages.append(new NMMItem(s));
@@ -95,10 +83,7 @@ NotesModel::NotesModel(QObject *parent)
     connect(NoteManager::instance(), SIGNAL(storageRemoved(NoteStorage::Ptr)), SLOT(storageRemoved(NoteStorage::Ptr)));
 }
 
-NotesModel::~NotesModel()
-{
-    qDeleteAll(storages);
-}
+NotesModel::~NotesModel() { qDeleteAll(storages); }
 
 void NotesModel::setStorageSignalHandlers(NoteStorage::Ptr s)
 {
@@ -132,8 +117,8 @@ QModelIndex NotesModel::noteIndex(const QString &storageId, const QString &noteI
 {
     QModelIndex storage = storageIndex(storageId);
     if (storage.isValid()) {
-        NMMItem *storageItem = static_cast<NMMItem*>(storage.internalPointer());
-        int i = 0;
+        NMMItem *storageItem = static_cast<NMMItem *>(storage.internalPointer());
+        int      i           = 0;
         foreach (NMMItem *c, storageItem->children) {
             if (c->id == noteId) {
                 return index(i, 0, storage);
@@ -159,7 +144,7 @@ void NotesModel::storageRemoved(const NoteStorage::Ptr &)
 void NotesModel::storageInvalidated()
 {
     beginResetModel();
-    auto storage = static_cast<NoteStorage*>(sender());
+    auto storage = static_cast<NoteStorage *>(sender());
     for (auto item : storages) {
         if (item->id == storage->systemName()) {
             item->children.clear();
@@ -174,8 +159,8 @@ void NotesModel::noteAdded(const NoteListItem &item)
 {
     QModelIndex parentIndex = storageIndex(item.storageId);
     if (parentIndex.isValid()) {
-        NMMItem *storage = static_cast<NMMItem*>(parentIndex.internalPointer());
-        int len = rowCount(parentIndex);
+        NMMItem *storage = static_cast<NMMItem *>(parentIndex.internalPointer());
+        int      len     = rowCount(parentIndex);
         beginInsertRows(parentIndex, len, len);
         storage->children.append(new NMMItem(item, storage));
         endInsertRows();
@@ -187,8 +172,8 @@ void NotesModel::noteModified(const NoteListItem &note)
 {
     QModelIndex index = noteIndex(note.storageId, note.id);
     if (index.isValid()) {
-        NMMItem *noteItem = static_cast<NMMItem*>(index.internalPointer());
-        noteItem->title = note.title;
+        NMMItem *noteItem = static_cast<NMMItem *>(index.internalPointer());
+        noteItem->title   = note.title;
         emit dataChanged(index, index);
     }
 }
@@ -202,9 +187,7 @@ void NotesModel::noteRemoved(const NoteListItem &item)
     }
 }
 
-
-QModelIndex NotesModel::index( int row, int column,
-                                     const QModelIndex & parent ) const
+QModelIndex NotesModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!hasIndex(row, column, parent)) {
         return QModelIndex();
@@ -225,11 +208,11 @@ QModelIndex NotesModel::index( int row, int column,
     return QModelIndex();
 }
 
-QModelIndex NotesModel::parent( const QModelIndex & index ) const
+QModelIndex NotesModel::parent(const QModelIndex &index) const
 {
     if (index.isValid()) {
         NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
-        int n = storages.indexOf(item);
+        int      n    = storages.indexOf(item);
         if (n == -1) { // its valid note
             return createIndex(storages.indexOf(item->parent), 0, item->parent);
         }
@@ -237,7 +220,7 @@ QModelIndex NotesModel::parent( const QModelIndex & index ) const
     return QModelIndex();
 }
 
-int NotesModel::rowCount( const QModelIndex & parent ) const
+int NotesModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid()) {
         return static_cast<NMMItem *>(parent.internalPointer())->children.count();
@@ -247,9 +230,10 @@ int NotesModel::rowCount( const QModelIndex & parent ) const
     return 0;
 }
 
-int NotesModel::columnCount( const QModelIndex &parent) const
+int NotesModel::columnCount(const QModelIndex &parent) const
 {
-    if (parent.isValid() && static_cast<NMMItem *>(parent.internalPointer())->type == ItemNote) { // note has no children so 0 columns
+    if (parent.isValid()
+        && static_cast<NMMItem *>(parent.internalPointer())->type == ItemNote) { // note has no children so 0 columns
         return 0;
     }
     return 1;
@@ -268,27 +252,27 @@ Qt::ItemFlags NotesModel::flags(const QModelIndex &index) const
     return QAbstractItemModel::flags(index);
 }
 
-QVariant NotesModel::data( const QModelIndex & index, int role ) const
+QVariant NotesModel::data(const QModelIndex &index, int role) const
 {
     if (index.isValid()) {
         NMMItem *item = static_cast<NMMItem *>(index.internalPointer());
         switch (role) {
-            case Qt::DisplayRole:
-                return item->title;
-            case Qt::DecorationRole:
-                return item->icon();
-            case ItemTypeRole:
-                return item->type;
-            case StorageIdRole:
-                if (item->type == ItemStorage) {
-                    return item->id;
-                }
-                return item->parent->id;
-            case NoteIdRole:
-                if (item->type == ItemStorage) {
-                    return "";
-                }
+        case Qt::DisplayRole:
+            return item->title;
+        case Qt::DecorationRole:
+            return item->icon();
+        case ItemTypeRole:
+            return item->type;
+        case StorageIdRole:
+            if (item->type == ItemStorage) {
                 return item->id;
+            }
+            return item->parent->id;
+        case NoteIdRole:
+            if (item->type == ItemStorage) {
+                return "";
+            }
+            return item->id;
         }
     }
     return QVariant();
@@ -296,15 +280,15 @@ QVariant NotesModel::data( const QModelIndex & index, int role ) const
 
 bool NotesModel::removeRows(int row, int count, const QModelIndex &parent)
 {
-    QList<NMMItem*> *source;
+    QList<NMMItem *> *source;
     if (parent.isValid()) { // note
         if (removeProtection == parent) {
             removeProtection = QModelIndex();
             return false;
         }
         NMMItem *storageItem = static_cast<NMMItem *>(parent.internalPointer());
-        source = &storageItem->children;
-    } else { //storage
+        source               = &storageItem->children;
+    } else { // storage
         source = &storages;
     }
     if (row < source->count() && count > 0) {
@@ -322,15 +306,9 @@ bool NotesModel::removeRows(int row, int count, const QModelIndex &parent)
     return false;
 }
 
-Qt::DropActions NotesModel::supportedDropActions() const
-{
-    return Qt::CopyAction;
-}
+Qt::DropActions NotesModel::supportedDropActions() const { return Qt::CopyAction; }
 
-QStringList NotesModel::mimeTypes() const
-{
-    return QStringList() << "application/qtnote.notes.list";
-}
+QStringList NotesModel::mimeTypes() const { return QStringList() << "application/qtnote.notes.list"; }
 
 QMimeData *NotesModel::mimeData(const QModelIndexList &indexes) const
 {
@@ -351,7 +329,8 @@ QMimeData *NotesModel::mimeData(const QModelIndexList &indexes) const
     return mimeData;
 }
 
-bool NotesModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
+bool NotesModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column,
+                              const QModelIndex &parent)
 {
     Q_UNUSED(row)
 
@@ -370,10 +349,10 @@ bool NotesModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int 
     NMMItem *dstStorageItem = static_cast<NMMItem *>(parent.internalPointer());
     if (dstStorageItem->type != ItemStorage)
         return false;
-    auto dstStorage = NoteManager::instance()->storage(dstStorageItem->id);
+    auto dstStorage  = NoteManager::instance()->storage(dstStorageItem->id);
     removeProtection = parent;
 
-    QByteArray encodedData = data->data("application/qtnote.notes.list");
+    QByteArray  encodedData = data->data("application/qtnote.notes.list");
     QDataStream stream(&encodedData, QIODevice::ReadOnly);
 
     while (!stream.atEnd()) {
@@ -383,7 +362,7 @@ bool NotesModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int 
             continue;
         }
         auto srcStorage = NoteManager::instance()->storage(storageId);
-        Note note = srcStorage->note(noteId);
+        Note note       = srcStorage->note(noteId);
         if (!note.text().isEmpty()) {
             dstStorage->createNote(note.text());
             srcStorage->deleteNote(noteId);

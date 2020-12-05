@@ -11,8 +11,7 @@ namespace QtNote {
 class FileStorage;
 }
 
-class FileStorageSettingsWidget : public QWidget
-{
+class FileStorageSettingsWidget : public QWidget {
     Q_OBJECT
 
 public:
@@ -30,7 +29,7 @@ private slots:
 
 private:
     Ui::FileStorageSettingsWidget *ui;
-    QtNote::FileStorage *storage;
+    QtNote::FileStorage *          storage;
 };
 
 #endif // FILESTORAGESETTINGSWIDGET_H

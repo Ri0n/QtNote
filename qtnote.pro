@@ -24,10 +24,10 @@ src.depends = libqtnote
 plugins.depends = libqtnote
 
 TRANSLATIONS += \
-	langs/qtnote_en.ts \
-	langs/qtnote_fr.ts \
-	langs/qtnote_ru.ts \
-	langs/qtnote_vi.ts
+    langs/qtnote_en.ts \
+    langs/qtnote_fr.ts \
+    langs/qtnote_ru.ts \
+    langs/qtnote_vi.ts
 
 include(common.pri)
 
@@ -35,39 +35,39 @@ LANGS = en fr ru vi
 for(t, LANGS):translations.files += "langs/qtnote_$${t}.qm"
 
 unix {
-	translations.path = $$TRANSLATIONSDIR
-	DISTFILES += $$translations
+    translations.path = $$TRANSLATIONSDIR
+    DISTFILES += $$translations
 
-	# Desktop file
-	desktop.files = $${TARGET}.desktop
-	desktop.path = $$DATADIR/applications
+    # Desktop file
+    desktop.files = $${TARGET}.desktop
+    desktop.path = $$DATADIR/applications
 
-	# Desktop pixmap
-	pixsizes = 16 22 24 32 48 64
-	for(size, pixsizes) {
-	path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
-	extra = cp -f $${PWD}/libqtnote/images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
-	eval(pix$${size}.path = $$path)
-	eval(pix$${size}.extra = $$extra)
-	eval(pixmaps += pix$${size})
-	}
+    # Desktop pixmap
+    pixsizes = 16 22 24 32 48 64
+    for(size, pixsizes) {
+    path = $$DATADIR/icons/hicolor/$${size}x$${size}/apps
+    extra = cp -f $${PWD}/libqtnote/images/$${TARGET}$${size}.png $(INSTALL_ROOT)$$path/$${TARGET}.png
+    eval(pix$${size}.path = $$path)
+    eval(pix$${size}.extra = $$extra)
+    eval(pixmaps += pix$${size})
+    }
 
-	pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
-	pixmap_svg.files = libqtnote/images/$${TARGET}.svg
+    pixmap_svg.path = $$DATADIR/icons/hicolor/scalable/apps
+    pixmap_svg.files = libqtnote/images/$${TARGET}.svg
 
-	# Man page
-	man.files = docs/qtnote.1
-	man.path = $$MANDIR
+    # Man page
+    man.files = docs/qtnote.1
+    man.path = $$MANDIR
 
-	INSTALLS += translations desktop $$pixmaps pixmap_svg man
+    INSTALLS += translations desktop $$pixmaps pixmap_svg man
 
-	commonconfig.input = install_common.pri.in
-	commonconfig.output = tmp/common.pri
-	QMAKE_SUBSTITUTES += commonconfig
+    commonconfig.input = install_common.pri.in
+    commonconfig.output = tmp/common.pri
+    QMAKE_SUBSTITUTES += commonconfig
 
-	cc_inst.path = $$DATADIR/$$APPNAME
-	cc_inst.files = tmp/common.pri
-	INSTALLS += cc_inst
+    cc_inst.path = $$DATADIR/$$APPNAME
+    cc_inst.files = tmp/common.pri
+    INSTALLS += cc_inst
 }
 
 win32 {

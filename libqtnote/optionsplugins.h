@@ -14,20 +14,20 @@ namespace QtNote {
 class Main;
 class PluginsModel;
 
-class OptionsPlugins : public QWidget
-{
-	Q_OBJECT
+class OptionsPlugins : public QWidget {
+    Q_OBJECT
 
 public:
-	explicit OptionsPlugins(Main *qtnote, QWidget *parent = 0);
-	~OptionsPlugins();
+    explicit OptionsPlugins(Main *qtnote, QWidget *parent = 0);
+    ~OptionsPlugins();
 
 private slots:
-	void pluginClicked(const QModelIndex &index);
+    void pluginClicked(const QModelIndex &index);
+
 private:
-	Ui::OptionsPlugins *ui;
-	Main *qtnote;
-	PluginsModel *pluginsModel;
+    Ui::OptionsPlugins *ui;
+    Main *              qtnote;
+    PluginsModel *      pluginsModel;
 };
 
 } // namespace QtNote

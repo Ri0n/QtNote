@@ -7,12 +7,11 @@
 
 namespace QtNote {
 
-class TrayImpl : public QObject
-{
+class TrayImpl : public QObject {
     Q_OBJECT
 
 public:
-    inline TrayImpl(QObject *parent = 0) : QObject(parent) {}
+    inline TrayImpl(QObject *parent = 0) : QObject(parent) { }
 
 signals:
     void exitTriggered();

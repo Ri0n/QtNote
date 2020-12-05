@@ -24,34 +24,37 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 
+#include "deintegrationinterface.h"
+#include "notecontextmenuhandler.h"
+#include "pluginoptionsinterface.h"
 #include "qtnoteplugininterface.h"
 #include "trayinterface.h"
-#include "deintegrationinterface.h"
-#include "pluginoptionsinterface.h"
-#include "notecontextmenuhandler.h"
 
 namespace QtNote {
 
 class SpellEngineInterface;
 class PluginHostInterface;
 
-class SpellCheckPlugin : public QObject, public PluginInterface, public RegularPluginInterface,
-        public PluginOptionsTooltipInterface, public PluginOptionsInterface, public NoteContextMenuHandler
-{
+class SpellCheckPlugin : public QObject,
+                         public PluginInterface,
+                         public RegularPluginInterface,
+                         public PluginOptionsTooltipInterface,
+                         public PluginOptionsInterface,
+                         public NoteContextMenuHandler {
     Q_OBJECT
 #if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
 #endif
-    Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface
-                 QtNote::PluginOptionsTooltipInterface QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface QtNote::PluginOptionsTooltipInterface
+                     QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
 public:
     explicit SpellCheckPlugin(QObject *parent = 0);
     ~SpellCheckPlugin();
 
     // PluginInterface
-    int metadataVersion() const;
+    int                    metadataVersion() const;
     virtual PluginMetadata metadata();
-    void setHost(PluginHostInterface *host);
+    void                   setHost(PluginHostInterface *host);
 
     // RegularPluginInterface
     bool init(Main *qtnote);
@@ -60,19 +63,20 @@ public:
     QString tooltip() const;
 
     // PluginOptionsInterface
-    QDialog* optionsDialog();
+    QDialog *optionsDialog();
 
     // NoteContextMenuHandler
     void populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu);
 
-    inline SpellEngineInterface* engine() const { return sei; }
-    QList<QLocale> preferredLanguages() const;
+    inline SpellEngineInterface *engine() const { return sei; }
+    QList<QLocale>               preferredLanguages() const;
 
 private slots:
     void noteWidgetCreated(QWidget *w);
     void settingsAccepted();
+
 private:
-    PluginHostInterface *host;
+    PluginHostInterface * host;
     SpellEngineInterface *sei;
 };
 

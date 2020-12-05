@@ -22,9 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEEDIT_H
 #define NOTEEDIT_H
 
-#include <QTextEdit>
 #include <QPointer>
 #include <QTextBlock>
+#include <QTextEdit>
 
 #include "notecontextmenuhandler.h"
 #include "qtnote_export.h"
@@ -33,32 +33,30 @@ class QDropEvent;
 
 namespace QtNote {
 
-class QTNOTE_EXPORT NoteEdit : public QTextEdit
-{
+class QTNOTE_EXPORT NoteEdit : public QTextEdit {
 public:
-    struct HoveredLinkPosition
-    {
+    struct HoveredLinkPosition {
         QTextBlock block;
-        int pos;
-        int length;
+        int        pos;
+        int        length;
     };
 
 private:
     Q_OBJECT
 
     QList<QPointer<QObject>> menuHandlers;
-    HoveredLinkPosition hlp;
+    HoveredLinkPosition      hlp;
 
-public:    
-	explicit NoteEdit(QWidget *parent = 0);
-    virtual void addContextMenuHandler(NoteContextMenuHandler *handler);
+public:
+    explicit NoteEdit(QWidget *parent = 0);
+    virtual void                      addContextMenuHandler(NoteContextMenuHandler *handler);
     inline const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
 
 protected:
-	void dropEvent(QDropEvent *e);
-	void focusOutEvent(QFocusEvent *event);
-	void focusInEvent(QFocusEvent *);
-    void contextMenuEvent(QContextMenuEvent *event);    
+    void dropEvent(QDropEvent *e);
+    void focusOutEvent(QFocusEvent *event);
+    void focusInEvent(QFocusEvent *);
+    void contextMenuEvent(QContextMenuEvent *event);
     void mousePressEvent(QMouseEvent *e);
     void mouseMoveEvent(QMouseEvent *e);
     void keyPressEvent(QKeyEvent *e);
@@ -66,11 +64,11 @@ protected:
 
 private:
     QString unparsedAnchorAt(const QPoint &pos);
-    void setLinkHighlightEnabled(bool state);
+    void    setLinkHighlightEnabled(bool state);
 
 signals:
-	void focusLost();
-	void focusReceived();
+    void focusLost();
+    void focusReceived();
     void linkHovered();
     void linkUnhovered();
 };

@@ -1,89 +1,73 @@
 #include <QAction>
 #include <QApplication>
-#include <QLibraryInfo>
-#include <QTranslator>
-#include <QLocale>
-#include <QDesktopWidget>
-#include <QStyle>
-#include <QSettings>
-#include <QMessageBox>
-#include <QProcess>
 #include <QClipboard>
-#include <QMenu>
 #include <QDataStream>
-#include <QDir>
-#include <QSystemTrayIcon>
-#include <QPluginLoader>
-#include <QHBoxLayout>
+#include <QDesktopWidget>
 #include <QDialog>
+#include <QDir>
+#include <QHBoxLayout>
+#include <QLibraryInfo>
+#include <QLocale>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPluginLoader>
+#include <QProcess>
+#include <QSettings>
+#include <QStyle>
+#include <QSystemTrayIcon>
+#include <QTranslator>
 #ifdef Q_OS_MAC
-# include <ApplicationServices/ApplicationServices.h>
+#include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#include "qtnote.h"
-#include "notemanager.h"
-#include "notedialog.h"
-#include "notewidget.h"
 #include "aboutdlg.h"
-#include "optionsdlg.h"
-#include "notemanagerdlg.h"
-#include "utils.h"
-#include "ptfstorage.h"
-#include "shortcutsmanager.h"
-#include "pluginmanager.h"
 #include "deintegrationinterface.h"
-#include "trayimpl.h"
 #include "globalshortcutsinterface.h"
+#include "notedialog.h"
+#include "notemanager.h"
+#include "notemanagerdlg.h"
+#include "notewidget.h"
 #include "notificationinterface.h"
+#include "optionsdlg.h"
 #include "optionsplugins.h"
+#include "pluginmanager.h"
+#include "ptfstorage.h"
+#include "qtnote.h"
+#include "shortcutsmanager.h"
+#include "trayimpl.h"
+#include "utils.h"
 
 //#define MAIN_DEBUG
 #ifdef MAIN_DEBUG
-# include <QDebug>
+#include <QDebug>
 #endif
 
-void initResources()
-{
-    Q_INIT_RESOURCE(main);
-}
+void initResources() { Q_INIT_RESOURCE(main); }
 
 namespace QtNote {
 
-class Main::Private : public QObject
-{
+class Main::Private : public QObject {
     Q_OBJECT
 
 public:
-    Main *q;
-    DEIntegrationInterface *de;
-    TrayImpl *tray;
+    Main *                    q;
+    DEIntegrationInterface *  de;
+    TrayImpl *                tray;
     GlobalShortcutsInterface *globalShortcuts;
-    NotificationInterface *notifier;
+    NotificationInterface *   notifier;
 
-    Private(Main *parent) :
-        QObject(parent),
-        q(parent),
-        de(0),
-        globalShortcuts(0),
-        notifier(0)
-    {
-
-    }
+    Private(Main *parent) : QObject(parent), q(parent), de(0), globalShortcuts(0), notifier(0) { }
 };
 
-
-Main::Main(QObject *parent) :
-    QObject(parent),
-    d(new Private(this)),
-    _inited(false)
+Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(false)
 {
     // loading localization
-    QString langFile = APPNAME;
-    QTranslator *translator = new QTranslator(qApp);
+    QString      langFile     = APPNAME;
+    QTranslator *translator   = new QTranslator(qApp);
     QTranslator *qtTranslator = new QTranslator(qApp);
-    QStringList langDirs;
-    QStringList qtLangDirs;
-    QString dlTrDir = Utils::qtnoteDataDir() + QLatin1String("/langs"); // where translaations could be downloaded
+    QStringList  langDirs;
+    QStringList  qtLangDirs;
+    QString      dlTrDir = Utils::qtnoteDataDir() + QLatin1String("/langs"); // where translaations could be downloaded
 
 #if defined(DEVEL) || defined(Q_OS_UNIX)
     langDirs << TRANSLATIONSDIR << dlTrDir; // in devel mode TRANSLATIONSDIR will refer to source/langs
@@ -94,11 +78,11 @@ Main::Main(QObject *parent) :
 #endif
 
     QSettings settings;
-    QString forcedLangName = settings.value(QLatin1String("language")).toString();
-    bool autoLang = (forcedLangName.isEmpty() || forcedLangName == "auto");
+    QString   forcedLangName = settings.value(QLatin1String("language")).toString();
+    bool      autoLang       = (forcedLangName.isEmpty() || forcedLangName == "auto");
 
-    QLocale locale = autoLang? QLocale::system() : QLocale(forcedLangName);
-    //qDebug() << forcedLangName;
+    QLocale locale = autoLang ? QLocale::system() : QLocale(forcedLangName);
+    // qDebug() << forcedLangName;
     foreach (const QString &langDir, langDirs) {
         if (translator->load(locale, langFile, "_", langDir)) {
             qApp->installTranslator(translator);
@@ -128,7 +112,9 @@ Main::Main(QObject *parent) :
     }
 
     if (!pluginError.isEmpty()) {
-        QMessageBox::critical(0, tr("Initialization Error"), pluginError + "\n" + tr("Enable a plugin with required functionality and restart QtNote"));
+        QMessageBox::critical(0, tr("Initialization Error"),
+                              pluginError + "\n"
+                                  + tr("Enable a plugin with required functionality and restart QtNote"));
         QDialog dlg;
         dlg.setLayout(new QHBoxLayout);
         dlg.layout()->addWidget(new OptionsPlugins(this));
@@ -141,21 +127,21 @@ Main::Main(QObject *parent) :
 
     _inited = NoteManager::instance()->loadAll();
     if (!NoteManager::instance()->loadAll()) {
-        QMessageBox::critical(0, "QtNote", QObject::tr("no one of note "
-                                                       "storages is accessible. can't continue.."));
+        QMessageBox::critical(0, "QtNote",
+                              QObject::tr("no one of note "
+                                          "storages is accessible. can't continue.."));
         return; // TODO review removing this
     }
     NoteManager::instance()->setPriorities(settings.value("storage.priority", QStringList()).toStringList());
 
     _shortcutsManager = new ShortcutsManager(d->globalShortcuts, this);
 
-
     connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
     connect(d->tray, SIGNAL(newNoteTriggered()), SLOT(createNewNote()));
     connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
     connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
     connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
-    connect(d->tray, SIGNAL(showNoteTriggered(QString,QString)), SLOT(showNoteDialog(QString,QString)));
+    connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(showNoteDialog(QString, QString)));
 
     // TODO it's a little ugly. refactor
     QAction *actNoteFromSel = new QAction(_shortcutsManager->friendlyName(ShortcutsManager::SKNoteFromSelection), this);
@@ -163,14 +149,11 @@ Main::Main(QObject *parent) :
     _shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, actNoteFromSel);
 }
 
-Main::~Main()
-{
-
-}
+Main::~Main() { }
 
 void Main::parseAppArguments(const QStringList &args)
 {
-    int i = 0;
+    int  i           = 0;
     bool argsHandled = false;
     while (i < args.size()) {
         if (args.at(i) == QLatin1String("-n")) {
@@ -188,12 +171,12 @@ void Main::parseAppArguments(const QStringList &args)
     }
     QSettings s;
     if (!argsHandled && !s.value("first-start").toBool()) {
-        QMessageBox *mb = new QMessageBox(QMessageBox::Information, tr("First Start"),
-            tr(
-              "This is your first start of QtNote note-taking application.\n\n"
-              "To start using just click on pencil in the system tray and choose \"New\" item to create new note.\n"
-              "Notes will be automatically saved to special storage, so you should not worry about this."
-              ), QMessageBox::Ok);
+        QMessageBox *mb = new QMessageBox(
+            QMessageBox::Information, tr("First Start"),
+            tr("This is your first start of QtNote note-taking application.\n\n"
+               "To start using just click on pencil in the system tray and choose \"New\" item to create new note.\n"
+               "Notes will be automatically saved to special storage, so you should not worry about this."),
+            QMessageBox::Ok);
         mb->setModal(false);
         mb->setAttribute(Qt::WA_DeleteOnClose);
         mb->show();
@@ -201,15 +184,9 @@ void Main::parseAppArguments(const QStringList &args)
     }
 }
 
-void Main::exitQtNote()
-{
-    QApplication::quit();
-}
+void Main::exitQtNote() { QApplication::quit(); }
 
-void Main::appMessageReceived(const QString &msg)
-{
-    parseAppArguments(msg.split(QLatin1String("!qtnote_argdelim!")));
-}
+void Main::appMessageReceived(const QString &msg) { parseAppArguments(msg.split(QLatin1String("!qtnote_argdelim!"))); }
 
 void Main::showAbout()
 {
@@ -222,7 +199,7 @@ void Main::showAbout()
 void Main::showNoteManager()
 {
     NoteManagerDlg *d = new NoteManagerDlg(this);
-    connect(d, SIGNAL(showNoteRequested(QString,QString)), SLOT(showNoteDialog(QString,QString)));
+    connect(d, SIGNAL(showNoteRequested(QString, QString)), SLOT(showNoteDialog(QString, QString)));
     d->show();
     activateWidget(d);
 }
@@ -236,7 +213,7 @@ void Main::showOptions()
     activateWidget(d);
 }
 
-NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId, const QString &contents)
+NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId, const QString &contents)
 {
     Note note;
     if (!noteId.isEmpty()) {
@@ -248,8 +225,7 @@ NoteWidget* Main::noteWidget(const QString &storageId, const QString &noteId, co
     }
 
     NoteWidget *w = new NoteWidget(storageId, noteId);
-    w->setAcceptRichText(NoteManager::instance()->storage(storageId)
-                         ->isRichTextAllowed());
+    w->setAcceptRichText(NoteManager::instance()->storage(storageId)->isRichTextAllowed());
     emit noteWidgetCreated(w);
     if (noteId.isEmpty()) {
         if (!contents.isEmpty()) {
@@ -295,35 +271,17 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
     activateWidget(dlg);
 }
 
-void Main::notifyError(const QString &text)
-{
-    d->notifier->notifyError(text);
-}
+void Main::notifyError(const QString &text) { d->notifier->notifyError(text); }
 
-void Main::activateWidget(QWidget *w) const
-{
-    d->de->activateWidget(w);
-}
+void Main::activateWidget(QWidget *w) const { d->de->activateWidget(w); }
 
-void Main::setTrayImpl(TrayImpl *tray)
-{
-    d->tray = tray;
-}
+void Main::setTrayImpl(TrayImpl *tray) { d->tray = tray; }
 
-void Main::setDesktopImpl(DEIntegrationInterface *de)
-{
-    d->de = de;
-}
+void Main::setDesktopImpl(DEIntegrationInterface *de) { d->de = de; }
 
-void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs)
-{
-    d->globalShortcuts = gs;
-}
+void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs) { d->globalShortcuts = gs; }
 
-void Main::setNotificationImpl(NotificationInterface *notifier)
-{
-    d->notifier = notifier;
-}
+void Main::setNotificationImpl(NotificationInterface *notifier) { d->notifier = notifier; }
 
 void Main::registerStorage(NoteStorage::Ptr &storage)
 {
@@ -339,10 +297,7 @@ void Main::unregisterStorage(NoteStorage::Ptr &storage)
     }
 }
 
-void Main::createNewNote()
-{
-    showNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
-}
+void Main::createNewNote() { showNoteDialog(NoteManager::instance()->defaultStorage()->systemName()); }
 
 void Main::createNewNoteFromSelection()
 {
@@ -351,40 +306,40 @@ void Main::createNewNoteFromSelection()
     contents = QApplication::clipboard()->text(QClipboard::Selection);
 #endif
 #ifdef Q_OS_WIN
-    int n = 0;
+    int            n = 0;
     QVector<INPUT> input(10);
-    memset(input.data(), 0, input.size()*sizeof(INPUT));
+    memset(input.data(), 0, input.size() * sizeof(INPUT));
 
     if (GetAsyncKeyState(VK_MENU) & (1 < 15)) {
         input[n].ki.dwFlags = KEYEVENTF_KEYUP;
-        input[n].ki.wVk = VK_MENU;
-        input[n++].ki.wScan = MapVirtualKey( VK_MENU, MAPVK_VK_TO_VSC );
+        input[n].ki.wVk     = VK_MENU;
+        input[n++].ki.wScan = MapVirtualKey(VK_MENU, MAPVK_VK_TO_VSC);
     }
     if (GetAsyncKeyState(VK_SHIFT) & (1 < 15)) {
         input[n].ki.dwFlags = KEYEVENTF_KEYUP;
-        input[n].ki.wVk = VK_SHIFT;
+        input[n].ki.wVk     = VK_SHIFT;
         input[n++].ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
     }
-    input[n].ki.wVk = VK_CONTROL;
+    input[n].ki.wVk     = VK_CONTROL;
     input[n].ki.dwFlags = 0;
-    input[n++].ki.wScan = MapVirtualKey( VK_CONTROL, MAPVK_VK_TO_VSC );
+    input[n++].ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
 
-    input[n].ki.wVk = 0x43; // Virtual key code for 'c'
+    input[n].ki.wVk     = 0x43; // Virtual key code for 'c'
     input[n].ki.dwFlags = 0;
-    input[n++].ki.wScan = MapVirtualKey( 0x56, MAPVK_VK_TO_VSC );
+    input[n++].ki.wScan = MapVirtualKey(0x56, MAPVK_VK_TO_VSC);
 
     input[n].ki.dwFlags = KEYEVENTF_KEYUP;
-    input[n].ki.wVk = input[0].ki.wVk;
+    input[n].ki.wVk     = input[0].ki.wVk;
     input[n++].ki.wScan = input[0].ki.wScan;
 
     input[n].ki.dwFlags = KEYEVENTF_KEYUP;
-    input[n].ki.wVk = input[1].ki.wVk;
+    input[n].ki.wVk     = input[1].ki.wVk;
     input[n++].ki.wScan = input[1].ki.wScan;
 
     bool sent = true;
     for (int i = 0; i < n; i++) {
         input[i].type = INPUT_KEYBOARD;
-        if(!SendInput(1, (LPINPUT)&(input[i]), sizeof(INPUT) ) ) {
+        if (!SendInput(1, (LPINPUT) & (input[i]), sizeof(INPUT))) {
             sent = false;
             break;
         }
@@ -395,9 +350,10 @@ void Main::createNewNoteFromSelection()
     }
 #endif
 #ifdef Q_OS_MAC
-    // copied from http://stackoverflow.com/questions/9758053/programming-with-qt-creator-and-cocoa-copying-the-selected-text-from-the-curre
-    CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateCombinedSessionState);
-    CGEventRef saveCommandDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, true);
+    // copied from
+    // http://stackoverflow.com/questions/9758053/programming-with-qt-creator-and-cocoa-copying-the-selected-text-from-the-curre
+    CGEventSourceRef source          = CGEventSourceCreate(kCGEventSourceStateCombinedSessionState);
+    CGEventRef       saveCommandDown = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, true);
     CGEventSetFlags(saveCommandDown, kCGEventFlagMaskCommand);
     CGEventRef saveCommandUp = CGEventCreateKeyboardEvent(source, (CGKeyCode)8, false);
 
@@ -417,8 +373,8 @@ void Main::createNewNoteFromSelection()
 
 void Main::note_trashRequested()
 {
-    NoteWidget *nw = static_cast<NoteWidget *>(sender());
-    auto storage = NoteManager::instance()->storage(nw->storageId());
+    NoteWidget *nw      = static_cast<NoteWidget *>(sender());
+    auto        storage = NoteManager::instance()->storage(nw->storageId());
     if (!nw->noteId().isEmpty()) {
 #ifdef MAIN_DEBUG
         qDebug() << "Main::note_trashRequested";
@@ -432,11 +388,11 @@ void Main::note_saveRequested()
 #ifdef MAIN_DEBUG
     qDebug() << "Main::note_saveRequested";
 #endif
-    NoteWidget *nw = static_cast<NoteWidget *>(sender());
-    QString storageId = nw->storageId();
-    QString noteId = nw->noteId();
-    QString text = nw->text();
-    auto storage = NoteManager::instance()->storage(storageId);
+    NoteWidget *nw        = static_cast<NoteWidget *>(sender());
+    QString     storageId = nw->storageId();
+    QString     noteId    = nw->noteId();
+    QString     text      = nw->text();
+    auto        storage   = NoteManager::instance()->storage(storageId);
     if (text.isEmpty()) { // delete empty note
         if (!noteId.isEmpty()) {
             storage->deleteNote(noteId);
@@ -461,8 +417,8 @@ void Main::note_invalidated()
 #ifdef MAIN_DEBUG
     qDebug() << "Main::note_invalidated";
 #endif
-    NoteWidget *nw = static_cast<NoteWidget *>(sender());
-    Note note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
+    NoteWidget *nw   = static_cast<NoteWidget *>(sender());
+    Note        note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
     if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
         if (note.text().startsWith(note.title())) {
             nw->setText(note.text());

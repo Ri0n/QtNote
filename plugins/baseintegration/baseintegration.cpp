@@ -1,11 +1,11 @@
+#include <QAction>
 #include <QWidget>
 #include <QtPlugin>
-#include <QAction>
 
 #include "baseintegration.h"
 #include "baseintegrationtray.h"
-#include "qxtglobalshortcut.h"
 #include "pluginhostinterface.h"
+#include "qxtglobalshortcut.h"
 
 namespace QtNote {
 
@@ -14,37 +14,27 @@ static const QLatin1String pluginId("base_de");
 //******************************************
 // BaseIntegration
 //******************************************
-BaseIntegration::BaseIntegration(QObject *parent) :
-    QObject(parent),
-    tray(0)
-{
-}
+BaseIntegration::BaseIntegration(QObject *parent) : QObject(parent), tray(0) { }
 
-int BaseIntegration::metadataVersion() const
-{
-    return MetadataVerion;
-}
+int BaseIntegration::metadataVersion() const { return MetadataVerion; }
 
 PluginMetadata BaseIntegration::metadata()
 {
     PluginMetadata md;
-    md.id = pluginId;
-    md.icon = QIcon(":/icons/logo");
-    md.name = "Base Integration";
+    md.id          = pluginId;
+    md.icon        = QIcon(":/icons/logo");
+    md.name        = "Base Integration";
     md.description = tr("Provides fallback desktop environment integration");
-    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-    md.version = 0x010100;    // plugin's version 0xXXYYZZPP
-    md.minVersion = 0x030002; // minimum compatible version of QtNote
-    md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
-    md.homepage = QUrl("http://ri0n.github.io/QtNote");
-    //md.extra.insert("de", QStringList() << "KDE-4");
+    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version     = 0x010100;       // plugin's version 0xXXYYZZPP
+    md.minVersion  = 0x030002;       // minimum compatible version of QtNote
+    md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
+    md.homepage    = QUrl("http://ri0n.github.io/QtNote");
+    // md.extra.insert("de", QStringList() << "KDE-4");
     return md;
 }
 
-void BaseIntegration::setHost(PluginHostInterface *host)
-{
-    this->host = host;
-}
+void BaseIntegration::setHost(PluginHostInterface *host) { this->host = host; }
 
 void BaseIntegration::activateWidget(QWidget *w)
 {
@@ -52,7 +42,7 @@ void BaseIntegration::activateWidget(QWidget *w)
     w->activateWindow();
 }
 
-TrayImpl* BaseIntegration::initTray(Main *qtnote)
+TrayImpl *BaseIntegration::initTray(Main *qtnote)
 {
     tray = new BaseIntegrationTray(qtnote, host, this);
     return tray;
@@ -89,7 +79,7 @@ void BaseIntegration::setGlobalShortcutEnabled(const QString &id, bool enabled)
 void BaseIntegration::notifyError(const QString &message)
 {
     if (tray) {
-        ((BaseIntegrationTray*)tray)->tray->showMessage(tr("Error"), message, QSystemTrayIcon::Warning, 5000);
+        ((BaseIntegrationTray *)tray)->tray->showMessage(tr("Error"), message, QSystemTrayIcon::Warning, 5000);
     }
 }
 

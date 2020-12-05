@@ -22,18 +22,18 @@
 #include "typeaheadfind.h"
 
 #include <QAction>
-#include <QLineEdit>
+#include <QApplication>
 #include <QCheckBox>
 #include <QLabel>
-#include <QTextEdit>
-#include <QApplication>
-#include <QStyle>
 #include <QLayout>
-#include <QTextDocumentFragment>
+#include <QLineEdit>
 #include <QPainter>
 #include <QScrollBar>
+#include <QStyle>
+#include <QTextDocumentFragment>
+#include <QTextEdit>
 
-static const char* replaceIconName = ":/icons/replace-text";
+static const char *        replaceIconName = ":/icons/replace-text";
 static QWeakPointer<QIcon> icnReplaceAll;
 
 /**
@@ -41,8 +41,7 @@ static QWeakPointer<QIcon> icnReplaceAll;
  * \brief The TypeAheadFindBar class provides a toolbar for typeahead finding.
  */
 
-class TypeAheadFindBar::Private
-{
+class TypeAheadFindBar::Private {
 public:
     // setup search and react to search results
     void doFind(bool backward = false)
@@ -65,8 +64,7 @@ public:
 
         if (find(options)) {
             le_find->setStyleSheet("");
-        }
-        else {
+        } else {
             le_find->setStyleSheet("QLineEdit { background: #ff6666; color: #ffffff }");
         }
     }
@@ -107,8 +105,8 @@ public:
         }
 
         QTextDocument::FindFlags options;
-        QTextCursor cursor = te->textCursor();
-        QTextDocumentFragment selected = cursor.selection();
+        QTextCursor              cursor   = te->textCursor();
+        QTextDocumentFragment    selected = cursor.selection();
         if (selected.isEmpty() || (selected.toPlainText() != le_find->text())) {
             if (!find(options))
                 return false;
@@ -123,22 +121,23 @@ public:
         QTextCursor cur;
         cur.setPosition(0);
         te->setTextCursor(cur);
-        while (doReplace());
+        while (doReplace())
+            ;
     }
 
-    QString text;
-    bool caseSensitive;
+    QString                text;
+    bool                   caseSensitive;
     TypeAheadFindBar::Mode mode;
 
-    QTextEdit *te;
-    QLineEdit *le_find;
-    QLineEdit *le_replace;
-    QAction *act_next;
-    QAction *act_prev;
-    QAction *act_replace;
-    QAction *act_replace_all;
-    QAction *act_le_replace;
-    QCheckBox *cb_case;
+    QTextEdit *           te;
+    QLineEdit *           le_find;
+    QLineEdit *           le_replace;
+    QAction *             act_next;
+    QAction *             act_prev;
+    QAction *             act_replace;
+    QAction *             act_replace_all;
+    QAction *             act_le_replace;
+    QCheckBox *           cb_case;
     QSharedPointer<QIcon> icnReplaceAll;
 };
 
@@ -148,21 +147,20 @@ public:
  * \param title, toolbar's title
  * \param parent, toolbar's parent
  */
-TypeAheadFindBar::TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent)
-: QToolBar(title, parent)
+TypeAheadFindBar::TypeAheadFindBar(QTextEdit *textedit, const QString &title, QWidget *parent) : QToolBar(title, parent)
 {
-    d = new Private();
+    d     = new Private();
     d->te = textedit;
     init();
 }
 
 void TypeAheadFindBar::init()
 {
-    setIconSize(QSize(20,20));
+    setIconSize(QSize(20, 20));
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
 
     d->caseSensitive = false;
-    d->text = "";
+    d->text          = "";
 
     d->le_find = new QLineEdit(this);
     d->le_find->setMaximumWidth(200);
@@ -194,15 +192,16 @@ void TypeAheadFindBar::init()
 
     d->icnReplaceAll = icnReplaceAll.toStrongRef();
     if (!d->icnReplaceAll) {
-        QPixmap replPix(replaceIconName);
+        QPixmap  replPix(replaceIconName);
         QPainter p(&replPix);
-        int w = replPix.width() / 3.0 * 2.0;
-        int h = replPix.height() / 3.0 * 2.0;
+        int      w = replPix.width() / 3.0 * 2.0;
+        int      h = replPix.height() / 3.0 * 2.0;
         p.drawPixmap(replPix.width() - w, replPix.height() - h, w, h,
-                     QApplication::style()->standardPixmap(QStyle::SP_BrowserReload)
-                     .scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                     QApplication::style()
+                         ->standardPixmap(QStyle::SP_BrowserReload)
+                         .scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         d->icnReplaceAll = QSharedPointer<QIcon>(new QIcon(replPix));
-        icnReplaceAll = d->icnReplaceAll;
+        icnReplaceAll    = d->icnReplaceAll;
     }
     d->act_replace_all = new QAction(*d->icnReplaceAll, tr("Replace all"), this);
     connect(d->act_replace_all, SIGNAL(triggered()), SLOT(replaceTextAll()));
@@ -226,10 +225,7 @@ void TypeAheadFindBar::setMode(TypeAheadFindBar::Mode mode)
     d->mode = mode;
 }
 
-TypeAheadFindBar::Mode TypeAheadFindBar::mode() const
-{
-    return d->mode;
-}
+TypeAheadFindBar::Mode TypeAheadFindBar::mode() const { return d->mode; }
 
 /**
  * \brief Destroys the toolbar.
@@ -246,8 +242,8 @@ TypeAheadFindBar::~TypeAheadFindBar()
  */
 void TypeAheadFindBar::optionsUpdate()
 {
-    //d->act_next->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-next"));
-    //d->act_prev->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-prev"));
+    // d->act_next->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-next"));
+    // d->act_prev->setShortcuts(ShortcutManager::instance()->shortcuts("chat.find-prev"));
 }
 
 /**
@@ -282,7 +278,7 @@ void TypeAheadFindBar::toggleVisibility()
     if (isVisible())
         hide();
     else
-        //show();
+        // show();
         open();
 }
 
@@ -317,8 +313,7 @@ void TypeAheadFindBar::textChanged(const QString &str)
         cursor.clearSelection();
         d->te->setTextCursor(cursor);
         d->le_find->setStyleSheet("");
-    }
-    else {
+    } else {
         d->act_next->setEnabled(true);
         d->act_prev->setEnabled(true);
 
@@ -334,39 +329,24 @@ void TypeAheadFindBar::textChanged(const QString &str)
 /**
  * \brief Private slot activated when find-next is requested.
  */
-void TypeAheadFindBar::findNext()
-{
-    d->doFind();
-}
+void TypeAheadFindBar::findNext() { d->doFind(); }
 
 /**
  * \brief Private slot activated when find-prev is requested.
  */
-void TypeAheadFindBar::findPrevious()
-{
-    d->doFind(true);
-}
+void TypeAheadFindBar::findPrevious() { d->doFind(true); }
 
 /**
  * \brief Private slot activated when replace is requested.
  */
-void TypeAheadFindBar::replaceText()
-{
-    d->doReplace();
-}
+void TypeAheadFindBar::replaceText() { d->doReplace(); }
 
 /**
  * \brief Private slot activated when replace-all is requested.
  */
-void TypeAheadFindBar::replaceTextAll()
-{
-    d->doReplaceAll();
-}
+void TypeAheadFindBar::replaceTextAll() { d->doReplaceAll(); }
 
 /**
  * \brief Private slot activated when case-sensitive box is toggled.
  */
-void TypeAheadFindBar::caseToggled(int state)
-{
-    d->caseSensitive = (state == Qt::Checked);
-}
+void TypeAheadFindBar::caseToggled(int state) { d->caseSensitive = (state == Qt::Checked); }

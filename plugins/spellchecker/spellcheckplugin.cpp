@@ -19,32 +19,32 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QWidget>
-#include <QtPlugin>
-#include <QLocale>
+#include <QContextMenuEvent>
+#include <QDebug>
 #include <QDialog>
 #include <QHBoxLayout>
+#include <QLocale>
+#include <QMenu>
 #include <QPushButton>
 #include <QSettings>
-#include <QDebug>
 #include <QTextDocumentFragment>
-#include <QMenu>
-#include <QContextMenuEvent>
+#include <QWidget>
+#include <QtPlugin>
 #if QT_VERSION < 0x050000
-# include <QRegExp>
+#include <QRegExp>
 #else
-# include <QRegularExpression>
+#include <QRegularExpression>
 #endif
 #include <memory>
 
-#include "spellcheckplugin.h"
-#include "qtnote.h"
-#include "notewidget.h"
-#include "hunspellengine.h"
 #include "highlighterext.h"
-#include "notehighlighter.h"
-#include "settingsdlg.h"
+#include "hunspellengine.h"
 #include "noteedit.h"
+#include "notehighlighter.h"
+#include "notewidget.h"
+#include "qtnote.h"
+#include "settingsdlg.h"
+#include "spellcheckplugin.h"
 
 namespace QtNote {
 
@@ -52,8 +52,7 @@ static const QLatin1String pluginId("spellchecker");
 
 static std::shared_ptr<HighlighterExtension> hlExt;
 
-class SpellCheckHighlighterExtension : public HighlighterExtension
-{
+class SpellCheckHighlighterExtension : public HighlighterExtension {
     SpellEngineInterface *sei;
 #if QT_VERSION < 0x050000
     QRegExp expression;
@@ -79,8 +78,8 @@ public:
 #if QT_VERSION < 0x050000
         int index = text.indexOf(expression);
         while (index >= 0) {
-            int length = expression.matchedLength();
-            QString word = expression.capturedTexts()[0];
+            int     length = expression.matchedLength();
+            QString word   = expression.capturedTexts()[0];
             if (word[0].isLetter() && sei->spell(word) == 0) { // ignore words starting with digit.
                 nh->addFormat(index, length, myClassFormat);
             }
@@ -90,7 +89,7 @@ public:
         QRegularExpressionMatchIterator i = expression.globalMatch(text);
         while (i.hasNext()) {
             QRegularExpressionMatch match = i.next();
-            //qDebug() << match.captured();
+            // qDebug() << match.captured();
             if (!sei->spell(match.captured())) {
                 nh->addFormat(match.capturedStart(), match.capturedLength(), myClassFormat);
             }
@@ -99,38 +98,35 @@ public:
     }
 };
 
-class SpellContextMenu : public QObject
-{
+class SpellContextMenu : public QObject {
     Q_OBJECT
 
     SpellEngineInterface *sei;
-    QTextEdit *te;
-    QTextCursor cursor;
+    QTextEdit *           te;
+    QTextCursor           cursor;
 
 public:
-    SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor,
-                     QString wrongWord, QMenu *menu) :
+    SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor, QString wrongWord,
+                     QMenu *menu) :
         QObject(menu),
-        sei(sei),
-        te(te),
-        cursor(cursor)
+        sei(sei), te(te), cursor(cursor)
     {
-        QList<QString> suggestions = sei->suggestions(wrongWord);
-        QList<QAction*> actions;
-        foreach(QString suggestion, suggestions) {
-            QAction* act_suggestion = new QAction(suggestion, menu);
+        QList<QString>   suggestions = sei->suggestions(wrongWord);
+        QList<QAction *> actions;
+        foreach (QString suggestion, suggestions) {
+            QAction *act_suggestion = new QAction(suggestion, menu);
             actions.append(act_suggestion);
-            connect(act_suggestion,SIGNAL(triggered()),SLOT(applySuggestion()));
+            connect(act_suggestion, SIGNAL(triggered()), SLOT(applySuggestion()));
         }
         if (actions.count()) {
             QAction *sep = new QAction(menu);
             sep->setSeparator(true);
             actions.append(sep);
         }
-        QAction* act_add = new QAction(tr("Add to dictionary"), menu);
+        QAction *act_add = new QAction(tr("Add to dictionary"), menu);
         act_add->setData(wrongWord);
         actions.append(act_add);
-        connect(act_add,SIGNAL(triggered()),SLOT(addToDictionary()));
+        connect(act_add, SIGNAL(triggered()), SLOT(addToDictionary()));
         QAction *sep = new QAction(menu);
         sep->setSeparator(true);
         actions.append(sep);
@@ -143,9 +139,9 @@ signals:
 private slots:
     void applySuggestion()
     {
-        QString word = ((QAction*)sender())->text();
-        int oldPos = te->textCursor().position();
-        int oldLength = cursor.position() - cursor.anchor();
+        QString word      = ((QAction *)sender())->text();
+        int     oldPos    = te->textCursor().position();
+        int     oldLength = cursor.position() - cursor.anchor();
 
         cursor.insertText(word);
         cursor.clearSelection();
@@ -157,7 +153,7 @@ private slots:
 
     void addToDictionary()
     {
-        QString word = ((QAction*)sender())->data().toString();
+        QString word = ((QAction *)sender())->data().toString();
         sei->addToDictionary(word);
         emit needRehighlight();
     }
@@ -166,41 +162,28 @@ private slots:
 //------------------------------------------------------------
 // SpellCheckPlugin
 //------------------------------------------------------------
-SpellCheckPlugin::SpellCheckPlugin(QObject *parent) :
-    QObject(parent),
-    sei(0)
-{
-}
+SpellCheckPlugin::SpellCheckPlugin(QObject *parent) : QObject(parent), sei(0) { }
 
-SpellCheckPlugin::~SpellCheckPlugin()
-{
-    delete sei;
-}
+SpellCheckPlugin::~SpellCheckPlugin() { delete sei; }
 
-int SpellCheckPlugin::metadataVersion() const
-{
-    return MetadataVerion;
-}
+int SpellCheckPlugin::metadataVersion() const { return MetadataVerion; }
 
 PluginMetadata SpellCheckPlugin::metadata()
 {
     PluginMetadata md;
-    md.id = pluginId;
-    md.icon = QIcon(":/icons/spellcheck-logo");
-    md.name = "Spell check";
+    md.id          = pluginId;
+    md.icon        = QIcon(":/icons/spellcheck-logo");
+    md.name        = "Spell check";
     md.description = tr("Realtime spell check.");
-    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-    md.minVersion = 0x020300; // minimum compatible version of QtNote
-    md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
-    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.minVersion  = 0x020300;       // minimum compatible version of QtNote
+    md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
+    md.homepage    = QUrl("http://ri0n.github.io/QtNote");
     return md;
 }
 
-void SpellCheckPlugin::setHost(PluginHostInterface *host)
-{
-    this->host = host;
-}
+void SpellCheckPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 
 bool SpellCheckPlugin::init(Main *qtnote)
 {
@@ -209,18 +192,18 @@ bool SpellCheckPlugin::init(Main *qtnote)
         sei->addLanguage(l);
     }
     hlExt = std::make_shared<SpellCheckHighlighterExtension>(sei);
-    connect(qtnote, SIGNAL(noteWidgetCreated(QWidget*)), SLOT(noteWidgetCreated(QWidget*)));
+    connect(qtnote, SIGNAL(noteWidgetCreated(QWidget *)), SLOT(noteWidgetCreated(QWidget *)));
     return true;
 }
 
 QString SpellCheckPlugin::tooltip() const
 {
     QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
-    QStringList ret;
+    QStringList                           ret;
     foreach (auto &d, dicts) {
         QLocale locale(d.language, d.country);
-        QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (") +
-                locale.nativeCountryName() + QLatin1Char(')');
+        QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (")
+            + locale.nativeCountryName() + QLatin1Char(')');
         if (!d.filename.isEmpty()) {
             l += QLatin1String(":</i> ");
             l += d.filename;
@@ -253,7 +236,7 @@ void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent 
     QString wrongWord = cursor.selectedText();
     if (!wrongWord.isEmpty() && !sei->spell(wrongWord)) {
         auto cm = new SpellContextMenu(sei, te, cursor, wrongWord, menu);
-        connect(cm, &SpellContextMenu::needRehighlight, this, [this](){host->rehighlight();});
+        connect(cm, &SpellContextMenu::needRehighlight, this, [this]() { host->rehighlight(); });
     }
 }
 
@@ -265,7 +248,7 @@ QList<QLocale> SpellCheckPlugin::preferredLanguages() const
 
     if (!s.contains(QLatin1String("langs"))) {
         QHash<QString, QLocale> codes;
-        QLocale systemLocale = QLocale::system();
+        QLocale                 systemLocale = QLocale::system();
         codes.insert(systemLocale.bcp47Name(), systemLocale);
 
         QStringList uiLangs = systemLocale.uiLanguages();
@@ -289,8 +272,8 @@ QList<QLocale> SpellCheckPlugin::preferredLanguages() const
 
 void SpellCheckPlugin::settingsAccepted()
 {
-    auto dlg = (SettingsDlg*)sender();
-    auto ret = dlg->preferredList();
+    auto      dlg = (SettingsDlg *)sender();
+    auto      ret = dlg->preferredList();
     QSettings s;
     s.beginGroup("plugins");
     s.beginGroup(pluginId);

@@ -28,16 +28,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 static const QLatin1String pluginId("tomboy_storge");
-static NoteStorage::Ptr storage;
+static NoteStorage::Ptr    storage;
 
 //------------------------------------------------------------
 // TomboyPlugin
 //------------------------------------------------------------
-TomboyPlugin::TomboyPlugin(QObject *parent) :
-    QObject(parent),
-    qtnote(0)
-{
-}
+TomboyPlugin::TomboyPlugin(QObject *parent) : QObject(parent), qtnote(0) { }
 
 TomboyPlugin::~TomboyPlugin()
 {
@@ -47,30 +43,27 @@ TomboyPlugin::~TomboyPlugin()
     }
 }
 
-int TomboyPlugin::metadataVersion() const
-{
-    return MetadataVerion;
-}
+int TomboyPlugin::metadataVersion() const { return MetadataVerion; }
 
 PluginMetadata TomboyPlugin::metadata()
 {
     PluginMetadata md;
-    md.id = pluginId;
-    md.icon = QIcon(":/icons/tomboy");
-    md.name = "Tomboy Storage";
+    md.id          = pluginId;
+    md.icon        = QIcon(":/icons/tomboy");
+    md.name        = "Tomboy Storage";
     md.description = tr("Allows read and write tomboy notes");
-    md.author = "Sergey Il'inykh <rion4ik@gmail.com>";
-    md.version = 0x010000;	// plugin's version 0xXXYYZZPP
-    md.minVersion = 0x020300; // minimum compatible version of QtNote
-    md.maxVersion = QTNOTE_VERSION; // maximum compatible version of QtNote
-    md.homepage = QUrl("http://ri0n.github.io/QtNote");
+    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.minVersion  = 0x020300;       // minimum compatible version of QtNote
+    md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
+    md.homepage    = QUrl("http://ri0n.github.io/QtNote");
     return md;
 }
 
 bool TomboyPlugin::init(Main *qtnote)
 {
     this->qtnote = qtnote;
-    storage = NoteStorage::Ptr(new TomboyStorage(this));
+    storage      = NoteStorage::Ptr(new TomboyStorage(this));
     qtnote->registerStorage(storage);
     return storage->isAccessible();
 }

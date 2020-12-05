@@ -26,25 +26,24 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class PTFStorage : public FileStorage
-{
+class PTFStorage : public FileStorage {
     Q_OBJECT
     Q_DISABLE_COPY(PTFStorage)
     void initNotesDir();
 
 public:
     PTFStorage(QObject *parent = 0);
-    bool init();
-    bool isAccessible() const;
-    const QString systemName() const;
-    const QString name() const;
-    QIcon storageIcon() const;
-    QIcon noteIcon() const;
+    bool                init();
+    bool                isAccessible() const;
+    const QString       systemName() const;
+    const QString       name() const;
+    QIcon               storageIcon() const;
+    QIcon               noteIcon() const;
     QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
-    Note note(const QString &noteId);
-    QString saveNote(const QString &noteId, const QString &text);
-    bool isRichTextAllowed() const;
-    QString findStorageDir() const;
+    Note                note(const QString &noteId);
+    QString             saveNote(const QString &noteId, const QString &text);
+    bool                isRichTextAllowed() const;
+    QString             findStorageDir() const;
 };
 
 } // namespace QtNote
