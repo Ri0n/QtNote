@@ -37,6 +37,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "deintegrationinterface.h"
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
+#include "qtnote_config.h"
 #include "trayinterface.h"
 
 namespace QtNote {
@@ -51,7 +52,7 @@ class PluginsIterator {
 public:
     PluginsIterator()
     {
-#ifdef DEVEL
+#ifdef QTNOTE_DEVEL
         QDir pluginsDir = QDir(qApp->applicationDirPath());
 
 #if defined(Q_OS_WIN)
@@ -79,7 +80,7 @@ public:
         pluginsDir.cd("plugins");
 
         foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-#ifdef DEVEL
+#ifdef QTNOTE_DEVEL
             QDir d(pluginsDir);
             d.cd(dirName);
             if (!dbgSubdir.isEmpty()) {
@@ -392,7 +393,7 @@ void PluginManager::updateMetadata()
 PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, PluginData::Ptr &cache,
                                                     QLibrary::LoadHints loadHints)
 {
-#ifdef DEVEL
+#ifdef QTNOTE_DEVEL
     qDebug("Loading plugin: %s", qPrintable(fileName));
 #endif
     QPluginLoader loader(fileName);

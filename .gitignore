@@ -19,6 +19,7 @@ QtNote-*-setup.exe
 tmp
 debian/files
 .qmake.stash
+CMakeLists.txt.user*
 
 # vs
 GeneratedFiles

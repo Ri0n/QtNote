@@ -33,6 +33,7 @@
 #include "pluginmanager.h"
 #include "ptfstorage.h"
 #include "qtnote.h"
+#include "qtnote_config.h"
 #include "shortcutsmanager.h"
 #include "trayimpl.h"
 #include "utils.h"
@@ -69,7 +70,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     QStringList  qtLangDirs;
     QString      dlTrDir = Utils::qtnoteDataDir() + QLatin1String("/langs"); // where translaations could be downloaded
 
-#if defined(DEVEL) || defined(Q_OS_UNIX)
+#if defined(QTNOTE_DEVEL) || defined(Q_OS_UNIX)
     langDirs << TRANSLATIONSDIR << dlTrDir; // in devel mode TRANSLATIONSDIR will refer to source/langs
     qtLangDirs << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
 #else
@@ -186,7 +187,10 @@ void Main::parseAppArguments(const QStringList &args)
 
 void Main::exitQtNote() { QApplication::quit(); }
 
-void Main::appMessageReceived(const QString &msg) { parseAppArguments(msg.split(QLatin1String("!qtnote_argdelim!"))); }
+void Main::appMessageReceived([[maybe_unused]] quint32 instanceId, const QByteArray &message)
+{
+    parseAppArguments(QString::fromUtf8(message).split(QLatin1String("!qtnote_argdelim!")));
+}
 
 void Main::showAbout()
 {

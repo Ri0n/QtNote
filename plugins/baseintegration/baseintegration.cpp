@@ -5,6 +5,7 @@
 #include "baseintegration.h"
 #include "baseintegrationtray.h"
 #include "pluginhostinterface.h"
+#include "qtnote_config.h"
 #include "qxtglobalshortcut.h"
 
 namespace QtNote {

@@ -71,6 +71,7 @@ public slots:
     void notifyError(const QString &);
     void showNoteDialog(const QString &storageId, const QString &noteId = QString(),
                         const QString &contents = QString());
+    void appMessageReceived(quint32 instanceId, const QByteArray &message);
 
 private slots:
     void exitQtNote();
@@ -79,7 +80,6 @@ private slots:
     void showOptions();
     void createNewNote();
     void createNewNoteFromSelection();
-    void appMessageReceived(const QString &msg);
     void note_trashRequested();
     void note_saveRequested();
     void note_invalidated();

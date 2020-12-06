@@ -31,6 +31,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "optionsplugins.h"
 #include "pluginmanager.h"
 #include "qtnote.h"
+#include "qtnote_config.h"
 #include "shortcutedit.h"
 #include "shortcutsmanager.h"
 #include "ui_optionsdlg.h"
@@ -92,7 +93,7 @@ public:
             } else if (role == Qt::ToolTipRole) {
                 return NoteManager::instance()->storage(storageId)->tooltip();
             } else if (role == Qt::ForegroundRole) {
-                QColor color = qApp->palette().color(QPalette::Foreground); // mey be not what we expect
+                QColor color = qApp->palette().color(QPalette::WindowText); // mey be not what we expect
                 if (!NoteManager::instance()->storage(storageId)->isAccessible()) {
                     color.setAlpha(128);
                 }

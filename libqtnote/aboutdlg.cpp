@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "aboutdlg.h"
+#include "qtnote_config.h"
 #include "ui_aboutdlg.h"
 
 AboutDlg::AboutDlg(QWidget *parent) : QDialog(parent), ui(new Ui::AboutDlg)

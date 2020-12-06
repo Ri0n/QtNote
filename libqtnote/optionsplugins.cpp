@@ -177,7 +177,7 @@ public:
             }
 
             case Qt::ForegroundRole: {
-                QColor color = qApp->palette().color(QPalette::Foreground); // mey be not what we expect
+                QColor color = qApp->palette().color(QPalette::WindowText); // mey be not what we expect
                 PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
                 if (!(status == PluginManager::LS_Initialized || status == PluginManager::LS_Initialized)) {
                     color.setAlpha(128);
