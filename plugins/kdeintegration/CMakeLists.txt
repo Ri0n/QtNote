@@ -13,8 +13,8 @@ add_library(kdeintegration SHARED
     kdeintegrationtray.cpp
     kdeintegrationtray.h
     )
-target_include_directories(kdeintegration PRIVATE 3rdparty/qxt)
-target_link_libraries(kdeintegration Qt5::Core Qt5::Gui Qt5::Widgets KF5::GlobalAccel KF5::Notifications KF5::WindowSystem)
+target_link_libraries(kdeintegration Qt5::Core Qt5::Gui Qt5::Widgets KF5::GlobalAccel
+    KF5::Notifications KF5::WindowSystem)
 if (UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     target_link_libraries(kdeintegration Qt5::X11Extras)

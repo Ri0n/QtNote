@@ -43,6 +43,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notehighlighter.h"
 #include "notewidget.h"
 #include "qtnote.h"
+#include "qtnote_config.h"
 #include "settingsdlg.h"
 #include "spellcheckplugin.h"
 
