@@ -1,12 +1,7 @@
+#include <KGlobalAccel>
+#include <KNotification>
 #include <KStatusNotifierItem>
 #include <KWindowSystem>
-#ifndef USE_KDE5
-#include <KAction>
-#else
-#include <KGlobalAccel>
-#include <QAction>
-#endif
-#include <KNotification>
 #include <QAction>
 #include <QWidget>
 #include <QtPlugin>
@@ -14,6 +9,7 @@
 #include "kdeintegration.h"
 #include "kdeintegrationtray.h"
 #include "pluginhostinterface.h"
+#include "qtnote_config.h"
 
 namespace QtNote {
 
@@ -64,7 +60,6 @@ void KDEIntegration::activateWidget(QWidget *w)
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {
-#ifdef USE_KDE5
     QAction *act = _shortcuts.value(id);
     if (!act) {
         act = new QAction(action->text(), this);
@@ -72,16 +67,6 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
         _shortcuts.insert(id, act);
     }
     KGlobalAccel::setGlobalShortcut(act, key);
-#else
-    // KGlobalAccel::setGlobalShortcut()
-    KAction *act = _shortcuts.value(id);
-    if (!act) {
-        act = new KAction(action->text(), this);
-        act->setObjectName(id);
-        _shortcuts.insert(id, act);
-    }
-    act->setGlobalShortcut(KShortcut(key));
-#endif
     connect(act, SIGNAL(triggered()), action, SLOT(trigger()), Qt::UniqueConnection);
     return true;
 }
@@ -92,11 +77,7 @@ bool KDEIntegration::updateGlobalShortcut(const QString &id, const QKeySequence 
     if (!act) {
         return false;
     }
-#ifdef USE_KDE5
     KGlobalAccel::setGlobalShortcut(act, key);
-#else
-    act->setGlobalShortcut(KShortcut(key), KAction::ActiveShortcut | KAction::DefaultShortcut, KAction::NoAutoloading);
-#endif
     return true;
 }
 

@@ -47,11 +47,7 @@ signals:
 public slots:
 
 private:
-#ifdef USE_KDE5
     QHash<QString, QAction *> _shortcuts;
-#else
-    QHash<QString, KAction *> _shortcuts;
-#endif
 };
 
 } // namespace QtNote

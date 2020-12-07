@@ -33,4 +33,5 @@ macro(add_qtnote_plugin name description)
         ${plugins_SOURCE_DIR}/qtnoteplugininterface.h
         ${plugins_SOURCE_DIR}/trayimpl.h
         )
+    include_directories(${CMAKE_BINARY_DIR} ${plugins_SOURCE_DIR} ${libqtnote_SOURCE_DIR})
 endmacro()

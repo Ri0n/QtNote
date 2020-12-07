@@ -6,10 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-qt5_add_resources(RC_SRC "main.qrc")
-
 add_library(qtnote SHARED
-    ${RC_SRC}
     aboutdlg.cpp
     aboutdlg.h
     colorbutton.cpp
@@ -83,6 +80,7 @@ add_library(qtnote SHARED
     notewidget.ui
     optionsdlg.ui
     optionsplugins.ui
+    main.qrc
 )
 
 target_include_directories(qtnote PRIVATE "${CMAKE_SOURCE_DIR}/plugins" "${CMAKE_BINARY_DIR}")
