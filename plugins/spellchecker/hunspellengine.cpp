@@ -9,8 +9,11 @@
 #include <QTextCodec>
 #include <hunspell.hxx>
 
-//#include "utils.h"
 #include "pluginhostinterface.h"
+#ifdef Q_OS_WIN
+#include "qtnote_config.h"
+#include "utils.h"
+#endif
 
 namespace QtNote {
 

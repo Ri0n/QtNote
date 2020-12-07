@@ -22,8 +22,6 @@ project(qtnote VERSION ${QTNOTE_VERSION})
 
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
 
-
-
 find_package(Qt5 COMPONENTS Widgets Core Gui PrintSupport REQUIRED)
 if (Qt5Widgets_VERSION VERSION_LESS 5.10.0)
     message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")
@@ -31,9 +29,13 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
+if(UNIX AND NOT (APPLE OR HAIKU))
+    set(UNIXLIKE ON)
+endif()
+
 include(GNUInstallDirs)
 set(APP_NAME qtnote)
-set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR})
+set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR}/${APP_NAME})
 set(PLUGINSDIR ${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME})
 configure_file(qtnote_config.h.in qtnote_config.h)
 

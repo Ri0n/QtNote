@@ -1,7 +1,13 @@
 project(plugins)
 
-add_subdirectory(baseintegration)
-add_subdirectory(kdeintegration)
-add_subdirectory(spellchecker)
-add_subdirectory(ubuntu)
-add_subdirectory(tomboy)
+set(plugins_list
+    baseintegration
+    kdeintegration
+    spellchecker
+    tomboy
+    ubuntu
+)
+
+foreach(plugin ${plugins_list})
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/${plugin}")
+endforeach()

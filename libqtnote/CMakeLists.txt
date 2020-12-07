@@ -6,82 +6,22 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+file(GLOB libqtnote_SRCS "./*.cpp")
+file(GLOB libqtnote_HDRS "./*.h")
+file(GLOB libqtnote_UIS "./*.ui")
+
+if(WIN32)
+    add_definitions(-DQTNOTE_EXPORT)
+endif()
+
 add_library(qtnote SHARED
-    aboutdlg.cpp
-    aboutdlg.h
-    colorbutton.cpp
-    colorbutton.h
-    defaults.h
-    filenameprovider.cpp
-    filenameprovider.h
-    filenotedata.cpp
-    filenotedata.h
-    filestorage.cpp
-    filestorage.h
-    filestoragesettingswidget.cpp
-    filestoragesettingswidget.h
-    highlighterext.h
-    humanfilenameprovider.cpp
-    humanfilenameprovider.h
-    note.cpp
-    notedata.cpp
-    notedata.h
-    notedialog.cpp
-    notedialog.h
-    noteedit.cpp
-    noteedit.h
-    note.h
-    notehighlighter.cpp
-    notehighlighter.h
-    notemanager.cpp
-    notemanagerdlg.cpp
-    notemanagerdlg.h
-    notemanager.h
-    notemanagerview.cpp
-    notemanagerview.h
-    notesmodel.cpp
-    notesmodel.h
-    notessearchmodel.cpp
-    notessearchmodel.h
-    notestorage.cpp
-    notestorage.h
-    notewidget.cpp
-    notewidget.h
-    optionsdlg.cpp
-    optionsdlg.h
-    optionsplugins.cpp
-    optionsplugins.h
-    pluginhost.cpp
-    pluginhost.h
-    pluginhostinterface.h
-    pluginmanager.cpp
-    pluginmanager.h
-    ptfdata.cpp
-    ptfdata.h
-    ptfstorage.cpp
-    ptfstorage.h
-    qtnote.cpp
-    qtnote_export.h
-    qtnote.h
-    shortcutedit.cpp
-    shortcutedit.h
-    shortcutsmanager.cpp
-    shortcutsmanager.h
-    typeaheadfind.cpp
-    typeaheadfind.h
-    utils.cpp
-    utils.h
-    uuidfilenameprovider.cpp
-    uuidfilenameprovider.h
-    aboutdlg.ui
-    filestoragesettingswidget.ui
-    notedialog.ui
-    notemanagerdlg.ui
-    notewidget.ui
-    optionsdlg.ui
-    optionsplugins.ui
+    ${libqtnote_HDRS}
+    ${libqtnote_SRCS}
+    ${libqtnote_UIS}
     main.qrc
 )
+
+set(qtnote_lib qtnote PARENT_SCOPE)
 
 target_include_directories(qtnote PRIVATE "${CMAKE_SOURCE_DIR}/plugins" "${CMAKE_BINARY_DIR}")
 target_include_directories(qtnote PUBLIC

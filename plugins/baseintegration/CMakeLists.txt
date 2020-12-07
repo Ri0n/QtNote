@@ -15,7 +15,7 @@ endif()
 if (WIN32)
     list(APPEND QXT_SRC 3rdparty/qxt/qxtglobalshortcut_win.cpp)
 endif()
-add_library(baseintegration SHARED
+add_library(baseintegration ${LIB_TYPE}
     ${QTNOTE_COMMON_PLUGIN_SRC}
     ${QXT_SRC}
     baseintegration.h
@@ -25,7 +25,7 @@ add_library(baseintegration SHARED
     baseintegration.qrc
     )
 target_include_directories(baseintegration PRIVATE 3rdparty/qxt)
-target_link_libraries(baseintegration Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(baseintegration ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets)
 if (UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     target_link_libraries(baseintegration Qt5::X11Extras)

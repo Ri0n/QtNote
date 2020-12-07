@@ -27,7 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #ifdef Q_OS_WIN
 #include <QLibrary>
-#include <ShlObj.h>
+#include <shlobj.h>
 #endif // Q_OS_WIN
 
 #include "humanfilenameprovider.h"

@@ -8,11 +8,14 @@
 #ifdef Q_OS_WIN
 #ifndef WINVER
 #define WINVER _WIN32_WINNT_VISTA
+#ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <WinSock2.h>
-#include <WinUser.h>
-#include <Windows.h>
+#endif
+#include <winsock2.h>
+#include <winuser.h>
+
+#include <windows.h>
 #endif
 #endif
 

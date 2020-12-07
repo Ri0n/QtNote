@@ -5,7 +5,11 @@ add_qtnote_plugin(spellchecker "Check for spelling errors")
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Hunspell REQUIRED IMPORTED_TARGET hunspell)
 
-add_library(spellchecker SHARED
+if(WIN32)
+    add_definitions(-DDICTSUBDIR="/spellcheck/myspell")
+endif()
+
+add_library(spellchecker ${LIB_TYPE}
     ${QTNOTE_COMMON_PLUGIN_SRC}
     engineinterface.cpp
     engineinterface.h
@@ -18,6 +22,6 @@ add_library(spellchecker SHARED
     spellcheckplugin.cpp
     spellcheckplugin.h
     )
-target_link_libraries(spellchecker Qt5::Core Qt5::Gui Qt5::Widgets PkgConfig::Hunspell)
+target_link_libraries(spellchecker ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets PkgConfig::Hunspell)
 
 install(TARGETS spellchecker DESTINATION ${PLUGINSDIR})

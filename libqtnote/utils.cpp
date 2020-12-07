@@ -21,10 +21,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QDir>
 #include <QSettings>
-#ifdef Q_OS_WIN
-#include <QLibrary>
-#include <ShlObj.h>
-#endif // Q_OS_WIN
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #endif
@@ -43,35 +39,7 @@ QString Utils::cuttedDots(const QString &src, int length)
     return src;
 }
 
-const QString Utils::genericDataDir()
-{
-#ifdef Q_OS_WIN
-    // Force Roaming
-    wchar_t path[MAX_PATH];
-    typedef HRESULT(WINAPI * SHGetFolderPathWFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
-    SHGetFolderPathWFunc SHGetFolderPathW
-        = (SHGetFolderPathWFunc)QLibrary::resolve(QLatin1String("Shell32"), "SHGetFolderPathW");
-    if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == S_OK) {
-        return QDir::fromNativeSeparators(QString::fromWCharArray(path));
-    } else {
-        return QString();
-    }
-#else
-#if QT_VERSION >= 0x050000
-    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-#else
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
-    QString dataDir = qgetenv("XDG_DATA_HOME");
-    if (dataDir.isEmpty()) {
-        dataDir = QDir::homePath() + "/.local/share";
-    }
-    return dataDir;
-#else
-    return QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-#endif
-#endif
-#endif
-}
+const QString Utils::genericDataDir() { return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation); }
 
 const QString &Utils::qtnoteDataDir()
 {
