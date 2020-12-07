@@ -11,3 +11,4 @@ target_link_libraries(qtnoteexe qtnote SingleApplication::SingleApplication)
 
 install(TARGETS qtnoteexe DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})
 install(FILES ${CMAKE_SOURCE_DIR}/qtnote.desktop DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/applications)
+install(FILES ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps)
