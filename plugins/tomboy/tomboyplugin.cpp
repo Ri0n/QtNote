@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "pluginhostinterface.h"
 #include "qtnote.h"
+#include "qtnote_config.h"
 #include "tomboyplugin.h"
 #include "tomboystorage.h"
 

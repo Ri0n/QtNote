@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QWidget>
 #include <QtPlugin>
 
+#include "qtnote_config.h"
 #include "ubuntu.h"
 #include "ubuntutray.h"
 #include "x11util.h"
