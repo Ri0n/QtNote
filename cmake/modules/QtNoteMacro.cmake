@@ -23,4 +23,12 @@ macro(add_qtnote_plugin name description)
     cmake_minimum_required(VERSION 3.10.0)
     project(qtnote_plugin_${name} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
     option(QTNOTE_ENABLE_${name} "Enable QtNote plugin: ${description}")
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(QTNOTE_COMMON_PLUGIN_SRC
+        ${plugins_SOURCE_DIR}/deintegrationinterface.h
+        ${plugins_SOURCE_DIR}/qtnoteplugininterface.h
+        ${plugins_SOURCE_DIR}/trayimpl.h
+        )
 endmacro()
