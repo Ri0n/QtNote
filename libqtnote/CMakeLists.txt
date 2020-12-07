@@ -85,7 +85,7 @@ add_library(qtnote SHARED
     optionsplugins.ui
 )
 
-target_include_directories(qtnote PRIVATE "${plugins_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+target_include_directories(qtnote PRIVATE "${CMAKE_SOURCE_DIR}/plugins" "${CMAKE_BINARY_DIR}")
 target_include_directories(qtnote PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
