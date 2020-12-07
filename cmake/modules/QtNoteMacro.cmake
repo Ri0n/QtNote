@@ -24,9 +24,9 @@ endif()
 macro(add_qtnote_plugin name description)
     cmake_minimum_required(VERSION 3.10.0)
     project(qtnote_plugin_${name} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
-    option(QTNOTE_ENABLE_${name} "Enable QtNote plugin: ${description}" ON)
+    option(QTNOTE_PLUGIN_ENABLE_${name} "Enable QtNote plugin: ${description}" ON)
 
-    if (NOT QTNOTE_ENABLE_${name})
+    if (NOT QTNOTE_PLUGIN_ENABLE_${name})
         return()
     endif()
 
