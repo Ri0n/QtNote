@@ -34,6 +34,7 @@ set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 set(APP_NAME qtnote)
 set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR})
+set(PLUGINSDIR ${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME})
 configure_file(qtnote_config.h.in qtnote_config.h)
 
 if(QTNOTE_DEVEL)

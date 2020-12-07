@@ -89,3 +89,5 @@ target_include_directories(qtnote PUBLIC
     $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
     )
 target_link_libraries(qtnote PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport)
+
+install(TARGETS qtnote DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})

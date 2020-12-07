@@ -14,3 +14,5 @@ add_library(tomboy SHARED
     )
 find_package(Qt5 COMPONENTS Xml REQUIRED)
 target_link_libraries(tomboy Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Xml)
+
+install(TARGETS tomboy DESTINATION ${PLUGINSDIR})

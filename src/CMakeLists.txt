@@ -8,3 +8,5 @@ main.cpp
 set_target_properties(qtnoteexe PROPERTIES OUTPUT_NAME qtnote)
 
 target_link_libraries(qtnoteexe qtnote SingleApplication::SingleApplication)
+
+install(TARGETS qtnoteexe DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})

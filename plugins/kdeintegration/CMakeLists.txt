@@ -1,9 +1,10 @@
 include(QtNoteMacro)
 
-find_package(KF5GlobalAccel CONFIG)
-find_package(KF5Notifications CONFIG)
-find_package(KF5WindowSystem CONFIG)
 add_qtnote_plugin(kdeintegration "Integration with KDE Plasma")
+
+find_package(KF5GlobalAccel CONFIG REQUIRED)
+find_package(KF5Notifications CONFIG REQUIRED)
+find_package(KF5WindowSystem CONFIG REQUIRED)
 
 add_library(kdeintegration SHARED
     ${QTNOTE_COMMON_PLUGIN_SRC}
@@ -19,3 +20,5 @@ if (UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     target_link_libraries(kdeintegration Qt5::X11Extras)
 endif()
+
+install(TARGETS kdeintegration DESTINATION ${PLUGINSDIR})

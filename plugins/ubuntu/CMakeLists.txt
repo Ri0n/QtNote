@@ -18,3 +18,5 @@ if (UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     target_link_libraries(ubuntu Qt5::X11Extras)
 endif()
+
+install(TARGETS ubuntu DESTINATION ${PLUGINSDIR})

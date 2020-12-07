@@ -19,3 +19,5 @@ add_library(spellchecker SHARED
     spellcheckplugin.h
     )
 target_link_libraries(spellchecker Qt5::Core Qt5::Gui Qt5::Widgets PkgConfig::Hunspell)
+
+install(TARGETS spellchecker DESTINATION ${PLUGINSDIR})
