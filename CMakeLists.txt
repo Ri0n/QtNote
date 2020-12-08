@@ -43,6 +43,10 @@ if(QTNOTE_DEVEL)
     add_definitions(-DQTNOTE_DEVEL)
 endif()
 
+if(WIN32)
+    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
+endif()
+
 add_subdirectory(3rdparty)
 add_subdirectory(libqtnote)
 add_subdirectory(src)

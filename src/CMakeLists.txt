@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.10.0)
 include(QtNoteMacro)
 project(qtnoteexe VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
+if(WIN32)
+    set(WINRESFILE "win/qtnote.rc")
+endif()
+
 add_executable(${PROJECT_NAME}
     WIN32
     MACOSX_BUNDLE
     main.cpp
+    ${WINRESFILE}
 )
 #add_dependencies(${PROJECT_NAME} build_translations)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME qtnote)

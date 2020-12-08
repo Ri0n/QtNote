@@ -24,7 +24,11 @@ foreach(_LANG ${qtnote_TRS})
     )
 endforeach()
 
+if(WIN32)
+    set_source_files_properties(${qtnote_TRS} PROPERTIES OUTPUT_LOCATION "${EXECUTABLE_OUTPUT_PATH}/langs")
+endif()
 qt5_add_translation(qtnote_QM ${qtnote_TRS})
+
 add_custom_target(build_translations ALL DEPENDS ${qtnote_QM})
 
 install(FILES ${qtnote_QM} DESTINATION ${TRANSLATIONSDIR})

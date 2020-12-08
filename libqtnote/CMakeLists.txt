@@ -28,6 +28,12 @@ target_include_directories(qtnote PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
     )
+if(WIN32)
+set_target_properties(qtnote
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+)
+endif()
 target_link_libraries(qtnote PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport)
 
 install(TARGETS qtnote DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
