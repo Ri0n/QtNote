@@ -91,7 +91,3 @@ void KDEIntegration::setGlobalShortcutEnabled(const QString &id, bool enabled)
 }
 
 } // namespace QtNote
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(kdeintegration, QtNote::KDEIntegration)
-#endif

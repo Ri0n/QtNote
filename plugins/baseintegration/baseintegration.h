@@ -22,9 +22,7 @@ class BaseIntegration : public QObject,
                         public NotificationInterface,
                         public GlobalShortcutsInterface {
     Q_OBJECT
-#if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.BaseIntegration")
-#endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::DEIntegrationInterface QtNote::TrayInterface
                      QtNote::GlobalShortcutsInterface QtNote::NotificationInterface)
 public:

@@ -32,9 +32,7 @@ class PluginHostInterface;
 
 class TomboyPlugin : public QObject, public PluginInterface, public RegularPluginInterface {
     Q_OBJECT
-#if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.tomboy")
-#endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface)
 
     Main *               qtnote;

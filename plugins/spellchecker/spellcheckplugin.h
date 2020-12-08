@@ -42,9 +42,7 @@ class SpellCheckPlugin : public QObject,
                          public PluginOptionsInterface,
                          public NoteContextMenuHandler {
     Q_OBJECT
-#if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
-#endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface QtNote::PluginOptionsTooltipInterface
                      QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
 public:

@@ -19,12 +19,10 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QColor>
 #include <QDir>
 #include <QSettings>
-#if QT_VERSION >= 0x050000
 #include <QStandardPaths>
-#endif
-#include <QColor>
 
 #include "utils.h"
 

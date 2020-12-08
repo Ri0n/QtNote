@@ -1,6 +1,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMessageBox>
@@ -11,9 +12,6 @@
 #include <QStyle>
 #include <QTextFragment>
 #include <QToolButton>
-#if QT_VERSION >= 0x050400
-#include <QGuiApplication>
-#endif
 
 #include "defaults.h"
 #include "notehighlighter.h"
@@ -189,9 +187,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
     connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
-#if QT_VERSION >= 0x050400
     connect(qGuiApp, &QGuiApplication::paletteChanged, this, [this](const QPalette &) { updateFirstLineColor(); });
-#endif
 }
 
 NoteWidget::~NoteWidget()
@@ -362,14 +358,9 @@ void NoteWidget::onSaveClicked()
         if (_features & RichText) {
             filters << allFormats[RichText];
         }
-        _extFileName
-            = QFileDialog::getSaveFileName(this, tr("Save Note As"),
-#if QT_VERSION < 0x050000
-                                           QDesktopServices::storageLocation(QDesktopServices::DesktopLocation),
-#else
-                                           QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
-#endif
-                                           filters.join(";;"), &_extSelecteFilter);
+        _extFileName = QFileDialog::getSaveFileName(this, tr("Save Note As"),
+                                                    QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+                                                    filters.join(";;"), &_extSelecteFilter);
     }
     if (!_extFileName.isEmpty()) {
         QFile f(_extFileName);

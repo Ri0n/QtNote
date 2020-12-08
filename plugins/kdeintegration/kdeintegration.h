@@ -22,9 +22,7 @@ class KDEIntegration : public QObject,
                        public DEIntegrationInterface,
                        public GlobalShortcutsInterface {
     Q_OBJECT
-#if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.KdeTrayIcon")
-#endif
     Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface
                      QtNote::GlobalShortcutsInterface QtNote::NotificationInterface)
 public:

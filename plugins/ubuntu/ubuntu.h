@@ -19,9 +19,7 @@ class UbuntuPlugin : public QObject,
                      DEIntegrationInterface,
                      public NotificationInterface {
     Q_OBJECT
-#if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Ubuntu")
-#endif
     Q_INTERFACES(
         QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface)
 public:

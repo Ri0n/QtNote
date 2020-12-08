@@ -263,15 +263,9 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
     ui->tblPlugins->setModel(pluginsModel);
     ButtonDelegate *btnsDelegate = new ButtonDelegate();
     ui->tblPlugins->setItemDelegateForColumn(2, btnsDelegate);
-#if QT_VERSION >= 0x050000
     ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->tblPlugins->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->tblPlugins->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-#else
-    ui->tblPlugins->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
-    ui->tblPlugins->horizontalHeader()->setResizeMode(1, QHeaderView::ResizeToContents);
-    ui->tblPlugins->horizontalHeader()->setResizeMode(2, QHeaderView::ResizeToContents);
-#endif
     connect(ui->tblPlugins, SIGNAL(clicked(QModelIndex)), SLOT(pluginClicked(QModelIndex)));
 }
 

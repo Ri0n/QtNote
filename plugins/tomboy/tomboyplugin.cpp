@@ -73,7 +73,3 @@ bool TomboyPlugin::init(Main *qtnote)
 }
 
 } // namespace QtNote
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(TomboyPlugin, QtNote::TomboyPlugin)
-#endif

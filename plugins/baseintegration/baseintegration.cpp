@@ -85,7 +85,3 @@ void BaseIntegration::notifyError(const QString &message)
 }
 
 } // namespace QtNote
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(kdeintegration, QtNote::BaseIntegration)
-#endif

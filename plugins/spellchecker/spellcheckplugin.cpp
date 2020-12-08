@@ -26,15 +26,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QLocale>
 #include <QMenu>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QTextDocumentFragment>
 #include <QWidget>
 #include <QtPlugin>
-#if QT_VERSION < 0x050000
-#include <QRegExp>
-#else
-#include <QRegularExpression>
-#endif
 #include <memory>
 
 #include "highlighterext.h"
@@ -55,20 +51,12 @@ static std::shared_ptr<HighlighterExtension> hlExt;
 
 class SpellCheckHighlighterExtension : public HighlighterExtension {
     SpellEngineInterface *sei;
-#if QT_VERSION < 0x050000
-    QRegExp expression;
-#else
-    QRegularExpression expression;
-#endif
+    QRegularExpression    expression;
 
 public:
     SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei)
     {
-#if QT_VERSION < 0x050000
-        expression = QRegExp("\\b\\w{2,}\\b");
-#else
         expression = QRegularExpression("[[:alpha:]]{2,}", QRegularExpression::UseUnicodePropertiesOption);
-#endif
     }
 
     void highlight(NoteHighlighter *nh, const QString &text)
@@ -76,17 +64,6 @@ public:
         QTextCharFormat myClassFormat;
         myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
 
-#if QT_VERSION < 0x050000
-        int index = text.indexOf(expression);
-        while (index >= 0) {
-            int     length = expression.matchedLength();
-            QString word   = expression.capturedTexts()[0];
-            if (word[0].isLetter() && sei->spell(word) == 0) { // ignore words starting with digit.
-                nh->addFormat(index, length, myClassFormat);
-            }
-            index = text.indexOf(expression, index + length);
-        }
-#else
         QRegularExpressionMatchIterator i = expression.globalMatch(text);
         while (i.hasNext()) {
             QRegularExpressionMatch match = i.next();
@@ -95,7 +72,6 @@ public:
                 nh->addFormat(match.capturedStart(), match.capturedLength(), myClassFormat);
             }
         }
-#endif
     }
 };
 
@@ -294,7 +270,3 @@ void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 } // namespace QtNote
 
 #include "spellcheckplugin.moc"
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(spellcheckplugin, QtNote::SpellCheckPlugin)
-#endif
