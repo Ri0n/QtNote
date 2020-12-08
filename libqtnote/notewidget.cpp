@@ -359,7 +359,7 @@ void NoteWidget::onSaveClicked()
 
     if (_extFileName.isEmpty() || !QFile::exists(_extFileName)) {
         QStringList filters = QStringList() << allFormats[Text];
-        if (_features && RichText) {
+        if (_features & RichText) {
             filters << allFormats[RichText];
         }
         _extFileName
