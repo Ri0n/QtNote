@@ -3,6 +3,7 @@ project(plugins)
 set(plugins_list
     baseintegration
     kdeintegration
+    macosx
     spellchecker
     tomboy
     ubuntu
