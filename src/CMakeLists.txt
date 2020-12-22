@@ -6,11 +6,17 @@ if(WIN32)
     set(WINRESFILE "win/qtnote.rc")
 endif()
 
+set(MACOSX_BUNDLE_ICON_FILE qtnote)
+set(APP_ICON_MACOSX ${CMAKE_CURRENT_SOURCE_DIR}/mac/qtnote.icns)
+set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES
+       MACOSX_PACKAGE_LOCATION "Resources")
+
 add_executable(${PROJECT_NAME}
     WIN32
     MACOSX_BUNDLE
     main.cpp
     ${WINRESFILE}
+    ${APP_ICON_MACOSX}
 )
 #add_dependencies(${PROJECT_NAME} build_translations)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME qtnote)
