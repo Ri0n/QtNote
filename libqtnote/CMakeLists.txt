@@ -35,5 +35,8 @@ set_target_properties(qtnote
 )
 endif()
 target_link_libraries(qtnote PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport)
+if (APPLE)
+    target_link_libraries(qtnote PUBLIC "-framework CoreFoundation" "-framework Carbon")
+endif()
 
 install(TARGETS qtnote DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
