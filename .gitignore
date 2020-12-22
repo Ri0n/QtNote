@@ -20,6 +20,7 @@ tmp
 debian/files
 .qmake.stash
 CMakeLists.txt.user*
+.DS_Store
 
 # vs
 GeneratedFiles
