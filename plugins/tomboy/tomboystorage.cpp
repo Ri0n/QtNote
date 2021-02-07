@@ -44,10 +44,10 @@ TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent) { fileExt = 
 bool TomboyStorage::init()
 {
     auto path = QSettings().value("storage.tomboy.path").toString();
-    notesDir.setPath(path.isEmpty() ? findStorageDir() : path);
-    if (!notesDir.isReadable() && !path.isEmpty()) {
-        notesDir.setPath(findStorageDir()); // try default
-    }
+    path      = path.isEmpty() ? findStorageDir() : path;
+    if (path.isEmpty())
+        return false;
+    notesDir.setPath(path);
     return isAccessible();
 }
 
