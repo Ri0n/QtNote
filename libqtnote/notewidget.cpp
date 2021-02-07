@@ -56,7 +56,7 @@ public:
         auto                                  ew = noteWidget->editWidget();
         std::weak_ptr<CurrentLinkHighlighter> weak_self
             = std::dynamic_pointer_cast<CurrentLinkHighlighter>(shared_from_this());
-        QObject::connect(ew, &NoteEdit::linkHovered, [this, weak_self]() {
+        ew->connect(ew, &NoteEdit::linkHovered, ew, [this, weak_self]() {
             auto self = weak_self.lock();
             if (!self)
                 return;
@@ -64,7 +64,7 @@ public:
             rehighlightLine(hlp.block, hlp.pos, hlp.length);
         });
 
-        QObject::connect(ew, &NoteEdit::linkUnhovered, [this, weak_self]() {
+        ew->connect(ew, &NoteEdit::linkUnhovered, ew, [this, weak_self]() {
             auto self = weak_self.lock();
             if (self)
                 rehighlightLine();

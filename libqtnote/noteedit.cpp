@@ -116,7 +116,8 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
     auto blockText  = cur.block().text();
     int  startPos, endPos;
     startPos = endPos = cur.positionInBlock();
-    if (!blockText.length() || blockText[startPos].isSpace() || cursorRect(cur).right() + 5 < pos.x()) {
+    if (!blockText.length() || startPos >= blockText.size() || blockText[startPos].isSpace()
+        || cursorRect(cur).right() + 5 < pos.x()) {
         // +5 just to make it smooth in other case we will get kind of glitches while hovering a link
         return QString();
     }
