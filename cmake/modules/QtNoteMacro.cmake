@@ -6,7 +6,7 @@ if ("${result}" STREQUAL "")
             execute_process(COMMAND ${GIT_EXECUTABLE} -C "${CMAKE_SOURCE_DIR}" describe --tags --always
                             OUTPUT_VARIABLE GIT_REPO_VERSION)
             string(STRIP "${GIT_REPO_VERSION}" GIT_REPO_VERSION)
-            string(REGEX REPLACE "\.0-" "." GIT_REPO_VERSION ${GIT_REPO_VERSION})
+            string(REGEX REPLACE "\\.0-" "." GIT_REPO_VERSION ${GIT_REPO_VERSION})
             string(REGEX REPLACE "-.*" "" GIT_REPO_VERSION ${GIT_REPO_VERSION})
             set(QTNOTE_VERSION ${GIT_REPO_VERSION} CACHE STRING "QtNote version string")
         endif()
