@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "qtnote_export.h"
 
 class QColor;
+class QDir;
 
 class QTNOTE_EXPORT Utils {
 public:
@@ -39,6 +40,19 @@ public:
 
     static QColor perceptiveColor(const QColor &against);
     static QColor mergeColors(const QColor &a, const QColor &b);
+
+    /**
+     * @brief fileNameForText converts text to an unique filename with the given extension.
+     *     If base part of the converted filename matches with `sameBaseName` or the file doesn't exists in the given
+     *     directory then the search for unique stops and the filename returned.
+     * @param dir           - directory to have unique filename in.
+     * @param text          - text to convert to a filename
+     * @param fileExt       - extension for the filename
+     * @param sameBaseName  - allowed name to ingore uniqueness (usually the original file we are going to rename)
+     *                        if a new unique base is proposed it will be written back to sameBaseName
+     * @return absolute path to the file
+     */
+    static QString fileNameForText(const QDir &dir, const QString &text, const QString &fileExt, QString &sameBaseName);
 };
 
 #endif // UTILS_H

@@ -23,34 +23,35 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDesktopServices>
 #include <QDir>
 #include <QSettings>
+#include <QUuid>
 
 #include "tomboydata.h"
 #include "tomboystorage.h"
-#include "uuidfilenameprovider.h"
 
 namespace QtNote {
 
-TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent)
+static QString newId()
 {
-    fileExt = "note";
+    QString uid = QUuid::createUuid().toString().toLower();
+    if (uid[0] == '{') {
+        return uid.mid(1, uid.length() - 2);
+    }
+    return uid;
 }
+
+TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent) { fileExt = "note"; }
 
 bool TomboyStorage::init()
 {
-    QSettings s;
-    notesDir = s.value("storage.tomboy.path").toString();
-    if (notesDir.isEmpty() || !QDir(notesDir).isReadable()) {
-        notesDir = findStorageDir();
-    }
-    if (!nameProvider) {
-        nameProvider = new UuidFileNameProvider(notesDir, fileExt);
-    } else {
-        nameProvider->setPath(notesDir);
+    auto path = QSettings().value("storage.tomboy.path").toString();
+    notesDir.setPath(path.isEmpty() ? findStorageDir() : path);
+    if (!notesDir.isReadable() && !path.isEmpty()) {
+        notesDir.setPath(findStorageDir()); // try default
     }
     return isAccessible();
 }
 
-bool TomboyStorage::isAccessible() const { return !notesDir.isEmpty() && QDir(notesDir).isReadable(); }
+bool TomboyStorage::isAccessible() const { return notesDir.isReadable(); }
 
 const QString TomboyStorage::systemName() const { return "tomboy"; }
 
@@ -63,10 +64,10 @@ QIcon TomboyStorage::noteIcon() const { return QIcon(":/icons/tomboynote"); }
 QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
 {
     QList<NoteListItem> ret;
-    foreach (QFileInfo fi, files) {
+    foreach (const QFileInfo &fi, files) {
         TomboyData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(nameProvider->uidForFileName(fi.fileName()), systemName(), note.title(), note.modifyTime());
+            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.modifyTime());
             ret.append(li);
         }
     }
@@ -91,7 +92,17 @@ Note TomboyStorage::note(const QString &id)
 QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
 {
     TomboyData note;
-    return saveNoteToFile(note, text, noteId);
+    QString    newNoteId = noteId.isEmpty() ? newId() : noteId;
+
+    note.setText(text);
+    auto baseName = QString(QLatin1String("%1.%2")).arg(newNoteId, fileExt);
+    if (!note.saveToFile(notesDir.absoluteFilePath(baseName))) {
+        handleFSError();
+        return QString();
+    }
+    NoteListItem item(newNoteId, systemName(), note.title(), note.modifyTime());
+    putToCache(item, noteId);
+    return newNoteId;
 }
 
 bool TomboyStorage::isRichTextAllowed() const { return true; }

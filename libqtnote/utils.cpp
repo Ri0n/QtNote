@@ -67,3 +67,31 @@ QColor Utils::mergeColors(const QColor &a, const QColor &b)
                             (a.blueF() * alphaA) + (b.blueF() * alphaB * (1 - alphaA)),
                             alphaA + (alphaB * (1 - alphaA)));
 }
+
+QString Utils::fileNameForText(const QDir &dir, const QString &text, const QString &fileExt, QString &sameBaseName)
+{
+    QString pfix = QLatin1Char('.') + fileExt;
+    QString fileName;
+    QString title = text.trimmed().split('\n')[0];
+    if (title.isEmpty()) {
+        return QString();
+    }
+    static QRegExp r("[<>:\"/\\\\|?*]");
+    title = title.replace(r, QChar('_')).left(255 - pfix.size()); // 255 is a regular max limit for a file name
+
+    if (title != sameBaseName) { // filename shoud be changed or it's new note
+        QString suf;
+        int     ind = 0;
+
+        QString proposedId = title;
+        while (dir.exists((fileName = dir.absoluteFilePath(QString("%1%2").arg(proposedId, pfix))))) {
+            ind++;
+            suf        = QString::number(ind);
+            proposedId = title.left(255 - suf.size() - pfix.size()) + suf;
+        }
+        sameBaseName = proposedId;
+    } else {
+        fileName = dir.absoluteFilePath(QString("%1.%3").arg(title, fileExt));
+    }
+    return fileName;
+}

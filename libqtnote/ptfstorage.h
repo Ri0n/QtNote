@@ -29,7 +29,8 @@ namespace QtNote {
 class PTFStorage : public FileStorage {
     Q_OBJECT
     Q_DISABLE_COPY(PTFStorage)
-    void initNotesDir();
+
+    QIcon icon;
 
 public:
     PTFStorage(QObject *parent = 0);

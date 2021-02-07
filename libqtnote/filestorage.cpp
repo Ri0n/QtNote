@@ -25,14 +25,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 #include <QUuid>
 
-#include "filenameprovider.h"
 #include "filenotedata.h"
 #include "filestorage.h"
 #include "filestoragesettingswidget.h"
 
 namespace QtNote {
 
-FileStorage::FileStorage(QObject *parent) : NoteStorage(parent), _cacheValid(false), nameProvider(0) { }
+FileStorage::FileStorage(QObject *parent) : NoteStorage(parent), _cacheValid(false) { }
 
 QString FileStorage::createNote(const QString &text) { return saveNote(QString(), text); }
 
@@ -40,37 +39,12 @@ void FileStorage::deleteNote(const QString &noteId)
 {
     auto r = cache.find(noteId);
     if (r != cache.end()) {
-        if (QFile::remove(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(fileExt)))) {
+        if (QFile::remove(notesDir.absoluteFilePath(QString("%1.%2").arg(noteId).arg(fileExt)))) {
             NoteListItem item = r.value();
             cache.remove(r.key());
             emit noteRemoved(item);
         }
     }
-}
-
-QString FileStorage::saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId)
-{
-    QString newNoteId = noteId;
-    QString fileName;
-
-    note.setText(text);
-    if (noteId.isEmpty()) {
-        fileName = nameProvider->newName(note, newNoteId);
-    } else {
-        fileName = nameProvider->updateName(note, newNoteId);
-    }
-
-    if (note.saveToFile(fileName)) {
-        if (!noteId.isEmpty() && noteId != newNoteId) {
-            QFile(nameProvider->fileNameForUid(noteId)).remove();
-        }
-
-        NoteListItem item(newNoteId, systemName(), note.title(), note.modifyTime());
-        putToCache(item, noteId); // noteId is old one. new one is in item.id
-        return newNoteId;
-    }
-    handleFSError();
-    return QString();
 }
 
 void FileStorage::handleFSError()
@@ -115,7 +89,7 @@ QWidget *FileStorage::settingsWidget()
     return w;
 }
 
-QString FileStorage::tooltip() { return QString("<b>%1:</b> %2").arg(tr("Storage path"), notesDir); }
+QString FileStorage::tooltip() { return QString("<b>%1:</b> %2").arg(tr("Storage path"), notesDir.absolutePath()); }
 
 void FileStorage::settingsApplied()
 {
@@ -128,8 +102,10 @@ void FileStorage::settingsApplied()
     if (!fi.isDir() || !fi.isWritable()) {
         return;
     }
-    notesDir = fi.absoluteFilePath();
-    QSettings().setValue(QString("storage.%1.path").arg(systemName()), notesDir == findStorageDir() ? "" : notesDir);
+    auto path = fi.absoluteFilePath();
+    notesDir.setPath(path);
+    QSettings().setValue(QString("storage.%1.path").arg(systemName()),
+                         notesDir.absolutePath() == findStorageDir() ? QString() : path);
     cache.clear();
     _cacheValid = false;
     init();

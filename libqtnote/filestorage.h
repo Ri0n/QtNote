@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef FILESTORAGE_H
 #define FILESTORAGE_H
 
+#include <QDir>
 #include <QFileInfoList>
 #include <QHash>
 
@@ -31,7 +32,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 class FileNoteData;
-class FileNameProvider;
 
 class QTNOTE_EXPORT FileStorage : public NoteStorage {
     Q_OBJECT
@@ -47,9 +47,8 @@ public:
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
 
 protected:
-    QString saveNoteToFile(FileNoteData &note, const QString &text, const QString &noteId = QString());
-    void    handleFSError();
-    void    ensureChachePopulated();
+    void handleFSError();
+    void ensureChachePopulated();
 
 protected slots:
     void settingsApplied();
@@ -58,8 +57,7 @@ protected:
     QString                      fileExt;
     QHash<QString, NoteListItem> cache;
     bool                         _cacheValid; /* last limit passed to noteList() */
-    QString                      notesDir;
-    FileNameProvider *           nameProvider;
+    QDir                         notesDir;
 };
 
 }

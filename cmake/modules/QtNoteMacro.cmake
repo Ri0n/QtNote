@@ -22,7 +22,6 @@ if ("${result}" STREQUAL "")
 endif()
 
 function(get_default_plugin_enabled out_var platforms)
-    message(STATUS "platforms: ${platforms}")
     if(APPLE AND macosx IN_LIST platforms)
         set(${out_var} ON PARENT_SCOPE)
     elseif(UNIXLIKE AND unix IN_LIST platforms)
