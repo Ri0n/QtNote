@@ -77,7 +77,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
 Note TomboyStorage::note(const QString &id)
 {
     if (!id.isEmpty()) {
-        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(id, fileExt));
+        QString   fileName = notesDir.absoluteFilePath(QString("%1.%2").arg(id, fileExt));
         QFileInfo fi(fileName);
         if (fi.isWritable()) {
             TomboyData *noteData = new TomboyData;

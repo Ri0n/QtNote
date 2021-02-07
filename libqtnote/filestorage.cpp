@@ -38,12 +38,10 @@ QString FileStorage::createNote(const QString &text) { return saveNote(QString()
 void FileStorage::deleteNote(const QString &noteId)
 {
     auto r = cache.find(noteId);
-    if (r != cache.end()) {
-        if (QFile::remove(notesDir.absoluteFilePath(QString("%1.%2").arg(noteId).arg(fileExt)))) {
-            NoteListItem item = r.value();
-            cache.remove(r.key());
-            emit noteRemoved(item);
-        }
+    if (r != cache.end() && notesDir.remove(QString("%1.%2").arg(noteId, fileExt))) {
+        NoteListItem item = r.value();
+        cache.erase(r);
+        emit noteRemoved(item);
     }
 }
 
@@ -117,9 +115,8 @@ void FileStorage::ensureChachePopulated()
     if (_cacheValid) {
         return;
     }
-    QDir d(notesDir);
-    if (d.isReadable()) {
-        QFileInfoList files = d.entryInfoList(QStringList(QString("*.") + fileExt), QDir::Files, QDir::Time);
+    if (notesDir.isReadable()) {
+        QFileInfoList files = notesDir.entryInfoList(QStringList(QString("*.") + fileExt), QDir::Files, QDir::Time);
         auto          ret   = noteListFromInfoList(files);
         cache.clear();
         for (auto &n : ret) {
