@@ -25,15 +25,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-PTFData::PTFData() : FileNoteData() { }
-
 bool PTFData::fromFile(QString fn)
 {
     QFile file(fn);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
     setText(QString::fromUtf8(file.readAll()));
-    setFile(fn);
+    sFileName = fn;
     file.close();
     QFileInfo fi(fn);
     dtCreate     = fi.birthTime();
@@ -50,10 +48,14 @@ bool PTFData::saveToFile(const QString &fileName)
         return false;
     }
     file.write(sText.toUtf8());
-    setFile(fileName);
+    sFileName = fileName;
     file.close();
     dtLastChange = QFileInfo(file).lastModified();
     return true;
 }
+
+void PTFData::remove() { QFile(sFileName).remove(); }
+
+qint64 PTFData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
 
 } // namespace QtNote

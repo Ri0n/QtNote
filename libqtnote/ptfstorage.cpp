@@ -72,7 +72,7 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
     foreach (const QFileInfo &fi, files) {
         PTFData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.modifyTime());
+            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange);
             ret.append(li);
         }
     }
@@ -106,7 +106,7 @@ QString PTFStorage::saveNote(const QString &noteId, const QString &text)
     if (!noteId.isEmpty() && noteId != newNoteId) {
         notesDir.remove(noteId + '.' + fileExt);
     }
-    NoteListItem item(newNoteId, systemName(), note.title(), note.modifyTime());
+    NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange);
     putToCache(item, noteId); // noteId is old one. new one is in item.id
     return newNoteId;
 }

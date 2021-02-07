@@ -25,7 +25,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 #include <QUuid>
 
-#include "filenotedata.h"
 #include "filestorage.h"
 #include "filestoragesettingswidget.h"
 
@@ -115,7 +114,7 @@ void FileStorage::ensureChachePopulated()
     if (_cacheValid) {
         return;
     }
-    if (notesDir.isReadable()) {
+    if (isAccessible()) {
         QFileInfoList files = notesDir.entryInfoList(QStringList(QString("*.") + fileExt), QDir::Files, QDir::Time);
         auto          ret   = noteListFromInfoList(files);
         cache.clear();

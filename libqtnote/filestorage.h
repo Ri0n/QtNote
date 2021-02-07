@@ -31,20 +31,20 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-class FileNoteData;
-
 class QTNOTE_EXPORT FileStorage : public NoteStorage {
     Q_OBJECT
 public:
     FileStorage(QObject *parent);
-    QString                     createNote(const QString &text);
-    void                        deleteNote(const QString &noteId);
-    virtual void                putToCache(const NoteListItem &note, const QString &oldNoteId);
-    virtual QString             findStorageDir() const = 0;
-    QWidget *                   settingsWidget();
-    QString                     tooltip();
-    QList<NoteListItem>         noteList(int limit = 0);
+    QString             createNote(const QString &text) override;
+    void                deleteNote(const QString &noteId) override;
+    QWidget *           settingsWidget() override;
+    QString             tooltip() override;
+    QList<NoteListItem> noteList(int limit = 0) override;
+
+    virtual QString             findStorageDir() const                      = 0;
     virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
+
+    void putToCache(const NoteListItem &note, const QString &oldNoteId);
 
 protected:
     void handleFSError();

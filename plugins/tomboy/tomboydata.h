@@ -22,23 +22,31 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef TOMBOYDATA_H
 #define TOMBOYDATA_H
 
-#include "filenotedata.h"
+#include "notedata.h"
+
 #include <QDateTime>
 #include <QDomDocument>
 #include <QFile>
 #include <QPointer>
 
-class TomboyData : public QtNote::FileNoteData {
+class TomboyData : public QtNote::NoteData {
 public:
-    TomboyData();
-    bool    fromFile(QString);
-    bool    saveToFile(const QString &fileName);
+    bool fromFile(QString);
+
+    bool   saveToFile(const QString &fileName);
+    void   remove() override;
+    qint64 lastChangeElapsed() const override;
+
     QString nodeText(QDomNode node);
 
+    QString   sFileName;
+    QDateTime dtLastChange;
+
 protected:
-    int iCursor;
-    int iWidth;
-    int iHeight;
+    QDateTime dtCreate;
+    int       iCursor;
+    int       iWidth;
+    int       iHeight;
 };
 
 #endif // TOMBOYDATA_H

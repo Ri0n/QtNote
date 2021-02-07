@@ -23,8 +23,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QIcon>
 #include <QtDebug>
 
-TomboyData::TomboyData() : FileNoteData() { }
-
 bool TomboyData::fromFile(QString fn)
 {
     QDomDocument dom("TomboyData");
@@ -35,7 +33,7 @@ bool TomboyData::fromFile(QString fn)
         file.close();
         return false;
     }
-    setFile(fn);
+    sFileName = fn;
     file.close();
 
     QDomElement root = dom.documentElement();
@@ -44,7 +42,7 @@ bool TomboyData::fromFile(QString fn)
     dtLastChange     = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
     // dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
     dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
-    iCursor  = nodeText(root.namedItem("create-date")).toInt();
+    iCursor  = nodeText(root.namedItem("cursor-position")).toInt();
     iWidth   = nodeText(root.namedItem("width")).toInt();
     iHeight  = nodeText(root.namedItem("height")).toInt();
 
@@ -74,7 +72,7 @@ bool TomboyData::saveToFile(const QString &fileName)
     node2.appendChild(text);
     node.appendChild(node2);
 
-    setFile(fileName);
+    sFileName = fileName;
     ;
     QFile file(sFileName);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -85,6 +83,10 @@ bool TomboyData::saveToFile(const QString &fileName)
     file.close();
     return true;
 }
+
+void TomboyData::remove() { QFile(sFileName).remove(); }
+
+qint64 TomboyData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
 
 QString TomboyData::nodeText(QDomNode node)
 {

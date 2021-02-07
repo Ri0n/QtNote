@@ -42,7 +42,7 @@ public:
     qint64    lastChangeElapsed() const;
 
 private:
-    QSharedPointer<NoteData> d;
+    QExplicitlySharedDataPointer<NoteData> d;
 };
 
 } // namespace QtNote

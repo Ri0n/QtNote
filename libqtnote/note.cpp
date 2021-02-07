@@ -27,7 +27,7 @@ namespace QtNote {
 
 Note::Note() { }
 
-Note::Note(NoteData *data) { d = QSharedPointer<NoteData>(data); }
+Note::Note(NoteData *data) : d(QExplicitlySharedDataPointer<NoteData>(data)) { }
 
 bool Note::isNull() { return !d; }
 
