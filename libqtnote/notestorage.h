@@ -45,14 +45,17 @@ struct NoteListItem {
     QDateTime lastModify;
 };
 
-bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b);
+inline bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b)
+{
+    return a.lastModify > b.lastModify; // backward order
+}
 
 class QTNOTE_EXPORT NoteStorage : public QObject {
     Q_OBJECT
 public:
     typedef QSharedPointer<NoteStorage> Ptr;
 
-    NoteStorage(QObject *parent);
+    using QObject::QObject;
     virtual bool          init()               = 0;
     virtual const QString systemName() const   = 0;
     virtual const QString name() const         = 0;
@@ -69,10 +72,9 @@ public:
     /* returns note id */
     virtual QString createNote(const QString &text) = 0;
     /* returns updated note id or the same */
-    virtual QString     saveNote(const QString &noteId, const QString &text) = 0;
-    virtual void        deleteNote(const QString &noteId)                    = 0;
-    virtual bool        isRichTextAllowed() const                            = 0;
-    virtual NoteFinder *search();
+    virtual QString saveNote(const QString &noteId, const QString &text) = 0;
+    virtual void    deleteNote(const QString &noteId)                    = 0;
+    virtual bool    isRichTextAllowed() const                            = 0;
 
     virtual QWidget *settingsWidget() { return 0; }
     virtual QString  tooltip() { return QString(); }
@@ -84,30 +86,6 @@ signals:
     void noteIdChanged(const NoteListItem &note, const QString &oldNoteId);
     void invalidated();
     void storageErorr(const QString &);
-};
-
-/**
- * @brief Notes search class.
- * Search object is owned by storage and self-destroyed on search-end
- */
-class NoteFinder : public QObject {
-    Q_OBJECT
-
-protected:
-    NoteStorage *_storage;
-
-public:
-    NoteFinder(NoteStorage *storage) : QObject(storage), _storage(storage) { }
-
-    inline NoteStorage *storage() const { return _storage; }
-
-signals:
-    void found(const QString &noteId);
-    void completed();
-
-public slots:
-    virtual void start(const QString &text);
-    virtual void abort();
 };
 
 } // namespace QtNote

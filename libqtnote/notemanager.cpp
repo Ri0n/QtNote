@@ -29,13 +29,53 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+/**
+ * @brief Notes search class.
+ * Search object is owned by storage and self-destroyed on search-end
+ */
+class NoteFinder : public QObject {
+    Q_OBJECT
+
+protected:
+    NoteStorage &_storage;
+
+public:
+    NoteFinder(NoteStorage &storage) : QObject(&storage), _storage(storage) { }
+
+    inline NoteStorage &storage() const { return _storage; }
+
+signals:
+    void found(const QString &noteId);
+    void completed();
+
+public slots:
+    virtual void start(const QString &text);
+    virtual void abort();
+};
+
+void NoteFinder::start(const QString &text)
+{
+    auto nl = _storage.noteList();
+    for (auto &n : qAsConst(nl)) {
+        // text always returns plain text
+        if (_storage.note(n.id).text().contains(text)) {
+            emit found(n.id);
+        }
+    }
+
+    emit completed();
+    deleteLater();
+}
+
+void NoteFinder::abort() { }
+
 GlobalNoteFinder::GlobalNoteFinder(QObject *parent) : QObject(parent) { }
 
 void GlobalNoteFinder::start(const QString &text)
 {
     abort();
-    for (auto storage : NoteManager::instance()->storages()) {
-        auto so = storage->search();
+    for (auto &storage : NoteManager::instance()->storages()) {
+        auto so = new NoteFinder(*storage);
         connect(so, SIGNAL(found(QString)), SLOT(noteFound(QString)));
         connect(so, SIGNAL(completed()), SLOT(searcherFinished()));
         searchers.insert(so, so);
@@ -45,7 +85,7 @@ void GlobalNoteFinder::start(const QString &text)
 
 void GlobalNoteFinder::abort()
 {
-    for (auto s : searchers) {
+    for (auto s : qAsConst(searchers)) {
         if (s) {
             s->abort();
         }
@@ -56,7 +96,7 @@ void GlobalNoteFinder::abort()
 void GlobalNoteFinder::noteFound(const QString &noteId)
 {
     NoteFinder *nf = dynamic_cast<NoteFinder *>(sender());
-    emit        found(nf->storage()->systemName(), noteId);
+    emit        found(nf->storage().systemName(), noteId);
 }
 
 void GlobalNoteFinder::searcherFinished()
@@ -146,7 +186,7 @@ const QMap<QString, NoteStorage::Ptr> NoteManager::storages(bool withInvalid) co
         return _storages;
     }
     decltype(_storages) ret;
-    for (auto item : _storages) {
+    for (auto &item : _storages) {
         if (item->isAccessible()) {
             ret.insert(item->systemName(), item);
         }
@@ -160,14 +200,14 @@ const std::list<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withInva
 
         auto storages = _storages;
 
-        for (auto code : _priorities) {
+        for (auto &code : _priorities) {
             auto storage = storages.take(code);
             if (storage) {
                 _prioCache.push_back(storage);
             }
         }
 
-        for (auto storage : storages) {
+        for (auto &storage : storages) {
             _prioCache.push_back(storage);
         }
     }
@@ -177,7 +217,7 @@ const std::list<NoteStorage::Ptr> NoteManager::prioritizedStorages(bool withInva
     }
 
     decltype(_prioCache) ret;
-    for (auto storage : _prioCache) {
+    for (auto &storage : _prioCache) {
         if (storage->isAccessible()) {
             ret.push_back(storage);
         }
@@ -223,3 +263,5 @@ NoteManager *NoteManager::instance()
 NoteManager *NoteManager::_instance = NULL;
 
 } // namespace QtNote
+
+#include "notemanager.moc"
