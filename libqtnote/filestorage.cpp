@@ -38,7 +38,7 @@ QString FileStorage::createNote(const QString &text) { return saveNote(QString()
 
 void FileStorage::deleteNote(const QString &noteId)
 {
-    QHash<QString, NoteListItem>::const_iterator r = cache.find(noteId);
+    auto r = cache.find(noteId);
     if (r != cache.end()) {
         if (QFile::remove(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(fileExt)))) {
             NoteListItem item = r.value();
@@ -146,7 +146,7 @@ void FileStorage::ensureChachePopulated()
         QFileInfoList files = d.entryInfoList(QStringList(QString("*.") + fileExt), QDir::Files, QDir::Time);
         auto          ret   = noteListFromInfoList(files);
         cache.clear();
-        for (auto n : ret) {
+        for (auto &n : ret) {
             cache.insert(n.id, n);
         }
         _cacheValid = true;

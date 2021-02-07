@@ -40,7 +40,6 @@ namespace QtNote {
 PTFStorage::PTFStorage(QObject *parent) : FileStorage(parent)
 {
     fileExt = "txt";
-    init();
 }
 
 bool PTFStorage::init()

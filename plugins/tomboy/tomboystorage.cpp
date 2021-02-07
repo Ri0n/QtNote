@@ -26,7 +26,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "tomboydata.h"
 #include "tomboystorage.h"
-#include "utils.h"
 #include "uuidfilenameprovider.h"
 
 namespace QtNote {
@@ -34,7 +33,6 @@ namespace QtNote {
 TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent)
 {
     fileExt = "note";
-    init();
 }
 
 bool TomboyStorage::init()
@@ -78,7 +76,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
 Note TomboyStorage::note(const QString &id)
 {
     if (!id.isEmpty()) {
-        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(id).arg(fileExt));
+        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(id, fileExt));
         QFileInfo fi(fileName);
         if (fi.isWritable()) {
             TomboyData *noteData = new TomboyData;
@@ -102,7 +100,7 @@ QString TomboyStorage::findStorageDir() const
 {
     QStringList tomboyDirs;
 
-    QString dataLocation = QDir::cleanPath(Utils::genericDataDir());
+    QString dataLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
 #ifdef Q_OS_UNIX
     tomboyDirs << (dataLocation + QLatin1String("/tomboy"));
     tomboyDirs << (QDir::home().path() + "/.tomboy");
