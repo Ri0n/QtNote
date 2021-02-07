@@ -1,6 +1,6 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin")
+add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin" unix macosx windows)
 
 set (QXT_SRC 3rdparty/qxt/qxtglobalshortcut.h
     3rdparty/qxt/qxtglobalshortcut.cpp

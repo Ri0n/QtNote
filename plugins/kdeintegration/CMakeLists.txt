@@ -1,6 +1,6 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(kdeintegration "Integration with KDE Plasma")
+add_qtnote_plugin(kdeintegration "Integration with KDE Plasma" unix)
 
 find_package(KF5GlobalAccel CONFIG REQUIRED)
 find_package(KF5Notifications CONFIG REQUIRED)

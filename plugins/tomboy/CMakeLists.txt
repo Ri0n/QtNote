@@ -1,6 +1,6 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(tomboy "Allows to load notes from Tomboy")
+add_qtnote_plugin(tomboy "Allows to load notes from Tomboy" unix macosx windows)
 
 add_library(tomboy ${LIB_TYPE}
     ${QTNOTE_COMMON_PLUGIN_SRC}

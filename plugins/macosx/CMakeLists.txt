@@ -1,6 +1,6 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(macosx "Mac OS X integration")
+add_qtnote_plugin(macosx "Mac OS X integration" macosx)
 
 add_library(macosx ${LIB_TYPE}
     ${QTNOTE_COMMON_PLUGIN_SRC}

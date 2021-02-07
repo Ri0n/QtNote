@@ -19,7 +19,16 @@ add_executable(${PROJECT_NAME}
     ${APP_ICON_MACOSX}
 )
 #add_dependencies(${PROJECT_NAME} build_translations)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME qtnote)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    OUTPUT_NAME qtnote
+    MACOSX_BUNDLE_BUNDLE_NAME QtNote
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${QTNOTE_VERSION}" # version
+    MACOSX_BUNDLE_BUNDLE_VERSION "${QTNOTE_VERSION}" # git tag
+    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2010-2020 Sergey Ilinykh"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.ri0n.qtnote"
+)
+
 
 target_link_libraries(${PROJECT_NAME} ${qtnote_lib} SingleApplication::SingleApplication)
 
