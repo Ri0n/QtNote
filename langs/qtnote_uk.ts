@@ -696,13 +696,13 @@ Notes will be automatically saved to special storage, so you should not worry ab
         <location filename="../libqtnote/typeaheadfind.cpp" line="169"/>
         <location filename="../libqtnote/typeaheadfind.cpp" line="171"/>
         <source>Find next</source>
-        <translation>Натупне</translation>
+        <translation>Шукати далі</translation>
     </message>
     <message>
         <location filename="../libqtnote/typeaheadfind.cpp" line="175"/>
         <location filename="../libqtnote/typeaheadfind.cpp" line="177"/>
         <source>Find previous</source>
-        <translation>Попереднє</translation>
+        <translation>Шукати попереднє</translation>
     </message>
     <message>
         <location filename="../libqtnote/typeaheadfind.cpp" line="182"/>
