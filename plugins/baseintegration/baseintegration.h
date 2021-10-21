@@ -43,9 +43,10 @@ public:
 public slots:
 
 private:
-    PluginHostInterface *               host;
-    TrayImpl *                          tray;
+    PluginHostInterface                *host;
+    TrayImpl                           *tray;
     QHash<QString, QxtGlobalShortcut *> _shortcuts;
+    bool                                isWayland = false;
 };
 
 } // namespace QtNote

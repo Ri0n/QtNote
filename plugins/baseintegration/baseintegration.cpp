@@ -15,7 +15,10 @@ static const QLatin1String pluginId("base_de");
 //******************************************
 // BaseIntegration
 //******************************************
-BaseIntegration::BaseIntegration(QObject *parent) : QObject(parent), tray(0) { }
+BaseIntegration::BaseIntegration(QObject *parent) :
+    QObject(parent), tray(0), isWayland(qgetenv("XDG_SESSION_TYPE") == "wayland")
+{
+}
 
 int BaseIntegration::metadataVersion() const { return MetadataVerion; }
 
@@ -51,7 +54,7 @@ TrayImpl *BaseIntegration::initTray(Main *qtnote)
 
 bool BaseIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {
-    if (!_shortcuts.contains(id)) {
+    if (!isWayland && !_shortcuts.contains(id)) {
         auto gs = new QxtGlobalShortcut(key, this);
         _shortcuts.insert(id, gs);
         connect(gs, SIGNAL(activated()), action, SLOT(trigger()));
