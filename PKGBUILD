@@ -19,8 +19,7 @@ build() {
   cd "$srcdir"
   # BUILD HERE
   cd "$srcdir/$_srcdirname-$pkgver"
-  qmake CONFIG+=noubuntu PREFIX="/usr" \
-        LIBDIR="/usr/lib" $pkgname.pro
+  cmake -DCMAKE_INSTALL_PREFIX="/usr" .
   make
 }
 

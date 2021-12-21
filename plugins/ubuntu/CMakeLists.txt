@@ -1,12 +1,11 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(ubuntu "Ubuntu integration" unix)
+add_qtnote_plugin(ubuntu "Ubuntu integration" ON unix)
 
 add_library(ubuntu ${LIB_TYPE}
     ${QTNOTE_COMMON_PLUGIN_SRC}
     ubuntu.cpp
     ubuntu.h
-    ubuntu.pro
     ubuntu.qrc
     ubuntutray.cpp
     ubuntutray.h

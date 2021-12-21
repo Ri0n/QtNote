@@ -52,9 +52,9 @@ using libqtnote and also to build QtNote plugins.
 
 %build
 %if 0%{?fedora}
-%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}" CONFIG-=debug CONFIG+=release
+%{cmake} -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release LIBDIR=%{_libdir} -DQMAKE_CXXFLAGS="%{optflags}" -DQMAKE_CFLAGS="%{optflags}" .
 %else
-%{qmake_qt5} PREFIX=%{_prefix} LIBDIR=%{_libdir} qtnote.pro QMAKE_CXXFLAGS="%{optflags}" QMAKE_CFLAGS="%{optflags}" CONFIG-=debug CONFIG+=release
+%{cmake} -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release LIBDIR=%{_libdir} -DQMAKE_CXXFLAGS="%{optflags}" -DQMAKE_CFLAGS="%{optflags}" .
 %endif
 %make_build
 

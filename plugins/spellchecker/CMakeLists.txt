@@ -1,9 +1,8 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(spellchecker "Check for spelling errors" unix macosx windows)
+qtnote_optional_pkgconfig(Hunspell IMPORTED_TARGET hunspell)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(Hunspell REQUIRED IMPORTED_TARGET hunspell)
+add_qtnote_plugin(spellchecker "Check for spelling errors" ${Hunspell_FOUND} unix macosx windows)
 
 if(WIN32)
     add_definitions(-DDICTSUBDIR="/spellcheck/myspell")
