@@ -3,6 +3,8 @@
 
 #include "trayimpl.h"
 
+#include <optional>
+
 class QAction;
 class QSystemTrayIcon;
 class QTimer;
@@ -28,13 +30,13 @@ private slots:
 
 private:
     friend class UbuntuPlugin;
-    Main *           qtnote;
-    QSystemTrayIcon *sti;
-    QAction *        actQuit, *actNew, *actAbout, *actOptions, *actManager;
-    QTimer *         menuUpdateTimer;
-    QMenu *          contextMenu;
-    QMenu *          advancedMenu;
-    uint             menuUpdateHash;
+    Main               *qtnote;
+    QSystemTrayIcon    *sti = nullptr;
+    QAction            *actQuit, *actNew, *actAbout, *actOptions, *actManager;
+    QTimer             *menuUpdateTimer;
+    QMenu              *contextMenu;
+    QMenu              *advancedMenu;
+    std::optional<uint> menuUpdateHash;
 };
 
 }

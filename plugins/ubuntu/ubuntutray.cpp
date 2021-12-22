@@ -20,13 +20,13 @@ namespace QtNote {
 
 UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(qtnote), contextMenu(0)
 {
+    sti = new QSystemTrayIcon(QIcon::fromTheme("qtnote", QIcon(":/icons/trayicon")), this);
+    connect(sti, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SIGNAL(newNoteTriggered()));
+
     menuUpdateTimer = new QTimer(this);
     menuUpdateTimer->setInterval(1000);
     menuUpdateTimer->setSingleShot(true);
     connect(menuUpdateTimer, SIGNAL(timeout()), SLOT(rebuildMenu()));
-
-    sti = new QSystemTrayIcon(QIcon::fromTheme("qtnote", QIcon(":/icons/trayicon")), this);
-    connect(sti, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SIGNAL(newNoteTriggered()));
 
     actQuit    = new QAction(QIcon(":/icons/exit"), tr("&Quit"), this);
     actNew     = new QAction(QIcon(":/icons/new"), tr("&New"), this);
@@ -48,17 +48,23 @@ UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote
     advancedMenu->addAction(actQuit);
     advancedMenu->setTitle(tr("More.."));
 
-    connect(NoteManager::instance(), SIGNAL(storageAdded(StorageItem)), menuUpdateTimer, SLOT(start()));
-    connect(NoteManager::instance(), SIGNAL(storageRemoved(StorageItem)), menuUpdateTimer, SLOT(start()));
-    connect(NoteManager::instance(), SIGNAL(storageChanged(StorageItem)), menuUpdateTimer, SLOT(start()));
+    connect(NoteManager::instance(), SIGNAL(storageAdded(NoteStorage::Ptr)), menuUpdateTimer, SLOT(start()));
+    connect(NoteManager::instance(), SIGNAL(storageRemoved(NoteStorage::Ptr)), menuUpdateTimer, SLOT(start()));
+    connect(NoteManager::instance(), SIGNAL(storageChanged(NoteStorage::Ptr)), menuUpdateTimer, SLOT(start()));
+
+    contextMenu = new QMenu(tr("Notes"));
+    connect(sti, &QObject::destroyed, this, [this]() {
+        contextMenu->deleteLater();
+        advancedMenu->deleteLater();
+    });
+
+    sti->setContextMenu(contextMenu);
+
     menuUpdateTimer->start();
+    sti->show();
 }
 
-UbuntuTray::~UbuntuTray()
-{
-    delete contextMenu;
-    delete advancedMenu;
-}
+UbuntuTray::~UbuntuTray() { }
 
 void UbuntuTray::rebuildMenu()
 {
@@ -69,12 +75,12 @@ void UbuntuTray::rebuildMenu()
         h ^= qHash(notes[i].title);
     }
 
-    if (h == menuUpdateHash) {
+    if (menuUpdateHash && h == *menuUpdateHash) {
         return; // menu is not changed;
     }
+    menuUpdateHash = h;
 
-    delete sti->contextMenu();
-    QMenu *contextMenu = new QMenu(tr("Notes"));
+    contextMenu->clear();
     contextMenu->addAction(actNew);
     contextMenu->addSeparator();
     for (int i = 0; i < notes.count(); i++) {
@@ -89,9 +95,6 @@ void UbuntuTray::rebuildMenu()
         contextMenu->addSeparator();
     }
     contextMenu->addMenu(advancedMenu);
-
-    sti->setContextMenu(contextMenu);
-    sti->show();
 }
 
 void UbuntuTray::noteSelected()

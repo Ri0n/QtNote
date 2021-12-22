@@ -51,11 +51,11 @@ class Main::Private : public QObject {
     Q_OBJECT
 
 public:
-    Main *                    q;
-    DEIntegrationInterface *  de;
-    TrayImpl *                tray;
+    Main                     *q;
+    DEIntegrationInterface   *de;
+    TrayImpl                 *tray;
     GlobalShortcutsInterface *globalShortcuts;
-    NotificationInterface *   notifier;
+    NotificationInterface    *notifier;
 
     Private(Main *parent) : QObject(parent), q(parent), de(0), globalShortcuts(0), notifier(0) { }
 };
@@ -257,7 +257,7 @@ NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId, co
 void Main::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
 {
 
-    NoteDialog *dlg = 0;
+    NoteDialog *dlg = nullptr;
     if (!noteId.isEmpty()) {
         // check if dialog for given storage and id is already opened
         dlg = NoteDialog::findDialog(storageId, noteId);
