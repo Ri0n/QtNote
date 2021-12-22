@@ -28,6 +28,12 @@ target_include_directories(qtnote PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
     )
+
+set_target_properties(qtnote PROPERTIES
+  PUBLIC_HEADER "${libqtnote_HDRS}"
+  VERSION ${QTNOTE_VERSION}
+  SOVERSION ${QTNOTE_VERSION_MAJOR}
+)
 if(WIN32)
 set_target_properties(qtnote
     PROPERTIES
@@ -45,6 +51,6 @@ install(TARGETS qtnote
     COMPONENT Libraries
     NAMELINK_COMPONENT Development
   PUBLIC_HEADER
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtnote"
     COMPONENT Development
 )

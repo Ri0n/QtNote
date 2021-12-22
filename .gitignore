@@ -30,6 +30,6 @@ debian/.debhelper/
 debian/debhelper-build-stamp
 debian/libqtnote-dev.substvars
 debian/libqtnote-dev/
-debian/libqtnote.substvars
-debian/libqtnote/
+debian/libqtnote*.substvars
+debian/libqtnote3/
 obj-x86_64-linux-gnu/
