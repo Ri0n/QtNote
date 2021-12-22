@@ -1,7 +1,7 @@
-qtnote (3.1.5) UNRELEASED; urgency=medium
+qtnote (3.1.5) impish; urgency=medium
 
-  * New release
-  * New release
+  * CMake and installation related fixes
+  * Fixed crash in ubuntu plugin
 
  -- Sergei Ilinykh <rion4ik@gmail.com>  Wed, 22 Dec 2021 19:37:50 +0300
 
