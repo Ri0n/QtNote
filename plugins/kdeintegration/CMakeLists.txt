@@ -26,4 +26,4 @@ if (UNIXLIKE)
     target_link_libraries(kdeintegration Qt5::X11Extras)
 endif()
 
-install(TARGETS kdeintegration DESTINATION ${PLUGINSDIR})
+install(TARGETS kdeintegration LIBRARY DESTINATION ${PLUGINSDIR}  COMPONENT Libraries NAMELINK_COMPONENT Development)

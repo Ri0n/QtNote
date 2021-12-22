@@ -39,4 +39,12 @@ if (APPLE)
     target_link_libraries(qtnote PUBLIC "-framework CoreFoundation" "-framework Carbon")
 endif()
 
-install(TARGETS qtnote DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
+install(TARGETS qtnote
+  LIBRARY
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    COMPONENT Libraries
+    NAMELINK_COMPONENT Development
+  PUBLIC_HEADER
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    COMPONENT Development
+)

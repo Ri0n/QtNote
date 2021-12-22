@@ -12,4 +12,4 @@ add_library(macosx ${LIB_TYPE}
     )
 target_link_libraries(macosx ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets)
 
-install(TARGETS macosx DESTINATION ${PLUGINSDIR})
+install(TARGETS macosx LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)

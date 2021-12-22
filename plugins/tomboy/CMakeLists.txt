@@ -15,4 +15,4 @@ add_library(tomboy ${LIB_TYPE}
 find_package(Qt5 COMPONENTS Xml REQUIRED)
 target_link_libraries(tomboy ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Xml)
 
-install(TARGETS tomboy DESTINATION ${PLUGINSDIR})
+install(TARGETS tomboy LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)

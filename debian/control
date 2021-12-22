@@ -2,19 +2,23 @@ Source: qtnote
 Section: text
 Priority: optional
 Maintainer: Sergei Ilinykh <rion4ik@gmail.com>
-Build-Depends: debhelper (>= 11), cmake (>= 3.10.0), dh-cmake, dh-cmake-compat (= 1), dh-sequence-cmake, qtbase5-dev, libqt5x11extras5-dev, libhunspell-dev, qttools5-dev, pkg-config
-Standards-Version: 3.9.3
+Build-Depends: cmake (>= 3.10.0), dh-cmake, dh-cmake-compat (= 1), dh-sequence-cmake, debhelper (>= 11), qtbase5-dev, libqt5x11extras5-dev, libhunspell-dev, qttools5-dev, pkg-config
+Standards-Version: 4.5.1
 Homepage: http://ri0n.github.io/QtNote
 Vcs-Git: https://github.com/Ri0n/QtNote.git
 Vcs-Browser: https://github.com/Ri0n/qtnote
 
 Package: libqtnote
 Architecture: any
-Depends: libexample (= ${binary:Version}), ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: QtNote library to work with various notes storages
+ Also works with QtNote plugins and able to provide some GUI
 
 Package: libqtnote-dev
 Architecture: any
 Depends: libqtnote (= ${binary:Version}), ${misc:Depends}
+Description: QtNote development files
+ Development files to write plugins or to work directly with QtNote library
 
 Package: qtnote
 Architecture: any

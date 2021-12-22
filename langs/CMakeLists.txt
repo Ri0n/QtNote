@@ -31,4 +31,4 @@ qt5_add_translation(qtnote_QM ${qtnote_TRS})
 
 add_custom_target(build_translations ALL DEPENDS ${qtnote_QM})
 
-install(FILES ${qtnote_QM} DESTINATION ${TRANSLATIONSDIR})
+install(FILES ${qtnote_QM} DESTINATION ${TRANSLATIONSDIR} COMPONENT Executable)

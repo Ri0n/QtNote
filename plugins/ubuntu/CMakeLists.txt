@@ -18,4 +18,4 @@ if (UNIXLIKE)
     target_link_libraries(ubuntu Qt5::X11Extras)
 endif()
 
-install(TARGETS ubuntu DESTINATION ${PLUGINSDIR})
+install(TARGETS ubuntu LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)

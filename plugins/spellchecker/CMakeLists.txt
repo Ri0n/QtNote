@@ -23,4 +23,4 @@ add_library(spellchecker ${LIB_TYPE}
     )
 target_link_libraries(spellchecker ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets PkgConfig::Hunspell)
 
-install(TARGETS spellchecker DESTINATION ${PLUGINSDIR})
+install(TARGETS spellchecker LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
