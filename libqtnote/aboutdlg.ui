@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>367</width>
-    <height>236</height>
+    <height>263</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,7 +28,6 @@
        <property name="font">
         <font>
          <pointsize>15</pointsize>
-         <weight>75</weight>
          <italic>true</italic>
          <bold>true</bold>
         </font>
@@ -46,7 +45,6 @@
        <property name="font">
         <font>
          <pointsize>15</pointsize>
-         <weight>75</weight>
          <italic>true</italic>
          <bold>true</bold>
         </font>
@@ -82,65 +80,93 @@
         <widget class="QLabel" name="label_2">
          <property name="font">
           <font>
-           <pointsize>10</pointsize>
-           <weight>75</weight>
            <italic>true</italic>
            <bold>true</bold>
           </font>
          </property>
          <property name="text">
-          <string>Simpe and usable note taking application</string>
+          <string>Simple and usable note taking application</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_4">
-         <property name="font">
-          <font>
-           <pointsize>9</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>License: GPL-3</string>
-         </property>
-        </widget>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>License:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string notr="true">E-Mail:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string notr="true">WWW:</string>
+           </property>
+           <property name="openExternalLinks">
+            <bool>true</bool>
+           </property>
+           <property name="textInteractionFlags">
+            <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string notr="true">GPL-3</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Sergei Ilinykh</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string notr="true">rion4ik@gmail.com</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string notr="true">&lt;a href=&quot;http://ri0n.github.io/QtNote&quot;&gt;http://ri0n.github.io/QtNote&lt;/a&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Author:</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
-        <widget class="QLabel" name="label_3">
-         <property name="font">
-          <font>
-           <pointsize>9</pointsize>
-          </font>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-         <property name="text">
-          <string>Author: Il'inykh Sergey</string>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_5">
-         <property name="font">
-          <font>
-           <pointsize>9</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string notr="true">E-Mail: rion4ik@gmail.com</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string notr="true">www: &lt;a href=&quot;http://ri0n.github.io/QtNote&quot;&gt;http://ri0n.github.io/QtNote&lt;/a&gt;</string>
-         </property>
-         <property name="openExternalLinks">
-          <bool>true</bool>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse</set>
-         </property>
-        </widget>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -159,11 +185,13 @@
          </property>
          <property name="plainText">
           <string>Russian:
-  Il'inykh Sergey &lt;rion4ik@gmail.com&gt;
+  Sergei Ilinykh &lt;rion4ik@gmail.com&gt;
+
+Ukrainian:
+  Vitaly Tonkacheyev
 
 Vietnamese:
-  Phan Anh
-</string>
+  Phan Anh</string>
          </property>
         </widget>
        </item>

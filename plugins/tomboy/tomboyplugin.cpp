@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2015 Ili'nykh Sergey
+Copyright (C) 2015 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ PluginMetadata TomboyPlugin::metadata()
     md.icon        = QIcon(":/icons/tomboy");
     md.name        = "Tomboy Storage";
     md.description = tr("Allows read and write tomboy notes");
-    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote

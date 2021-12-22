@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -223,7 +223,7 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     dlg->setWindowIcon(QIcon(":/icons/options"));
     dlg->setWindowTitle(tr("%1: Settings").arg(NoteManager::instance()->storage(storageId)->name()));
     dlg->resize(500, 30);
-    QVBoxLayout *     vl  = new QVBoxLayout;
+    QVBoxLayout      *vl  = new QVBoxLayout;
     QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(dbb, SIGNAL(accepted()), w, SIGNAL(apply()));
     connect(dbb, SIGNAL(accepted()), dlg, SLOT(accept()));

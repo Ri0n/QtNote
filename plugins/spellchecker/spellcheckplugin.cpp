@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2015 Ili'nykh Sergey
+Copyright (C) 2015 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ class SpellContextMenu : public QObject {
     Q_OBJECT
 
     SpellEngineInterface *sei;
-    QTextEdit *           te;
+    QTextEdit            *te;
     QTextCursor           cursor;
 
 public:
@@ -152,7 +152,7 @@ PluginMetadata SpellCheckPlugin::metadata()
     md.icon        = QIcon(":/icons/spellcheck-logo");
     md.name        = "Spell check";
     md.description = tr("Realtime spell check.");
-    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote

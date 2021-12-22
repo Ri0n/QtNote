@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2020 Ilinykh Sergey
+Copyright (C) 2020 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -246,7 +246,7 @@ void PluginManager::loadPlugins()
             continue;
         }
         TrayInterface *tp   = qobject_cast<TrayInterface *>(pd->instance);
-        TrayImpl *     tray = tp->initTray(qtnote);
+        TrayImpl      *tray = tp->initTray(qtnote);
         if (tray) {
             qtnote->setTrayImpl(tray);
             pd->loadStatus = LS_Initialized;

@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2015 Ili'nykh Sergey
+Copyright (C) 2015 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ private slots:
     void settingsAccepted();
 
 private:
-    PluginHostInterface * host;
+    PluginHostInterface  *host;
     SpellEngineInterface *sei;
 };
 

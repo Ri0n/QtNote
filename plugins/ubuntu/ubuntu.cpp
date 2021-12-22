@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ PluginMetadata UbuntuPlugin::metadata()
     md.icon        = QIcon(":/icons/ubuntu-logo");
     md.name        = "Ubuntu Integration";
     md.description = tr("Integrtion with ubuntu-only features");
-    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
@@ -84,7 +84,7 @@ void UbuntuPlugin::activateWidget(QWidget *w)
 
 void UbuntuPlugin::activator()
 {
-    QTimer * timer = (QTimer *)sender();
+    QTimer  *timer = (QTimer *)sender();
     QWidget *w     = sender()->property("widget").value<QWidget *>();
 
     /*w->activateWindow();

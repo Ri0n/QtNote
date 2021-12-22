@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ public:
 
     Qt::DropActions supportedDropActions() const;
     QStringList     mimeTypes() const;
-    QMimeData *     mimeData(const QModelIndexList &indexes) const;
+    QMimeData      *mimeData(const QModelIndexList &indexes) const;
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
 signals:

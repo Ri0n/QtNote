@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ private slots:
 class QTNOTE_EXPORT NoteManager : public QObject {
     Q_OBJECT
 public:
-    static NoteManager *     instance();
+    static NoteManager      *instance();
     static GlobalNoteFinder *search() { return new GlobalNoteFinder(instance()); }
 
     void registerStorage(NoteStorage::Ptr storage);
@@ -95,7 +95,7 @@ private slots:
 private:
     NoteManager(QObject *parent);
 
-    static NoteManager *                _instance;
+    static NoteManager                 *_instance;
     QStringList                         _priorities;
     QMap<QString, NoteStorage::Ptr>     _storages;
     mutable std::list<NoteStorage::Ptr> _prioCache;

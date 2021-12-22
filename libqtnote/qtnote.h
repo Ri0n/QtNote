@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -49,10 +49,10 @@ public:
     inline bool isOperable() const { return _inited; }
     void        parseAppArguments(const QStringList &args);
 
-    NoteWidget * noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString());
+    NoteWidget  *noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString());
     virtual void activateWidget(QWidget *w) const; // virtual for plugins
     inline ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
-    inline PluginManager *   pluginManager() const { return _pluginManager; }
+    inline PluginManager    *pluginManager() const { return _pluginManager; }
 
     void setTrayImpl(TrayImpl *tray);
     void setDesktopImpl(DEIntegrationInterface *de);
@@ -91,7 +91,7 @@ private:
 
     bool              _inited;
     ShortcutsManager *_shortcutsManager;
-    PluginManager *   _pluginManager;
+    PluginManager    *_pluginManager;
 };
 
 } // namespace QtNote

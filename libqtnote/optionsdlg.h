@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ protected:
 
 private:
     Ui::OptionsDlg *ui;
-    Main *          qtnote;
+    Main           *qtnote;
     class PriorityModel;
     PriorityModel *priorityModel;
 

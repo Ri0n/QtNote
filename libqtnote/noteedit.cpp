@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ void NoteEdit::focusInEvent(QFocusEvent *e)
 
 void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
 {
-    QMenu *                                 menu = createStandardContextMenu();
+    QMenu                                  *menu = createStandardContextMenu();
     QMutableListIterator<QPointer<QObject>> it(menuHandlers);
     while (it.hasNext()) {
         auto p = dynamic_cast<NoteContextMenuHandler *>(it.next().data());

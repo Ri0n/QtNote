@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2010 Ili'nykh Sergey
+Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ public:
     FileStorage(QObject *parent);
     QString             createNote(const QString &text) override;
     void                deleteNote(const QString &noteId) override;
-    QWidget *           settingsWidget() override;
+    QWidget            *settingsWidget() override;
     QString             tooltip() override;
     QList<NoteListItem> noteList(int limit = 0) override;
 

@@ -1,6 +1,6 @@
 /*
 QtNote - Simple note-taking application
-Copyright (C) 2020 Ilinykh Sergey
+Copyright (C) 2020 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ public:
     virtual NoteManager *noteManager()                              = 0;
     virtual QString      qtnoteDataDir()                            = 0;
     virtual void         rehighlight()                              = 0; // invalide syntax highligh for all open notes
-    virtual NoteEdit *   noteTextWidget(QWidget *w)                 = 0;
+    virtual NoteEdit    *noteTextWidget(QWidget *w)                 = 0;
     virtual void         addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type) = 0;
 };
 

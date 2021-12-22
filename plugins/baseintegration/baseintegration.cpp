@@ -29,7 +29,7 @@ PluginMetadata BaseIntegration::metadata()
     md.icon        = QIcon(":/icons/logo");
     md.name        = "Base Integration";
     md.description = tr("Provides fallback desktop environment integration");
-    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010100;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x030002;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote

@@ -1,7 +1,7 @@
 /*
  * typeaheadfind.cpp - Typeahead find toolbar
  * Copyright (C) 2006  Maciej Niedzielski
- *   2015 Added replace mode (C) Ilinykh Sergey
+ *   2015 Added replace mode (C) Sergei Ilinykh
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
 #include <QTextDocumentFragment>
 #include <QTextEdit>
 
-static const char *        replaceIconName = ":/icons/replace-text";
+static const char         *replaceIconName = ":/icons/replace-text";
 static QWeakPointer<QIcon> icnReplaceAll;
 
 /**
@@ -129,15 +129,15 @@ public:
     bool                   caseSensitive;
     TypeAheadFindBar::Mode mode;
 
-    QTextEdit *           te;
-    QLineEdit *           le_find;
-    QLineEdit *           le_replace;
-    QAction *             act_next;
-    QAction *             act_prev;
-    QAction *             act_replace;
-    QAction *             act_replace_all;
-    QAction *             act_le_replace;
-    QCheckBox *           cb_case;
+    QTextEdit            *te;
+    QLineEdit            *le_find;
+    QLineEdit            *le_replace;
+    QAction              *act_next;
+    QAction              *act_prev;
+    QAction              *act_replace;
+    QAction              *act_replace_all;
+    QAction              *act_le_replace;
+    QCheckBox            *cb_case;
     QSharedPointer<QIcon> icnReplaceAll;
 };
 
