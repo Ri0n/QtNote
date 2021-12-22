@@ -29,7 +29,7 @@ PluginMetadata KDEIntegration::metadata()
     md.icon        = QIcon(":/icons/kde-logo");
     md.name        = "KDE Integration";
     md.description = tr("Provide native look and feel for KDE users");
-    md.author      = "Sergey Il'inykh <rion4ik@gmail.com>";
+    md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote

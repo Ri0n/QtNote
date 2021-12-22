@@ -1,5 +1,4 @@
 #!/usr/bin/make -f
 
-QMAKE=qmake -qt=5
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/qmake.mk
+%:
+	dh $@ --buildsystem=cmake
