@@ -1,3 +1,9 @@
+qtnote (3.1.6) UNRELEASED; urgency=medium
+
+  * New release
+
+ -- Sergei Ilinykh <rion4ik@gmail.com>  Thu, 23 Dec 2021 02:04:19 +0300
+
 qtnote (3.1.5) impish; urgency=medium
 
   * CMake and installation related fixes
