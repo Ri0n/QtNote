@@ -1,2 +1,26 @@
-#!/bin/sh
-dch -M -v $(cat version) "New release"
+#!/bin/bash
+
+gittag2version() {
+  # remove hash and sum to last numbers. e.g. v1.0.5-35-gdfsdfggw => v1.0.40
+  # (so please avoid using anything but 0 in the patch part of version)
+  local git_version=$(echo "$1" | sed 's/-g[a-z0-9]\{7,\}//')
+  gv_lp=${git_version##*.}
+  case "$gv_lp" in
+    *-*) build_v=$(expr ${gv_lp%-*} + ${gv_lp#*-}) ;;
+    *) build_v="$gv_lp" ;;
+  esac
+  echo "${git_version%.*}.$build_v"
+}
+
+git_version=$(git describe --tags 2>/dev/null)
+if [ -n "$git_version" ]; then
+  git_version=$(gittag2version "$git_version")
+  branch=$(git rev-parse --abbrev-ref HEAD)
+  [ "$branch" == HEAD ] && branch=$git_commit # detached
+  [ "$branch" == master ] || git_version="${git_version}-${branch}"
+else
+  echo "Failed to fetch version from git tag"
+  exit 1
+fi
+set -ex
+dch -M -v ${git_version} "New release"
