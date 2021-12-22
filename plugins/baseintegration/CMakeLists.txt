@@ -35,4 +35,4 @@ if (UNIX)
     endif()
 endif()
 
-install(TARGETS baseintegration DESTINATION ${PLUGINSDIR})
+install(TARGETS baseintegration LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
