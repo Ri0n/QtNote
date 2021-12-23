@@ -15,12 +15,12 @@ gittag2version() {
 git_version=$(git describe --tags 2>/dev/null)
 if [ -n "$git_version" ]; then
   git_version=$(gittag2version "$git_version")
-  branch=$(git rev-parse --abbrev-ref HEAD)
-  [ "$branch" == HEAD ] && branch=$git_commit # detached
-  [ "$branch" == master ] || git_version="${git_version}-${branch}"
+  if [ "$(dpkg-parsechangelog --show-field Version)" = "$git_version" ]; then
+    exit 0
+  fi
 else
   echo "Failed to fetch version from git tag"
   exit 1
 fi
-set -ex
+
 dch -M -v ${git_version} "New release"
