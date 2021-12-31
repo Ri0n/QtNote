@@ -55,44 +55,25 @@ public:
 #ifdef QTNOTE_DEVEL
         QDir pluginsDir = QDir(qApp->applicationDirPath());
 
-#if defined(Q_OS_WIN)
-        QString dbgSubdir = pluginsDir.dirName();
-        if (!(dbgSubdir.toLower() == "debug" || dbgSubdir.toLower() == "release")) {
-            dbgSubdir.clear();
-        }
-#else
-        QString dbgSubdir;
-#endif
-
-#if defined(Q_OS_WIN)
-        if (!dbgSubdir.isEmpty())
-            pluginsDir.cdUp();
-#elif defined(Q_OS_MAC)
+#if defined(Q_OS_MAC)
         if (pluginsDir.dirName() == "MacOS") {
             pluginsDir.cdUp();
             pluginsDir.cdUp();
             pluginsDir.cdUp();
         }
 #endif
-        if (pluginsDir.dirName() == "src") {
-            pluginsDir.cdUp();
-        }
         pluginsDir.cd("plugins");
-
+#ifdef Q_OS_WIN
+        pluginsDirs << pluginsDir.path();
+#else
         foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-#ifdef QTNOTE_DEVEL
             QDir d(pluginsDir);
             d.cd(dirName);
-            if (!dbgSubdir.isEmpty()) {
-                d.cd(dbgSubdir);
-            }
             pluginsDirs << d.path();
-#else
-            pluginsDirs << pluginsDir.absoluteFilePath(dirName);
-#endif
         }
+#endif
         qDebug() << "Plugins dirs: " << pluginsDirs;
-#else
+#else // not devel
 
         pluginsDirs << Utils::qtnoteDataDir() + "/plugins";
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)

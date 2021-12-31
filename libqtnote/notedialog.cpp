@@ -65,9 +65,13 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
 
     noteWidget->setFocus(Qt::OtherFocusReason);
 
-    connect(noteWidget, SIGNAL(trashRequested()), SLOT(trashRequested()));
-    connect(noteWidget, SIGNAL(noteIdChanged(QString, QString)), SLOT(noteIdChanged(QString, QString)));
-    connect(noteWidget, SIGNAL(firstLineChanged()), SLOT(firstLineChanged()));
+    connect(noteWidget, &NoteWidget::trashRequested, this, &NoteDialog::trashRequested);
+    connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
+        if (oldId.isEmpty() && !newId.isEmpty()) {
+            NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->storageId(), newId), this);
+        }
+    });
+    connect(noteWidget, &NoteWidget::firstLineChanged, this, &NoteDialog::firstLineChanged);
 
     firstLineChanged();
 }
@@ -119,13 +123,6 @@ void NoteDialog::firstLineChanged()
 {
     QString l = noteWidget->firstLine().trimmed();
     setWindowTitle(Utils::cuttedDots(l.isEmpty() ? tr("[No Title]") : l, 256));
-}
-
-void NoteDialog::noteIdChanged(const QString &oldId, const QString &newId)
-{
-    if (oldId.isEmpty() && !newId.isEmpty()) {
-        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), newId), this);
-    }
 }
 
 QHash<QPair<QString, QString>, NoteDialog *> NoteDialog::dialogs;

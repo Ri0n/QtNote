@@ -19,7 +19,7 @@ add_library(kdeintegration ${LIB_TYPE}
     kdeintegrationtray.cpp
     kdeintegrationtray.h
     )
-target_link_libraries(kdeintegration Qt5::Core Qt5::Gui Qt5::Widgets KF5::GlobalAccel
+target_link_libraries(kdeintegration qtnote Qt5::Core Qt5::Gui Qt5::Widgets KF5::GlobalAccel
     KF5::Notifications KF5::WindowSystem)
 if (UNIXLIKE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)

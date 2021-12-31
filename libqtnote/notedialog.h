@@ -45,7 +45,6 @@ protected:
     void changeEvent(QEvent *e);
 
 private slots:
-    void noteIdChanged(const QString &oldId, const QString &newId);
     void firstLineChanged();
 
 private:

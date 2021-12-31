@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.12.0)
 include(QtNoteMacro)
 project(libqtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
@@ -10,27 +10,28 @@ file(GLOB libqtnote_SRCS "./*.cpp")
 file(GLOB libqtnote_HDRS "./*.h")
 file(GLOB libqtnote_UIS "./*.ui")
 
-if(WIN32)
-    add_definitions(-DQTNOTE_EXPORT)
-endif()
-
+include(GenerateExportHeader)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 add_library(qtnote SHARED
     ${libqtnote_HDRS}
     ${libqtnote_SRCS}
     ${libqtnote_UIS}
     main.qrc
 )
+generate_export_header(qtnote)
 
 set(qtnote_lib qtnote PARENT_SCOPE)
 
-target_include_directories(qtnote PRIVATE "${CMAKE_SOURCE_DIR}/plugins" "${CMAKE_BINARY_DIR}")
+target_include_directories(qtnote PRIVATE "${plugins_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 target_include_directories(qtnote PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
     $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
     )
 
 set_target_properties(qtnote PROPERTIES
-  PUBLIC_HEADER "${libqtnote_HDRS}"
+  PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/somelib_export.h"
   VERSION ${QTNOTE_VERSION}
   SOVERSION ${QTNOTE_VERSION_MAJOR}
 )

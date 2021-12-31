@@ -50,9 +50,6 @@ protected:
     void handleFSError();
     void ensureChachePopulated();
 
-protected slots:
-    void settingsApplied();
-
 protected:
     QString                      fileExt;
     QHash<QString, NoteListItem> cache;

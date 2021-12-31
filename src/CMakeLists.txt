@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10.0)
 include(QtNoteMacro)
 project(qtnoteexe VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 if(WIN32)
     set(WINRESFILE "win/qtnote.rc")
 endif()
@@ -18,6 +22,7 @@ add_executable(${PROJECT_NAME}
     ${WINRESFILE}
     ${APP_ICON_MACOSX}
 )
+
 #add_dependencies(${PROJECT_NAME} build_translations)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME qtnote
@@ -28,7 +33,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2010-2020 Sergei Ilinykh"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.ri0n.qtnote"
 )
-
 
 target_link_libraries(${PROJECT_NAME} ${qtnote_lib} SingleApplication::SingleApplication)
 

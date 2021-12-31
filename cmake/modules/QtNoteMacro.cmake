@@ -90,7 +90,7 @@ macro(add_qtnote_plugin name description buildable)
         ${plugins_SOURCE_DIR}/qtnoteplugininterface.h
         ${plugins_SOURCE_DIR}/trayimpl.h
         )
-    include_directories(${CMAKE_BINARY_DIR} ${plugins_SOURCE_DIR} ${libqtnote_SOURCE_DIR})
+    include_directories(${CMAKE_BINARY_DIR} ${plugins_SOURCE_DIR})
     if(WIN32)
         set(EXTRA_LINK_TARGET ${qtnote_lib})
         set(LIB_TYPE "MODULE")
