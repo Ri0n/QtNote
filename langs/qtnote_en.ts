@@ -15,7 +15,7 @@
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="92"/>
-        <source>Simpe and usable note taking application</source>
+        <source>Simple and usable note taking application</source>
         <translation></translation>
     </message>
     <message>
