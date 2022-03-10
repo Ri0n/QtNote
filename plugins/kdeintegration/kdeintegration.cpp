@@ -40,7 +40,8 @@ PluginMetadata KDEIntegration::metadata()
                                   << "/usr/share/xsessions/plasma"
                                   << "plasma"
                                   << "/usr/share/xsessions/plasma5"
-                                  << "/usr/share/wayland-sessions/plasmawayland");
+                                  << "/usr/share/wayland-sessions/plasmawayland"
+                                  << "plasmawayland");
     return md;
 }
 
