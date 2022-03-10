@@ -143,7 +143,7 @@ SpellCheckPlugin::SpellCheckPlugin(QObject *parent) : QObject(parent), sei(0) { 
 
 SpellCheckPlugin::~SpellCheckPlugin() { delete sei; }
 
-int SpellCheckPlugin::metadataVersion() const { return MetadataVerion; }
+int SpellCheckPlugin::metadataVersion() const { return MetadataVersion; }
 
 PluginMetadata SpellCheckPlugin::metadata()
 {

@@ -39,7 +39,7 @@ static const QLatin1String pluginId("ubuntu_de");
 //------------------------------------------------------------
 UbuntuPlugin::UbuntuPlugin(QObject *parent) : QObject(parent), _tray(0) { }
 
-int UbuntuPlugin::metadataVersion() const { return MetadataVerion; }
+int UbuntuPlugin::metadataVersion() const { return MetadataVersion; }
 
 PluginMetadata UbuntuPlugin::metadata()
 {

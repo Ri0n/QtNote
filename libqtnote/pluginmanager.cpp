@@ -61,6 +61,8 @@ public:
             pluginsDir.cdUp();
             pluginsDir.cdUp();
         }
+#else
+        pluginsDir.cdUp(); // on linux application dir is <builddir>/src. probably same same on windows
 #endif
         pluginsDir.cd("plugins");
 #ifdef Q_OS_WIN
@@ -325,13 +327,15 @@ void PluginManager::updateMetadata()
     s.beginGroup("plugins");
     foreach (const QString &pluginId, s.childGroups()) {
         s.beginGroup(pluginId);
-        if (s.value("metaversion").toInt() != MetadataVerion) {
+        bool    validMeta = s.value("metaversion").toInt() == MetadataVersion;
+        QString fileName  = s.value("filename").toString();
+        if (!validMeta || !QFile::exists(fileName)) {
             s.remove("");
             s.endGroup();
             continue;
         }
         PluginData::Ptr pd(new PluginData);
-        pd->fileName            = s.value("filename").toString();
+        pd->fileName            = fileName;
         tmpPlugins[pluginId]    = pd;
         file2data[pd->fileName] = pd;
         pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy").toInt();
@@ -395,7 +399,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
         }
 
         PluginMetadata md           = qnp->metadata();
-        bool           metaVerMatch = (qnp->metadataVersion() == MetadataVerion);
+        bool           metaVerMatch = (qnp->metadataVersion() == MetadataVersion);
         if (!metaVerMatch || md.id.isEmpty() || md.name.isEmpty()) {
             loader.unload();
             if (metaVerMatch) {

@@ -45,7 +45,7 @@ TomboyPlugin::~TomboyPlugin()
     }
 }
 
-int TomboyPlugin::metadataVersion() const { return MetadataVerion; }
+int TomboyPlugin::metadataVersion() const { return MetadataVersion; }
 
 void TomboyPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 

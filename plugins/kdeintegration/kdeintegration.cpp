@@ -20,7 +20,7 @@ static const QLatin1String pluginId("kde_de");
 //------------------------------------------------------------
 KDEIntegration::KDEIntegration(QObject *parent) : QObject(parent) { }
 
-int KDEIntegration::metadataVersion() const { return MetadataVerion; }
+int KDEIntegration::metadataVersion() const { return MetadataVersion; }
 
 PluginMetadata KDEIntegration::metadata()
 {

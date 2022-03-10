@@ -20,7 +20,7 @@ BaseIntegration::BaseIntegration(QObject *parent) :
 {
 }
 
-int BaseIntegration::metadataVersion() const { return MetadataVerion; }
+int BaseIntegration::metadataVersion() const { return MetadataVersion; }
 
 PluginMetadata BaseIntegration::metadata()
 {

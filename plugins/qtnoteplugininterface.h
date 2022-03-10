@@ -10,7 +10,7 @@
 
 namespace QtNote {
 
-#define MetadataVerion 2
+#define MetadataVersion 2
 
 struct PluginMetadata {
     QIcon        icon;
