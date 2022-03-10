@@ -62,6 +62,10 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     if (reason != QSystemTrayIcon::Trigger) {
         return;
     }
+    if (currentMenu) {
+        currentMenu->close();
+        return;
+    }
     QMenu menu;
     menu.addAction(actNew);
     menu.addSeparator();
@@ -107,7 +111,9 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     if (mr.top() < dr.top()) {
         mr.moveTop(dr.top());
     }
+    currentMenu  = &menu;
     QAction *act = menu.exec(mr.topLeft());
+    currentMenu  = nullptr;
 
     if (act && act != actNew) {
         NoteListItem &note = notes[act->data().toInt()];

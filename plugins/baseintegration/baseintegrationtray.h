@@ -23,6 +23,7 @@ class BaseIntegrationTray : public TrayImpl {
     QSystemTrayIcon     *tray;
     QMenu               *contextMenu;
     QAction             *actQuit, *actNew, *actAbout, *actOptions, *actManager;
+    QMenu               *currentMenu = nullptr;
 
 public:
     explicit BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent = 0);

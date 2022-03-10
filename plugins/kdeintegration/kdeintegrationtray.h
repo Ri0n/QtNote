@@ -4,6 +4,7 @@
 #include "trayimpl.h"
 
 class QAction;
+class QMenu;
 class KStatusNotifierItem;
 
 namespace QtNote {
@@ -23,9 +24,10 @@ private slots:
     void showNotes(bool active, const QPoint &pos);
 
 private:
-    Main *               qtnote;
+    Main                *qtnote;
     KStatusNotifierItem *sni;
-    QAction *            actNew;
+    QAction             *actNew;
+    QMenu               *currentMenu = nullptr;
 };
 
 }
