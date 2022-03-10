@@ -23,7 +23,7 @@ generate_export_header(qtnote)
 
 set(qtnote_lib qtnote PARENT_SCOPE)
 
-target_include_directories(qtnote PRIVATE "${plugins_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+target_include_directories(qtnote PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../plugins" "${CMAKE_BINARY_DIR}")
 target_include_directories(qtnote PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
@@ -31,7 +31,7 @@ target_include_directories(qtnote PUBLIC
     )
 
 set_target_properties(qtnote PROPERTIES
-  PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/somelib_export.h"
+  PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
   VERSION ${QTNOTE_VERSION}
   SOVERSION ${QTNOTE_VERSION_MAJOR}
 )
