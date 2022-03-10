@@ -46,6 +46,13 @@ BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, PluginHostInterface *host
     connect(actAbout, SIGNAL(triggered()), SIGNAL(aboutTriggered()));
 }
 
+BaseIntegrationTray::~BaseIntegrationTray()
+{
+    // ensure proper order of delition and don't forget to delete contextMenu
+    delete tray;
+    delete contextMenu;
+}
+
 void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::MiddleClick || reason == QSystemTrayIcon::DoubleClick) {

@@ -18,14 +18,15 @@ class BaseIntegrationTray : public TrayImpl {
 
     friend class BaseIntegration;
 
-    Main *               qtnote;
+    Main                *qtnote;
     PluginHostInterface *host;
-    QSystemTrayIcon *    tray;
-    QMenu *              contextMenu;
-    QAction *            actQuit, *actNew, *actAbout, *actOptions, *actManager;
+    QSystemTrayIcon     *tray;
+    QMenu               *contextMenu;
+    QAction             *actQuit, *actNew, *actAbout, *actOptions, *actManager;
 
 public:
     explicit BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent = 0);
+    ~BaseIntegrationTray();
     void notifyError(const QString &message);
 
 signals:
