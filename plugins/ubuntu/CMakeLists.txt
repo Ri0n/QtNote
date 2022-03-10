@@ -12,7 +12,7 @@ add_library(ubuntu ${LIB_TYPE}
     x11util.cpp
     x11util.h
     )
-target_link_libraries(ubuntu Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(ubuntu ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets)
 if (UNIXLIKE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     target_link_libraries(ubuntu Qt5::X11Extras)
