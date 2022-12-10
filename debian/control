@@ -2,7 +2,7 @@ Source: qtnote
 Section: text
 Priority: optional
 Maintainer: Sergei Ilinykh <rion4ik@gmail.com>
-Build-Depends: cmake (>= 3.10.0), dh-cmake, dh-cmake-compat (= 1), dh-sequence-cmake, debhelper (>= 11), qtbase5-dev, libqt5x11extras5-dev, libhunspell-dev, qttools5-dev, pkg-config
+Build-Depends: cmake (>= 3.10.0), dh-cmake, dh-cmake-compat (= 1), dh-sequence-cmake, debhelper (>= 11), qtbase5-dev, libqt5x11extras5-dev, libhunspell-dev, qttools5-dev, pkg-config, libsingleapplication-dev
 Standards-Version: 4.5.1
 Homepage: http://ri0n.github.io/QtNote
 Vcs-Git: https://github.com/Ri0n/QtNote.git
