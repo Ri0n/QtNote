@@ -44,4 +44,4 @@ Check ./admin/{deb,rpm}build.sh scripts. You can start them w/o arguments.
 
 ## Internationalization
 
-https://www.transifex.com/projects/p/qtnote/
+https://app.transifex.com/rion/qtnote
