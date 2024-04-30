@@ -191,8 +191,8 @@ void PluginManager::loadPlugins()
 #ifdef Q_OS_OSX
     QString session = "macosx";
 #else
-    QString session = qgetenv(
-        "DESKTOP_SESSION"); // FIXME prefer XDG_CURRENT_DESKTOP or QGenericUnixServices::desktopEnvironment for qt5
+    auto    desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
+    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last();
 #endif
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];
@@ -341,7 +341,7 @@ void PluginManager::updateMetadata()
         pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy").toInt();
         pd->loadStatus          = LS_Undefined;
         pd->modifyTime
-            = QDateTime::fromTime_t(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
+            = QDateTime::fromSecsSinceEpoch(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
         pd->features             = (PluginFeatures)s.value("features").toUInt();
         pd->metadata.id          = pluginId;
         pd->metadata.name        = s.value("name").toString();
@@ -446,7 +446,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
         s.setValue("id", md.id);
         s.setValue("loadPolicy", cache->loadPolicy);
         s.setValue("filename", cache->fileName);
-        s.setValue("lastModify", cache->modifyTime.toTime_t());
+        s.setValue("lastModify", cache->modifyTime.toSecsSinceEpoch());
         s.setValue("features", (uint)cache->features);
         s.setValue("name", md.name);
         s.setValue("description", md.description);

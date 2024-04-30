@@ -1,5 +1,5 @@
 pkgname=qtnote
-pkgver=3.0.5
+pkgver=3.2.0
 pkgrel=1
 pkgdesc="Note-taking application written with Qt in mind"
 arch=('i686' 'x86_64')

@@ -9,6 +9,7 @@
 #include <QPrintDialog>
 #include <QPrinter>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QTextFragment>
 #include <QToolButton>
@@ -187,7 +188,9 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
     connect(ui->noteEdit, SIGNAL(focusLost()), SLOT(save()));
     connect(ui->noteEdit, SIGNAL(focusReceived()), SLOT(focusReceived()), Qt::QueuedConnection);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     connect(qGuiApp, &QGuiApplication::paletteChanged, this, [this](const QPalette &) { updateFirstLineColor(); });
+#endif
 }
 
 NoteWidget::~NoteWidget()
@@ -395,6 +398,16 @@ void NoteWidget::onTrashClicked()
     _trashRequested = true;
     emit trashRequested();
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool NoteWidget::event(QEvent *event)
+{
+    if (event->type() == QEvent::ApplicationPaletteChange) {
+        updateFirstLineColor();
+    }
+    return QWidget::event(event);
+}
+#endif
 
 void NoteWidget::updateFirstLineColor()
 {

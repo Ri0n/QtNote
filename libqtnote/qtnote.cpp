@@ -2,7 +2,6 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QDataStream>
-#include <QDesktopWidget>
 #include <QDialog>
 #include <QDir>
 #include <QHBoxLayout>
@@ -38,7 +37,7 @@
 #include "trayimpl.h"
 #include "utils.h"
 
-//#define MAIN_DEBUG
+// #define MAIN_DEBUG
 #ifdef MAIN_DEBUG
 #include <QDebug>
 #endif
@@ -72,7 +71,11 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
 
 #if defined(QTNOTE_DEVEL) || defined(Q_OS_UNIX)
     langDirs << TRANSLATIONSDIR << dlTrDir; // in devel mode TRANSLATIONSDIR will refer to source/langs
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     qtLangDirs << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+#else
+    qtLangDirs << QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+#endif
 #else
     langDirs << qApp->applicationDirPath() + QLatin1String("/langs") << dlTrDir;
     qtLangDirs << langDirs;

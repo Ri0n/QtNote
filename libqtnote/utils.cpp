@@ -21,6 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QColor>
 #include <QDir>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 
@@ -76,7 +77,7 @@ QString Utils::fileNameForText(const QDir &dir, const QString &text, const QStri
     if (title.isEmpty()) {
         return QString();
     }
-    static QRegExp r("[<>:\"/\\\\|?*]");
+    static QRegularExpression r("[<>:\"/\\\\|?*]");
     title = title.replace(r, QChar('_')).left(255 - pfix.size()); // 255 is a regular max limit for a file name
 
     if (title != sameBaseName) { // filename shoud be changed or it's new note

@@ -1,6 +1,5 @@
 #include <QAction>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QMenu>
 #include <QScreen>
 #include <QSettings>

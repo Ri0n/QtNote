@@ -21,6 +21,6 @@ add_library(spellchecker ${LIB_TYPE}
     spellcheckplugin.cpp
     spellcheckplugin.h
     )
-target_link_libraries(spellchecker ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets PkgConfig::Hunspell)
+target_link_libraries(spellchecker ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets PkgConfig::Hunspell)
 
 install(TARGETS spellchecker LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)

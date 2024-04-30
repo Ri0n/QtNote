@@ -29,14 +29,14 @@ private slots:
 
 private:
     friend class MacOSXPlugin;
-    Main *           qtnote;
+    Main                *qtnote;
     PluginHostInterface *host;
-    QSystemTrayIcon *sti;
-    QAction *        actQuit, *actNew, *actAbout, *actOptions, *actManager;
-    QTimer *         menuUpdateTimer;
-    QMenu *          contextMenu;
-    QMenu *          advancedMenu;
-    uint             menuUpdateHash;
+    QSystemTrayIcon     *sti;
+    QAction             *actQuit, *actNew, *actAbout, *actOptions, *actManager;
+    QTimer              *menuUpdateTimer;
+    QMenu               *contextMenu;
+    QMenu               *advancedMenu;
+    uint                 menuUpdateHash;
 };
 
 }

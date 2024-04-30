@@ -20,12 +20,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
+#endif
 #include <QHBoxLayout>
 #include <QRandomGenerator>
+#include <QScreen>
 #include <QSettings>
 
-#include "note.h"
 #include "notedialog.h"
 #include "notewidget.h"
 #include "typeaheadfind.h"
@@ -43,7 +45,11 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     setObjectName("noteDlg");
 
     QHBoxLayout *l = new QHBoxLayout;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     l->setMargin(2);
+#else
+    l->setContentsMargins(2, 2, 2, 2);
+#endif
     l->addWidget(noteWidget);
     setLayout(l);
 
@@ -55,7 +61,7 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
         NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()), this);
     }
     if (rect.isEmpty()) {
-        QSize avail = QApplication::desktop()->size() - sizeHint();
+        QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
         int   x = avail.width() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.width() / 2;
         int   y = avail.height() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.height() / 2;
         move(x, y);

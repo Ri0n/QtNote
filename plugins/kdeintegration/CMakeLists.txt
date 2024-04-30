@@ -1,11 +1,15 @@
 include(QtNoteMacro)
 
-find_package(KF5GlobalAccel CONFIG)
-find_package(KF5Notifications CONFIG)
-find_package(KF5WindowSystem CONFIG)
+find_package(KF${QT_DEFAULT_MAJOR_VERSION}GlobalAccel CONFIG)
+find_package(KF${QT_DEFAULT_MAJOR_VERSION}Notifications CONFIG)
+find_package(KF${QT_DEFAULT_MAJOR_VERSION}WindowSystem CONFIG)
+if (${QT_DEFAULT_MAJOR_VERSION} GREATER_EQUAL 6)
+    find_package(KF${QT_DEFAULT_MAJOR_VERSION}StatusNotifierItem CONFIG)
+    #find_package(KF${QT_DEFAULT_MAJOR_VERSION}X11Extras CONFIG)
+endif()
 
 set(kdeintegration_buildable OFF)
-if(KF5GlobalAccel_FOUND AND KF5Notifications_FOUND AND KF5WindowSystem_FOUND)
+if(KF${QT_DEFAULT_MAJOR_VERSION}GlobalAccel_FOUND AND KF${QT_DEFAULT_MAJOR_VERSION}Notifications_FOUND AND KF${QT_DEFAULT_MAJOR_VERSION}WindowSystem_FOUND)
     set(kdeintegration_buildable ON)
 endif()
 
@@ -19,11 +23,18 @@ add_library(kdeintegration ${LIB_TYPE}
     kdeintegrationtray.cpp
     kdeintegrationtray.h
     )
-target_link_libraries(kdeintegration qtnote Qt5::Core Qt5::Gui Qt5::Widgets KF5::GlobalAccel
-    KF5::Notifications KF5::WindowSystem)
+target_link_libraries(kdeintegration qtnote Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets KF${QT_DEFAULT_MAJOR_VERSION}::GlobalAccel
+    KF${QT_DEFAULT_MAJOR_VERSION}::Notifications KF${QT_DEFAULT_MAJOR_VERSION}::WindowSystem)
+if (${QT_DEFAULT_MAJOR_VERSION} GREATER_EQUAL 6)
+    target_link_libraries(kdeintegration KF${QT_DEFAULT_MAJOR_VERSION}::StatusNotifierItem)
+endif()
 if (UNIXLIKE)
-    find_package(Qt5 COMPONENTS X11Extras REQUIRED)
-    target_link_libraries(kdeintegration Qt5::X11Extras)
+    if (${QT_DEFAULT_MAJOR_VERSION} LESS 6)
+        find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS X11Extras REQUIRED)
+        target_link_libraries(kdeintegration Qt${QT_DEFAULT_MAJOR_VERSION}::X11Extras)
+    # else()
+    #     target_link_libraries(kdeintegration KF${QT_DEFAULT_MAJOR_VERSION}::X11Extras)
+    endif()
 endif()
 
 install(TARGETS kdeintegration LIBRARY DESTINATION ${PLUGINSDIR}  COMPONENT Libraries NAMELINK_COMPONENT Development)

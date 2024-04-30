@@ -31,15 +31,15 @@ public:
 
     void                    setText(QString text);
     QString                 text();
-    inline const Features & features() const { return _features; }
+    inline const Features  &features() const { return _features; }
     inline void             setFeatures(const Features &features) { _features = features; }
-    virtual NoteEdit *      editWidget() const;
+    virtual NoteEdit       *editWidget() const;
     inline NoteHighlighter *highlighter() const { return _highlighter; }
     void                    setAcceptRichText(bool state);
     inline QString          storageId() const { return _storageId; }
     inline QString          noteId() const { return _noteId; }
     void                    setNoteId(const QString &noteId);
-    inline const QString &  firstLine() const { return _firstLine; }
+    inline const QString   &firstLine() const { return _firstLine; }
     inline qint64           lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
     inline bool             isTrashRequested() const { return _trashRequested; }
     inline void             setTrashRequested(bool state) { _trashRequested = state; }
@@ -53,8 +53,11 @@ signals:
     void invalidated(); // emited when we are unsure we have the latest data
 
 protected:
-    void changeEvent(QEvent *e);
-    void keyPressEvent(QKeyEvent *event);
+    void changeEvent(QEvent *e) override;
+    void keyPressEvent(QKeyEvent *event) override;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool event(QEvent *event) override;
+#endif
 
 public slots:
     void save();
@@ -75,8 +78,8 @@ private slots:
 private:
     Ui::NoteWidget *ui = nullptr;
 
-    TypeAheadFindBar *                    findBar      = nullptr;
-    NoteHighlighter *                     _highlighter = nullptr;
+    TypeAheadFindBar                     *findBar      = nullptr;
+    NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
     QString                               _storageId;
     QString                               _noteId;

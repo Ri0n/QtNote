@@ -6,7 +6,7 @@ set(plugins_list
     macosx
     spellchecker
     tomboy
-    ubuntu
+    gnome
 )
 
 foreach(plugin ${plugins_list})

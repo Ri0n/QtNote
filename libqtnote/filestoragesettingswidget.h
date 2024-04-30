@@ -30,7 +30,7 @@ private slots:
 
 private:
     Ui::FileStorageSettingsWidget *ui;
-    QtNote::FileStorage *          storage;
+    QtNote::FileStorage           *storage;
 };
 
 #endif // FILESTORAGESETTINGSWIDGET_H

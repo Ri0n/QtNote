@@ -82,7 +82,7 @@ public:
 class PluginsModel : public QAbstractTableModel {
     Q_OBJECT
 
-    Main *      qtnote;
+    Main       *qtnote;
     QStringList pluginIds; // by priority
     QIcon       settingIcon;
 
@@ -228,7 +228,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const
     {
         if (index.column() == 0) {
-            return QAbstractTableModel::flags(index) | Qt::ItemIsTristate | Qt::ItemIsUserCheckable;
+            return QAbstractTableModel::flags(index) | Qt::ItemIsUserTristate | Qt::ItemIsUserCheckable;
         }
         return QAbstractTableModel::flags(index);
     }

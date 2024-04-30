@@ -46,7 +46,7 @@ public:
         typedef QSharedPointer<PluginData> Ptr;
 
         PluginData() : instance(0), loadStatus(LS_Undefined) { }
-        QObject *                     instance;
+        QObject                      *instance;
         LoadPolicy                    loadPolicy;
         LoadStatus                    loadStatus;
         QString                       fileName;
@@ -98,8 +98,8 @@ signals:
 public slots:
 
 private:
-    Main *                          qtnote;
-    PluginHost *                    pluginHost = nullptr;
+    Main                           *qtnote;
+    PluginHost                     *pluginHost = nullptr;
     QHash<QString, PluginData::Ptr> plugins;
 
     LoadStatus loadPlugin(const QString &fileName, PluginData::Ptr &cache,

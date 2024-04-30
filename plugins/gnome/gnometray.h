@@ -1,5 +1,5 @@
-#ifndef UBUNTUTRAY_H
-#define UBUNTUTRAY_H
+#ifndef GNOMETRAY_H
+#define GNOMETRAY_H
 
 #include "trayimpl.h"
 
@@ -14,11 +14,11 @@ namespace QtNote {
 
 class Main;
 
-class UbuntuTray : public TrayImpl {
+class GnomeTray : public TrayImpl {
     Q_OBJECT
 public:
-    explicit UbuntuTray(Main *qtnote, QObject *parent);
-    ~UbuntuTray();
+    explicit GnomeTray(Main *qtnote, QObject *parent);
+    ~GnomeTray();
 
 signals:
 
@@ -29,7 +29,7 @@ private slots:
     void noteSelected();
 
 private:
-    friend class UbuntuPlugin;
+    friend class GnomePlugin;
     Main               *qtnote;
     QSystemTrayIcon    *sti = nullptr;
     QAction            *actQuit, *actNew, *actAbout, *actOptions, *actManager;
@@ -41,4 +41,4 @@ private:
 
 }
 
-#endif // UBUNTUTRAY_H
+#endif // GNOMETRAY_H

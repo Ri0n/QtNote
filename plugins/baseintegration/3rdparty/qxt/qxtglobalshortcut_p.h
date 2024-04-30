@@ -33,15 +33,15 @@
 
 #include "qxtglobalshortcut.h"
 #include <QAbstractEventDispatcher>
-#include <QKeySequence>
 #include <QHash>
+#include <QKeySequence>
 
 #include <QAbstractNativeEventFilter>
 
-
 class QxtGlobalShortcutPrivate : public QxtPrivate<QxtGlobalShortcut>
 #if !defined(Q_OS_MAC)
-        ,public QAbstractNativeEventFilter
+    ,
+                                 public QAbstractNativeEventFilter
 #endif
 {
 public:
@@ -49,17 +49,21 @@ public:
     QxtGlobalShortcutPrivate();
     ~QxtGlobalShortcutPrivate();
 
-    bool enabled;
-    Qt::Key key;
+    bool                  enabled;
+    Qt::Key               key;
     Qt::KeyboardModifiers mods;
 
-    bool setShortcut(const QKeySequence& shortcut);
+    bool setShortcut(const QKeySequence &shortcut);
     bool unsetShortcut();
 
     static bool error;
 #ifndef Q_OS_MAC
     static int ref;
-    virtual bool nativeEventFilter(const QByteArray & eventType, void * message, long * result);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    virtual bool nativeEventFilter(const QByteArray &eventType, void *message, long *result);
+#else
+    virtual bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result);
+#endif
 #endif // Q_OS_MAC
 
     static void activateShortcut(quint32 nativeKey, quint32 nativeMods);
@@ -71,7 +75,7 @@ private:
     static bool registerShortcut(quint32 nativeKey, quint32 nativeMods);
     static bool unregisterShortcut(quint32 nativeKey, quint32 nativeMods);
 
-    static QHash<QPair<quint32, quint32>, QxtGlobalShortcut*> shortcuts;
+    static QHash<QPair<quint32, quint32>, QxtGlobalShortcut *> shortcuts;
 };
 
 #endif // QXTGLOBALSHORTCUT_P_H

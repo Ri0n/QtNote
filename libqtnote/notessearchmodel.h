@@ -14,7 +14,7 @@ class NotesSearchModel : public QSortFilterProxyModel {
 
     bool                        _searchInBody;
     QString                     _text;
-    GlobalNoteFinder *          _finder;
+    GlobalNoteFinder           *_finder;
     QHash<QString, QStringList> _foundCache;
 
 public:

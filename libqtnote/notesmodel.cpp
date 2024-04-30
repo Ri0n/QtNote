@@ -19,6 +19,7 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QIODevice>
 #include <QMimeData>
 #include <QStringList>
 

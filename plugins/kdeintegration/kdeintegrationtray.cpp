@@ -1,7 +1,6 @@
 #include <KNotification>
 #include <KStatusNotifierItem>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QMenu>
 #include <QScreen>
 #include <QSettings>

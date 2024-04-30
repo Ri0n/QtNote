@@ -1,4 +1,10 @@
 #!/usr/bin/make -f
 
+#export DH_VERBOSE = 1
+
 %:
 	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DQT_DEFAULT_MAJOR_VERSION=5

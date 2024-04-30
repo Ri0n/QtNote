@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDropEvent>
+#include <QFile>
 #include <QMenu>
 #include <QMimeData>
 #include <QTextBlock>

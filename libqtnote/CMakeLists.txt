@@ -41,7 +41,7 @@ set_target_properties(qtnote
     RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
 )
 endif()
-target_link_libraries(qtnote PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport)
+target_link_libraries(qtnote PUBLIC Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::PrintSupport)
 if (APPLE)
     target_link_libraries(qtnote PUBLIC "-framework CoreFoundation" "-framework Carbon")
 endif()

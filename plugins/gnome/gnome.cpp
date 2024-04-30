@@ -25,55 +25,55 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QWidget>
 #include <QtPlugin>
 
+#include "gnome.h"
+#include "gnometray.h"
 #include "qtnote_config.h"
-#include "ubuntu.h"
-#include "ubuntutray.h"
 #include "x11util.h"
 
 namespace QtNote {
 
-static const QLatin1String pluginId("ubuntu_de");
+static const QLatin1String pluginId("gnome_de");
 
 //------------------------------------------------------------
-// UbuntuPlugin
+// GnomePlugin
 //------------------------------------------------------------
-UbuntuPlugin::UbuntuPlugin(QObject *parent) : QObject(parent), _tray(0) { }
+GnomePlugin::GnomePlugin(QObject *parent) : QObject(parent), _tray(0) { }
 
-int UbuntuPlugin::metadataVersion() const { return MetadataVersion; }
+int GnomePlugin::metadataVersion() const { return MetadataVersion; }
 
-PluginMetadata UbuntuPlugin::metadata()
+PluginMetadata GnomePlugin::metadata()
 {
     PluginMetadata md;
     md.id          = pluginId;
-    md.icon        = QIcon(":/icons/ubuntu-logo");
-    md.name        = "Ubuntu Integration";
-    md.description = tr("Integrtion with ubuntu-only features");
+    md.icon        = QIcon(":/icons/gnome-logo");
+    md.name        = "Gnome Integration";
+    md.description = tr("Integrtion with gnome-only features");
     md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
     md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
-    md.extra.insert("de", QStringList() << "ubuntu");
+    md.extra.insert("de", QStringList() << "gnome");
     return md;
 }
 
-void UbuntuPlugin::setHost(PluginHostInterface *host) { this->host = host; }
+void GnomePlugin::setHost(PluginHostInterface *host) { this->host = host; }
 
-TrayImpl *UbuntuPlugin::initTray(Main *qtnote)
+TrayImpl *GnomePlugin::initTray(Main *qtnote)
 {
-    _tray = new UbuntuTray(qtnote, this);
+    _tray = new GnomeTray(qtnote, this);
     return _tray;
 }
 
-void UbuntuPlugin::notifyError(const QString &msg)
+void GnomePlugin::notifyError(const QString &msg)
 {
-    // TODO ue libnotify instead or what is ubuntu-way
+    // TODO ue libnotify instead or what is gnome-way
     if (_tray) {
         _tray->sti->showMessage(tr("Error"), msg, QSystemTrayIcon::Warning);
     }
 }
 
-void UbuntuPlugin::activateWidget(QWidget *w)
+void GnomePlugin::activateWidget(QWidget *w)
 {
     QTimer *timer = new QTimer(this);
     timer->setSingleShot(true);
@@ -82,14 +82,14 @@ void UbuntuPlugin::activateWidget(QWidget *w)
     timer->start(100);
 }
 
-void UbuntuPlugin::activator()
+void GnomePlugin::activator()
 {
     QTimer  *timer = (QTimer *)sender();
     QWidget *w     = sender()->property("widget").value<QWidget *>();
 
-    /*w->activateWindow();
-    w->raise();*/
-    X11Util::forceActivateWindow(w->winId());
+    w->activateWindow();
+    w->raise();
+    // X11Util::forceActivateWindow(w->winId());
     timer->deleteLater();
 }
 

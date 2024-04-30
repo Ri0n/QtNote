@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDesktopServices>
 #include <QDir>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QUuid>
 
 #include "tomboydata.h"

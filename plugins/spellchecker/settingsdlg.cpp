@@ -12,7 +12,11 @@ public:
     QLocale locale;
 
     LocaleWidgetItem(const QLocale &locale) :
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QListWidgetItem(locale.nativeLanguageName() + QLatin1String(" (") + locale.nativeTerritoryName()
+#else
         QListWidgetItem(locale.nativeLanguageName() + QLatin1String(" (") + locale.nativeCountryName()
+#endif
                         + QLatin1Char(')')),
         locale(locale)
     {

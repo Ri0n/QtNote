@@ -26,8 +26,8 @@ private slots:
 
 private:
     Ui::OptionsPlugins *ui;
-    Main *              qtnote;
-    PluginsModel *      pluginsModel;
+    Main               *qtnote;
+    PluginsModel       *pluginsModel;
 };
 
 } // namespace QtNote

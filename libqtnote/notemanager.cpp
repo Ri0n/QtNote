@@ -56,7 +56,7 @@ public slots:
 void NoteFinder::start(const QString &text)
 {
     auto nl = _storage.noteList();
-    for (auto &n : qAsConst(nl)) {
+    for (auto &n : std::as_const(nl)) {
         // text always returns plain text
         if (_storage.note(n.id).text().contains(text)) {
             emit found(n.id);
@@ -85,7 +85,7 @@ void GlobalNoteFinder::start(const QString &text)
 
 void GlobalNoteFinder::abort()
 {
-    for (auto s : qAsConst(searchers)) {
+    for (auto s : std::as_const(searchers)) {
         if (s) {
             s->abort();
         }

@@ -13,14 +13,10 @@ namespace QtNote {
 class MacOSXTray;
 class PluginHostInterface;
 
-class MacOSXPlugin : public QObject,
-                     public PluginInterface,
-                     public TrayInterface,
-                     public NotificationInterface {
+class MacOSXPlugin : public QObject, public PluginInterface, public TrayInterface, public NotificationInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.MacOSX")
-    Q_INTERFACES(
-        QtNote::PluginInterface QtNote::TrayInterface QtNote::NotificationInterface)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::NotificationInterface)
 public:
     explicit MacOSXPlugin(QObject *parent = 0);
 
@@ -32,7 +28,7 @@ public:
     void      notifyError(const QString &msg);
 
 private:
-    MacOSXTray *         _tray;
+    MacOSXTray          *_tray;
     PluginHostInterface *host;
 };
 

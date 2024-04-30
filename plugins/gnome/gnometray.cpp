@@ -1,6 +1,5 @@
 #include <QAction>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QMenu>
 #include <QMetaType>
 #include <QSettings>
@@ -8,9 +7,9 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 
+#include "gnometray.h"
 #include "notemanager.h"
 #include "qtnote.h"
-#include "ubuntutray.h"
 #include "utils.h"
 
 typedef QPair<QString, QString> NoteIdent;
@@ -18,7 +17,7 @@ Q_DECLARE_METATYPE(NoteIdent)
 
 namespace QtNote {
 
-UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(qtnote), contextMenu(0)
+GnomeTray::GnomeTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(qtnote), contextMenu(0)
 {
     sti = new QSystemTrayIcon(QIcon::fromTheme("qtnote", QIcon(":/icons/trayicon")), this);
     connect(sti, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), SIGNAL(newNoteTriggered()));
@@ -64,9 +63,9 @@ UbuntuTray::UbuntuTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote
     sti->show();
 }
 
-UbuntuTray::~UbuntuTray() { }
+GnomeTray::~GnomeTray() { }
 
-void UbuntuTray::rebuildMenu()
+void GnomeTray::rebuildMenu()
 {
     uint                h = 0;
     QSettings           s;
@@ -97,7 +96,7 @@ void UbuntuTray::rebuildMenu()
     contextMenu->addMenu(advancedMenu);
 }
 
-void UbuntuTray::noteSelected()
+void GnomeTray::noteSelected()
 {
     NoteIdent ni = ((QAction *)sender())->data().value<NoteIdent>();
     emit      showNoteTriggered(ni.first, ni.second);

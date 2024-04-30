@@ -1,7 +1,7 @@
 project(langs)
 file(GLOB qtnote_TRS "${CMAKE_CURRENT_SOURCE_DIR}/qtnote_*.ts")
 
-find_package(Qt5 COMPONENTS LinguistTools REQUIRED)
+find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS LinguistTools REQUIRED)
 
 set(PROJECT_DIRS
 ${CMAKE_SOURCE_DIR}
@@ -17,7 +17,7 @@ foreach(_LANG ${qtnote_TRS})
     string(REPLACE "@" "_" _SHORT_LANG ${_SHORT_LANG})
     add_custom_command(TARGET lupdate
         PRE_BUILD
-        COMMAND ${Qt5_LUPDATE_EXECUTABLE}
+        COMMAND ${Qt${QT_DEFAULT_MAJOR_VERSION}_LUPDATE_EXECUTABLE}
         ARGS -no-obsolete -recursive ${PROJECT_DIRS} -ts ${_LANG}
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         VERBATIM
@@ -27,7 +27,7 @@ endforeach()
 if(WIN32)
     set_source_files_properties(${qtnote_TRS} PROPERTIES OUTPUT_LOCATION "${EXECUTABLE_OUTPUT_PATH}/langs")
 endif()
-qt5_add_translation(qtnote_QM ${qtnote_TRS})
+qt_add_translation(qtnote_QM ${qtnote_TRS})
 
 add_custom_target(build_translations ALL DEPENDS ${qtnote_QM})
 

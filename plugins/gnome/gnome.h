@@ -1,5 +1,5 @@
-#ifndef UBUNTUPLUGIN_H
-#define UBUNTUPLUGIN_H
+#ifndef GNOMEPLUGIN_H
+#define GNOMEPLUGIN_H
 
 #include <QObject>
 
@@ -10,20 +10,20 @@
 
 namespace QtNote {
 
-class UbuntuTray;
+class GnomeTray;
 class PluginHostInterface;
 
-class UbuntuPlugin : public QObject,
-                     public PluginInterface,
-                     public TrayInterface,
-                     DEIntegrationInterface,
-                     public NotificationInterface {
+class GnomePlugin : public QObject,
+                    public PluginInterface,
+                    public TrayInterface,
+                    DEIntegrationInterface,
+                    public NotificationInterface {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Ubuntu")
+    Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Gnome")
     Q_INTERFACES(
         QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface)
 public:
-    explicit UbuntuPlugin(QObject *parent = 0);
+    explicit GnomePlugin(QObject *parent = 0);
 
     int                    metadataVersion() const;
     virtual PluginMetadata metadata();
@@ -38,10 +38,10 @@ private slots:
     void activator();
 
 private:
-    UbuntuTray *         _tray;
+    GnomeTray           *_tray;
     PluginHostInterface *host;
 };
 
 } // namespace QtNote
 
-#endif // UBUNTUPLUGIN_H
+#endif // GNOMEPLUGIN_H

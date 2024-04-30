@@ -84,9 +84,7 @@ class SpellContextMenu : public QObject {
 
 public:
     SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor, QString wrongWord,
-                     QMenu *menu) :
-        QObject(menu),
-        sei(sei), te(te), cursor(cursor)
+                     QMenu *menu) : QObject(menu), sei(sei), te(te), cursor(cursor)
     {
         QList<QString>   suggestions = sei->suggestions(wrongWord);
         QList<QAction *> actions;
@@ -180,7 +178,11 @@ QString SpellCheckPlugin::tooltip() const
     foreach (auto &d, dicts) {
         QLocale locale(d.language, d.country);
         QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (")
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            + locale.nativeTerritoryName() + QLatin1Char(')');
+#else
             + locale.nativeCountryName() + QLatin1Char(')');
+#endif
         if (!d.filename.isEmpty()) {
             l += QLatin1String(":</i> ");
             l += d.filename;

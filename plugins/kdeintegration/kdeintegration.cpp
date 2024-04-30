@@ -2,6 +2,8 @@
 #include <KNotification>
 #include <KStatusNotifierItem>
 #include <KWindowSystem>
+#include <KX11Extras>
+
 #include <QAction>
 #include <QWidget>
 #include <QtPlugin>
@@ -34,14 +36,7 @@ PluginMetadata KDEIntegration::metadata()
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
-    md.extra.insert("de",
-                    QStringList() << "KDE-4"
-                                  << "kde-plasma"
-                                  << "/usr/share/xsessions/plasma"
-                                  << "plasma"
-                                  << "/usr/share/xsessions/plasma5"
-                                  << "/usr/share/wayland-sessions/plasmawayland"
-                                  << "plasmawayland");
+    md.extra.insert("de", QStringList() << "KDE");
     return md;
 }
 
@@ -55,10 +50,7 @@ void KDEIntegration::notifyError(const QString &msg)
     n->sendEvent();
 }
 
-void KDEIntegration::activateWidget(QWidget *w)
-{
-    KWindowSystem::forceActiveWindow(w->winId(), 0); // just activateWindow doesn't work when started from tray
-}
+void KDEIntegration::activateWidget(QWidget *w) { KX11Extras::forceActiveWindow(w->winId(), 0); }
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {

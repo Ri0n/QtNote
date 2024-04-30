@@ -29,10 +29,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSystemTrayIcon>
 #include <QTimer>
 
-#include "notemanager.h"
-#include "qtnote.h"
 #include "macosxtray.h"
+#include "notemanager.h"
 #include "pluginhostinterface.h"
+#include "qtnote.h"
 #include "utils.h"
 
 typedef QPair<QString, QString> NoteIdent;
@@ -40,7 +40,8 @@ Q_DECLARE_METATYPE(NoteIdent)
 
 namespace QtNote {
 
-MacOSXTray::MacOSXTray(Main *qtnote, PluginHostInterface *host, QObject *parent) : TrayImpl(parent), qtnote(qtnote), host(host), contextMenu(0)
+MacOSXTray::MacOSXTray(Main *qtnote, PluginHostInterface *host, QObject *parent) :
+    TrayImpl(parent), qtnote(qtnote), host(host), contextMenu(0)
 {
     menuUpdateTimer = new QTimer(this);
     menuUpdateTimer->setInterval(1000);

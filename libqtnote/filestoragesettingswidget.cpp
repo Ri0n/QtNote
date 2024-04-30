@@ -6,8 +6,7 @@
 
 FileStorageSettingsWidget::FileStorageSettingsWidget(const QString &customPath, QtNote::FileStorage *storage,
                                                      QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::FileStorageSettingsWidget), storage(storage)
+    QWidget(parent), ui(new Ui::FileStorageSettingsWidget), storage(storage)
 {
     ui->setupUi(this);
     ui->cbCustomPath->setChecked(!customPath.isEmpty());

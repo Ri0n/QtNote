@@ -7,6 +7,8 @@
 
 class Hunspell;
 class QTextCodec;
+class QStringEncoder;
+class QStringDecoder;
 
 namespace QtNote {
 
@@ -15,9 +17,14 @@ class PluginHostInterface;
 class HunspellEngine : public SpellEngineInterface {
 public:
     struct LangItem {
-        DictInfo    info;
-        Hunspell *  hunspell;
+        DictInfo  info;
+        Hunspell *hunspell;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         QTextCodec *codec;
+#else
+        QStringEncoder *encoder = nullptr;
+        QStringDecoder *decoder = nullptr;
+#endif
     };
 
     HunspellEngine(PluginHostInterface *host);

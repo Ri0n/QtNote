@@ -10,7 +10,7 @@
 %endif
 
 Name:           qtnote
-Version:        3.0.5
+Version:        3.2.0
 Release:        1%{?dist}
 Summary:        Simple note-taking application in Qt
 # FIXME: Select a correct license from https://github.com/openSUSE/spec-cleaner#spdx-licenses

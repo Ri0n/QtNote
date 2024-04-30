@@ -25,9 +25,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QWidget>
 #include <QtPlugin>
 
-#include "qtnote_config.h"
 #include "macosx.h"
 #include "macosxtray.h"
+#include "qtnote_config.h"
 
 namespace QtNote {
 

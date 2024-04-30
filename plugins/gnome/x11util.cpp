@@ -1,5 +1,10 @@
+#include <QtGlobal>
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QX11Info>
+#else
+#include <QGuiApplication>
+#endif
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 
@@ -7,7 +12,18 @@
 
 void X11Util::forceActivateWindow(unsigned long winId)
 {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     Display *display = QX11Info::display();
+#else
+    auto x11app = qApp->nativeInterface<QNativeInterface::QX11Application>();
+    if (!x11app) {
+        return;
+    }
+    Display *display = x11app->display();
+#endif
+    if (!display) {
+        return;
+    }
 
     Atom   net_wm_active_window = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
     XEvent xev;
@@ -23,7 +39,7 @@ void X11Util::forceActivateWindow(unsigned long winId)
     xev.xclient.data.l[3]    = 0;
     xev.xclient.data.l[4]    = 0;
 
-    XSendEvent(display, QX11Info::appRootWindow(), False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+    XSendEvent(display, DefaultRootWindow(display), False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
     /* Ensure focus is actually switched to active window */
     XSetInputFocus(display, winId, RevertToParent, CurrentTime);

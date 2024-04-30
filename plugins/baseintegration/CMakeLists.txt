@@ -25,13 +25,13 @@ add_library(baseintegration ${LIB_TYPE}
     baseintegration.qrc
     )
 target_include_directories(baseintegration PRIVATE 3rdparty/qxt)
-target_link_libraries(baseintegration ${EXTRA_LINK_TARGET} Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(baseintegration ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets)
 if (UNIX)
     if (APPLE)
         target_link_libraries(baseintegration "-framework Carbon")
-    else()
-        find_package(Qt5 COMPONENTS X11Extras REQUIRED)
-        target_link_libraries(baseintegration Qt5::X11Extras)
+    elseif(${QT_DEFAULT_MAJOR_VERSION} LESS 6)
+        find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS X11Extras REQUIRED)
+        target_link_libraries(baseintegration Qt${QT_DEFAULT_MAJOR_VERSION}::X11Extras)
     endif()
 endif()
 
