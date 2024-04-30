@@ -11,7 +11,7 @@ depends=( 'qt5-base' 'qt5-tools' 'hunspell'
 makedepends=('tar')
 conflicts=(qtnote-git)
 source=(https://github.com/Ri0n/QtNote/archive/$pkgver.tar.gz)
-md5sums=('4e119a4ee9bf9b4520f3a5b6a64ed1b9')
+md5sums=('fccd107d2130cd77da9a21edfb76c927')
 
 _srcdirname=QtNote
 
