@@ -25,6 +25,14 @@ project(qtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
 
+if("${QT_DEFAULT_MAJOR_VERSION}" STREQUAL "")
+    if(WIN32 OR APPLE)
+        set(QT_DEFAULT_MAJOR_VERSION 6)
+    else()
+        set(QT_DEFAULT_MAJOR_VERSION 5)
+    endif()
+endif()
+
 find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Widgets Core Gui PrintSupport REQUIRED)
 if (Qt${QT_DEFAULT_MAJOR_VERSION}Widgets_VERSION VERSION_LESS 5.10.0)
     message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")

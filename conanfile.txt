@@ -1,0 +1,6 @@
+[requires]
+hunspell/1.7.2
+
+[generators]
+CMakeDeps
+CMakeToolchain

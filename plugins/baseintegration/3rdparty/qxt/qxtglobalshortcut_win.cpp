@@ -33,7 +33,12 @@
 
 
 bool QxtGlobalShortcutPrivate::nativeEventFilter(const QByteArray & eventType,
-    void * message, long * result)
+    void * message,
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+                                                 long *result)
+#else
+                                                 qintptr *result)
+#endif
 {
     Q_UNUSED(eventType);
     Q_UNUSED(result);

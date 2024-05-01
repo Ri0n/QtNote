@@ -13,7 +13,11 @@
 #include <QStringDecoder>
 #include <QStringEncoder>
 #endif
+#ifdef Q_OS_WIN
+#include <hunspell/hunspell.hxx>
+#else
 #include <hunspell.hxx>
+#endif
 
 #include "pluginhostinterface.h"
 #ifdef Q_OS_WIN

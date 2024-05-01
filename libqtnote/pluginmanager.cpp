@@ -55,25 +55,28 @@ public:
 #ifdef QTNOTE_DEVEL
         QDir pluginsDir = QDir(qApp->applicationDirPath());
 
-#if defined(Q_OS_MAC)
+#  if defined(Q_OS_MAC)
         if (pluginsDir.dirName() == "MacOS") {
             pluginsDir.cdUp();
             pluginsDir.cdUp();
             pluginsDir.cdUp();
         }
-#else
+#  else
         pluginsDir.cdUp(); // on linux application dir is <builddir>/src. probably same same on windows
-#endif
+#  endif
         pluginsDir.cd("plugins");
-#ifdef Q_OS_WIN
+#  ifdef Q_OS_WIN
         pluginsDirs << pluginsDir.path();
-#else
+        pluginsDir = QDir::current();
+        pluginsDir.cd("plugins");
+        pluginsDirs << pluginsDir.path();
+#  else
         foreach (const QString &dirName, pluginsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
             QDir d(pluginsDir);
             d.cd(dirName);
             pluginsDirs << d.path();
         }
-#endif
+#  endif
         qDebug() << "Plugins dirs: " << pluginsDirs;
 #else // not devel
 
