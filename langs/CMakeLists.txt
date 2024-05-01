@@ -44,4 +44,5 @@ else()
                         TS_FILES ${qtnote_TRS}
                         QM_FILES_OUTPUT_VARIABLE qtnote_QM)
 endif()
-add_custom_target(build_translations ALL DEPENDS ${qtnote_QM})
+
+install(FILES ${qtnote_QM} DESTINATION ${TRANSLATIONSDIR} COMPONENT Executable)
