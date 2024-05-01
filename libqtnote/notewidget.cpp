@@ -389,7 +389,7 @@ void NoteWidget::onTrashClicked()
 {
     QSettings s;
     if (!text().isEmpty() && s.value("ui.ask-on-delete", true).toBool()
-        && QMessageBox::question(0, tr("Deletion confirmation"), tr("Are you sure want to delete this note?"),
+        && QMessageBox::question(0, tr("Deletion confirmation"), tr("Are you sure you want to delete this note?"),
                                  QMessageBox::Yes | QMessageBox::No)
             != QMessageBox::Yes) {
         return;

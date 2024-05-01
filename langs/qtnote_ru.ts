@@ -492,7 +492,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="339"/>
-        <source>Are you sure want to delete this note?</source>
+        <source>Are you sure you want to delete this note?</source>
         <translation>Вы действительно хотите удалить эту заметку?</translation>
     </message>
 </context>
