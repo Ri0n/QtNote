@@ -98,6 +98,7 @@ void NoteDialog::changeEvent(QEvent *e)
     default:
         break;
     }
+    QDialog::changeEvent(e);
 }
 
 void NoteDialog::trashRequested()

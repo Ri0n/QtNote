@@ -273,6 +273,7 @@ void Main::showNoteDialog(const QString &storageId, const QString &noteId, const
         }
         dlg = new NoteDialog(nw);
         dlg->setWindowIcon(NoteManager::instance()->storage(storageId)->noteIcon());
+        dlg->setWindowState(Qt::WindowNoState);
     }
     dlg->show();
     activateWidget(dlg);
