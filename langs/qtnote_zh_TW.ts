@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.0" language="zh_TW">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="zh_TW">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -7,39 +9,63 @@
         <translation>關於QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="78"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="76"/>
         <source>About</source>
         <translation>關於</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="92"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="88"/>
         <source>Simple and usable note taking application</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="104"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="97"/>
+        <source>License:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="131"/>
+        <source>Sergei Ilinykh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="152"/>
+        <source>Author:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="187"/>
+        <source>Russian:
+  Sergei Ilinykh &lt;rion4ik@gmail.com&gt;
+
+Ukrainian:
+  Vitaly Tonkacheyev
+
+Vietnamese:
+  Phan Anh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>License: GPL-3</source>
-        <translation>授權: GPL-3</translation>
+        <translation type="vanished">授權: GPL-3</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="116"/>
         <source>Author: Il&apos;inykh Sergey</source>
-        <translation>作者: Il&apos;inykh Sergey</translation>
+        <translation type="vanished">作者: Il&apos;inykh Sergey</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="149"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="175"/>
         <source>Translations</source>
         <translation>翻譯：台灣人st.michael &lt;stmic999@gmail.com&gt;</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="161"/>
         <source>Russian:
-  Il'inykh Sergey &lt;rion4ik@gmail.com&gt;
+  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
 
 Vietnamese:
   Phan Anh
 </source>
-        <translation>俄文：
+        <translation type="vanished">俄文：
 Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 越南文: Phan Anh</translation>
     </message>
@@ -62,7 +88,7 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
         <translation>瀏覽</translation>
     </message>
     <message>
-        <location filename="../libqtnote/filestoragesettingswidget.cpp" line="31"/>
+        <location filename="../libqtnote/filestoragesettingswidget.cpp" line="24"/>
         <source>Choose storage directory</source>
         <translation>選擇儲存目錄</translation>
     </message>
@@ -165,7 +191,7 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="140"/>
+        <location filename="../libqtnote/qtnote.cpp" line="135"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>無筆記儲存可用，無法繼續</translation>
     </message>
@@ -173,12 +199,12 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::BaseIntegration</name>
     <message>
-        <location filename="../plugins/baseintegration/baseintegration.cpp" line="32"/>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="31"/>
         <source>Provides fallback desktop environment integration</source>
         <translation>提供降級桌面環境整合</translation>
     </message>
     <message>
-        <location filename="../plugins/baseintegration/baseintegration.cpp" line="66"/>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="86"/>
         <source>Error</source>
         <translation>錯誤</translation>
     </message>
@@ -214,92 +240,192 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::FileStorage</name>
     <message>
-        <location filename="../libqtnote/filestorage.cpp" line="76"/>
+        <location filename="../libqtnote/filestorage.cpp" line="51"/>
         <source>File system error for storage &quot;%1&quot;. Please check your settings.</source>
         <translation>%1 的檔案系統錯誤，請檢查設定</translation>
     </message>
     <message>
-        <location filename="../libqtnote/filestorage.cpp" line="101"/>
+        <location filename="../libqtnote/filestorage.cpp" line="106"/>
         <source>Storage path</source>
         <translation>儲存路徑</translation>
     </message>
 </context>
 <context>
+    <name>QtNote::GnomePlugin</name>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
+        <source>Integrtion with gnome-only features</source>
+        <translation>和gnome專有功能整合</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
+        <source>Error</source>
+        <translation>錯誤</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::GnomeTray</name>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
+        <source>&amp;Quit</source>
+        <translation>放棄</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
+        <source>&amp;New</source>
+        <translation>新開</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
+        <source>&amp;About</source>
+        <translation>關於</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
+        <source>&amp;Options</source>
+        <translation>選項</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
+        <source>&amp;Note Manager</source>
+        <translation>筆記管理</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
+        <source>More..</source>
+        <translation>更多..</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
+        <source>Notes</source>
+        <translation>筆記</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="40"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
         <source>Provide native look and feel for KDE users</source>
         <translation>提供KDE用戶原生視覺體驗環境</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="57"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="49"/>
         <source>Error</source>
         <translation>錯誤</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="71"/>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="80"/>
         <source>New note from selection</source>
-        <translation>從選擇開啟新筆記</translation>
+        <translation type="vanished">從選擇開啟新筆記</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="38"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
         <translation>新開</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="41"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
         <translation>筆記管理員</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="42"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
         <translation>選項</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="43"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
         <translation>關於</translation>
     </message>
 </context>
 <context>
+    <name>QtNote::MacOSXPlugin</name>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
+        <source>Error</source>
+        <translation type="unfinished">錯誤</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::MacOSXTray</name>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
+        <source>&amp;Quit</source>
+        <translation type="unfinished">放棄</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
+        <source>&amp;New</source>
+        <translation type="unfinished">新開</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
+        <source>&amp;About</source>
+        <translation type="unfinished">關於</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
+        <source>&amp;Options</source>
+        <translation type="unfinished">選項</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
+        <source>&amp;Note Manager</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
+        <source>More..</source>
+        <translation type="unfinished">更多..</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
+        <source>Notes</source>
+        <translation type="unfinished">筆記</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::Main</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="119"/>
+        <location filename="../libqtnote/qtnote.cpp" line="111"/>
         <source>Desktop integration plugin is not loaded</source>
         <translation>桌面整合插件未載入</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="121"/>
+        <location filename="../libqtnote/qtnote.cpp" line="113"/>
         <source>Tray icon is not initialized</source>
         <translation>Tray圖示未起始</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="123"/>
+        <location filename="../libqtnote/qtnote.cpp" line="115"/>
         <source>Notifications plugin is not loaded</source>
         <translation>通知插件未載入</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="127"/>
+        <location filename="../libqtnote/qtnote.cpp" line="119"/>
         <source>Initialization Error</source>
         <translation>啟始錯誤</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="127"/>
+        <location filename="../libqtnote/qtnote.cpp" line="121"/>
         <source>Enable a plugin with required functionality and restart QtNote</source>
         <translation>啟用一個具有必要功能的插件，並重啟動QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="184"/>
+        <location filename="../libqtnote/qtnote.cpp" line="179"/>
         <source>First Start</source>
         <translation>首次啟動</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="185"/>
+        <location filename="../libqtnote/qtnote.cpp" line="180"/>
         <source>This is your first start of QtNote note-taking application.
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
@@ -313,62 +439,62 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <location filename="../libqtnote/notewidget.cpp" line="112"/>
         <source>Save</source>
         <translation>儲存</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <location filename="../libqtnote/notewidget.cpp" line="112"/>
         <source>Save note to file</source>
         <translation>儲存筆記到檔案</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Copy</source>
         <translation>複製</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Copy note to clipboard</source>
         <translation>複製剪貼簿</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Print</source>
         <translation>列印</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Print note</source>
         <translation>列印筆記</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Find</source>
         <translation>尋找</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Find text in note</source>
         <translation>尋找筆記的文字</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <location filename="../libqtnote/notewidget.cpp" line="117"/>
         <source>Replace</source>
         <translation>取代</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <location filename="../libqtnote/notewidget.cpp" line="117"/>
         <source>Replace text in note</source>
         <translation>取代筆記的文字</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Delete</source>
         <translation>刪除</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Delete note</source>
         <translation>刪除筆記</translation>
     </message>
@@ -376,7 +502,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteDialog</name>
     <message>
-        <location filename="../libqtnote/notedialog.cpp" line="130"/>
+        <location filename="../libqtnote/notedialog.cpp" line="131"/>
         <source>[No Title]</source>
         <translation>筆記標題</translation>
     </message>
@@ -384,20 +510,22 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>Note Manager (%1)</source>
         <translation>筆記管理員</translation>
     </message>
     <message numerus="yes">
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation><numerusform>%n 筆記</numerusform></translation>
+        <translation>
+            <numerusform>%n 筆記</numerusform>
+        </translation>
     </message>
 </context>
 <context>
     <name>QtNote::NoteManagerView</name>
     <message>
-        <location filename="../libqtnote/notemanagerview.cpp" line="42"/>
+        <location filename="../libqtnote/notemanagerview.cpp" line="39"/>
         <source>Delete</source>
         <translation>刪除</translation>
     </message>
@@ -405,27 +533,27 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="297"/>
+        <location filename="../libqtnote/notewidget.cpp" line="355"/>
         <source>Text files (*.txt)</source>
         <translation>文字檔(*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="298"/>
+        <location filename="../libqtnote/notewidget.cpp" line="356"/>
         <source>HTML files (*.html)</source>
         <translation>HTML檔案(*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="306"/>
+        <location filename="../libqtnote/notewidget.cpp" line="364"/>
         <source>Save Note As</source>
         <translation>儲存筆記為</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="338"/>
+        <location filename="../libqtnote/notewidget.cpp" line="392"/>
         <source>Deletion confirmation</source>
         <translation>確認刪除</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="339"/>
+        <location filename="../libqtnote/notewidget.cpp" line="392"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>你確定要刪除這個筆記？</translation>
     </message>
@@ -433,12 +561,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::OptionsDlg</name>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="178"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="175"/>
         <source>Failed to update shortcut for &quot;%1&quot;</source>
         <translation>%1 未更新捷徑</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="229"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>%1: Settings</source>
         <translation>%1:設定</translation>
     </message>
@@ -446,7 +574,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="297"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>: Settings</source>
         <translation>設定</translation>
     </message>
@@ -454,7 +582,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::PTFStorage</name>
     <message>
-        <location filename="../libqtnote/ptfstorage.cpp" line="73"/>
+        <location filename="../libqtnote/ptfstorage.cpp" line="63"/>
         <source>Plain Text Storage</source>
         <translation>純文字儲存</translation>
     </message>
@@ -462,48 +590,48 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::PluginsModel</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="169"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="148"/>
         <source>ABI mismatch</source>
         <translation>ABI不合</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="170"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="149"/>
         <source>Incompatible metadata</source>
         <translation>語意資料不相容</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="171"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="150"/>
         <source>Incompatible version</source>
         <translation>版本不相容</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="172"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="151"/>
         <source>Loaded</source>
         <translation>載入</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="173"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="152"/>
         <source>Initialized</source>
         <translation>初始化</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="174"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="153"/>
         <source>Not a plugin</source>
         <translation>不是插件</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="175"/>
-        <location filename="../libqtnote/optionsplugins.cpp" line="176"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="154"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="155"/>
         <source>Not loaded</source>
         <translation>未載入</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="179"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="158"/>
         <source>&lt;b&gt;Filename:&lt;/b&gt; %1</source>
         <translation>檔名：</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="180"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="159"/>
         <source>&lt;b&gt;Status:&lt;/b&gt; %1</source>
         <translation>狀態：</translation>
     </message>
@@ -511,8 +639,8 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::ShortcutsManager</name>
     <message>
-        <location filename="../libqtnote/shortcutsmanager.cpp" line="17"/>
-        <location filename="../libqtnote/shortcutsmanager.cpp" line="25"/>
+        <location filename="../libqtnote/shortcutsmanager.cpp" line="20"/>
+        <location filename="../libqtnote/shortcutsmanager.cpp" line="28"/>
         <source>Note From Selection</source>
         <translation>選擇筆記</translation>
     </message>
@@ -520,20 +648,28 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::SpellCheckPlugin</name>
     <message>
-        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="88"/>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="152"/>
         <source>Realtime spell check.</source>
         <translation>即時拼字檢查</translation>
     </message>
     <message>
-        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="125"/>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>載入的字典</translation>
     </message>
 </context>
 <context>
+    <name>QtNote::SpellContextMenu</name>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="101"/>
+        <source>Add to dictionary</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>QtNote::TomboyPlugin</name>
     <message>
-        <location filename="../plugins/tomboy/tomboyplugin.cpp" line="61"/>
+        <location filename="../plugins/tomboy/tomboyplugin.cpp" line="58"/>
         <source>Allows read and write tomboy notes</source>
         <translation>允許讀寫tomboy筆記</translation>
     </message>
@@ -541,60 +677,9 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::TomboyStorage</name>
     <message>
-        <location filename="../plugins/tomboy/tomboystorage.cpp" line="56"/>
+        <location filename="../plugins/tomboy/tomboystorage.cpp" line="59"/>
         <source>Tomboy Storage</source>
         <translation>Tomboy儲存</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::UbuntuPlugin</name>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntu.cpp" line="56"/>
-        <source>Integrtion with ubuntu-only features</source>
-        <translation>和ubuntu專有功能整合</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntu.cpp" line="76"/>
-        <source>Error</source>
-        <translation>錯誤</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::UbuntuTray</name>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="35"/>
-        <source>&amp;Quit</source>
-        <translation>放棄</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="36"/>
-        <source>&amp;New</source>
-        <translation>新開</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="37"/>
-        <source>&amp;About</source>
-        <translation>關於</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="38"/>
-        <source>&amp;Options</source>
-        <translation>選項</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="39"/>
-        <source>&amp;Note Manager</source>
-        <translation>筆記管理</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="53"/>
-        <source>More..</source>
-        <translation>更多..</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="82"/>
-        <source>Notes</source>
-        <translation>筆記</translation>
     </message>
 </context>
 <context>
@@ -608,40 +693,40 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>TypeAheadFindBar</name>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="160"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="167"/>
         <source>Search</source>
         <translation>搜尋</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="166"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="181"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="173"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="188"/>
         <source>Replace</source>
         <translation>取代</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="169"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="171"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="176"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="178"/>
         <source>Find next</source>
         <translation>尋找下一筆</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="175"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="177"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="182"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="184"/>
         <source>Find previous</source>
         <translation>尋找前一筆</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="182"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="189"/>
         <source>Replace text</source>
         <translation>取代文字</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="198"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="206"/>
         <source>Replace all</source>
         <translation>取代所有的</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="202"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="210"/>
         <source>&amp;Case sensitive</source>
         <translation>區別大小寫</translation>
     </message>

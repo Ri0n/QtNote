@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.0" language="vi">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="vi">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -7,39 +9,63 @@
         <translation>Thông tin về QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="78"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="76"/>
         <source>About</source>
         <translation>Thông tin về</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="92"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="88"/>
         <source>Simple and usable note taking application</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="104"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="97"/>
+        <source>License:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="131"/>
+        <source>Sergei Ilinykh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="152"/>
+        <source>Author:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/aboutdlg.ui" line="187"/>
+        <source>Russian:
+  Sergei Ilinykh &lt;rion4ik@gmail.com&gt;
+
+Ukrainian:
+  Vitaly Tonkacheyev
+
+Vietnamese:
+  Phan Anh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>License: GPL-3</source>
-        <translation>Giấy phép: GPL-3</translation>
+        <translation type="vanished">Giấy phép: GPL-3</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="116"/>
         <source>Author: Il&apos;inykh Sergey</source>
-        <translation>Tác giả: Il&apos;inykh Sergey</translation>
+        <translation type="vanished">Tác giả: Il&apos;inykh Sergey</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="149"/>
+        <location filename="../libqtnote/aboutdlg.ui" line="175"/>
         <source>Translations</source>
         <translation>Dịch thuật</translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="161"/>
         <source>Russian:
-  Il'inykh Sergey &lt;rion4ik@gmail.com&gt;
+  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
 
 Vietnamese:
   Phan Anh
 </source>
-        <translation>Tiếng Nga:
+        <translation type="vanished">Tiếng Nga:
 Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
 
 Tiếng Việt:
@@ -65,7 +91,7 @@ Phan Anh
         <translation>Duyệt tìm</translation>
     </message>
     <message>
-        <location filename="../libqtnote/filestoragesettingswidget.cpp" line="31"/>
+        <location filename="../libqtnote/filestoragesettingswidget.cpp" line="24"/>
         <source>Choose storage directory</source>
         <translation>Chọn thư mục lưu trữ</translation>
     </message>
@@ -168,7 +194,7 @@ Phan Anh
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="140"/>
+        <location filename="../libqtnote/qtnote.cpp" line="135"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>không thể truy cập bất kỳ ổ lưu trữ ghi chú nào. không thể tiếp tục...</translation>
     </message>
@@ -176,12 +202,12 @@ Phan Anh
 <context>
     <name>QtNote::BaseIntegration</name>
     <message>
-        <location filename="../plugins/baseintegration/baseintegration.cpp" line="32"/>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="31"/>
         <source>Provides fallback desktop environment integration</source>
         <translation>Cho phép tích hợp môi trường bàn làm việc dự phòng</translation>
     </message>
     <message>
-        <location filename="../plugins/baseintegration/baseintegration.cpp" line="66"/>
+        <location filename="../plugins/baseintegration/baseintegration.cpp" line="86"/>
         <source>Error</source>
         <translation>Lỗi</translation>
     </message>
@@ -217,92 +243,192 @@ Phan Anh
 <context>
     <name>QtNote::FileStorage</name>
     <message>
-        <location filename="../libqtnote/filestorage.cpp" line="76"/>
+        <location filename="../libqtnote/filestorage.cpp" line="51"/>
         <source>File system error for storage &quot;%1&quot;. Please check your settings.</source>
         <translation>Lỗi hệ thống tập tin của ổ lưu trữ &quot;%1&quot;. Hãy kiểm tra lại cài đặt.</translation>
     </message>
     <message>
-        <location filename="../libqtnote/filestorage.cpp" line="101"/>
+        <location filename="../libqtnote/filestorage.cpp" line="106"/>
         <source>Storage path</source>
         <translation>Đường dẫn lưu trữ</translation>
     </message>
 </context>
 <context>
+    <name>QtNote::GnomePlugin</name>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
+        <source>Integrtion with gnome-only features</source>
+        <translation>Tích hợp với các tính năng độc nhất của Gnome</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
+        <source>Error</source>
+        <translation>Lỗi</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::GnomeTray</name>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Thoát</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
+        <source>&amp;New</source>
+        <translation>&amp;Mới</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
+        <source>&amp;About</source>
+        <translation>&amp;Thông tin về</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
+        <source>&amp;Options</source>
+        <translation>&amp;Tuỳ chọn</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Trình quản lý ghi chú</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
+        <source>More..</source>
+        <translation>Xem thêm...</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
+        <source>Notes</source>
+        <translation>Các ghi chú</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="40"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
         <source>Provide native look and feel for KDE users</source>
         <translation>Đem đến giao diện thân thuộc cho người dùng KDE</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="57"/>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="49"/>
         <source>Error</source>
         <translation>Lỗi</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="71"/>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="80"/>
         <source>New note from selection</source>
-        <translation>Ghi chú mới từ lựa chọn</translation>
+        <translation type="vanished">Ghi chú mới từ lựa chọn</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="38"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
         <translation>&amp;Mới</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="41"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
         <translation>&amp;Trình quản lý ghi chú</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="42"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
         <translation>&amp;Tuỳ chọn</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="43"/>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
         <translation>&amp;Thông tin về</translation>
     </message>
 </context>
 <context>
+    <name>QtNote::MacOSXPlugin</name>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
+        <source>Error</source>
+        <translation type="unfinished">Lỗi</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::MacOSXTray</name>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
+        <source>&amp;Quit</source>
+        <translation type="unfinished">&amp;Thoát</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
+        <source>&amp;New</source>
+        <translation type="unfinished">&amp;Mới</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
+        <source>&amp;About</source>
+        <translation type="unfinished">&amp;Thông tin về</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
+        <source>&amp;Options</source>
+        <translation type="unfinished">&amp;Tuỳ chọn</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
+        <source>&amp;Note Manager</source>
+        <translation type="unfinished">&amp;Trình quản lý ghi chú</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
+        <source>More..</source>
+        <translation type="unfinished">Xem thêm...</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
+        <source>Notes</source>
+        <translation type="unfinished">Các ghi chú</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::Main</name>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="119"/>
+        <location filename="../libqtnote/qtnote.cpp" line="111"/>
         <source>Desktop integration plugin is not loaded</source>
         <translation>Chưa nạp tiện ích tích hợp bàn làm việc</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="121"/>
+        <location filename="../libqtnote/qtnote.cpp" line="113"/>
         <source>Tray icon is not initialized</source>
         <translation>Chưa chạy biểu tượng khay</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="123"/>
+        <location filename="../libqtnote/qtnote.cpp" line="115"/>
         <source>Notifications plugin is not loaded</source>
         <translation>Chưa nạp tiện ích thông báo</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="127"/>
+        <location filename="../libqtnote/qtnote.cpp" line="119"/>
         <source>Initialization Error</source>
         <translation>Lỗi khởi chạy</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="127"/>
+        <location filename="../libqtnote/qtnote.cpp" line="121"/>
         <source>Enable a plugin with required functionality and restart QtNote</source>
         <translation>Bật tiện ích với tính năng được yêu cầu và khởi động lại QtNote</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="184"/>
+        <location filename="../libqtnote/qtnote.cpp" line="179"/>
         <source>First Start</source>
         <translation>Lần khởi chạy đầu tiên</translation>
     </message>
     <message>
-        <location filename="../libqtnote/qtnote.cpp" line="185"/>
+        <location filename="../libqtnote/qtnote.cpp" line="180"/>
         <source>This is your first start of QtNote note-taking application.
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
@@ -316,62 +442,62 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <location filename="../libqtnote/notewidget.cpp" line="112"/>
         <source>Save</source>
         <translation>Lưu</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="53"/>
+        <location filename="../libqtnote/notewidget.cpp" line="112"/>
         <source>Save note to file</source>
         <translation>Lưu ghi chú thành tập tin</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Copy</source>
         <translation>Sao chép</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="54"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Copy note to clipboard</source>
         <translation>Sao chép ghi chú vào clipboard</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Print</source>
         <translation>In</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="55"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Print note</source>
         <translation>In ghi chú</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Find</source>
         <translation>Tìm kiếm</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="56"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Find text in note</source>
         <translation>Tìm văn bản trong ghi chú</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <location filename="../libqtnote/notewidget.cpp" line="117"/>
         <source>Replace</source>
         <translation>Thay thế</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="57"/>
+        <location filename="../libqtnote/notewidget.cpp" line="117"/>
         <source>Replace text in note</source>
         <translation>Thay thế văn bản trong ghi chú</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Delete</source>
         <translation>Xoá</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="58"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Delete note</source>
         <translation>Xoá ghi chú</translation>
     </message>
@@ -379,7 +505,7 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::NoteDialog</name>
     <message>
-        <location filename="../libqtnote/notedialog.cpp" line="130"/>
+        <location filename="../libqtnote/notedialog.cpp" line="131"/>
         <source>[No Title]</source>
         <translation>[Chưa đặt tiêu đề]</translation>
     </message>
@@ -387,20 +513,22 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>Note Manager (%1)</source>
         <translation>Trình quản lý ghi chú (%1)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../libqtnote/notemanagerdlg.cpp" line="139"/>
+        <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation><numerusform>%n ghi chú</numerusform></translation>
+        <translation>
+            <numerusform>%n ghi chú</numerusform>
+        </translation>
     </message>
 </context>
 <context>
     <name>QtNote::NoteManagerView</name>
     <message>
-        <location filename="../libqtnote/notemanagerview.cpp" line="42"/>
+        <location filename="../libqtnote/notemanagerview.cpp" line="39"/>
         <source>Delete</source>
         <translation>Xoá</translation>
     </message>
@@ -408,27 +536,27 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="297"/>
+        <location filename="../libqtnote/notewidget.cpp" line="355"/>
         <source>Text files (*.txt)</source>
         <translation>Tập tin văn bản (*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="298"/>
+        <location filename="../libqtnote/notewidget.cpp" line="356"/>
         <source>HTML files (*.html)</source>
         <translation>Tập tin HTML (*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="306"/>
+        <location filename="../libqtnote/notewidget.cpp" line="364"/>
         <source>Save Note As</source>
         <translation>Lưu ghi chú dưới dạng</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="338"/>
+        <location filename="../libqtnote/notewidget.cpp" line="392"/>
         <source>Deletion confirmation</source>
         <translation>Xác nhận xoá</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="339"/>
+        <location filename="../libqtnote/notewidget.cpp" line="392"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>Có chắc là bạn muốn xoá ghi chú này?</translation>
     </message>
@@ -436,12 +564,12 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::OptionsDlg</name>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="178"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="175"/>
         <source>Failed to update shortcut for &quot;%1&quot;</source>
         <translation>Lỗi khi cập nhật lối tắt cho &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsdlg.cpp" line="229"/>
+        <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>%1: Settings</source>
         <translation>%1: Cài đặt</translation>
     </message>
@@ -449,7 +577,7 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="297"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>: Settings</source>
         <translation>: Cài đặt</translation>
     </message>
@@ -457,7 +585,7 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::PTFStorage</name>
     <message>
-        <location filename="../libqtnote/ptfstorage.cpp" line="73"/>
+        <location filename="../libqtnote/ptfstorage.cpp" line="63"/>
         <source>Plain Text Storage</source>
         <translation>Lưu trữ văn bản thông thường</translation>
     </message>
@@ -465,48 +593,48 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::PluginsModel</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="169"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="148"/>
         <source>ABI mismatch</source>
         <translation>ABI không khớp</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="170"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="149"/>
         <source>Incompatible metadata</source>
         <translation>Siêu dữ liệu không tương thích</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="171"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="150"/>
         <source>Incompatible version</source>
         <translation>Phiên bản không tương thích</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="172"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="151"/>
         <source>Loaded</source>
         <translation>Đã nạp</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="173"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="152"/>
         <source>Initialized</source>
         <translation>Đã khởi chạy</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="174"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="153"/>
         <source>Not a plugin</source>
         <translation>Không phải tiện ích</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="175"/>
-        <location filename="../libqtnote/optionsplugins.cpp" line="176"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="154"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="155"/>
         <source>Not loaded</source>
         <translation>Chưa nạp</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="179"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="158"/>
         <source>&lt;b&gt;Filename:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Tên tập tin:&lt;/b&gt; %1</translation>
     </message>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="180"/>
+        <location filename="../libqtnote/optionsplugins.cpp" line="159"/>
         <source>&lt;b&gt;Status:&lt;/b&gt; %1</source>
         <translation>&lt;b&gt;Trạng thái:&lt;/b&gt; %1</translation>
     </message>
@@ -514,8 +642,8 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::ShortcutsManager</name>
     <message>
-        <location filename="../libqtnote/shortcutsmanager.cpp" line="17"/>
-        <location filename="../libqtnote/shortcutsmanager.cpp" line="25"/>
+        <location filename="../libqtnote/shortcutsmanager.cpp" line="20"/>
+        <location filename="../libqtnote/shortcutsmanager.cpp" line="28"/>
         <source>Note From Selection</source>
         <translation>Ghi chú từ lựa chọn</translation>
     </message>
@@ -523,20 +651,28 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::SpellCheckPlugin</name>
     <message>
-        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="88"/>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="152"/>
         <source>Realtime spell check.</source>
         <translation>Kiểm tra chính tả thời gian thực.</translation>
     </message>
     <message>
-        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="125"/>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Thư mục đã nạp:&lt;/b&gt; </translation>
     </message>
 </context>
 <context>
+    <name>QtNote::SpellContextMenu</name>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="101"/>
+        <source>Add to dictionary</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>QtNote::TomboyPlugin</name>
     <message>
-        <location filename="../plugins/tomboy/tomboyplugin.cpp" line="61"/>
+        <location filename="../plugins/tomboy/tomboyplugin.cpp" line="58"/>
         <source>Allows read and write tomboy notes</source>
         <translation>Cho phép đọc và viết ghi chú Tomboy</translation>
     </message>
@@ -544,60 +680,9 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>QtNote::TomboyStorage</name>
     <message>
-        <location filename="../plugins/tomboy/tomboystorage.cpp" line="56"/>
+        <location filename="../plugins/tomboy/tomboystorage.cpp" line="59"/>
         <source>Tomboy Storage</source>
         <translation>Ổ lưu trữ Tomboy</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::UbuntuPlugin</name>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntu.cpp" line="56"/>
-        <source>Integrtion with ubuntu-only features</source>
-        <translation>Tích hợp với các tính năng độc nhất của Ubuntu</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntu.cpp" line="76"/>
-        <source>Error</source>
-        <translation>Lỗi</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::UbuntuTray</name>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="35"/>
-        <source>&amp;Quit</source>
-        <translation>&amp;Thoát</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="36"/>
-        <source>&amp;New</source>
-        <translation>&amp;Mới</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="37"/>
-        <source>&amp;About</source>
-        <translation>&amp;Thông tin về</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="38"/>
-        <source>&amp;Options</source>
-        <translation>&amp;Tuỳ chọn</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="39"/>
-        <source>&amp;Note Manager</source>
-        <translation>&amp;Trình quản lý ghi chú</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="53"/>
-        <source>More..</source>
-        <translation>Xem thêm...</translation>
-    </message>
-    <message>
-        <location filename="../plugins/ubuntu/ubuntutray.cpp" line="82"/>
-        <source>Notes</source>
-        <translation>Các ghi chú</translation>
     </message>
 </context>
 <context>
@@ -611,40 +696,40 @@ Các ghi chú sẽ được lưu tự động trên ổ lưu trữ đặc biệt
 <context>
     <name>TypeAheadFindBar</name>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="160"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="167"/>
         <source>Search</source>
         <translation>Tìm kiếm</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="166"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="181"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="173"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="188"/>
         <source>Replace</source>
         <translation>Thay thế</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="169"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="171"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="176"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="178"/>
         <source>Find next</source>
         <translation>Tìm tiếp theo</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="175"/>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="177"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="182"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="184"/>
         <source>Find previous</source>
         <translation>Tìm trước đó</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="182"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="189"/>
         <source>Replace text</source>
         <translation>Thay thế văn bản</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="198"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="206"/>
         <source>Replace all</source>
         <translation>Thay thế tất cả</translation>
     </message>
     <message>
-        <location filename="../libqtnote/typeaheadfind.cpp" line="202"/>
+        <location filename="../libqtnote/typeaheadfind.cpp" line="210"/>
         <source>&amp;Case sensitive</source>
         <translation>&amp;Phân biệt chữ hoa/thường</translation>
     </message>
