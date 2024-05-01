@@ -151,7 +151,7 @@ PluginMetadata SpellCheckPlugin::metadata()
     md.name        = "Spell check";
     md.description = tr("Realtime spell check.");
     md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
-    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.version     = 0x020000;       // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");

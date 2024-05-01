@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    SingleApplication a(argc, argv);
+    SingleApplication a(argc, argv); //, true, SingleApplication::Mode::User, 1000, "xxx");
     if (a.isSecondary()) {
         QStringList args = a.arguments();
         if (args.size() > 1) {

@@ -41,6 +41,7 @@ private:
     PluginHostInterface *host;
     QList<LangItem>      languages;
     QSet<QString>        runtimeDict;
+    QStringList          dictPaths;
 };
 
 } // namespace QtNote

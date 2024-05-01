@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QLibraryInfo>
 #include <QSet>
+#include <QStandardPaths>
 #include <QString>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QTextCodec>
@@ -22,31 +23,59 @@
 
 namespace QtNote {
 
-static QStringList dictPaths()
+static QStringList findDictPaths()
 {
-    static QStringList dictPaths;
-    if (dictPaths.isEmpty()) {
-        QSet<QString> dictPathSet;
-        QString       pathFromEnv = QString::fromLocal8Bit(qgetenv("MYSPELL_DICT_DIR"));
-        if (!pathFromEnv.isEmpty())
-            dictPathSet << pathFromEnv;
+    QStringList dictPaths;
 #if defined(Q_OS_WIN)
-        dictPathSet << QCoreApplication::applicationDirPath() + QLatin1String(stringify(DICTSUBDIR));
-        dictPathSet << Utils::qtnoteDataDir() + QLatin1String(stringify(DICTSUBDIR));
+    dictPaths << QCoreApplication::applicationDirPath() + QLatin1String(stringify(DICTSUBDIR));
+    dictPaths << Utils::qtnoteDataDir() + QLatin1String(stringify(DICTSUBDIR));
 #elif defined(Q_OS_MAC)
-        dictPathSet << QLatin1String("/opt/local/share/myspell"); // MacPorts standard paths
+    dictPaths << QLatin1String("/opt/local/share/myspell"); // MacPorts standard paths
 #else
-        dictPathSet << QLatin1String("/usr/share/myspell") << QLatin1String("/usr/share/hunspell")
-                    << QLatin1String("/usr/local/share/myspell") << QLatin1String("/usr/local/share/hunspell");
+    dictPaths << QLatin1String("/usr/share/myspell") << QLatin1String("/usr/share/hunspell")
+              << QLatin1String("/usr/local/share/myspell") << QLatin1String("/usr/local/share/hunspell");
 #endif
-        dictPaths = QStringList(dictPathSet.begin(), dictPathSet.end());
+    dictPaths += QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("hunspell"),
+                                           QStandardPaths::LocateDirectory);
+    dictPaths += QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("myspell"),
+                                           QStandardPaths::LocateDirectory);
+
+    QSet<QString> uniqueDirs;
+    uniqueDirs.reserve(dictPaths.size());
+    for (auto it = dictPaths.begin(); it < dictPaths.end(); ++it) {
+        auto fi = QFileInfo(*it);
+        if (fi.isDir() && fi.isReadable()) {
+            uniqueDirs << QFileInfo(*it).canonicalFilePath();
+        }
     }
+    dictPaths = QStringList(uniqueDirs.begin(), uniqueDirs.end());
+    std::sort(dictPaths.begin(), dictPaths.end(), [](const auto &a, const auto &b) {
+        auto aw = QFileInfo(a).isWritable();
+        auto bw = QFileInfo(b).isWritable();
+        if (aw == bw) {
+            static auto local = QStringLiteral("local");
+            auto        al    = a.contains(local);
+            auto        bl    = b.contains(local);
+            if (al == bl) {
+                return a.size() > b.size();
+            }
+            return al;
+        }
+        return aw;
+    });
+    QString pathFromEnv = QString::fromLocal8Bit(qgetenv("MYSPELL_DICT_DIR"));
+    if (!pathFromEnv.isEmpty()) {
+        auto cfp = QFileInfo(pathFromEnv).canonicalFilePath();
+        if (!uniqueDirs.contains(cfp))
+            dictPaths.prepend(cfp);
+    }
+
     return dictPaths;
 }
 
-static bool scanDictPaths(const QString &language, QFileInfo &aff, QFileInfo &dic)
+static bool scanDictPaths(const QStringList &dictPaths, const QString &language, QFileInfo &aff, QFileInfo &dic)
 {
-    foreach (const QString &dictPath, dictPaths()) {
+    foreach (const QString &dictPath, dictPaths) {
         QDir dir(dictPath);
         if (dir.exists()) {
             QFileInfo affInfo(dir.filePath(language + QLatin1String(".aff")));
@@ -73,6 +102,7 @@ HunspellEngine::HunspellEngine(PluginHostInterface *host) : host(host)
             runtimeDict << w;
         }
     }
+    dictPaths = findDictPaths();
 }
 
 HunspellEngine::~HunspellEngine()
@@ -98,7 +128,7 @@ HunspellEngine::~HunspellEngine()
 QList<QLocale> HunspellEngine::supportedLanguages() const
 {
     QMap<QString, QLocale> retHash;
-    foreach (const QString &dictPath, dictPaths()) {
+    foreach (const QString &dictPath, dictPaths) {
         QDir dir(dictPath);
         if (!dir.exists()) {
             continue;
@@ -121,7 +151,7 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
 {
     QString   language = locale.name();
     QFileInfo aff, dic;
-    if (scanDictPaths(language, aff, dic)) {
+    if (scanDictPaths(dictPaths, language, aff, dic)) {
         LangItem li;
         // qDebug() << "Add hunspell:" << aff.absoluteFilePath() << dic.absoluteFilePath();
         li.hunspell = new Hunspell(aff.absoluteFilePath().toLocal8Bit(), dic.absoluteFilePath().toLocal8Bit());

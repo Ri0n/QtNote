@@ -21,6 +21,7 @@ debian/files
 .qmake.stash
 CMakeLists.txt.user*
 .DS_Store
+build
 
 # vs
 GeneratedFiles
