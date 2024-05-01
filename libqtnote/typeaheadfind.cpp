@@ -208,7 +208,15 @@ void TypeAheadFindBar::init()
     addAction(d->act_replace_all);
 
     d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
-    connect(d->cb_case, SIGNAL(stateChanged(int)), SLOT(caseToggled(int)));
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+    connect(d->cb_case, &QCheckBox::stateChanged, this, [this](int state){
+        d->caseSensitive = (state == Qt::Checked);
+    });
+#else
+    connect(d->cb_case, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state){
+        d->caseSensitive = (state == Qt::Checked);
+    });
+#endif
     addWidget(d->cb_case);
 
     optionsUpdate();
@@ -346,7 +354,3 @@ void TypeAheadFindBar::replaceText() { d->doReplace(); }
  */
 void TypeAheadFindBar::replaceTextAll() { d->doReplaceAll(); }
 
-/**
- * \brief Private slot activated when case-sensitive box is toggled.
- */
-void TypeAheadFindBar::caseToggled(int state) { d->caseSensitive = (state == Qt::Checked); }

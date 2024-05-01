@@ -51,7 +51,6 @@ private slots:
     void textChanged(const QString &);
     void findNext();
     void findPrevious();
-    void caseToggled(int);
     void replaceText();
     void replaceTextAll();
 
