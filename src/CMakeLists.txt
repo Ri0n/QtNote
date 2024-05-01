@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.10.0)
 include(QtNoteMacro)
 project(qtnoteexe VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
 if(WIN32)
     set(WINRESFILE "win/qtnote.rc")
 endif()

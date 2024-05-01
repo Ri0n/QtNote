@@ -16,6 +16,8 @@
 # -------------------------------------------------
 
 cmake_minimum_required(VERSION 3.10.0)
+set(CMAKE_CXX_STANDARD 17)
+
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(QtNoteMacro)
 message(STATUS "Version: QtNote-${QTNOTE_VERSION}")
@@ -28,13 +30,34 @@ if (Qt${QT_DEFAULT_MAJOR_VERSION}Widgets_VERSION VERSION_LESS 5.10.0)
     message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-
 if(UNIX AND NOT (APPLE OR HAIKU))
     set(UNIXLIKE ON)
 endif()
 
-include(GNUInstallDirs)
+set(I18N_TRANSLATED_LANGUAGES)
+file(GLOB qtnote_TRS "${CMAKE_CURRENT_SOURCE_DIR}/qtnote_*.ts")
+foreach(_LANG ${qtnote_TRS})
+    get_filename_component(_SHORT_LANG ${_LANG} NAME_WE)
+    string(REPLACE "@" "_" _SHORT_LANG ${_SHORT_LANG})
+    list(APPEND I18N_TRANSLATED_LANGUAGES ${_SHORT_LANG})
+endforeach()
+if(Qt${QT_DEFAULT_MAJOR_VERSION}Core_VERSION VERSION_LESS 6.3.0)
+    include(GNUInstallDirs)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC ON)
+    if(WIN32 AND CMAKE_RUNTIME_OUTPUT_DIRECTORY STREQUAL "")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+    set(USE_FOLDERS ON)
+elseif(Qt${QT_DEFAULT_MAJOR_VERSION}Core_VERSION VERSION_LESS 6.7.0)
+    qt_standard_project_setup()
+else()
+    qt_standard_project_setup(
+        I18N_TRANSLATED_LANGUAGES ${I18N_TRANSLATED_LANGUAGES}
+        I18N_SOURCE_LANGUAGE en
+    )
+endif()
 set(APP_NAME qtnote)
 set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR}/${APP_NAME})
 set(PLUGINSDIR ${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME})
