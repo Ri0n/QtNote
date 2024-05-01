@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 #git clean -xfd .
 #git sudmofule foreach git clean -xfd .
@@ -20,15 +20,20 @@ gittag2version() {
 
 version=$(gittag2version ${1:-$(git describe --tags 2>/dev/null)})
 base_name=qtnote-$version
-git archive --prefix ${base_name}/ -o ../${base_name}.tar HEAD
-git submodule --quiet foreach 'cd $toplevel; tar --transform "s|^|'$base_name/'|" -rf ../'"$base_name"'.tar $sm_path'
+release_dir=../${base_name}
+tar_file=${release_dir}.tar
+git archive -o $tar_file HEAD
+git submodule --quiet foreach 'cd $toplevel; tar -rf '"$tar_file"' $sm_path'
 
+rm -rf $release_dir
+mkdir $release_dir
+tar -C ../${base_name} -xf $tar_file
 
-tar -vf ../${base_name}.tar --delete ${base_name}/PKGBUILD # it has invalid hashsum
-echo "$version" > version
-tar --transform "s|^|$base_name/|" -rf ../${base_name}.tar version
-rm version
-# TODO patch other files having version
+echo -n "$version" > ${release_dir}/qtnote.version
+sed -i -e "s|^pkgver=.*|pkgver=$version|" ${release_dir}/PKGBUILD
+sed -i -e "s|^\(Version:\s*\)[0-9].*|\1$version|" ${release_dir}/qtnote.spec
+sed -i -e "s| Version=\"[^\"]\+\"| Version=\"$version\"|" ${release_dir}/installer.wxs
+sed -i -e "1 s|qtnote ([^)]\+)|qtnote ($version)|" ${release_dir}/debian/changelog
 
-xz -fz9 ../${base_name}.tar
-echo "result: ../${base_name}.tar.xz"
+tar cJvf $tar_file.xz $release_dir
+echo "result: $tar_file.xz"
