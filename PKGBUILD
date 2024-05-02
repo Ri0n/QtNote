@@ -6,12 +6,12 @@ arch=('i686' 'x86_64')
 url="http://ri0n.github.io/QtNote"
 license=('GPL3')
 depends=( 'qt5-base' 'qt5-tools' 'hunspell'
-          'kglobalaccel' 'kwindowsystem'
-          'knotifications')
+          'kglobalaccel5' 'kwindowsystem5'
+          'knotifications5')
 makedepends=('tar')
 conflicts=(qtnote-git)
-source=(https://github.com/Ri0n/QtNote/archive/$pkgver.tar.gz)
-md5sums=('fccd107d2130cd77da9a21edfb76c927')
+source=(https://github.com/Ri0n/QtNote/releases/download/$pkgver/$pkgname-$pkgver.tar.xz)
+md5sums=('9402cdef96dc0bcb41c66d00948d5aa5')
 
 _srcdirname=QtNote
 
@@ -19,11 +19,12 @@ build() {
   cd "$srcdir"
   # BUILD HERE
   cd "$srcdir/$_srcdirname-$pkgver"
-  cmake -DCMAKE_INSTALL_PREFIX="/usr" .
-  make
+  mkdir -p build; cd build
+  cmake -DCMAKE_INSTALL_PREFIX="/usr" ..
+  cmake --build . --target all
 }
 
 package() {
-  cd "$srcdir/$_srcdirname-$pkgver"
-  make INSTALL_ROOT="$pkgdir/"  install
+  cd "$srcdir/$_srcdirname-$pkgver/build"
+  make DESTDIR="$pkgdir"  install
 }
