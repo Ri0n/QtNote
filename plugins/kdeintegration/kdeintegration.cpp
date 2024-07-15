@@ -2,7 +2,9 @@
 #include <KNotification>
 #include <KStatusNotifierItem>
 #include <KWindowSystem>
+#ifndef OLD_K_FORCE_ACTIVATE
 #include <KX11Extras>
+#endif
 
 #include <QAction>
 #include <QWidget>
@@ -36,7 +38,7 @@ PluginMetadata KDEIntegration::metadata()
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
-    md.extra.insert("de", QStringList() << "KDE");
+    md.extra.insert("de", QStringList() << "kde");
     return md;
 }
 
@@ -50,7 +52,13 @@ void KDEIntegration::notifyError(const QString &msg)
     n->sendEvent();
 }
 
-void KDEIntegration::activateWidget(QWidget *w) { KX11Extras::forceActiveWindow(w->winId(), 0); }
+void KDEIntegration::activateWidget(QWidget *w) {
+#if OLD_K_FORCE_ACTIVATE
+    KWindowSystem::forceActiveWindow(w->winId(), 0);
+#else
+    KX11Extras::forceActiveWindow(w->winId(), 0);
+#endif
+}
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
 {

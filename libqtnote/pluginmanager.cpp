@@ -195,7 +195,7 @@ void PluginManager::loadPlugins()
     QString session = "macosx";
 #else
     auto    desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
-    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last();
+    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
 #endif
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];

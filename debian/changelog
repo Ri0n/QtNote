@@ -1,3 +1,9 @@
+qtnote (3.2.5) UNRELEASED; urgency=medium
+
+  * Ubuntu 22.04 compat
+
+ -- Sergei Ilinykh <rion4ik@gmail.com>  Mon, 15 Jul 2024 19:11:54 +0300
+
 qtnote (3.2.0) noble; urgency=medium
 
   * Qt6 support
