@@ -30,7 +30,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.ri0n.qtnote"
 )
 
-target_link_libraries(${PROJECT_NAME} ${qtnote_lib} SingleApplication::SingleApplication)
+target_link_libraries(${PROJECT_NAME} ${qtnote_lib} QtSingleApplication)
 
 install(TARGETS ${PROJECT_NAME}
   RUNTIME

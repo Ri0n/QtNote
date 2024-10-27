@@ -23,7 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QBuffer>
 #include <QDataStream>
 #include <QStringList>
-#include <SingleApplication>
+#include <QtSingleApplication>
 #include <iostream>
 
 #include "qtnote.h"
@@ -39,8 +39,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    SingleApplication a(argc, argv); //, true, SingleApplication::Mode::User, 1000, "xxx");
-    if (a.isSecondary()) {
+    QtSingleApplication a(argc, argv); //, true, SingleApplication::Mode::User, 1000, "xxx");
+    if (a.isRunning()) {
         QStringList args = a.arguments();
         if (args.size() > 1) {
             args.pop_front();
@@ -56,9 +56,8 @@ int main(int argc, char *argv[])
 
     QtNote::Main qtnote;
     if (qtnote.isOperable()) {
-        SingleApplication::instance()->connect(&a, &SingleApplication::receivedMessage, &qtnote,
-                                               &QtNote::Main::appMessageReceived);
-        qtnote.parseAppArguments(SingleApplication::instance()->arguments().mid(1));
+        a.connect(&a, &QtSingleApplication::messageReceived, &qtnote, &QtNote::Main::appMessageReceived);
+        qtnote.parseAppArguments(a.arguments().mid(1));
         return a.exec();
     }
     return 1;

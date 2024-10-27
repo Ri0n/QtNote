@@ -190,9 +190,9 @@ void Main::parseAppArguments(const QStringList &args)
 
 void Main::exitQtNote() { QApplication::quit(); }
 
-void Main::appMessageReceived([[maybe_unused]] quint32 instanceId, const QByteArray &message)
+void Main::appMessageReceived(const QString &message)
 {
-    parseAppArguments(QString::fromUtf8(message).split(QLatin1String("!qtnote_argdelim!")));
+    parseAppArguments(message.split(QLatin1String("!qtnote_argdelim!")));
 }
 
 void Main::showAbout()

@@ -278,7 +278,7 @@ void OptionsPlugins::pluginClicked(const QModelIndex &index)
         QDialog *d  = qtnote->pluginManager()->optionsDialog(id);
         if (d) {
             auto &md = qtnote->pluginManager()->metadata(id);
-            d->setWindowTitle(md.name + tr(": Settings"));
+            d->setWindowTitle(md.name + QStringLiteral(": ") + tr("Settings"));
             d->setWindowIcon(md.icon);
             d->show();
             d->raise();

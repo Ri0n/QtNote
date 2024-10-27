@@ -221,7 +221,7 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     }
     QDialog *dlg = new QDialog(this);
     dlg->setWindowIcon(QIcon(":/icons/options"));
-    dlg->setWindowTitle(tr("%1: Settings").arg(NoteManager::instance()->storage(storageId)->name()));
+    dlg->setWindowTitle(NoteManager::instance()->storage(storageId)->name() + QStringLiteral(": ") + tr("Settings"));
     dlg->resize(500, 30);
     QVBoxLayout      *vl  = new QVBoxLayout;
     QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
