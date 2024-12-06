@@ -56,14 +56,17 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     QRect rect;
     if (!noteWidget->noteId().isEmpty()) {
         rect = QSettings().value(QString("geometry.%1.%2").arg(noteWidget->storageId(), noteWidget->noteId())).toRect();
+        if (!rect.isValid() || !screen()->geometry().contains(rect)) {
+            rect = {};
+        }
 
         Q_ASSERT(!NoteDialog::findDialog(noteWidget->storageId(), noteWidget->noteId()));
         NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()), this);
     }
     if (rect.isEmpty()) {
         QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
-        int   x = avail.width() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.width() / 2;
-        int   y = avail.height() / 4 + (QRandomGenerator::global()->generate() / (float)RAND_MAX) * avail.height() / 2;
+        int x = QRandomGenerator::global()->bounded(avail.width() / 4, avail.width() / 2);
+        int y = QRandomGenerator::global()->bounded(avail.height() / 4, avail.height() / 2);
         move(x, y);
     } else {
         setGeometry(rect);
