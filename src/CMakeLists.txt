@@ -36,7 +36,18 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME
     DESTINATION "${CMAKE_INSTALL_BINDIR}"
     COMPONENT Executable)
-if(NOT WIN32)
+
+if(WIN32)
+    # Try to find windeployqt executable
+    if(WINDEPLOYQT_EXECUTABLE)
+        # Run windeployqt after build
+        add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${WINDEPLOYQT_EXECUTABLE} --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:${PROJECT_NAME}>
+            COMMENT "Running windeployqt to gather Qt dependencies"
+        )
+    endif()
+else(WIN32)
     install(FILES ${CMAKE_SOURCE_DIR}/qtnote.desktop DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/applications COMPONENT Executable)
     install(FILES ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps COMPONENT Executable)
 endif()

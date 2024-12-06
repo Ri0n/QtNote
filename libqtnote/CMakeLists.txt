@@ -46,12 +46,30 @@ if (APPLE)
     target_link_libraries(qtnote PUBLIC "-framework CoreFoundation" "-framework Carbon")
 endif()
 
-install(TARGETS qtnote
-  LIBRARY
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    COMPONENT Libraries
-    NAMELINK_COMPONENT Development
-  PUBLIC_HEADER
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtnote"
-    COMPONENT Development
-)
+if(WIN32)
+    # Install only the DLL for Windows
+    install(TARGETS qtnote
+        RUNTIME
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            COMPONENT Libraries
+    )
+
+    if(WINDEPLOYQT_EXECUTABLE)
+        # Run windeployqt after build
+        add_custom_command(
+            TARGET qtnote POST_BUILD
+            COMMAND ${WINDEPLOYQT_EXECUTABLE} --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:qtnote>
+            COMMENT "Running windeployqt to gather Qt dependencies"
+        )
+    endif()
+else()
+    install(TARGETS qtnote
+      LIBRARY
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        COMPONENT Libraries
+        NAMELINK_COMPONENT Development
+      PUBLIC_HEADER
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/qtnote"
+        COMPONENT Development
+    )
+endif()

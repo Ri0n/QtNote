@@ -16,7 +16,7 @@
 # -------------------------------------------------
 
 cmake_minimum_required(VERSION 3.10.0)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(QtNoteMacro)
@@ -66,9 +66,29 @@ else()
         I18N_SOURCE_LANGUAGE en
     )
 endif()
+if(WIN32)
+    set(CMAKE_INSTALL_BINDIR ".") # Place executables in the root directory for Windows
+    if(CMAKE_RUNTIME_OUTPUT_DIRECTORY STREQUAL "")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+    # Ensure CMAKE_INSTALL_PREFIX is set
+    if(NOT CMAKE_INSTALL_PREFIX)
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install_root")
+    endif()
+endif()
+message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 set(APP_NAME qtnote)
-set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR}/${APP_NAME})
-set(PLUGINSDIR ${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME})
+
+if(WIN32)
+    # On Windows, place plugins in a 'plugins' directory near the executable
+    set(PLUGINSDIR "${CMAKE_INSTALL_BINDIR}/plugins")
+    set(TRANSLATIONSDIR "${CMAKE_INSTALL_BINDIR}/translations")
+else()
+    # On Linux, place plugins in the system library directory under APP_NAME
+    set(PLUGINSDIR "${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME}")
+    set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR}/${APP_NAME})
+endif()
+
 configure_file(qtnote_config.h.in qtnote_config.h)
 
 if(QTNOTE_DEVEL)
@@ -77,10 +97,15 @@ endif()
 
 if(WIN32)
     set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
+
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
+    if(NOT WINDEPLOYQT_EXECUTABLE)
+        message(WARNING "windeployqt not found! Dependencies for standalone deployment will not be gathered.")
+    endif()
 endif()
 
 add_subdirectory(3rdparty)
 add_subdirectory(libqtnote)
 add_subdirectory(src)
 add_subdirectory(plugins)
-add_subdirectory(langs)
+add_subdirectory(translations)

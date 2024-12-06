@@ -1,4 +1,4 @@
-project(langs)
+project(translations)
 file(GLOB qtnote_TRS "${CMAKE_CURRENT_SOURCE_DIR}/qtnote_*.ts")
 
 find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS LinguistTools REQUIRED)
@@ -26,7 +26,7 @@ if(Qt${QT_DEFAULT_MAJOR_VERSION}LinguistTools_VERSION VERSION_LESS 6.7.0)
     endforeach()
 
     if(WIN32)
-        set_source_files_properties(${qtnote_TRS} PROPERTIES OUTPUT_LOCATION "${EXECUTABLE_OUTPUT_PATH}/langs")
+        set_source_files_properties(${qtnote_TRS} PROPERTIES OUTPUT_LOCATION "${EXECUTABLE_OUTPUT_PATH}/translations")
     endif()
     qt_add_translation(qtnote_QM ${qtnote_TRS})
 

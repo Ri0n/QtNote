@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+    <Product Id="*" Name="QtNote" Language="1033" Version="@PROJECT_VERSION@" Manufacturer="R-Soft" UpgradeCode="@UPGRADE_CODE@">
+        <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+        <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+
+        <!-- Minimal supported version Windows 10 (1809 = NT 10.0, build 17763) -->
+        <Condition Message="This application requires Windows 10 (1809) or later.">
+            <![CDATA[Installed OR (VersionNT >= 1000 AND NTProductType = 1 AND VersionNT64 >= 1000 AND MsiNTProductType = 1 AND WindowsBuild >= 17763)]]>
+        </Condition>
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="APPLICATIONROOTDIRECTORY" Name="QtNote">
+                    @COMPONENTS@
+                </Directory>
+            </Directory>
+            <Directory Id="DesktopFolder" />
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ProgramMenuDir" Name="QtNote">
+                    <Component Win64="yes" Id="StartMenuShortcuts" Guid="*">
+                        <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+                        <Shortcut Id="UninstallProduct" Name="Uninstall QtNote" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]" />
+                        <util:InternetShortcut Id="WebsiteShortcut" Name="QtNote Homepage" Target="http://ri0n.github.io/QtNote" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id="DefaultFeature" Title="Main Feature" Level="1">
+            @COMPONENT_REFS@
+        </Feature>
+
+        <WixVariable Id="WixUILicenseRtf" Value="installer\wix\GPLv3.rtf" />
+        <UI />
+        <UIRef Id="WixUI_Minimal" />
+        <Icon Id="DesktopIcon.exe" SourceFile="$(sys.CURRENTDIR)\.inst\qtnote.exe" />
+        <Icon Id="StartMenuIcon.exe" SourceFile="$(sys.CURRENTDIR)\.inst\qtnote.exe" />
+        <Icon Id="icon.ico" SourceFile="src\win\pen64.ico" />
+        <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." Schedule="afterInstallInitialize" AllowSameVersionUpgrades="yes" />
+    </Product>
+</Wix>
