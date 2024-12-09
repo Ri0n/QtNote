@@ -5,21 +5,26 @@
             <bal:WixStandardBootstrapperApplication
                 LicenseFile="GPLv3.rtf"
                 LogoFile="pen64.ico"
-                Theme="rtfLicense" />
+                Theme="rtfLargeLicense" />
             <Payload SourceFile="@LICENSE_RTF@" />
             <Payload SourceFile="@LOGO_FILE@" />
         </BootstrapperApplication>
 
         <Chain>
             <ExePackage
-                Compressed="no"
                 DetectCondition="(VCREDIST_INSTALLED=1) AND (VCREDIST_VERSION >= v14.30.30704)"
-                DownloadUrl="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-                SourceFile="vc_redist.x64.exe"
                 InstallArguments="/quiet /norestart"
                 Permanent="yes"
                 Vital="yes">
-                <!-- RemotePayload Description="VC++ 2022 Redistributable" ProductName="MyProductName" Size="size-in-bytes" Version="1.1.1.1" Hash="SHA-1-checksum-here"/-->
+                <ExePackagePayload
+                    Compressed="no"
+                    Description="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34433"
+                    ProductName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34433"
+                    Name="vc_redist.x64.exe"
+                    DownloadUrl="https://aka.ms/vs/17/release/vc_redist.x64.exe"
+                    Size="25640112"
+                    Version="14.42.34433.0"
+                    Hash="20e2d7437367cb262ce45184eb4d809249fe654aa450d226e376d4057c00b58ecfd8834a8b5153eb148960ffc845bed1f0943d5ff9a6fc1355b1503138562d8d"/>
             </ExePackage>
 
 

@@ -14,7 +14,7 @@ endif()
 add_qtnote_plugin(spellchecker "Check for spelling errors" ${HUNSPEL_ENABLED} unix macosx windows)
 
 if(WIN32)
-    add_definitions(-DDICTSUBDIR="/spellcheck/myspell")
+    add_definitions(-DDICTSUBDIR=/spellcheck/myspell)
 endif()
 
 add_library(spellchecker ${LIB_TYPE}

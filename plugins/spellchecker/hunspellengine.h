@@ -30,12 +30,14 @@ public:
     HunspellEngine(PluginHostInterface *host);
     ~HunspellEngine();
 
-    QList<QLocale>  supportedLanguages() const;
-    bool            addLanguage(const QLocale &locale);
-    bool            spell(const QString &word) const;
-    void            addToDictionary(const QString &word);
-    QList<QString>  suggestions(const QString &word) const;
-    QList<DictInfo> loadedDicts() const;
+    QList<QLocale>  supportedLanguages() const override;
+    bool            addLanguage(const QLocale &locale) override;
+    bool            spell(const QString &word) const override;
+    void            addToDictionary(const QString &word) override;
+    QList<QString>  suggestions(const QString &word) const override;
+    QList<DictInfo> loadedDicts() const override;
+
+    QStringList     diagnostics() const override;
 
 private:
     PluginHostInterface *host;

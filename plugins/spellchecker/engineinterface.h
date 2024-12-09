@@ -23,6 +23,7 @@ public:
     virtual void            addToDictionary(const QString &word)   = 0;
     virtual QList<QString>  suggestions(const QString &word) const = 0;
     virtual QList<DictInfo> loadedDicts() const                    = 0;
+    virtual QStringList     diagnostics() const                    = 0;
 };
 
 } // namespace QtNote

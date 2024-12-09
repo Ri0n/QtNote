@@ -27,6 +27,11 @@
 
 namespace QtNote {
 
+namespace {
+    QStringList          diagnostics;
+    void addDiag(QString &&s) { diagnostics.append(std::move(s)); if (diagnostics.size() > 50) diagnostics.pop_front(); }
+}
+
 static QStringList findDictPaths()
 {
     QStringList dictPaths;
@@ -50,6 +55,8 @@ static QStringList findDictPaths()
         auto fi = QFileInfo(*it);
         if (fi.isDir() && fi.isReadable()) {
             uniqueDirs << QFileInfo(*it).canonicalFilePath();
+        } else {
+            diagnostics.append(QObject::tr("%1 is not readable").arg(fi.absoluteFilePath()));
         }
     }
     dictPaths = QStringList(uniqueDirs.begin(), uniqueDirs.end());
@@ -135,8 +142,10 @@ QList<QLocale> HunspellEngine::supportedLanguages() const
     foreach (const QString &dictPath, dictPaths) {
         QDir dir(dictPath);
         if (!dir.exists()) {
+            addDiag(QObject::tr("Directory %s doesn't exist").arg(dictPath));
             continue;
         }
+        addDiag(QObject::tr("Checking if %s has dictionaries").arg(dictPath));
         foreach (const QFileInfo &fi, dir.entryInfoList(QStringList() << "*.dic", QDir::Files)) {
             QLocale locale(fi.baseName());
             if (locale != QLocale::c()) {
@@ -145,6 +154,9 @@ QList<QLocale> HunspellEngine::supportedLanguages() const
 #else
                 retHash.insert(locale.nativeLanguageName() + locale.nativeTerritoryName(), locale);
 #endif
+                addDiag(QObject::tr("Found %s dictionary").arg(fi.baseName()));
+            } else {
+                addDiag(QObject::tr("Skip %s dictionary as C locale").arg(fi.baseName()));
             }
         }
     }
@@ -241,6 +253,11 @@ QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const
         ret.append(li.info);
     }
     return ret;
+}
+
+QStringList HunspellEngine::diagnostics() const
+{
+    return QtNote::diagnostics;
 }
 
 }

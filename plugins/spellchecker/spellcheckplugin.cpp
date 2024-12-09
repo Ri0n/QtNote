@@ -174,7 +174,7 @@ bool SpellCheckPlugin::init(Main *qtnote)
 QString SpellCheckPlugin::tooltip() const
 {
     QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
-    QStringList                           ret;
+    QStringList                           dictsHtml;
     foreach (auto &d, dicts) {
         QLocale locale(d.language, d.country);
         QString l = QLatin1String("<i>") + locale.nativeLanguageName() + QLatin1String(" (")
@@ -189,10 +189,15 @@ QString SpellCheckPlugin::tooltip() const
         } else {
             l += QLatin1String("</i>");
         }
-        ret.append(l);
+        dictsHtml.append(l);
     }
 
-    return tr("<b>Loaded dictionaries:</b> ") + ret.join("<br/>  ");
+    auto ret = tr("<b>Loaded dictionaries:</b> ") + (dictsHtml.isEmpty()? tr("none"): dictsHtml.join("<br/>  "));
+    if (dicts.empty() && sei->supportedLanguages().isEmpty()) {
+        ret += QString("<br/><b>%1:</b><br/>").arg(tr("Diagnostics"));
+        ret += sei->diagnostics().join(QLatin1String("<br/>"));
+    }
+    return ret;
 }
 
 QDialog *SpellCheckPlugin::optionsDialog()
