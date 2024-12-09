@@ -19,9 +19,25 @@
             </Directory>
         </StandardDirectory>
 
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="ProgramMenuDir" Name="QtNote">
+                <!-- Здесь будут созданы ярлыки -->
+                <Component Id="StartMenuShortcuts" Guid="*">
+                    <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+                    <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+                    <Shortcut Id="ExeShortcut"
+                              Name="QtNote"
+                              Description="Launch QtNote"
+                              Target="[APPLICATIONROOTDIRECTORY]QtNote.exe"
+                              WorkingDirectory="APPLICATIONROOTDIRECTORY" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
         <!-- Основная функция -->
         <Feature Id="DefaultFeature" Title="Main Feature" Level="1">
             @COMPONENT_REFS@
+            <ComponentRef Id="StartMenuShortcuts" />
         </Feature>
 
         <Icon Id="DesktopIcon.exe" SourceFile="@CMAKE_INSTALL_PREFIX@/qtnote.exe" />
