@@ -15,7 +15,7 @@
 # E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 # -------------------------------------------------
 
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.25.0)
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
@@ -71,10 +71,6 @@ if(WIN32)
     if(CMAKE_RUNTIME_OUTPUT_DIRECTORY STREQUAL "")
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
-    # Ensure CMAKE_INSTALL_PREFIX is set
-    if(NOT CMAKE_INSTALL_PREFIX)
-        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install_root")
-    endif()
 endif()
 message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 set(APP_NAME qtnote)
@@ -96,12 +92,7 @@ if(QTNOTE_DEVEL)
 endif()
 
 if(WIN32)
-    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
-
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
-    if(NOT WINDEPLOYQT_EXECUTABLE)
-        message(WARNING "windeployqt not found! Dependencies for standalone deployment will not be gathered.")
-    endif()
+    include(wix/wix.cmake)
 endif()
 
 add_subdirectory(3rdparty)

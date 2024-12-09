@@ -12,4 +12,4 @@ add_library(macosx ${LIB_TYPE}
     )
 target_link_libraries(macosx ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets)
 
-install(TARGETS macosx LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
+install_qtnote_plugin(macosx)

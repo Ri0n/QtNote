@@ -41,4 +41,4 @@ if (UNIXLIKE)
     endif()
 endif()
 
-install(TARGETS kdeintegration LIBRARY DESTINATION ${PLUGINSDIR}  COMPONENT Libraries NAMELINK_COMPONENT Development)
+install_qtnote_plugin(kdeintegration)

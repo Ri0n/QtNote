@@ -17,5 +17,4 @@ if (UNIXLIKE  AND ${QT_DEFAULT_MAJOR_VERSION} LESS 6)
     find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS X11Extras REQUIRED)
     target_link_libraries(gnome Qt${QT_DEFAULT_MAJOR_VERSION}::X11Extras)
 endif()
-
-install(TARGETS gnome LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
+install_qtnote_plugin(gnome)

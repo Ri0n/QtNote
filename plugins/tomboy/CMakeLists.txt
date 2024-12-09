@@ -15,4 +15,4 @@ add_library(tomboy ${LIB_TYPE}
 find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Xml REQUIRED)
 target_link_libraries(tomboy ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::Xml)
 
-install(TARGETS tomboy LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
+install_qtnote_plugin(tomboy)

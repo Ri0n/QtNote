@@ -35,13 +35,4 @@ if (UNIX)
     endif()
 endif()
 
-install(TARGETS baseintegration LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
-
-if(WINDEPLOYQT_EXECUTABLE)
-    # Run windeployqt after build
-    add_custom_command(
-        TARGET baseintegration POST_BUILD
-        COMMAND ${WINDEPLOYQT_EXECUTABLE} --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:baseintegration>
-        COMMENT "Running windeployqt to gather Qt dependencies"
-    )
-endif()
+install_qtnote_plugin(baseintegration)
