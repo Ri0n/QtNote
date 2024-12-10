@@ -11,7 +11,6 @@
 
         <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
 
-        <!-- Используем StandardDirectory для TARGETDIR и ProgramFiles64Folder -->
         <StandardDirectory Id="TARGETDIR" />
         <StandardDirectory Id="ProgramFiles64Folder">
             <Directory Id="APPLICATIONROOTDIRECTORY" Name="QtNote">
@@ -21,8 +20,7 @@
 
         <StandardDirectory Id="ProgramMenuFolder">
             <Directory Id="ProgramMenuDir" Name="QtNote">
-                <!-- Здесь будут созданы ярлыки -->
-                <Component Id="StartMenuShortcuts" Guid="*">
+                <Component Id="StartMenuShortcuts" Guid="*" Bitness="always64">
                     <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
                     <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
                     <Shortcut Id="ExeShortcut"
@@ -34,7 +32,6 @@
             </Directory>
         </StandardDirectory>
 
-        <!-- Основная функция -->
         <Feature Id="DefaultFeature" Title="Main Feature" Level="1">
             @COMPONENT_REFS@
             <ComponentRef Id="StartMenuShortcuts" />

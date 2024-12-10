@@ -72,7 +72,7 @@ function(generate_wxs_dir dir_to_glob indent)
             continue()
         endif()
         list(APPEND components "
-            ${indent}<Component Id=\"${file_id}\" Guid=\"*\">
+            ${indent}<Component Id=\"${file_id}\" Guid=\"*\" Bitness=\"always64\">
             ${indent}    <File Id=\"${file_id}\" Name=\"${file_name}\" Source=\"${file}\" />
             ${indent}</Component>")
         list(APPEND component_refs "
@@ -114,7 +114,7 @@ add_custom_target(prepare_install
 
 add_custom_target(package
     DEPENDS prepare_install
-    COMMAND ${WIX_EXECUTABLE} build ${WIX_OUTPUT} -o ${QTNOTE_MSI}
+    COMMAND ${WIX_EXECUTABLE} build ${WIX_OUTPUT} -platform x64 -o ${QTNOTE_MSI}
     USES_TERMINAL
     COMMENT "Building MSI package with WiX 5"
 )
