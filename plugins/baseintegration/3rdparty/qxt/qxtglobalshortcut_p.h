@@ -57,6 +57,8 @@ public:
     bool unsetShortcut();
 
     static bool error;
+    static QString errorString;
+
 #ifndef Q_OS_MAC
     static int ref;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

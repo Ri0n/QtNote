@@ -35,6 +35,7 @@
 
 #ifndef Q_OS_MAC
 int QxtGlobalShortcutPrivate::ref = 0;
+QString QxtGlobalShortcutPrivate::errorString;
 #endif // Q_OS_MAC
 QHash<QPair<quint32, quint32>, QxtGlobalShortcut *> QxtGlobalShortcutPrivate::shortcuts;
 
@@ -80,7 +81,7 @@ bool QxtGlobalShortcutPrivate::setShortcut(const QKeySequence &shortcut)
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         qWarning() << "QxtGlobalShortcut failed to register:" << QKeySequence(key + mods).toString();
 #else
-        qWarning() << "QxtGlobalShortcut failed to register:" << QKeySequence(QKeyCombination(mods, key)).toString();
+        qWarning() << "QxtGlobalShortcut failed to register:" << QKeySequence(QKeyCombination(mods, key)).toString() << errorString;
 #endif
     return res;
 }

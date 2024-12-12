@@ -445,62 +445,62 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="112"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save</source>
         <translation>Gem</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="112"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save note to file</source>
         <translation>Gem note til fil</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy</source>
         <translation>Kopiér</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy note to clipboard</source>
         <translation>kopiér note til udklipsholder</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print</source>
         <translation>Udskriv</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print note</source>
         <translation>Udskriv note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
+        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find</source>
         <translation>Find</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
+        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find text in note</source>
         <translation>Find tekst i note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="117"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace</source>
         <translation>Erstat</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="117"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace text in note</source>
         <translation>Erstat tekst i note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
+        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete</source>
         <translation>Slet</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
+        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete note</source>
         <translation>Slet note</translation>
     </message>
@@ -540,29 +540,34 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="355"/>
+        <location filename="../libqtnote/notewidget.cpp" line="356"/>
         <source>Text files (*.txt)</source>
         <translation>Tekstfiler (*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="356"/>
+        <location filename="../libqtnote/notewidget.cpp" line="357"/>
         <source>HTML files (*.html)</source>
         <translation>HTMLfiler (*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="364"/>
+        <location filename="../libqtnote/notewidget.cpp" line="365"/>
         <source>Save Note As</source>
         <translation>Gem Note Som</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="392"/>
+        <location filename="../libqtnote/notewidget.cpp" line="393"/>
         <source>Deletion confirmation</source>
         <translation>Slettebekræftelse</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="392"/>
+        <location filename="../libqtnote/notewidget.cpp" line="393"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>Er du sikker på, at du ønsker at slette denne note?</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="395"/>
+        <source>Don&apos;t ask again</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

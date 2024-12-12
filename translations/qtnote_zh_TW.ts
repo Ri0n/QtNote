@@ -438,62 +438,62 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="112"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save</source>
         <translation>儲存</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="112"/>
+        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save note to file</source>
         <translation>儲存筆記到檔案</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy</source>
         <translation>複製</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
+        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy note to clipboard</source>
         <translation>複製剪貼簿</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print</source>
         <translation>列印</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
+        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print note</source>
         <translation>列印筆記</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
+        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find</source>
         <translation>尋找</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
+        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find text in note</source>
         <translation>尋找筆記的文字</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="117"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace</source>
         <translation>取代</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="117"/>
+        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace text in note</source>
         <translation>取代筆記的文字</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
+        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete</source>
         <translation>刪除</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
+        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete note</source>
         <translation>刪除筆記</translation>
     </message>
@@ -532,29 +532,34 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="355"/>
+        <location filename="../libqtnote/notewidget.cpp" line="356"/>
         <source>Text files (*.txt)</source>
         <translation>文字檔(*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="356"/>
+        <location filename="../libqtnote/notewidget.cpp" line="357"/>
         <source>HTML files (*.html)</source>
         <translation>HTML檔案(*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="364"/>
+        <location filename="../libqtnote/notewidget.cpp" line="365"/>
         <source>Save Note As</source>
         <translation>儲存筆記為</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="392"/>
+        <location filename="../libqtnote/notewidget.cpp" line="393"/>
         <source>Deletion confirmation</source>
         <translation>確認刪除</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="392"/>
+        <location filename="../libqtnote/notewidget.cpp" line="393"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>你確定要刪除這個筆記？</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="395"/>
+        <source>Don&apos;t ask again</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

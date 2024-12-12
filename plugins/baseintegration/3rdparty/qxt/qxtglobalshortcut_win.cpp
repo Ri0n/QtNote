@@ -31,6 +31,31 @@
 
 #include <qt_windows.h>
 
+namespace {
+QString getLastErrorAsString() {
+    DWORD errorMessageID = ::GetLastError();
+    if (errorMessageID == 0) {
+        return QString(); // Нет ошибки
+    }
+
+    LPWSTR messageBuffer = nullptr;
+    size_t size = FormatMessageW(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        errorMessageID,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPWSTR)&messageBuffer,
+        0,
+        nullptr
+        );
+
+    QString errorMessage = QString::fromWCharArray(messageBuffer, static_cast<int>(size));
+    LocalFree(messageBuffer);
+
+    return errorMessage.trimmed(); // Убираем лишние символы, если есть
+}
+}
+
 
 bool QxtGlobalShortcutPrivate::nativeEventFilter(const QByteArray & eventType,
     void * message,
@@ -238,7 +263,11 @@ quint32 QxtGlobalShortcutPrivate::nativeKeycode(Qt::Key key)
 
 bool QxtGlobalShortcutPrivate::registerShortcut(quint32 nativeKey, quint32 nativeMods)
 {
-    return RegisterHotKey(0, nativeMods ^ nativeKey, nativeMods, nativeKey);
+    auto res = RegisterHotKey(0, nativeMods ^ nativeKey, nativeMods, nativeKey);
+    if (!res) {
+        errorString = getLastErrorAsString();
+    }
+    return res;
 }
 
 bool QxtGlobalShortcutPrivate::unregisterShortcut(quint32 nativeKey, quint32 nativeMods)
