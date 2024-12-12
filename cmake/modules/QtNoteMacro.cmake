@@ -37,7 +37,7 @@ if (NOT QTNOTE_VERSION_MAJOR)
                 math(EXPR QTNOTE_VERSION_PATCH "${QTNOTE_VERSION_PATCH} + ${QTNOTE_VERSION_TWEAK}" OUTPUT_FORMAT DECIMAL)
                 set(GIT_REPO_VERSION ${QTNOTE_VERSION_MAJOR}.${QTNOTE_VERSION_MINOR}.${QTNOTE_VERSION_PATCH})
                 set(QTNOTE_VERSION_TWEAK 0)
-                set(QTNOTE_VERSION ${GIT_REPO_VERSION} CACHE STRING "QtNote version string")
+                set(QTNOTE_VERSION ${GIT_REPO_VERSION})
             else()
                 set(QTNOTE_VERSION ${GIT_REPO_FULL_VERSION})
             endif()
@@ -46,7 +46,7 @@ if (NOT QTNOTE_VERSION_MAJOR)
         if (EXISTS "${CMAKE_SOURCE_DIR}/qtnote.version")
             file(READ "${CMAKE_SOURCE_DIR}/qtnote.version" QTNOTE_VERSION_FILE)
             sanitize_version(${QTNOTE_VERSION_FILE} QTNOTE QTNOTE_VERSION_FILE)
-            set(QTNOTE_VERSION ${QTNOTE_VERSION_FILE} CACHE STRING "QtNote version string")
+            set(QTNOTE_VERSION ${QTNOTE_VERSION_FILE})
         endif()
     endif()
     set(VERSION_FOR_WIX  ${QTNOTE_VERSION}.0)
@@ -59,7 +59,7 @@ if ("${QTNOTE_VERSION}" STREQUAL "")
         message(FATAL_ERROR "Invalid default version ${QTNOTE_DEFAULT_VERSION}")
     endif()
     message(WARNING "Failed to find QtNote version. Using ${QTNOTE_VERSION}")
-    set(QTNOTE_VERSION "${QTNOTE_VERSION}" CACHE STRING "QtNote version string")
+    #set(QTNOTE_VERSION "${QTNOTE_VERSION}" CACHE STRING "QtNote version string")
 endif()
 
 function(qtnote_platform_has_plugin out_var platforms)
@@ -119,15 +119,18 @@ macro(qtnote_optional_pkgconfig)
     endif()
 endmacro()
 
-macro(install_qtnote_plugin name)
-    install(TARGETS ${name} LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
-
+macro(windeployqt name)
     if(WINDEPLOYQT_EXECUTABLE)
         # Run windeployqt after build
         add_custom_command(
             TARGET ${name} POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-compiler-runtime --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:${name}>
+            COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-compiler-runtime --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:${name}>
             COMMENT "Running windeployqt on ${name} to gather Qt dependencies"
         )
     endif()
+endmacro()
+
+macro(install_qtnote_plugin name)
+    install(TARGETS ${name} LIBRARY DESTINATION ${PLUGINSDIR} COMPONENT Libraries NAMELINK_COMPONENT Development)
+    windeployqt(${name})
 endmacro()

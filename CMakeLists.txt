@@ -79,6 +79,12 @@ if(WIN32)
     # On Windows, place plugins in a 'plugins' directory near the executable
     set(PLUGINSDIR "${CMAKE_INSTALL_BINDIR}/plugins")
     set(TRANSLATIONSDIR "${CMAKE_INSTALL_BINDIR}/translations")
+
+    # Ensure CMAKE_INSTALL_PREFIX is set
+    if(NOT CMAKE_INSTALL_PREFIX)
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install_root")
+    endif()
+    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
 else()
     # On Linux, place plugins in the system library directory under APP_NAME
     set(PLUGINSDIR "${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME}")

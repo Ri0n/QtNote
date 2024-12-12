@@ -1,10 +1,3 @@
-
-# Ensure CMAKE_INSTALL_PREFIX is set
-if(NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install_root")
-endif()
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
-
 find_program(WINDEPLOYQT_EXECUTABLE windeployqt)
 if(NOT WINDEPLOYQT_EXECUTABLE)
     message(WARNING "windeployqt not found! Dependencies for standalone deployment will not be gathered.")
@@ -23,7 +16,10 @@ set(WIX_BUNDLE_TEMPLATE "${CMAKE_SOURCE_DIR}/wix/QtNoteInstaller.wixbundle.in")
 set(WIX_OUTPUT "${CMAKE_BINARY_DIR}/installer.wxs")
 set(WIX_BUNDLE_OUTPUT "${CMAKE_BINARY_DIR}/QtNoteInstaller.wixbundle")
 set(QTNOTE_MSI ${CMAKE_BINARY_DIR}/QtNote.msi)
-set(QTNOTE_INSTALLER_EXE ${CMAKE_BINARY_DIR}/QtNoteInstaller.exe)
+
+set(QTNOTE_INSTALLER_EXE QtNote.Installer-${QTNOTE_VERSION}.exe)
+set(QTNOTE_INSTALLER_EXE_PATH ${CMAKE_BINARY_DIR}/${QTNOTE_INSTALLER_EXE})
+
 set(LICENSE_TXT "${CMAKE_SOURCE_DIR}/license.txt")
 set(LICENSE_RTF "${CMAKE_BINARY_DIR}/GPLv3.rtf")
 set(LOGO_FILE "${CMAKE_SOURCE_DIR}/src/win/pen64.ico")
@@ -101,7 +97,6 @@ function(generate_wxs output_file output_bundle_file)
     configure_file(${WIX_TEMPLATE} ${output_file} @ONLY)
     configure_file(${WIX_BUNDLE_TEMPLATE} ${output_bundle_file} @ONLY)
     configure_file(${CMAKE_SOURCE_DIR}/src/win/pen64.ico ${CMAKE_BINARY_DIR}/pen64.ico COPYONLY)
-    #configure_file(${CMAKE_SOURCE_DIR}/wix/BootstrapperApplicationData.xml ${CMAKE_BINARY_DIR}/BootstrapperApplicationData.xml COPYONLY)
 endfunction()
 
 generate_wxs(${WIX_OUTPUT} ${WIX_BUNDLE_OUTPUT})
@@ -121,10 +116,10 @@ add_custom_target(package
 
 # don't forget `wix extension add -g WixToolset.BootstrapperApplications.wixext`
 add_custom_command(
-    OUTPUT QtNoteInstaller.exe
-    COMMAND ${WIX_EXECUTABLE} build ${WIX_BUNDLE_OUTPUT} -ext WixToolset.BootstrapperApplications.wixext -o ${QTNOTE_INSTALLER_EXE}
+    OUTPUT ${QTNOTE_INSTALLER_EXE}
+    COMMAND ${WIX_EXECUTABLE} build ${WIX_BUNDLE_OUTPUT} -ext WixToolset.BootstrapperApplications.wixext -o ${QTNOTE_INSTALLER_EXE_PATH}
     DEPENDS ${WIX_BUNDLE_OUTPUT} ${QTNOTE_MSI} ${LICENSE_RTF}
     COMMENT "Building Burn Bootstrapper"
 )
 
-add_custom_target(burn_installer DEPENDS ${QTNOTE_INSTALLER_EXE} package)
+add_custom_target(burn_installer DEPENDS ${QTNOTE_INSTALLER_EXE_PATH} package)

@@ -34,15 +34,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="187"/>
-        <source>Russian:
-  Sergei Ilinykh &lt;rion4ik@gmail.com&gt;
-
-Ukrainian:
-  Vitaly Tonkacheyev
-
-Vietnamese:
-  Phan Anh</source>
+        <location filename="../libqtnote/aboutdlg.ui" line="181"/>
+        <source>All the translations are maintained on &lt;a href=&quot;https://app.transifex.com/rion/qtnote&quot;&gt;Transifex&lt;/a&gt; by various contributors. &lt;br /&gt;&lt;br /&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Special thanks to:&lt;/span&gt;
+&lt;ul&gt;
+&lt;li&gt;Eduardo Delmoral&lt;/li&gt;
+&lt;li&gt;Heimen Stoffels&lt;/li&gt;
+&lt;li&gt;Peter Jespersen&lt;/li&gt;
+&lt;li&gt;Phan Anh&lt;/li&gt;
+&lt;li&gt;st.michael c&lt;/li&gt;
+&lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
+and to other contributors whose names have been lost or not yet added.
+</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -98,9 +100,13 @@ Vietnamese:
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
-        <translation>&lt;h1&gt;Менеджер заметок&lt;/h1&gt;&lt;h6&gt;(Группируй, перетаскивай и ищи свои заметки)&lt;h6&gt;</translation>
+        <translation type="vanished">&lt;h1&gt;Менеджер заметок&lt;/h1&gt;&lt;h6&gt;(Группируй, перетаскивай и ищи свои заметки)&lt;h6&gt;</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
+        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -196,6 +202,31 @@ Vietnamese:
         <location filename="../libqtnote/qtnote.cpp" line="135"/>
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>Ни одно из хранилищ недоступно. Продолжение невозможно..</translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
+        <source>%1 is not readable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
+        <source>Directory %s doesn&apos;t exist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
+        <source>Checking if %s has dictionaries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
+        <source>Found %s dictionary</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
+        <source>Skip %s dictionary as C locale</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -310,69 +341,58 @@ Vietnamese:
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
-        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>Интеграция с Gnome/Unity функциональностью</translation>
+        <translation type="vanished">Интеграция с Gnome/Unity функциональностью</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation>Ошибка</translation>
+        <translation type="vanished">Ошибка</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation>&amp;Выход</translation>
+        <translation type="vanished">&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation>&amp;Новая</translation>
+        <translation type="vanished">&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation>&amp;О Программе</translation>
+        <translation type="vanished">&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation>Н&amp;астройки</translation>
+        <translation type="vanished">Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation>&amp;Менеджер Заметок</translation>
+        <translation type="vanished">&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation>Ещё..</translation>
+        <translation type="vanished">Ещё..</translation>
     </message>
     <message>
         <source>Error</source>
         <translation type="obsolete">Ошибка</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation>Заметки</translation>
+        <translation type="vanished">Заметки</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation>Естественный вид для пользователей KDE</translation>
+        <translation type="vanished">Естественный вид для пользователей KDE</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="49"/>
         <source>Error</source>
-        <translation>Ошибка</translation>
+        <translation type="vanished">Ошибка</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -382,24 +402,20 @@ Vietnamese:
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation>&amp;Новая</translation>
+        <translation type="vanished">&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation>&amp;Менеджер Заметок</translation>
+        <translation type="vanished">&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation>Н&amp;астройки</translation>
+        <translation type="vanished">Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation>&amp;О Программе</translation>
+        <translation type="vanished">&amp;О Программе</translation>
     </message>
     <message>
         <source>Error</source>
@@ -409,52 +425,39 @@ Vietnamese:
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
-        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
-        <source>Integrtion with macosx-only features</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="unfinished">Ошибка</translation>
+        <translation type="obsolete">Ошибка</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXTray</name>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="unfinished">&amp;Выход</translation>
+        <translation type="obsolete">&amp;Выход</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="unfinished">&amp;Новая</translation>
+        <translation type="obsolete">&amp;Новая</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="unfinished">&amp;О Программе</translation>
+        <translation type="obsolete">&amp;О Программе</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="unfinished">Н&amp;астройки</translation>
+        <translation type="obsolete">Н&amp;астройки</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="unfinished">&amp;Менеджер Заметок</translation>
+        <translation type="obsolete">&amp;Менеджер Заметок</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="unfinished">Ещё..</translation>
+        <translation type="obsolete">Ещё..</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="unfinished">Заметки</translation>
+        <translation type="obsolete">Заметки</translation>
     </message>
 </context>
 <context>
@@ -566,7 +569,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteDialog</name>
     <message>
-        <location filename="../libqtnote/notedialog.cpp" line="131"/>
+        <location filename="../libqtnote/notedialog.cpp" line="135"/>
         <source>[No Title]</source>
         <translation>[Нет заголовка]</translation>
     </message>
@@ -633,16 +636,24 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>%1: Settings</source>
-        <translation>%1: Настройки</translation>
+        <translation type="vanished">%1: Настройки</translation>
     </message>
 </context>
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>: Settings</source>
-        <translation>: Настройки</translation>
+        <translation type="vanished">: Настройки</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -722,6 +733,16 @@ Notes will be automatically saved to special storage, so you should not worry ab
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Загруженные словари:&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
+        <source>none</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
+        <source>Diagnostics</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -53,15 +53,7 @@ if(WIN32)
             DESTINATION "${CMAKE_INSTALL_BINDIR}"
             COMPONENT Libraries
     )
-
-    if(WINDEPLOYQT_EXECUTABLE)
-        # Run windeployqt after build
-        add_custom_command(
-            TARGET qtnote POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE} --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:qtnote>
-            COMMENT "Running windeployqt to gather Qt dependencies"
-        )
-    endif()
+    windeployqt(qtnote)
 else()
     install(TARGETS qtnote
       LIBRARY

@@ -34,15 +34,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../libqtnote/aboutdlg.ui" line="187"/>
-        <source>Russian:
-  Sergei Ilinykh &lt;rion4ik@gmail.com&gt;
-
-Ukrainian:
-  Vitaly Tonkacheyev
-
-Vietnamese:
-  Phan Anh</source>
+        <location filename="../libqtnote/aboutdlg.ui" line="181"/>
+        <source>All the translations are maintained on &lt;a href=&quot;https://app.transifex.com/rion/qtnote&quot;&gt;Transifex&lt;/a&gt; by various contributors. &lt;br /&gt;&lt;br /&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Special thanks to:&lt;/span&gt;
+&lt;ul&gt;
+&lt;li&gt;Eduardo Delmoral&lt;/li&gt;
+&lt;li&gt;Heimen Stoffels&lt;/li&gt;
+&lt;li&gt;Peter Jespersen&lt;/li&gt;
+&lt;li&gt;Phan Anh&lt;/li&gt;
+&lt;li&gt;st.michael c&lt;/li&gt;
+&lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
+and to other contributors whose names have been lost or not yet added.
+</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -96,9 +98,13 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
-        <translation>&lt;h1&gt;筆記管理員&lt;/h1&gt;&lt;h6&gt;(群集,拖放以搜尋你的筆記)</translation>
+        <translation type="vanished">&lt;h1&gt;筆記管理員&lt;/h1&gt;&lt;h6&gt;(群集,拖放以搜尋你的筆記)</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
+        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -195,6 +201,31 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
         <source>no one of note storages is accessible. can&apos;t continue..</source>
         <translation>無筆記儲存可用，無法繼續</translation>
     </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
+        <source>%1 is not readable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
+        <source>Directory %s doesn&apos;t exist</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
+        <source>Checking if %s has dictionaries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
+        <source>Found %s dictionary</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
+        <source>Skip %s dictionary as C locale</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QtNote::BaseIntegration</name>
@@ -253,65 +284,54 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
-        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>和gnome專有功能整合</translation>
+        <translation type="vanished">和gnome專有功能整合</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation>錯誤</translation>
+        <translation type="vanished">錯誤</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation>放棄</translation>
+        <translation type="vanished">放棄</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation>新開</translation>
+        <translation type="vanished">新開</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation>關於</translation>
+        <translation type="vanished">關於</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation>選項</translation>
+        <translation type="vanished">選項</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation>筆記管理</translation>
+        <translation type="vanished">筆記管理</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation>更多..</translation>
+        <translation type="vanished">更多..</translation>
     </message>
     <message>
-        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation>筆記</translation>
+        <translation type="vanished">筆記</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="33"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation>提供KDE用戶原生視覺體驗環境</translation>
+        <translation type="vanished">提供KDE用戶原生視覺體驗環境</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="49"/>
         <source>Error</source>
-        <translation>錯誤</translation>
+        <translation type="vanished">錯誤</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -321,75 +341,54 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation>新開</translation>
+        <translation type="vanished">新開</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation>筆記管理員</translation>
+        <translation type="vanished">筆記管理員</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation>選項</translation>
+        <translation type="vanished">選項</translation>
     </message>
     <message>
-        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation>關於</translation>
+        <translation type="vanished">關於</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
-        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
-        <source>Integrtion with macosx-only features</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="unfinished">錯誤</translation>
+        <translation type="obsolete">錯誤</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXTray</name>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="unfinished">放棄</translation>
+        <translation type="obsolete">放棄</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="unfinished">新開</translation>
+        <translation type="obsolete">新開</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="unfinished">關於</translation>
+        <translation type="obsolete">關於</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="unfinished">選項</translation>
+        <translation type="obsolete">選項</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
-        <source>&amp;Note Manager</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="unfinished">更多..</translation>
+        <translation type="obsolete">更多..</translation>
     </message>
     <message>
-        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="unfinished">筆記</translation>
+        <translation type="obsolete">筆記</translation>
     </message>
 </context>
 <context>
@@ -502,7 +501,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteDialog</name>
     <message>
-        <location filename="../libqtnote/notedialog.cpp" line="131"/>
+        <location filename="../libqtnote/notedialog.cpp" line="135"/>
         <source>[No Title]</source>
         <translation>筆記標題</translation>
     </message>
@@ -567,16 +566,24 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>%1: Settings</source>
-        <translation>%1:設定</translation>
+        <translation type="vanished">%1:設定</translation>
     </message>
 </context>
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>: Settings</source>
-        <translation>設定</translation>
+        <translation type="vanished">設定</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -656,6 +663,16 @@ Notes will be automatically saved to special storage, so you should not worry ab
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>&lt;b&gt;Loaded dictionaries:&lt;/b&gt; </source>
         <translation>載入的字典</translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
+        <source>none</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
+        <source>Diagnostics</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
