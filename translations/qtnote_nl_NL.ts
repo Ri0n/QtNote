@@ -211,22 +211,22 @@ Vietnamees:
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
-        <source>Directory %s doesn&apos;t exist</source>
+        <source>Directory %1 doesn&apos;t exist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
-        <source>Checking if %s has dictionaries</source>
+        <source>Checking if %1 has dictionaries</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
-        <source>Found %s dictionary</source>
+        <source>Found %1 dictionary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
-        <source>Skip %s dictionary as C locale</source>
+        <source>Ignore %1 dictionary as C locale</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

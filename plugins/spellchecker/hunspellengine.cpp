@@ -142,10 +142,10 @@ QList<QLocale> HunspellEngine::supportedLanguages() const
     foreach (const QString &dictPath, dictPaths) {
         QDir dir(dictPath);
         if (!dir.exists()) {
-            addDiag(QObject::tr("Directory %s doesn't exist").arg(dictPath));
+            addDiag(QObject::tr("Directory %1 doesn't exist").arg(dictPath));
             continue;
         }
-        addDiag(QObject::tr("Checking if %s has dictionaries").arg(dictPath));
+        addDiag(QObject::tr("Checking if %1 has dictionaries").arg(dictPath));
         foreach (const QFileInfo &fi, dir.entryInfoList(QStringList() << "*.dic", QDir::Files)) {
             QLocale locale(fi.baseName());
             if (locale != QLocale::c()) {
@@ -154,9 +154,9 @@ QList<QLocale> HunspellEngine::supportedLanguages() const
 #else
                 retHash.insert(locale.nativeLanguageName() + locale.nativeTerritoryName(), locale);
 #endif
-                addDiag(QObject::tr("Found %s dictionary").arg(fi.baseName()));
+                addDiag(QObject::tr("Found %1 dictionary").arg(fi.baseName()));
             } else {
-                addDiag(QObject::tr("Skip %s dictionary as C locale").arg(fi.baseName()));
+                addDiag(QObject::tr("Ignore %1 dictionary as C locale").arg(fi.baseName()));
             }
         }
     }
