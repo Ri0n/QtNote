@@ -34,9 +34,9 @@ if(Qt${QT_DEFAULT_MAJOR_VERSION}LinguistTools_VERSION VERSION_LESS 6.7.0)
 else()
     set(LANGS_SOURCE_TARGETS)
     foreach(trg baseintegration gnome kdeintegration spellchecker tomboy macosx)
-        if(TARGET ${trg})
+        #if(TARGET ${trg})
             list(APPEND LANGS_SOURCE_TARGETS ${trg})
-        endif()
+        #endif()
     endforeach()
     qt_add_translations(TARGETS qtnoteexe
                         SOURCE_TARGETS qtnoteexe qtnote ${LANGS_SOURCE_TARGETS}

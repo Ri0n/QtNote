@@ -284,54 +284,65 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation type="vanished">和gnome專有功能整合</translation>
+        <translation>和gnome專有功能整合</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation type="vanished">錯誤</translation>
+        <translation>錯誤</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation type="vanished">放棄</translation>
+        <translation>放棄</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation type="vanished">新開</translation>
+        <translation>新開</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation type="vanished">關於</translation>
+        <translation>關於</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation type="vanished">選項</translation>
+        <translation>選項</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">筆記管理</translation>
+        <translation>筆記管理</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation type="vanished">更多..</translation>
+        <translation>更多..</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation type="vanished">筆記</translation>
+        <translation>筆記</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="35"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation type="vanished">提供KDE用戶原生視覺體驗環境</translation>
+        <translation>提供KDE用戶原生視覺體驗環境</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
-        <translation type="vanished">錯誤</translation>
+        <translation>錯誤</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -341,54 +352,75 @@ Il&apos;inykh Sergey &amp;lt;rion4ik@gmail.com&amp;gt;
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation type="vanished">新開</translation>
+        <translation>新開</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">筆記管理員</translation>
+        <translation>筆記管理員</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation type="vanished">選項</translation>
+        <translation>選項</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation type="vanished">關於</translation>
+        <translation>關於</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="obsolete">錯誤</translation>
+        <translation type="unfinished">錯誤</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXTray</name>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="obsolete">放棄</translation>
+        <translation type="unfinished">放棄</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="obsolete">新開</translation>
+        <translation type="unfinished">新開</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="obsolete">關於</translation>
+        <translation type="unfinished">關於</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="obsolete">選項</translation>
+        <translation type="unfinished">選項</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
+        <source>&amp;Note Manager</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="obsolete">更多..</translation>
+        <translation type="unfinished">更多..</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="obsolete">筆記</translation>
+        <translation type="unfinished">筆記</translation>
     </message>
 </context>
 <context>

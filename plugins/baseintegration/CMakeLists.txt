@@ -1,7 +1,5 @@
 include(QtNoteMacro)
 
-add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin" ON unix macosx windows)
-
 set (QXT_SRC 3rdparty/qxt/qxtglobalshortcut.h
     3rdparty/qxt/qxtglobalshortcut.cpp
     3rdparty/qxt/qxtglobal.h
@@ -15,15 +13,16 @@ endif()
 if (WIN32)
     list(APPEND QXT_SRC 3rdparty/qxt/qxtglobalshortcut_win.cpp)
 endif()
-add_library(baseintegration ${LIB_TYPE}
-    ${QTNOTE_COMMON_PLUGIN_SRC}
+
+add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin" ON unix macosx windows SOURCES
     ${QXT_SRC}
     baseintegration.h
     baseintegration.cpp
     baseintegrationtray.h
     baseintegrationtray.cpp
     baseintegration.qrc
-    )
+)
+
 target_include_directories(baseintegration PRIVATE 3rdparty/qxt)
 target_link_libraries(baseintegration ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets)
 if (UNIX)
