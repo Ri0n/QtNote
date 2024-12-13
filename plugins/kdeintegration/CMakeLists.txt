@@ -13,16 +13,14 @@ if(KF${QT_DEFAULT_MAJOR_VERSION}GlobalAccel_FOUND AND KF${QT_DEFAULT_MAJOR_VERSI
     set(kdeintegration_buildable ON)
 endif()
 
-add_qtnote_plugin(kdeintegration "Integration with KDE Plasma" ${kdeintegration_buildable} unix)
-
-add_library(kdeintegration ${LIB_TYPE}
-    ${QTNOTE_COMMON_PLUGIN_SRC}
+add_qtnote_plugin(kdeintegration "Integration with KDE Plasma" ${kdeintegration_buildable} unix SOURCES
     kdeintegration.cpp
     kdeintegration.h
     kdeintegration.qrc
     kdeintegrationtray.cpp
     kdeintegrationtray.h
-    )
+)
+
 target_link_libraries(kdeintegration qtnote Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets KF${QT_DEFAULT_MAJOR_VERSION}::GlobalAccel
     KF${QT_DEFAULT_MAJOR_VERSION}::Notifications KF${QT_DEFAULT_MAJOR_VERSION}::WindowSystem)
 if (${QT_DEFAULT_MAJOR_VERSION} GREATER_EQUAL 6)
