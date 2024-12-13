@@ -501,12 +501,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished"/>
+        <translation>打印</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished"/>
+        <translation>打印笔记</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
