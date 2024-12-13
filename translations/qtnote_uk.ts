@@ -500,7 +500,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished"/>
+        <translation>Роздрукувати</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
