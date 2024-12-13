@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="da">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="da">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -16,22 +14,22 @@
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="88"/>
         <source>Simple and usable note taking application</source>
-        <translation type="unfinished"></translation>
+        <translation>Enkelt og nyttigt note-program</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="97"/>
         <source>License:</source>
-        <translation type="unfinished"></translation>
+        <translation>Licens:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="131"/>
         <source>Sergei Ilinykh</source>
-        <translation type="unfinished"></translation>
+        <translation>Sergei Ilinykh</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="152"/>
         <source>Author:</source>
-        <translation type="unfinished"></translation>
+        <translation>Udviklet af:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="181"/>
@@ -45,34 +43,12 @@
 &lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
 and to other contributors whose names have been lost or not yet added.
 </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>License: GPL-3</source>
-        <translation type="vanished">Licens: GPL-3</translation>
-    </message>
-    <message>
-        <source>Author: Il&apos;inykh Sergey</source>
-        <translation type="vanished">Udvikler: Il&apos;inykh Sergey</translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="175"/>
         <source>Translations</source>
         <translation>Oversættelser</translation>
-    </message>
-    <message>
-        <source>Russian:
-  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
-
-Vietnamese:
-  Phan Anh
-</source>
-        <translation type="vanished">Russisk:
-  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
-
-Vietnamesisk:
-  Phan Anh
-</translation>
     </message>
 </context>
 <context>
@@ -101,13 +77,9 @@ Vietnamesisk:
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
-        <translation type="vanished">&lt;H1&gt; Notehåndtering&lt;/ h1&gt; &lt;h6&gt; (Gruppe, træk og slip og søg i dine noter)&lt;/h6&gt;</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -207,27 +179,27 @@ Vietnamesisk:
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
         <source>%1 is not readable</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
         <source>Directory %1 doesn&apos;t exist</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
         <source>Checking if %1 has dictionaries</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
         <source>Found %1 dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -289,7 +261,7 @@ Vietnamesisk:
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>Integration med Gnome-specifik funktionalitet</translation>
+        <translation>Integration med Gnome-funktionalitet</translation>
     </message>
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="72"/>
@@ -347,10 +319,6 @@ Vietnamesisk:
         <source>Error</source>
         <translation>Fejl</translation>
     </message>
-    <message>
-        <source>New note from selection</source>
-        <translation type="vanished">Ny note fra udvælgelse</translation>
-    </message>
 </context>
 <context>
     <name>QtNote::KDEIntegrationTray</name>
@@ -380,12 +348,12 @@ Vietnamesisk:
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="49"/>
         <source>Integrtion with macosx-only features</source>
-        <translation type="unfinished"></translation>
+        <translation>Integration med MacOS-funktionalitet</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="unfinished">Fejl</translation>
+        <translation>Fejl</translation>
     </message>
 </context>
 <context>
@@ -393,37 +361,37 @@ Vietnamesisk:
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="unfinished">&amp;Luk</translation>
+        <translation>&amp;Luk</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="unfinished">&amp;Ny</translation>
+        <translation>&amp;Ny</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="unfinished">&amp; Om</translation>
+        <translation>&amp; Om</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="unfinished">&amp;Indstillinger</translation>
+        <translation>&amp;Indstillinger</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="unfinished">&amp;Notehåndtering</translation>
+        <translation>&amp;Notehåndtering</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="unfinished">Mere..</translation>
+        <translation>Mere..</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="unfinished">Noter</translation>
+        <translation>Noter</translation>
     </message>
 </context>
 <context>
@@ -551,10 +519,7 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation>
-            <numerusform>%n note</numerusform>
-            <numerusform>%n noter</numerusform>
-        </translation>
+        <translation><numerusform>%n note</numerusform><numerusform>%n noter</numerusform></translation>
     </message>
 </context>
 <context>
@@ -590,12 +555,12 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="393"/>
         <source>Are you sure you want to delete this note?</source>
-        <translation>Er du sikker på, at du ønsker at slette denne note?</translation>
+        <translation>Er du sikker på at du gerne vil slette denne note?</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="395"/>
         <source>Don&apos;t ask again</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -608,23 +573,15 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1: Settings</source>
-        <translation type="vanished">%1: Indstillinger</translation>
+        <translation>Indstillinger</translation>
     </message>
 </context>
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <source>: Settings</source>
-        <translation type="vanished">: Indstillinger</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Indstillinger</translation>
     </message>
 </context>
 <context>
@@ -708,12 +665,12 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>none</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
         <source>Diagnostics</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -721,7 +678,7 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="101"/>
         <source>Add to dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation>Tilføj til ordbog</translation>
     </message>
 </context>
 <context>
