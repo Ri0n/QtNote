@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="uk">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="uk">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -449,64 +451,52 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save</source>
-        <translation>Зберегти</translation>
+        <translation type="vanished">Зберегти</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save note to file</source>
-        <translation>Зберегти нотатку до файлу</translation>
+        <translation type="vanished">Зберегти нотатку до файлу</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy</source>
-        <translation>Копіювати</translation>
+        <translation type="vanished">Копіювати</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy note to clipboard</source>
-        <translation>Скопіювати нотатку до буферу обміну</translation>
+        <translation type="vanished">Скопіювати нотатку до буферу обміну</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print</source>
-        <translation>Роздрукувати</translation>
+        <translation type="vanished">Роздрукувати</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print note</source>
-        <translation>Роздрукувати нотатку</translation>
+        <translation type="vanished">Роздрукувати нотатку</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find</source>
-        <translation>Знайти</translation>
+        <translation type="vanished">Знайти</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find text in note</source>
-        <translation>Знайти текст у нотатці</translation>
+        <translation type="vanished">Знайти текст у нотатці</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace</source>
-        <translation>Замінити</translation>
+        <translation type="vanished">Замінити</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace text in note</source>
-        <translation>Замінити текст у нотатці</translation>
+        <translation type="vanished">Замінити текст у нотатці</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete</source>
-        <translation>Видалити</translation>
+        <translation type="vanished">Видалити</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete note</source>
-        <translation>Видалити нотатку</translation>
+        <translation type="vanished">Видалити нотатку</translation>
     </message>
 </context>
 <context>
@@ -527,7 +517,11 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform></translation>
+        <translation>
+            <numerusform>%n нотаток</numerusform>
+            <numerusform>%n нотаток</numerusform>
+            <numerusform>%n нотаток</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -541,32 +535,92 @@ Notes will be automatically saved to special storage, so you should not worry ab
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="356"/>
+        <location filename="../libqtnote/notewidget.cpp" line="126"/>
+        <source>Save</source>
+        <translation type="unfinished">Зберегти</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="126"/>
+        <source>Save note to file</source>
+        <translation type="unfinished">Зберегти нотатку до файлу</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="131"/>
+        <source>Copy</source>
+        <translation type="unfinished">Копіювати</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="131"/>
+        <source>Copy note to clipboard</source>
+        <translation type="unfinished">Скопіювати нотатку до буферу обміну</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="135"/>
+        <source>Print</source>
+        <translation type="unfinished">Роздрукувати</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="135"/>
+        <source>Print note</source>
+        <translation type="unfinished">Роздрукувати нотатку</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="141"/>
+        <source>Find</source>
+        <translation type="unfinished">Знайти</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="141"/>
+        <source>Find text in note</source>
+        <translation type="unfinished">Знайти текст у нотатці</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="148"/>
+        <source>Replace</source>
+        <translation type="unfinished">Замінити</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="148"/>
+        <source>Replace text in note</source>
+        <translation type="unfinished">Замінити текст у нотатці</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="155"/>
+        <source>Delete</source>
+        <translation type="unfinished">Видалити</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="155"/>
+        <source>Delete note</source>
+        <translation type="unfinished">Видалити нотатку</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="340"/>
         <source>Text files (*.txt)</source>
         <translation>Текстові файли (*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="357"/>
+        <location filename="../libqtnote/notewidget.cpp" line="341"/>
         <source>HTML files (*.html)</source>
         <translation>HTML файли (*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="365"/>
+        <location filename="../libqtnote/notewidget.cpp" line="349"/>
         <source>Save Note As</source>
         <translation>Зберегти нотатку як</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="393"/>
+        <location filename="../libqtnote/notewidget.cpp" line="377"/>
         <source>Deletion confirmation</source>
         <translation>Підтвердження видалення</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="393"/>
+        <location filename="../libqtnote/notewidget.cpp" line="377"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>Ви впевнені, що хочете видалити цю нотатку?</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="395"/>
+        <location filename="../libqtnote/notewidget.cpp" line="379"/>
         <source>Don&apos;t ask again</source>
         <translation>Не питати знову</translation>
     </message>

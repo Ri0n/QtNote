@@ -15,7 +15,6 @@ class TypeAheadFindBar;
 
 namespace QtNote {
 
-struct ActData;
 class NoteEdit;
 class NoteHighlighter;
 
@@ -92,7 +91,7 @@ private:
     bool                                  _trashRequested = false;
     bool                                  _changed        = false;
 
-    QAction *initAction(const ActData &name);
+    QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 };
 
 } // namespace QtNote

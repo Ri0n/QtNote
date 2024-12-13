@@ -1,4 +1,6 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="da">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="da">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -43,7 +45,7 @@
 &lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
 and to other contributors whose names have been lost or not yet added.
 </source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="175"/>
@@ -79,7 +81,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -179,27 +181,27 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
         <source>%1 is not readable</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
         <source>Directory %1 doesn&apos;t exist</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
         <source>Checking if %1 has dictionaries</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
         <source>Found %1 dictionary</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -441,64 +443,52 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
 <context>
     <name>QtNote::MakeVSHappy</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save</source>
-        <translation>Gem</translation>
+        <translation type="vanished">Gem</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="113"/>
         <source>Save note to file</source>
-        <translation>Gem note til fil</translation>
+        <translation type="vanished">Gem note til fil</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy</source>
-        <translation>Kopiér</translation>
+        <translation type="vanished">Kopiér</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="114"/>
         <source>Copy note to clipboard</source>
-        <translation>kopiér note til udklipsholder</translation>
+        <translation type="vanished">kopiér note til udklipsholder</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print</source>
-        <translation>Udskriv</translation>
+        <translation type="vanished">Udskriv</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="115"/>
         <source>Print note</source>
-        <translation>Udskriv note</translation>
+        <translation type="vanished">Udskriv note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find</source>
-        <translation>Find</translation>
+        <translation type="vanished">Find</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="116"/>
         <source>Find text in note</source>
-        <translation>Find tekst i note</translation>
+        <translation type="vanished">Find tekst i note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace</source>
-        <translation>Erstat</translation>
+        <translation type="vanished">Erstat</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="118"/>
         <source>Replace text in note</source>
-        <translation>Erstat tekst i note</translation>
+        <translation type="vanished">Erstat tekst i note</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete</source>
-        <translation>Slet</translation>
+        <translation type="vanished">Slet</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="119"/>
         <source>Delete note</source>
-        <translation>Slet note</translation>
+        <translation type="vanished">Slet note</translation>
     </message>
 </context>
 <context>
@@ -519,7 +509,10 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation><numerusform>%n note</numerusform><numerusform>%n noter</numerusform></translation>
+        <translation>
+            <numerusform>%n note</numerusform>
+            <numerusform>%n noter</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -533,34 +526,94 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
 <context>
     <name>QtNote::NoteWidget</name>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="356"/>
+        <location filename="../libqtnote/notewidget.cpp" line="126"/>
+        <source>Save</source>
+        <translation type="unfinished">Gem</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="126"/>
+        <source>Save note to file</source>
+        <translation type="unfinished">Gem note til fil</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="131"/>
+        <source>Copy</source>
+        <translation type="unfinished">Kopiér</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="131"/>
+        <source>Copy note to clipboard</source>
+        <translation type="unfinished">kopiér note til udklipsholder</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="135"/>
+        <source>Print</source>
+        <translation type="unfinished">Udskriv</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="135"/>
+        <source>Print note</source>
+        <translation type="unfinished">Udskriv note</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="141"/>
+        <source>Find</source>
+        <translation type="unfinished">Find</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="141"/>
+        <source>Find text in note</source>
+        <translation type="unfinished">Find tekst i note</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="148"/>
+        <source>Replace</source>
+        <translation type="unfinished">Erstat</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="148"/>
+        <source>Replace text in note</source>
+        <translation type="unfinished">Erstat tekst i note</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="155"/>
+        <source>Delete</source>
+        <translation type="unfinished">Slet</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="155"/>
+        <source>Delete note</source>
+        <translation type="unfinished">Slet note</translation>
+    </message>
+    <message>
+        <location filename="../libqtnote/notewidget.cpp" line="340"/>
         <source>Text files (*.txt)</source>
         <translation>Tekstfiler (*.txt)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="357"/>
+        <location filename="../libqtnote/notewidget.cpp" line="341"/>
         <source>HTML files (*.html)</source>
         <translation>HTMLfiler (*.html)</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="365"/>
+        <location filename="../libqtnote/notewidget.cpp" line="349"/>
         <source>Save Note As</source>
         <translation>Gem Note Som</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="393"/>
+        <location filename="../libqtnote/notewidget.cpp" line="377"/>
         <source>Deletion confirmation</source>
         <translation>Slettebekræftelse</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="393"/>
+        <location filename="../libqtnote/notewidget.cpp" line="377"/>
         <source>Are you sure you want to delete this note?</source>
         <translation>Er du sikker på at du gerne vil slette denne note?</translation>
     </message>
     <message>
-        <location filename="../libqtnote/notewidget.cpp" line="395"/>
+        <location filename="../libqtnote/notewidget.cpp" line="379"/>
         <source>Don&apos;t ask again</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -665,12 +718,12 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>none</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
         <source>Diagnostics</source>
-        <translation type="unfinished"/>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

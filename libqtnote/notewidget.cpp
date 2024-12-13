@@ -102,23 +102,6 @@ public:
     }
 };
 
-struct ActData {
-    const char *icon;
-    const char *text;
-    const char *toolTip;
-    const char *shortcut;
-};
-
-static struct MakeVSHappy {
-    ActData save =  { "", QT_TR_NOOP("Save"), QT_TR_NOOP("Save note to file"), "Ctrl+S" };
-    ActData copy =  { ":/icons/copy", QT_TR_NOOP("Copy"), QT_TR_NOOP("Copy note to clipboard"), "Ctrl+Shift+C" };
-    ActData print =  { ":/icons/print", QT_TR_NOOP("Print"), QT_TR_NOOP("Print note"), "Ctrl+P" };
-    ActData find  =  { ":/icons/find", QT_TR_NOOP("Find"), QT_TR_NOOP("Find text in note"), "Ctrl+F" };
-    ActData replace
-        =  { ":/icons/replace-text", QT_TR_NOOP("Replace"), QT_TR_NOOP("Replace text in note"), "Ctrl+R" };
-    ActData trash =  { ":/icons/trash", QT_TR_NOOP("Delete"), QT_TR_NOOP("Delete note"), "Ctrl+D" };
-} staticActData;
-
 NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     ui(new Ui::NoteWidget), _storageId(storageId), _noteId(noteId)
 {
@@ -140,35 +123,36 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     QToolBar *tbar = new QToolBar(this);
     ui->toolbarLayout->addWidget(tbar);
 
-    QAction *act = initAction(staticActData.save);
+    QAction *act = initAction(nullptr, tr("Save"), tr("Save note to file"), "Ctrl+S");
     act->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
 
-    act = initAction(staticActData.copy);
+    act = initAction(":/icons/copy", tr("Copy"), tr("Copy note to clipboard"), "Ctrl+Shift+C");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onCopyClicked()));
 
-    act = initAction(staticActData.print);
+    act = initAction(":/icons/print", tr("Print"), tr("Print note"), "Ctrl+P");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onPrintClicked()));
 
     tbar->addSeparator();
 
-    act = initAction(staticActData.find);
+    act = initAction( ":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
+
     QToolButton *findButton = dynamic_cast<QToolButton *>(tbar->widgetForAction(act));
     findButton->setPopupMode(QToolButton::InstantPopup);
 
-    act = initAction(staticActData.replace);
+    act = initAction(":/icons/replace-text", tr("Replace"), tr("Replace text in note"), "Ctrl+R");
     // tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
     findButton->addAction(act);
 
     tbar->addSeparator();
 
-    act = initAction(staticActData.trash);
+    act = initAction(":/icons/trash", tr("Delete"), tr("Delete note"), "Ctrl+D");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
 
@@ -200,11 +184,11 @@ NoteWidget::~NoteWidget()
     delete ui;
 }
 
-QAction *NoteWidget::initAction(const ActData &actData)
+QAction *NoteWidget::initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey)
 {
-    QAction *act = new QAction(QIcon(actData.icon), tr(actData.text), this);
-    act->setToolTip(actData.toolTip);
-    act->setShortcut(QKeySequence(QLatin1String(actData.shortcut)));
+    QAction *act = new QAction(icon? QIcon(icon) : QIcon(), title, this);
+    act->setToolTip(toolTip);
+    act->setShortcut(QKeySequence(QLatin1String(hotkey)));
     act->setShortcutContext(Qt::WindowShortcut);
     return act;
 }
