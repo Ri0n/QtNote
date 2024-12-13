@@ -480,7 +480,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save</source>
-        <translation type="unfinished"/>
+        <translation>Сохранить</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
@@ -500,12 +500,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished"/>
+        <translation>Распечатать</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished"/>
+        <translation>Распечатать заметку</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
