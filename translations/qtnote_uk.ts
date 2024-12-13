@@ -510,12 +510,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find</source>
-        <translation type="unfinished"/>
+        <translation>Знайти</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find text in note</source>
-        <translation type="unfinished"/>
+        <translation>Знайти текст у нотатці</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
