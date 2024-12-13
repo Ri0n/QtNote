@@ -109,6 +109,7 @@ add_custom_target(prepare_install
 
 add_custom_target(package
     DEPENDS prepare_install
+    BYPRODUCTS ${QTNOTE_MSI}
     COMMAND ${WIX_EXECUTABLE} build ${WIX_OUTPUT} -platform x64 -o ${QTNOTE_MSI}
     USES_TERMINAL
     COMMENT "Building MSI package with WiX 5"
@@ -116,10 +117,10 @@ add_custom_target(package
 
 # don't forget `wix extension add -g WixToolset.BootstrapperApplications.wixext`
 add_custom_command(
-    OUTPUT ${QTNOTE_INSTALLER_EXE}
+    OUTPUT ${QTNOTE_INSTALLER_EXE_PATH}
     COMMAND ${WIX_EXECUTABLE} build ${WIX_BUNDLE_OUTPUT} -ext WixToolset.BootstrapperApplications.wixext -o ${QTNOTE_INSTALLER_EXE_PATH}
     DEPENDS ${WIX_BUNDLE_OUTPUT} ${QTNOTE_MSI} ${LICENSE_RTF}
     COMMENT "Building Burn Bootstrapper"
 )
 
-add_custom_target(burn_installer DEPENDS ${QTNOTE_INSTALLER_EXE_PATH} package)
+add_custom_target(burn_installer DEPENDS ${QTNOTE_INSTALLER_EXE_PATH})
