@@ -357,7 +357,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="49"/>
         <source>Integrtion with macosx-only features</source>
-        <translation type="unfinished"/>
+        <translation>Інтеграція лише з функціями macosx</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="70"/>
