@@ -287,54 +287,65 @@ Vietnamesisk:
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation type="vanished">Integration med Gnome-specifik funktionalitet</translation>
+        <translation>Integration med Gnome-specifik funktionalitet</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation type="vanished">Fejl</translation>
+        <translation>Fejl</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation type="vanished">&amp;Luk</translation>
+        <translation>&amp;Luk</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Ny</translation>
+        <translation>&amp;Ny</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp; Om</translation>
+        <translation>&amp; Om</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation type="vanished">&amp;Indstillinger</translation>
+        <translation>&amp;Indstillinger</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Notehåndtering</translation>
+        <translation>&amp;Notehåndtering</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation type="vanished">Mere..</translation>
+        <translation>Mere..</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation type="vanished">Noter</translation>
+        <translation>Noter</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="35"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation type="vanished">Giv indfødt udseende for KDE-brugere</translation>
+        <translation>Giv indfødt udseende for KDE-brugere</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
-        <translation type="vanished">Fejl</translation>
+        <translation>Fejl</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -344,58 +355,75 @@ Vietnamesisk:
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Ny</translation>
+        <translation>&amp;Ny</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Notehåndtering</translation>
+        <translation>&amp;Notehåndtering</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation type="vanished">&amp;Indstillinger</translation>
+        <translation>&amp;Indstillinger</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp; Om</translation>
+        <translation>&amp; Om</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="obsolete">Fejl</translation>
+        <translation type="unfinished">Fejl</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXTray</name>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="obsolete">&amp;Luk</translation>
+        <translation type="unfinished">&amp;Luk</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="obsolete">&amp;Ny</translation>
+        <translation type="unfinished">&amp;Ny</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="obsolete">&amp; Om</translation>
+        <translation type="unfinished">&amp; Om</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="obsolete">&amp;Indstillinger</translation>
+        <translation type="unfinished">&amp;Indstillinger</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="obsolete">&amp;Notehåndtering</translation>
+        <translation type="unfinished">&amp;Notehåndtering</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="obsolete">Mere..</translation>
+        <translation type="unfinished">Mere..</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="obsolete">Noter</translation>
+        <translation type="unfinished">Noter</translation>
     </message>
 </context>
 <context>

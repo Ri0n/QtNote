@@ -290,54 +290,65 @@ Eduardo Delmoral &lt;edelmoral@gmail.com&gt;
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation type="vanished">Integración con características de Gnome</translation>
+        <translation>Integración con características de Gnome</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation type="vanished">Error</translation>
+        <translation>Error</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation type="vanished">&amp;Salir</translation>
+        <translation>&amp;Salir</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Nueva</translation>
+        <translation>&amp;Nueva</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp;Acerca de</translation>
+        <translation>&amp;Acerca de</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation type="vanished">&amp;Opciones</translation>
+        <translation>&amp;Opciones</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Administrador de Notas</translation>
+        <translation>&amp;Administrador de Notas</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation type="vanished">Más..</translation>
+        <translation>Más..</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation type="vanished">Notas</translation>
+        <translation>Notas</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="35"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation type="vanished">Proporciona apariencia nativa para los usuarios de KDE</translation>
+        <translation>Proporciona apariencia nativa para los usuarios de KDE</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
-        <translation type="vanished">Error</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -347,54 +358,75 @@ Eduardo Delmoral &lt;edelmoral@gmail.com&gt;
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Nueva</translation>
+        <translation>&amp;Nueva</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Administrador de Notas</translation>
+        <translation>&amp;Administrador de Notas</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation type="vanished">&amp;Opciones</translation>
+        <translation>&amp;Opciones</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp;Acerca de</translation>
+        <translation>&amp;Acerca de</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="obsolete">Error</translation>
+        <translation type="unfinished">Error</translation>
     </message>
 </context>
 <context>
     <name>QtNote::MacOSXTray</name>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="obsolete">&amp;Salir</translation>
+        <translation type="unfinished">&amp;Salir</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
+        <source>&amp;New</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="obsolete">&amp;Acerca de</translation>
+        <translation type="unfinished">&amp;Acerca de</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="obsolete">&amp;Opciones</translation>
+        <translation type="unfinished">&amp;Opciones</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="obsolete">&amp;Administrador de Notas</translation>
+        <translation type="unfinished">&amp;Administrador de Notas</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="obsolete">Más..</translation>
+        <translation type="unfinished">Más..</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="obsolete">Notas</translation>
+        <translation type="unfinished">Notas</translation>
     </message>
 </context>
 <context>

@@ -311,6 +311,10 @@ and to other contributors whose names have been lost or not yet added.
         <translation>Ещё..</translation>
     </message>
     <message>
+        <source>Error</source>
+        <translation type="obsolete">Ошибка</translation>
+    </message>
+    <message>
         <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
         <translation>Заметки</translation>
@@ -327,6 +331,10 @@ and to other contributors whose names have been lost or not yet added.
         <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
         <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>New note from selection</source>
+        <translation type="vanished">Новая заметка из выделения</translation>
     </message>
 </context>
 <context>

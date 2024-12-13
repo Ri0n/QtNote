@@ -345,58 +345,69 @@ Vietnamese:
 <context>
     <name>QtNote::GnomePlugin</name>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation type="vanished">Інтеграція з Gnome/Unity функціональністю</translation>
+        <translation>Інтеграція з Gnome/Unity функціональністю</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
         <source>Error</source>
-        <translation type="vanished">Помилка</translation>
+        <translation>Помилка</translation>
     </message>
 </context>
 <context>
     <name>QtNote::GnomeTray</name>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
         <source>&amp;Quit</source>
-        <translation type="vanished">&amp;Вихід</translation>
+        <translation>&amp;Вихід</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Нова</translation>
+        <translation>&amp;Нова</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp;Про Програму</translation>
+        <translation>&amp;Про Програму</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
         <source>&amp;Options</source>
-        <translation type="vanished">Н&amp;алаштування</translation>
+        <translation>Н&amp;алаштування</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Менеджер Нотаток</translation>
+        <translation>&amp;Менеджер Нотаток</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
         <source>More..</source>
-        <translation type="vanished">Більше..</translation>
+        <translation>Більше..</translation>
     </message>
     <message>
         <source>Error</source>
         <translation type="obsolete">Ошибка</translation>
     </message>
     <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
-        <translation type="vanished">Нотатки</translation>
+        <translation>Нотатки</translation>
     </message>
 </context>
 <context>
     <name>QtNote::KDEIntegration</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="35"/>
         <source>Provide native look and feel for KDE users</source>
-        <translation type="vanished">Забезпечує нативний вигляд для користувачів KDE</translation>
+        <translation>Забезпечує нативний вигляд для користувачів KDE</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
-        <translation type="vanished">Помилка</translation>
+        <translation>Помилка</translation>
     </message>
     <message>
         <source>New note from selection</source>
@@ -406,20 +417,24 @@ Vietnamese:
 <context>
     <name>QtNote::KDEIntegrationTray</name>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
         <source>&amp;New</source>
-        <translation type="vanished">&amp;Нова</translation>
+        <translation>&amp;Нова</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
         <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Менеджер Нотаток</translation>
+        <translation>&amp;Менеджер Нотаток</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
         <source>&amp;Options</source>
-        <translation type="vanished">Н&amp;алаштування</translation>
+        <translation>Н&amp;алаштування</translation>
     </message>
     <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
         <source>&amp;About</source>
-        <translation type="vanished">&amp;Про Програму</translation>
+        <translation>&amp;Про Програму</translation>
     </message>
     <message>
         <source>Error</source>
@@ -427,34 +442,54 @@ Vietnamese:
     </message>
 </context>
 <context>
+    <name>QtNote::MacOSXPlugin</name>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
+        <source>Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>QtNote::MacOSXTray</name>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="obsolete">&amp;Вихід</translation>
+        <translation type="unfinished">&amp;Вихід</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="obsolete">&amp;Нова</translation>
+        <translation type="unfinished">&amp;Нова</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="obsolete">&amp;Про Програму</translation>
+        <translation type="unfinished">&amp;Про Програму</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="obsolete">Н&amp;алаштування</translation>
+        <translation type="unfinished">Н&amp;алаштування</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="obsolete">&amp;Менеджер Нотаток</translation>
+        <translation type="unfinished">&amp;Менеджер Нотаток</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="obsolete">Більше..</translation>
+        <translation type="unfinished">Більше..</translation>
     </message>
     <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="obsolete">Нотатки</translation>
+        <translation type="unfinished">Нотатки</translation>
     </message>
 </context>
 <context>

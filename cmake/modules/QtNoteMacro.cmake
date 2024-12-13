@@ -75,9 +75,13 @@ function(qtnote_platform_has_plugin out_var platforms)
 endfunction()
 
 macro(add_qtnote_plugin name description buildable)
+    set(multiValueArgs
+        SOURCES)
+    cmake_parse_arguments(arg "" "" "${multiValueArgs}" ${ARGN})
+
     cmake_minimum_required(VERSION 3.10.0)
     project(qtnote_plugin_${name} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
-    qtnote_platform_has_plugin(_def_plugin_enabled "${ARGN}")
+    qtnote_platform_has_plugin(_def_plugin_enabled "${arg_UNPARSED_ARGUMENTS}")
     if(${buildable})
         if(${_def_plugin_enabled})
             message(STATUS "PLUGIN ${name} is available on this platform and buildable")
@@ -91,6 +95,7 @@ macro(add_qtnote_plugin name description buildable)
     option(QTNOTE_PLUGIN_ENABLE_${name} "Enable QtNote plugin: ${description}" ${_def_plugin_enabled})
 
     if (NOT QTNOTE_PLUGIN_ENABLE_${name})
+        add_custom_target(${name} SOURCES ${arg_SOURCES})
         return()
     endif()
 
@@ -110,6 +115,10 @@ macro(add_qtnote_plugin name description buildable)
     else()
         set(LIB_TYPE "SHARED")
     endif()
+    add_library(${name} ${LIB_TYPE}
+        ${QTNOTE_COMMON_PLUGIN_SRC}
+        ${arg_SOURCES}
+        )
 endmacro()
 
 macro(qtnote_optional_pkgconfig)

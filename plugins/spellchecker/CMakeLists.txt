@@ -11,14 +11,7 @@ else()
     set(HUNSPEL_ENABLED ${Hunspell_FOUND})
 endif()
 
-add_qtnote_plugin(spellchecker "Check for spelling errors" ${HUNSPEL_ENABLED} unix macosx windows)
-
-if(WIN32)
-    add_definitions(-DDICTSUBDIR=/spellcheck/myspell)
-endif()
-
-add_library(spellchecker ${LIB_TYPE}
-    ${QTNOTE_COMMON_PLUGIN_SRC}
+add_qtnote_plugin(spellchecker "Check for spelling errors" ${HUNSPEL_ENABLED} unix macosx windows SOURCES
     engineinterface.cpp
     engineinterface.h
     hunspellengine.cpp
@@ -29,7 +22,13 @@ add_library(spellchecker ${LIB_TYPE}
     spellchecker.qrc
     spellcheckplugin.cpp
     spellcheckplugin.h
-    )
+)
+
+
+if(WIN32)
+    add_compile_definitions(spellchecker PRIVATE DICTSUBDIR=/spellcheck/myspell)
+endif()
+
 target_link_libraries(spellchecker
     ${EXTRA_LINK_TARGET}
     Qt${QT_DEFAULT_MAJOR_VERSION}::Core
