@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="ru_RU">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="ru">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -21,17 +19,17 @@
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="97"/>
         <source>License:</source>
-        <translation type="unfinished"></translation>
+        <translation>Лицензия:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="131"/>
         <source>Sergei Ilinykh</source>
-        <translation type="unfinished"></translation>
+        <translation>Сергей Ильиных</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="152"/>
         <source>Author:</source>
-        <translation type="unfinished"></translation>
+        <translation>Автор:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="181"/>
@@ -45,33 +43,21 @@
 &lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
 and to other contributors whose names have been lost or not yet added.
 </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>License: GPL-3</source>
-        <translation type="vanished">Лицензия: GPL-3</translation>
-    </message>
-    <message>
-        <source>Author: Il&apos;inykh Sergey</source>
-        <translation type="vanished">Автор: Ильиных Сергей</translation>
+        <translation>Все переводы поддерживаются пользователями сервиса &lt;a href=&quot;https://app.transifex.com/rion/qtnote&quot;&gt;Transifex&lt;/a&gt;. &lt;br /&gt;&lt;br /&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Особая благодарность:&lt;/span&gt;
+&lt;ul&gt;
+&lt;li&gt;Eduardo Delmoral&lt;/li&gt;
+&lt;li&gt;Heimen Stoffels&lt;/li&gt;
+&lt;li&gt;Peter Jespersen&lt;/li&gt;
+&lt;li&gt;Phan Anh&lt;/li&gt;
+&lt;li&gt;st.michael c&lt;/li&gt;
+&lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
+и другим участникам проекта и переводов чьи имена были потеряны или ещё не были добавлены.
+</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="175"/>
         <source>Translations</source>
         <translation>Переводы</translation>
-    </message>
-    <message>
-        <source>Russian:
-  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
-
-Vietnamese:
-  Phan Anh
-</source>
-        <translation type="vanished">Русский:
-  Ильиных Сергей &lt;rion4ik@gmail.com&gt;
-
-Вьетнамский:
-  Phan Anh</translation>
     </message>
 </context>
 <context>
@@ -100,13 +86,9 @@ Vietnamese:
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
-        <translation type="vanished">&lt;h1&gt;Менеджер заметок&lt;/h1&gt;&lt;h6&gt;(Группируй, перетаскивай и ищи свои заметки)&lt;h6&gt;</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h1&gt;Менеджер заметок&lt;/h1&gt;&lt;h6&gt;(Группируй, переноси и ищи свои заметки)&lt;/h6&gt;</translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -206,78 +188,27 @@ Vietnamese:
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
         <source>%1 is not readable</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 не читается</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
         <source>Directory %1 doesn&apos;t exist</source>
-        <translation type="unfinished"></translation>
+        <translation>Каталог %1 не существует</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
         <source>Checking if %1 has dictionaries</source>
-        <translation type="unfinished"></translation>
+        <translation>Проверяем есть ли словари в %1</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
         <source>Found %1 dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation>Найден словарь %1</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>QtNote</name>
-    <message>
-        <source>Save</source>
-        <translation type="obsolete">Сохранить</translation>
-    </message>
-    <message>
-        <source>Save note to file</source>
-        <translation type="obsolete">Сохранить заметку в файл</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation type="obsolete">Копировать</translation>
-    </message>
-    <message>
-        <source>Copy note to clipboard</source>
-        <translation type="obsolete">Скопировать заметку в буфер обмена</translation>
-    </message>
-    <message>
-        <source>Print</source>
-        <translation type="obsolete">Распечатать</translation>
-    </message>
-    <message>
-        <source>Print note</source>
-        <translation type="obsolete">Распечатать заметку</translation>
-    </message>
-    <message>
-        <source>Find</source>
-        <translation type="obsolete">Найти</translation>
-    </message>
-    <message>
-        <source>Find text in note</source>
-        <translation type="obsolete">Найти текст в заметке</translation>
-    </message>
-    <message>
-        <source>Replace</source>
-        <translation type="obsolete">Заменить</translation>
-    </message>
-    <message>
-        <source>Replace text in note</source>
-        <translation type="obsolete">Заменить текст в заметке</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation type="obsolete">Удалить</translation>
-    </message>
-    <message>
-        <source>Delete note</source>
-        <translation type="obsolete">Удалить заметку</translation>
+        <translation>Пропускаем словарь %1 как локаль C</translation>
     </message>
 </context>
 <context>
@@ -320,10 +251,6 @@ Vietnamese:
         <source>&amp;Note Manager</source>
         <translation>&amp;Менеджер Заметок</translation>
     </message>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">Ошибка</translation>
-    </message>
 </context>
 <context>
     <name>QtNote::FileStorage</name>
@@ -343,7 +270,7 @@ Vietnamese:
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>Интеграция с Gnome/Unity функциональностью</translation>
+        <translation>Интеграция с окружением рабочего стола Gnome</translation>
     </message>
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="72"/>
@@ -432,22 +359,18 @@ Vietnamese:
         <source>&amp;About</source>
         <translation>&amp;О Программе</translation>
     </message>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">Ошибка</translation>
-    </message>
 </context>
 <context>
     <name>QtNote::MacOSXPlugin</name>
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="49"/>
         <source>Integrtion with macosx-only features</source>
-        <translation type="unfinished"></translation>
+        <translation>Интеграция с MacOS</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosx.cpp" line="70"/>
         <source>Error</source>
-        <translation type="unfinished">Ошибка</translation>
+        <translation>Ошибка</translation>
     </message>
 </context>
 <context>
@@ -455,37 +378,37 @@ Vietnamese:
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
         <source>&amp;Quit</source>
-        <translation type="unfinished">&amp;Выход</translation>
+        <translation>&amp;Выход</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
         <source>&amp;New</source>
-        <translation type="unfinished">&amp;Новая</translation>
+        <translation>&amp;Новая</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
         <source>&amp;About</source>
-        <translation type="unfinished">&amp;О Программе</translation>
+        <translation>&amp;О Программе</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
         <source>&amp;Options</source>
-        <translation type="unfinished">Н&amp;астройки</translation>
+        <translation>Н&amp;астройки</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
         <source>&amp;Note Manager</source>
-        <translation type="unfinished">&amp;Менеджер Заметок</translation>
+        <translation>&amp;Менеджер Заметок</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
         <source>More..</source>
-        <translation type="unfinished">Ещё..</translation>
+        <translation>Ещё..</translation>
     </message>
     <message>
         <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
         <source>Notes</source>
-        <translation type="unfinished">Заметки</translation>
+        <translation>Заметки</translation>
     </message>
 </context>
 <context>
@@ -526,7 +449,7 @@ Vietnamese:
 
 To start using just click on pencil in the system tray and choose &quot;New&quot; item to create new note.
 Notes will be automatically saved to special storage, so you should not worry about this.</source>
-        <translation>Это Ваш первый запуск QtNote - программы для работы с заметками
+        <translation>Это Ваш первый запуск QtNote, программы для работы с заметками.
 
 Чтобы начать пользоваться программой, просто щелкните карандаш в системном трее и выберите пункт &quot;Новая&quot; для создания новой заметки. Заметки автоматически сохраняются в специальное хранилище, так что вы не должны об этом беспокоиться.</translation>
     </message>
@@ -612,11 +535,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation>
-            <numerusform>%n заметка</numerusform>
-            <numerusform>%n заметки</numerusform>
-            <numerusform>%n заметок</numerusform>
-        </translation>
+        <translation><numerusform>%n заметка</numerusform><numerusform>%n заметки</numerusform><numerusform>%n заметок</numerusform><numerusform>%n заметок</numerusform></translation>
     </message>
 </context>
 <context>
@@ -657,7 +576,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="395"/>
         <source>Don&apos;t ask again</source>
-        <translation type="unfinished"></translation>
+        <translation>Больше не спрашивать</translation>
     </message>
 </context>
 <context>
@@ -670,23 +589,15 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1: Settings</source>
-        <translation type="vanished">%1: Настройки</translation>
+        <translation>Настройки</translation>
     </message>
 </context>
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <source>: Settings</source>
-        <translation type="vanished">: Настройки</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Настройки</translation>
     </message>
 </context>
 <context>
@@ -770,12 +681,12 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>none</source>
-        <translation type="unfinished"></translation>
+        <translation>отсутствуют</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
         <source>Diagnostics</source>
-        <translation type="unfinished"></translation>
+        <translation>Диагностика</translation>
     </message>
 </context>
 <context>
@@ -783,7 +694,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="101"/>
         <source>Add to dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation>Добавить в словарь</translation>
     </message>
 </context>
 <context>
