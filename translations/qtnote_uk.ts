@@ -527,7 +527,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform><numerusform>%n нотаток</numerusform></translation>
     </message>
 </context>
 <context>
