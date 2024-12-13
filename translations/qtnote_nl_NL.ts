@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="nl_NL">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="nl_NL">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -271,7 +269,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>Integratie met Gnome-functies</translation>
+        <translation>Integratie met GNOME-functies</translation>
     </message>
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="72"/>
@@ -328,10 +326,6 @@ and to other contributors whose names have been lost or not yet added.
         <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
         <translation>Fout</translation>
-    </message>
-    <message>
-        <source>New note from selection</source>
-        <translation type="vanished">Nieuwe notitie uit selectie</translation>
     </message>
 </context>
 <context>
@@ -453,57 +447,6 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     </message>
 </context>
 <context>
-    <name>QtNote::MakeVSHappy</name>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Opslaan</translation>
-    </message>
-    <message>
-        <source>Save note to file</source>
-        <translation type="vanished">Notitie opslaan naar bestand</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation type="vanished">Kopiëren</translation>
-    </message>
-    <message>
-        <source>Copy note to clipboard</source>
-        <translation type="vanished">Notitie kopiëren naar klembord</translation>
-    </message>
-    <message>
-        <source>Print</source>
-        <translation type="vanished">Afdrukken</translation>
-    </message>
-    <message>
-        <source>Print note</source>
-        <translation type="vanished">Notitie afdrukken</translation>
-    </message>
-    <message>
-        <source>Find</source>
-        <translation type="vanished">Zoeken</translation>
-    </message>
-    <message>
-        <source>Find text in note</source>
-        <translation type="vanished">Tekst zoeken in notities</translation>
-    </message>
-    <message>
-        <source>Replace</source>
-        <translation type="vanished">Vervangen</translation>
-    </message>
-    <message>
-        <source>Replace text in note</source>
-        <translation type="vanished">Tekst zoeken en vervangen in notities</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation type="vanished">Verwijderen</translation>
-    </message>
-    <message>
-        <source>Delete note</source>
-        <translation type="vanished">Notitie verwijderen</translation>
-    </message>
-</context>
-<context>
     <name>QtNote::NoteDialog</name>
     <message>
         <location filename="../libqtnote/notedialog.cpp" line="135"/>
@@ -521,10 +464,7 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation>
-            <numerusform>%n notitie</numerusform>
-            <numerusform>%n notities</numerusform>
-        </translation>
+        <translation><numerusform>%n notitie</numerusform><numerusform>%n notities</numerusform></translation>
     </message>
 </context>
 <context>
@@ -540,62 +480,62 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save</source>
-        <translation type="unfinished">Opslaan</translation>
+        <translation>Opslaan</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save note to file</source>
-        <translation type="unfinished">Notitie opslaan naar bestand</translation>
+        <translation>Notitie opslaan naar bestand</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy</source>
-        <translation type="unfinished">Kopiëren</translation>
+        <translation>Kopiëren</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy note to clipboard</source>
-        <translation type="unfinished">Notitie kopiëren naar klembord</translation>
+        <translation>Notitie kopiëren naar klembord</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished">Afdrukken</translation>
+        <translation>Afdrukken</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished">Notitie afdrukken</translation>
+        <translation>Notitie afdrukken</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find</source>
-        <translation type="unfinished">Zoeken</translation>
+        <translation>Zoeken</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find text in note</source>
-        <translation type="unfinished">Tekst zoeken in notities</translation>
+        <translation>Tekst zoeken in notities</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace</source>
-        <translation type="unfinished">Vervangen</translation>
+        <translation>Vervangen</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace text in note</source>
-        <translation type="unfinished">Tekst zoeken en vervangen in notities</translation>
+        <translation>Tekst zoeken en vervangen in notities</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete</source>
-        <translation type="unfinished">Verwijderen</translation>
+        <translation>Verwijderen</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete note</source>
-        <translation type="unfinished">Notitie verwijderen</translation>
+        <translation>Notitie verwijderen</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="340"/>
