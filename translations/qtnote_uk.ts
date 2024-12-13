@@ -673,7 +673,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>none</source>
-        <translation type="unfinished"/>
+        <translation>нічого</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
