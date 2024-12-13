@@ -500,12 +500,12 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished"/>
+        <translation>Afdrukken</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished"/>
+        <translation>Notitie afdrukken</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
