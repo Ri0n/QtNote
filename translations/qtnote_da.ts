@@ -573,7 +573,7 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>Settings</source>
-        <translation type="unfinished"/>
+        <translation>Indstillinger</translation>
     </message>
 </context>
 <context>
@@ -581,7 +581,7 @@ Noter vil automatisk blive gemt i et specielt lager, så det behøver du ikke be
     <message>
         <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>Settings</source>
-        <translation type="unfinished"/>
+        <translation>Indstillinger</translation>
     </message>
 </context>
 <context>
