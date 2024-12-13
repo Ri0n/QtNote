@@ -208,7 +208,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"/>
+        <translation>跳过 %1 词典作为 C 区域设置</translation>
     </message>
 </context>
 <context>
