@@ -266,6 +266,144 @@ and to other contributors whose names have been lost or not yet added.
     </message>
 </context>
 <context>
+    <name>QtNote::GnomePlugin</name>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="50"/>
+        <source>Integrtion with gnome-only features</source>
+        <translation>Интеграция с окружением рабочего стола Gnome</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnome.cpp" line="72"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::GnomeTray</name>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="30"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Выход</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="31"/>
+        <source>&amp;New</source>
+        <translation>&amp;Новая</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="32"/>
+        <source>&amp;About</source>
+        <translation>&amp;О Программе</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="33"/>
+        <source>&amp;Options</source>
+        <translation>Н&amp;астройки</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="34"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="48"/>
+        <source>More..</source>
+        <translation>Ещё..</translation>
+    </message>
+    <message>
+        <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
+        <source>Notes</source>
+        <translation>Заметки</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::KDEIntegration</name>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="35"/>
+        <source>Provide native look and feel for KDE users</source>
+        <translation>Естественный вид для пользователей KDE</translation>
+    </message>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::KDEIntegrationTray</name>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="26"/>
+        <source>&amp;New</source>
+        <translation>&amp;Новая</translation>
+    </message>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="29"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="30"/>
+        <source>&amp;Options</source>
+        <translation>Н&amp;астройки</translation>
+    </message>
+    <message>
+        <location filename="../plugins/kdeintegration/kdeintegrationtray.cpp" line="31"/>
+        <source>&amp;About</source>
+        <translation>&amp;О Программе</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::MacOSXPlugin</name>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="49"/>
+        <source>Integrtion with macosx-only features</source>
+        <translation>Интеграция с MacOS</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosx.cpp" line="70"/>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+</context>
+<context>
+    <name>QtNote::MacOSXTray</name>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="53"/>
+        <source>&amp;Quit</source>
+        <translation>&amp;Выход</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="54"/>
+        <source>&amp;New</source>
+        <translation>&amp;Новая</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="55"/>
+        <source>&amp;About</source>
+        <translation>&amp;О Программе</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="56"/>
+        <source>&amp;Options</source>
+        <translation>Н&amp;астройки</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="57"/>
+        <source>&amp;Note Manager</source>
+        <translation>&amp;Менеджер Заметок</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="71"/>
+        <source>More..</source>
+        <translation>Ещё..</translation>
+    </message>
+    <message>
+        <location filename="../plugins/macosx/macosxtray.cpp" line="99"/>
+        <source>Notes</source>
+        <translation>Заметки</translation>
+    </message>
+</context>
+<context>
     <name>QtNote::Main</name>
     <message>
         <location filename="../libqtnote/qtnote.cpp" line="111"/>
