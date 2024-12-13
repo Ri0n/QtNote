@@ -193,7 +193,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
         <source>Directory %1 doesn&apos;t exist</source>
-        <translation type="unfinished"/>
+        <translation>Каталог %1 не существует</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
