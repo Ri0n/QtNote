@@ -179,7 +179,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
         <source>%1 is not readable</source>
-        <translation type="unfinished"/>
+        <translation>%1 не читается</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
