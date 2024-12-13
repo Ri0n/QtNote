@@ -37,7 +37,7 @@ public:
     QList<QString>  suggestions(const QString &word) const override;
     QList<DictInfo> loadedDicts() const override;
 
-    QStringList     diagnostics() const override;
+    QStringList diagnostics() const override;
 
 private:
     PluginHostInterface *host;

@@ -65,8 +65,8 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     }
     if (rect.isEmpty()) {
         QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
-        int x = QRandomGenerator::global()->bounded(avail.width() / 4, avail.width() / 2);
-        int y = QRandomGenerator::global()->bounded(avail.height() / 4, avail.height() / 2);
+        int   x     = QRandomGenerator::global()->bounded(avail.width() / 4, avail.width() / 2);
+        int   y     = QRandomGenerator::global()->bounded(avail.height() / 4, avail.height() / 2);
         move(x, y);
     } else {
         setGeometry(rect);

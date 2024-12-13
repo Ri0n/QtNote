@@ -138,7 +138,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
     tbar->addSeparator();
 
-    act = initAction( ":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
+    act = initAction(":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
 
@@ -186,7 +186,7 @@ NoteWidget::~NoteWidget()
 
 QAction *NoteWidget::initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey)
 {
-    QAction *act = new QAction(icon? QIcon(icon) : QIcon(), title, this);
+    QAction *act = new QAction(icon ? QIcon(icon) : QIcon(), title, this);
     act->setToolTip(toolTip);
     act->setShortcut(QKeySequence(QLatin1String(hotkey)));
     act->setShortcutContext(Qt::WindowShortcut);
@@ -374,10 +374,10 @@ void NoteWidget::onTrashClicked()
 {
     QSettings s;
     if (!text().isEmpty() && s.value("ui.ask-on-delete", true).toBool()) {
-        auto mb = new QMessageBox(QMessageBox::Question, tr("Deletion confirmation"), tr("Are you sure you want to delete this note?"),
-                                  QMessageBox::Yes | QMessageBox::No);
+        auto mb = new QMessageBox(QMessageBox::Question, tr("Deletion confirmation"),
+                                  tr("Are you sure you want to delete this note?"), QMessageBox::Yes | QMessageBox::No);
         mb->setCheckBox(new QCheckBox(tr("Don't ask again")));
-        auto res = mb->exec();
+        auto res     = mb->exec();
         auto dontAsk = mb->checkBox()->isChecked();
         delete mb;
         if (res != QMessageBox::Yes) {

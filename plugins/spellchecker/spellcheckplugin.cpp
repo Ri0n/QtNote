@@ -84,7 +84,9 @@ class SpellContextMenu : public QObject {
 
 public:
     SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor, QString wrongWord,
-                     QMenu *menu) : QObject(menu), sei(sei), te(te), cursor(cursor)
+                     QMenu *menu) :
+        QObject(menu),
+        sei(sei), te(te), cursor(cursor)
     {
         QList<QString>   suggestions = sei->suggestions(wrongWord);
         QList<QAction *> actions;
@@ -192,7 +194,7 @@ QString SpellCheckPlugin::tooltip() const
         dictsHtml.append(l);
     }
 
-    auto ret = tr("<b>Loaded dictionaries:</b> ") + (dictsHtml.isEmpty()? tr("none"): dictsHtml.join("<br/>  "));
+    auto ret = tr("<b>Loaded dictionaries:</b> ") + (dictsHtml.isEmpty() ? tr("none") : dictsHtml.join("<br/>  "));
     if (dicts.empty() && sei->supportedLanguages().isEmpty()) {
         ret += QString("<br/><b>%1:</b><br/>").arg(tr("Diagnostics"));
         ret += sei->diagnostics().join(QLatin1String("<br/>"));

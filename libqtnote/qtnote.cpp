@@ -67,7 +67,8 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     QTranslator *qtTranslator = new QTranslator(qApp);
     QStringList  langDirs;
     QStringList  qtLangDirs;
-    QString      dlTrDir = Utils::qtnoteDataDir() + QLatin1String("/translations"); // where translaations could be downloaded
+    QString      dlTrDir
+        = Utils::qtnoteDataDir() + QLatin1String("/translations"); // where translaations could be downloaded
 
 #if defined(QTNOTE_DEVEL) || defined(Q_OS_UNIX)
     langDirs << TRANSLATIONSDIR << dlTrDir; // in devel mode TRANSLATIONSDIR will refer to source/translations

@@ -52,7 +52,8 @@ void KDEIntegration::notifyError(const QString &msg)
     n->sendEvent();
 }
 
-void KDEIntegration::activateWidget(QWidget *w) {
+void KDEIntegration::activateWidget(QWidget *w)
+{
 #if OLD_K_FORCE_ACTIVATE
     KWindowSystem::forceActiveWindow(w->winId(), 0);
 #else

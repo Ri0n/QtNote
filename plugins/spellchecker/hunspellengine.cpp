@@ -28,8 +28,13 @@
 namespace QtNote {
 
 namespace {
-    QStringList          diagnostics;
-    void addDiag(QString &&s) { diagnostics.append(std::move(s)); if (diagnostics.size() > 50) diagnostics.pop_front(); }
+    QStringList diagnostics;
+    void        addDiag(QString &&s)
+    {
+        diagnostics.append(std::move(s));
+        if (diagnostics.size() > 50)
+            diagnostics.pop_front();
+    }
 }
 
 static QStringList findDictPaths()
@@ -214,7 +219,7 @@ bool HunspellEngine::spell(const QString &word) const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto ba = li.codec->fromUnicode(word); // byte array in dict's encoding
 #else
-        QByteArray ba = li.encoder->encode(word);
+        QByteArray ba     = li.encoder->encode(word);
 #endif
         if (li.hunspell->spell(std::string(ba.data(), size_t(ba.size()))) != 0) {
             return true;
@@ -232,7 +237,7 @@ QList<QString> HunspellEngine::suggestions(const QString &word) const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto result = li.hunspell->suggest(std::string(li.codec->fromUnicode(word)));
 #else
-        auto result = li.hunspell->suggest(std::string(QByteArray(li.encoder->encode(word))));
+        auto       result = li.hunspell->suggest(std::string(QByteArray(li.encoder->encode(word))));
 #endif
         for (auto &s : result) {
             QByteArray ba(s.data(), int(s.size()));
@@ -255,9 +260,6 @@ QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const
     return ret;
 }
 
-QStringList HunspellEngine::diagnostics() const
-{
-    return QtNote::diagnostics;
-}
+QStringList HunspellEngine::diagnostics() const { return QtNote::diagnostics; }
 
 }
