@@ -270,7 +270,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="50"/>
         <source>Integrtion with gnome-only features</source>
-        <translation>Інтеграція з функціями лише gnome</translation>
+        <translation>Інтеграція лише з функціями gnome</translation>
     </message>
     <message>
         <location filename="../plugins/gnome/gnome.cpp" line="72"/>
