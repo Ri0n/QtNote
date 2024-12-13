@@ -568,7 +568,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="395"/>
         <source>Don&apos;t ask again</source>
-        <translation type="unfinished"/>
+        <translation>Не питати знову</translation>
     </message>
 </context>
 <context>
