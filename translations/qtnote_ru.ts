@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="ru">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="ru">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -313,10 +311,6 @@ and to other contributors whose names have been lost or not yet added.
         <translation>Ещё..</translation>
     </message>
     <message>
-        <source>Error</source>
-        <translation type="obsolete">Ошибка</translation>
-    </message>
-    <message>
         <location filename="../plugins/gnome/gnometray.cpp" line="54"/>
         <source>Notes</source>
         <translation>Заметки</translation>
@@ -333,10 +327,6 @@ and to other contributors whose names have been lost or not yet added.
         <location filename="../plugins/kdeintegration/kdeintegration.cpp" line="51"/>
         <source>Error</source>
         <translation>Ошибка</translation>
-    </message>
-    <message>
-        <source>New note from selection</source>
-        <translation type="vanished">Новая заметка из выделения</translation>
     </message>
 </context>
 <context>
@@ -457,57 +447,6 @@ Notes will be automatically saved to special storage, so you should not worry ab
     </message>
 </context>
 <context>
-    <name>QtNote::MakeVSHappy</name>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Сохранить</translation>
-    </message>
-    <message>
-        <source>Save note to file</source>
-        <translation type="vanished">Сохранить заметку в файл</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation type="vanished">Копировать</translation>
-    </message>
-    <message>
-        <source>Copy note to clipboard</source>
-        <translation type="vanished">Скопировать заметку в буфер обмена</translation>
-    </message>
-    <message>
-        <source>Print</source>
-        <translation type="vanished">Распечатать</translation>
-    </message>
-    <message>
-        <source>Print note</source>
-        <translation type="vanished">Распечатать заметку</translation>
-    </message>
-    <message>
-        <source>Find</source>
-        <translation type="vanished">Найти</translation>
-    </message>
-    <message>
-        <source>Find text in note</source>
-        <translation type="vanished">Найти текст в заметке</translation>
-    </message>
-    <message>
-        <source>Replace</source>
-        <translation type="vanished">Заменить</translation>
-    </message>
-    <message>
-        <source>Replace text in note</source>
-        <translation type="vanished">Заменить текст в заметке</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation type="vanished">Удалить</translation>
-    </message>
-    <message>
-        <source>Delete note</source>
-        <translation type="vanished">Удалить заметку</translation>
-    </message>
-</context>
-<context>
     <name>QtNote::NoteDialog</name>
     <message>
         <location filename="../libqtnote/notedialog.cpp" line="135"/>
@@ -525,11 +464,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation>
-            <numerusform>%n заметка</numerusform>
-            <numerusform>%n заметки</numerusform>
-            <numerusform>%n заметок</numerusform>
-        </translation>
+        <translation><numerusform>%n заметка</numerusform><numerusform>%n заметки</numerusform><numerusform>%n заметок</numerusform><numerusform>%n заметок</numerusform></translation>
     </message>
 </context>
 <context>
@@ -545,62 +480,62 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save</source>
-        <translation type="unfinished">Сохранить</translation>
+        <translation>Сохранить</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save note to file</source>
-        <translation type="unfinished">Сохранить заметку в файл</translation>
+        <translation>Сохранить заметку в файл</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy</source>
-        <translation type="unfinished">Копировать</translation>
+        <translation>Копировать</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy note to clipboard</source>
-        <translation type="unfinished">Скопировать заметку в буфер обмена</translation>
+        <translation>Скопировать заметку в буфер обмена</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print</source>
-        <translation type="unfinished">Распечатать</translation>
+        <translation>Распечатать</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished">Распечатать заметку</translation>
+        <translation>Распечатать заметку</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find</source>
-        <translation type="unfinished">Найти</translation>
+        <translation>Найти</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find text in note</source>
-        <translation type="unfinished">Найти текст в заметке</translation>
+        <translation>Найти текст в заметке</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace</source>
-        <translation type="unfinished">Заменить</translation>
+        <translation>Заменить</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace text in note</source>
-        <translation type="unfinished">Заменить текст в заметке</translation>
+        <translation>Заменить текст в заметке</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete</source>
-        <translation type="unfinished">Удалить</translation>
+        <translation>Удалить</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete note</source>
-        <translation type="unfinished">Удалить заметку</translation>
+        <translation>Удалить заметку</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="340"/>
