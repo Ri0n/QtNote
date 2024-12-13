@@ -88,7 +88,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
-        <translation type="unfinished"/>
+        <translation>&lt;h1&gt;Менеджер заметок&lt;/h1&gt;&lt;h6&gt;(Группируй, переноси и ищи свои заметки)&lt;/h6&gt;</translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
