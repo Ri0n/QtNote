@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="nl_NL">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="nl_NL">
 <context>
     <name>AboutDlg</name>
     <message>
@@ -21,17 +19,17 @@
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="97"/>
         <source>License:</source>
-        <translation type="unfinished"></translation>
+        <translation>Licentie:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="131"/>
         <source>Sergei Ilinykh</source>
-        <translation type="unfinished"></translation>
+        <translation>Sergei Ilinykh</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="152"/>
         <source>Author:</source>
-        <translation type="unfinished"></translation>
+        <translation>Maker:</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="181"/>
@@ -45,34 +43,20 @@
 &lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
 and to other contributors whose names have been lost or not yet added.
 </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>License: GPL-3</source>
-        <translation type="vanished">Licentie: GPL-3</translation>
-    </message>
-    <message>
-        <source>Author: Il&apos;inykh Sergey</source>
-        <translation type="vanished">Maker: Il&apos;inykh Sergey</translation>
+        <translation>Alle vertalingen worden gedaan en beheerd op &lt;a href=&quot;https://app.transifex.com/rion/qtnote&quot;&gt;Transifex&lt;/a&gt;, en zijn afkomstig van diverse bijdragers. &lt;br /&gt;&lt;br /&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Veel dank aan:&lt;/span&gt;
+&lt;ul&gt;
+&lt;li&gt;Eduardo Delmoral&lt;/li&gt;
+&lt;li&gt;Heimen Stoffels&lt;/li&gt;
+&lt;li&gt;Peter Jespersen&lt;/li&gt;
+&lt;li&gt;Phan Anh&lt;/li&gt;
+&lt;li&gt;st.michael c&lt;/li&gt;
+&lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;en andere bijdragers wiens namen kwijt zijn geraakt of nog niet zijn toegevoegd.
+</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="175"/>
         <source>Translations</source>
         <translation>Vertalingen</translation>
-    </message>
-    <message>
-        <source>Russian:
-  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
-
-Vietnamese:
-  Phan Anh
-</source>
-        <translation type="vanished">Russisch:
-  Il&apos;inykh Sergey &lt;rion4ik@gmail.com&gt;
-
-Vietnamees:
-  Phan Anh
-</translation>
     </message>
 </context>
 <context>
@@ -101,13 +85,9 @@ Vietnamees:
 <context>
     <name>NoteManagerDlg</name>
     <message>
-        <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)</source>
-        <translation type="vanished">&lt;h1&gt;Notitiebeheer&lt;/h1&gt;&lt;h6&gt;(groepeer, herorden en doorzoek je notities)</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="63"/>
         <source>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag&apos;n&apos;Drop and search your notes)&lt;/h6&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;h1&gt;Notitiebeheer&lt;/h1&gt;&lt;h6&gt;(groepeer, herorden en doorzoek je notities)</translation>
     </message>
     <message>
         <location filename="../libqtnote/notemanagerdlg.ui" line="88"/>
@@ -207,27 +187,27 @@ Vietnamees:
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="59"/>
         <source>%1 is not readable</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 is onleesbaar</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="145"/>
         <source>Directory %1 doesn&apos;t exist</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
         <source>Checking if %1 has dictionaries</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
         <source>Found %1 dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -282,120 +262,6 @@ Vietnamees:
         <location filename="../libqtnote/filestorage.cpp" line="106"/>
         <source>Storage path</source>
         <translation>Opslagpad</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::GnomePlugin</name>
-    <message>
-        <source>Integrtion with gnome-only features</source>
-        <translation type="vanished">Integratie met Gnome-functies</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation type="vanished">Fout</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::GnomeTray</name>
-    <message>
-        <source>&amp;Quit</source>
-        <translation type="vanished">&amp;Afsluiten</translation>
-    </message>
-    <message>
-        <source>&amp;New</source>
-        <translation type="vanished">&amp;Nieuw</translation>
-    </message>
-    <message>
-        <source>&amp;About</source>
-        <translation type="vanished">&amp;Over</translation>
-    </message>
-    <message>
-        <source>&amp;Options</source>
-        <translation type="vanished">&amp;Instellingen</translation>
-    </message>
-    <message>
-        <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Notitiebeheer</translation>
-    </message>
-    <message>
-        <source>More..</source>
-        <translation type="vanished">Meer...</translation>
-    </message>
-    <message>
-        <source>Notes</source>
-        <translation type="vanished">Notities</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::KDEIntegration</name>
-    <message>
-        <source>Provide native look and feel for KDE users</source>
-        <translation type="vanished">Biedt een thema om QtNote te integreren in de KDE-werkomgeving</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation type="vanished">Fout</translation>
-    </message>
-    <message>
-        <source>New note from selection</source>
-        <translation type="vanished">Nieuwe notitie uit selectie</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::KDEIntegrationTray</name>
-    <message>
-        <source>&amp;New</source>
-        <translation type="vanished">&amp;Nieuw</translation>
-    </message>
-    <message>
-        <source>&amp;Note Manager</source>
-        <translation type="vanished">&amp;Notitiebeheer</translation>
-    </message>
-    <message>
-        <source>&amp;Options</source>
-        <translation type="vanished">&amp;Instellingen</translation>
-    </message>
-    <message>
-        <source>&amp;About</source>
-        <translation type="vanished">&amp;Over</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::MacOSXPlugin</name>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">Fout</translation>
-    </message>
-</context>
-<context>
-    <name>QtNote::MacOSXTray</name>
-    <message>
-        <source>&amp;Quit</source>
-        <translation type="obsolete">&amp;Afsluiten</translation>
-    </message>
-    <message>
-        <source>&amp;New</source>
-        <translation type="obsolete">&amp;Nieuw</translation>
-    </message>
-    <message>
-        <source>&amp;About</source>
-        <translation type="obsolete">&amp;Over</translation>
-    </message>
-    <message>
-        <source>&amp;Options</source>
-        <translation type="obsolete">&amp;Instellingen</translation>
-    </message>
-    <message>
-        <source>&amp;Note Manager</source>
-        <translation type="obsolete">&amp;Notitiebeheer</translation>
-    </message>
-    <message>
-        <source>More..</source>
-        <translation type="obsolete">Meer...</translation>
-    </message>
-    <message>
-        <source>Notes</source>
-        <translation type="obsolete">Notities</translation>
     </message>
 </context>
 <context>
@@ -523,10 +389,7 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message numerus="yes">
         <location filename="../libqtnote/notemanagerdlg.cpp" line="134"/>
         <source>%n notes</source>
-        <translation>
-            <numerusform>%n notitie</numerusform>
-            <numerusform>%n notities</numerusform>
-        </translation>
+        <translation><numerusform>%n notitie</numerusform><numerusform>%n notities</numerusform></translation>
     </message>
 </context>
 <context>
@@ -567,7 +430,7 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="395"/>
         <source>Don&apos;t ask again</source>
-        <translation type="unfinished"></translation>
+        <translation>Niet meer vragen</translation>
     </message>
 </context>
 <context>
@@ -580,23 +443,15 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../libqtnote/optionsdlg.cpp" line="224"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1: Settings</source>
-        <translation type="vanished">%1: Instellingen</translation>
+        <translation>Instellingen</translation>
     </message>
 </context>
 <context>
     <name>QtNote::OptionsPlugins</name>
     <message>
-        <source>: Settings</source>
-        <translation type="vanished">: Instellingen</translation>
-    </message>
-    <message>
         <location filename="../libqtnote/optionsplugins.cpp" line="281"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Instellingen</translation>
     </message>
 </context>
 <context>
@@ -680,12 +535,12 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="195"/>
         <source>none</source>
-        <translation type="unfinished"></translation>
+        <translation>geen</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="197"/>
         <source>Diagnostics</source>
-        <translation type="unfinished"></translation>
+        <translation>Foutopsporing</translation>
     </message>
 </context>
 <context>
@@ -693,7 +548,7 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../plugins/spellchecker/spellcheckplugin.cpp" line="101"/>
         <source>Add to dictionary</source>
-        <translation type="unfinished"></translation>
+        <translation>Toevoegen aan woordenboek</translation>
     </message>
 </context>
 <context>
