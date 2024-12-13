@@ -207,7 +207,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
         <source>Ignore %1 dictionary as C locale</source>
-        <translation type="unfinished"/>
+        <translation>Woordenboek %1 overslaan, want C-taal</translation>
     </message>
 </context>
 <context>
