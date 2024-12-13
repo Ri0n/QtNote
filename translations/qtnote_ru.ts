@@ -43,7 +43,16 @@
 &lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
 and to other contributors whose names have been lost or not yet added.
 </source>
-        <translation type="unfinished"/>
+        <translation>Все переводы поддерживаются пользователями сервиса &lt;a href=&quot;https://app.transifex.com/rion/qtnote&quot;&gt;Transifex&lt;/a&gt;. &lt;br /&gt;&lt;br /&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Особая благодарность:&lt;/span&gt;
+&lt;ul&gt;
+&lt;li&gt;Eduardo Delmoral&lt;/li&gt;
+&lt;li&gt;Heimen Stoffels&lt;/li&gt;
+&lt;li&gt;Peter Jespersen&lt;/li&gt;
+&lt;li&gt;Phan Anh&lt;/li&gt;
+&lt;li&gt;st.michael c&lt;/li&gt;
+&lt;li&gt;Vitaly Tonkacheyev &lt;/li&gt;&lt;/ul&gt;
+и другим участникам проекта и переводов чьи имена были потеряны или ещё не были добавлены.
+</translation>
     </message>
     <message>
         <location filename="../libqtnote/aboutdlg.ui" line="175"/>
