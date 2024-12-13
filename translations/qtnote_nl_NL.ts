@@ -515,7 +515,7 @@ Notities worden automatisch opgeslagen in een speciale opslagmap zodat je ze noo
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
         <source>Find text in note</source>
-        <translation type="unfinished"/>
+        <translation>Tekst zoeken in notities</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
