@@ -202,7 +202,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
         <source>Found %1 dictionary</source>
-        <translation type="unfinished"/>
+        <translation>Woordenboek %1 aangetroffen</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="159"/>
