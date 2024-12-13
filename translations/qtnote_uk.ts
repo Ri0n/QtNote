@@ -480,22 +480,22 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save</source>
-        <translation type="unfinished"/>
+        <translation>Зберегти</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="126"/>
         <source>Save note to file</source>
-        <translation type="unfinished"/>
+        <translation>Зберегти нотатку до файлу</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy</source>
-        <translation type="unfinished"/>
+        <translation>Копіювати</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="131"/>
         <source>Copy note to clipboard</source>
-        <translation type="unfinished"/>
+        <translation>Скопіювати нотатку до буферу обміну</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
@@ -505,7 +505,7 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="135"/>
         <source>Print note</source>
-        <translation type="unfinished"/>
+        <translation>Роздрукувати нотатку</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="141"/>
@@ -520,22 +520,22 @@ Notes will be automatically saved to special storage, so you should not worry ab
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace</source>
-        <translation type="unfinished"/>
+        <translation>Замінити</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="148"/>
         <source>Replace text in note</source>
-        <translation type="unfinished"/>
+        <translation>Замінити текст у нотатці</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete</source>
-        <translation type="unfinished"/>
+        <translation>Видалити</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="155"/>
         <source>Delete note</source>
-        <translation type="unfinished"/>
+        <translation>Видалити нотатку</translation>
     </message>
     <message>
         <location filename="../libqtnote/notewidget.cpp" line="340"/>
