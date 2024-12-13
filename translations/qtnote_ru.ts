@@ -198,7 +198,7 @@ and to other contributors whose names have been lost or not yet added.
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="148"/>
         <source>Checking if %1 has dictionaries</source>
-        <translation type="unfinished"/>
+        <translation>Проверяем есть ли словари в %1</translation>
     </message>
     <message>
         <location filename="../plugins/spellchecker/hunspellengine.cpp" line="157"/>
