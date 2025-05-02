@@ -54,9 +54,6 @@ if(Qt${QT_DEFAULT_MAJOR_VERSION}Core_VERSION VERSION_LESS 6.3.0)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOUIC ON)
-    if(WIN32 AND CMAKE_RUNTIME_OUTPUT_DIRECTORY STREQUAL "")
-        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    endif()
     set(USE_FOLDERS ON)
 elseif(Qt${QT_DEFAULT_MAJOR_VERSION}Core_VERSION VERSION_LESS 6.7.0)
     qt_standard_project_setup()
@@ -66,30 +63,24 @@ else()
         I18N_SOURCE_LANGUAGE en
     )
 endif()
+
 if(WIN32)
-    set(CMAKE_INSTALL_BINDIR ".") # Place executables in the root directory for Windows
+    #set(CMAKE_INSTALL_BINDIR ".") # Place executables in the root directory for Windows
     if(CMAKE_RUNTIME_OUTPUT_DIRECTORY STREQUAL "")
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
-endif()
-message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
-set(APP_NAME qtnote)
-
-if(WIN32)
-    # On Windows, place plugins in a 'plugins' directory near the executable
-    set(PLUGINSDIR "${CMAKE_INSTALL_BINDIR}/plugins")
-    set(TRANSLATIONSDIR "${CMAKE_INSTALL_BINDIR}/translations")
-
-    # Ensure CMAKE_INSTALL_PREFIX is set
-    if(NOT CMAKE_INSTALL_PREFIX)
-        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install_root")
-    endif()
-    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/qtnote)
+    #message(STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/install")
+    set(PLUGINSDIR "plugins")
+    set(TRANSLATIONSDIR "translations")
+    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/qtnote)
 else()
-    # On Linux, place plugins in the system library directory under APP_NAME
     set(PLUGINSDIR "${CMAKE_INSTALL_FULL_LIBDIR}/${APP_NAME}")
     set(TRANSLATIONSDIR ${CMAKE_INSTALL_FULL_DATADIR}/${APP_NAME})
 endif()
+
+message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
+set(APP_NAME qtnote)
 
 configure_file(qtnote_config.h.in qtnote_config.h)
 
@@ -97,12 +88,12 @@ if(QTNOTE_DEVEL)
     add_definitions(-DQTNOTE_DEVEL)
 endif()
 
-if(WIN32)
-    include(wix/wix.cmake)
-endif()
-
 add_subdirectory(3rdparty)
 add_subdirectory(libqtnote)
 add_subdirectory(src)
 add_subdirectory(plugins)
 add_subdirectory(translations)
+
+if(WIN32)
+    add_subdirectory(wix)
+endif()

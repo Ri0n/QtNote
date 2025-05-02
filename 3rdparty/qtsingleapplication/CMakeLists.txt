@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(QtSingleApplication)
 
-option(QT_DEFAULT_MAJOR_VERSION "Set default Qt major version (5 or 6)" "")
 option(QT_SINGLE_APPLICATION_INSTALL "Disable installation of QtSingleApplication" ON)
 option(QT_SINGLE_APPLICATION_WIDGET "Enable QApplication (Widget-based Application)" ON)
 

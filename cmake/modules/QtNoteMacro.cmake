@@ -79,7 +79,7 @@ macro(add_qtnote_plugin name description buildable)
         SOURCES)
     cmake_parse_arguments(arg "" "" "${multiValueArgs}" ${ARGN})
 
-    cmake_minimum_required(VERSION 3.10.0)
+    cmake_minimum_required(VERSION 3.14.0)
     project(qtnote_plugin_${name} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
     qtnote_platform_has_plugin(_def_plugin_enabled "${arg_UNPARSED_ARGUMENTS}")
     if(${buildable})
@@ -130,12 +130,17 @@ endmacro()
 
 macro(windeployqt name)
     if(WINDEPLOYQT_EXECUTABLE)
-        # Run windeployqt after build
-        add_custom_command(
-            TARGET ${name} POST_BUILD
-            COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-compiler-runtime --no-system-dxc-compiler --no-system-d3d-compiler --no-opengl-sw --dir ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE:${name}>
-            COMMENT "Running windeployqt on ${name} to gather Qt dependencies"
-        )
+        install(CODE "
+            execute_process(
+                COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"
+                    --no-compiler-runtime
+                    --no-system-dxc-compiler
+                    --no-system-d3d-compiler
+                    --no-opengl-sw
+                    --dir ${CMAKE_INSTALL_PREFIX}
+                    $<TARGET_FILE:${name}>
+            )
+        ")
     endif()
 endmacro()
 

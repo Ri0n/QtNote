@@ -45,3 +45,15 @@ Check ./admin/{deb,rpm}build.sh scripts. You can start them w/o arguments.
 ## Internationalization
 
 https://app.transifex.com/rion/qtnote
+
+## Build on Microsoft Windows
+
+You need conan in your PATH. It's up to you how you install it. Then you need to enable
+Conan support in Qt Creator plugins. You need cmake and ninja in PATH too because 
+Qt Creator doesn't pass their locations to Conan (just add those installed by 
+Qt Maintenance tool). The remaining magic should work automatically.
+
+### Creating installer
+
+To build an installer wix.exe from WiX toolset also has to be in PATH. 
+Also enable burn_installer cmake target in build settings. Then do ctrl+b.

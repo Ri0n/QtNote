@@ -1,54 +1,54 @@
 <?xml version="1.0"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
     <Bundle Name="QtNote" Version="@VERSION_FOR_WIX@" Manufacturer="R-Soft" UpgradeCode="@UPGRADE_CODE@">
         <BootstrapperApplication>
             <bal:WixStandardBootstrapperApplication
                 LicenseFile="GPLv3.rtf"
-                LogoFile="pen64.ico"
+                LogoFile="@LOGO_FILE@"
                 Theme="rtfLargeLicense" />
             <Payload SourceFile="@LICENSE_RTF@" />
             <Payload SourceFile="@LOGO_FILE@" />
         </BootstrapperApplication>
 
+        <util:RegistrySearch
+            Id="VCRedistInstalledSearch"
+            Variable="VCRedistInstalled"
+            Root="HKLM"
+            Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
+            Value="Installed"
+            Result="value"
+        />
+        <util:RegistrySearch
+            Id="VCRedistVersionSearch"
+            Variable="VCRedistVersion"
+            Root="HKLM"
+            Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
+            Value="Version"
+            Result="value"
+        />
+
         <Chain>
             <ExePackage
-                DetectCondition="(VCREDIST_INSTALLED=1) AND (VCREDIST_VERSION >= v14.30.30704)"
+                DetectCondition="VCRedistInstalled AND VCRedistVersion >= v14.42.34438"
+                InstallCondition="NOT VCRedistInstalled OR VCRedistVersion &lt; v14.42.34438"
                 InstallArguments="/quiet /norestart"
                 Permanent="yes"
                 Vital="yes">
                 <ExePackagePayload
                     Compressed="no"
-                    Description="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34433"
-                    ProductName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34433"
+                    Description="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34438"
+                    ProductName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34438"
                     Name="vc_redist.x64.exe"
                     DownloadUrl="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-                    Size="25640112"
-                    Version="14.42.34433.0"
-                    Hash="20e2d7437367cb262ce45184eb4d809249fe654aa450d226e376d4057c00b58ecfd8834a8b5153eb148960ffc845bed1f0943d5ff9a6fc1355b1503138562d8d"/>
+                    Size="25641968"
+                    Version="14.42.34438.0"
+                    Hash="C021453F6DBC8E79C5B97CA1F5D717868E9124E503391CC133A76F10643E2B41043E47D98836F524938D581C610D5F887C710CD5E6C036DC8F868074E3759C8F"/>
+                <ExitCode Behavior="success" Value="3010"/>  <!-- ignore reboot -->
+                <ExitCode Behavior="success" Value="0"/>     <!-- success -->
+                <ExitCode Behavior="success" Value="1638"/>  <!-- a newer version is already installed -->
             </ExePackage>
 
-
-            <MsiPackage SourceFile="QtNote.msi" />
+            <MsiPackage SourceFile="@QTNOTE_MSI@" />
         </Chain>
     </Bundle>
-
-    <Fragment>
-        <!-- Определяем переменные -->
-        <Property Id="VCREDIST_INSTALLED">
-            <RegistrySearch
-                Id="VCREDIST_INSTALLED"
-                Root="HKLM"
-                Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
-                Name="Installed"
-                Type="raw" />
-        </Property>
-        <Property Id="VCREDIST_VERSION">
-            <RegistrySearch
-                Id="VCREDIST_VERSION"
-                Root="HKLM"
-                Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
-                Name="Version"
-                Type="raw" />
-        </Property>
-    </Fragment>
 </Wix>

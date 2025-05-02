@@ -1,0 +1,67 @@
+cmake_minimum_required(VERSION 3.25.0)
+
+function(path_to_id_name path)
+    file(RELATIVE_PATH rel_file "${CMAKE_INSTALL_PREFIX}" "${path}")
+    #string(REPLACE "/" "\\" rel_file "${rel_file}")
+    get_filename_component(file_name "${rel_file}" NAME)
+    #get_filename_component(file_dir "${rel_file}" PATH)
+    #string(REPLACE "/" "\\" file_dir "${file_dir}")
+    string(TOUPPER "${file_name}" file_id)
+    string(REPLACE "." "_" file_id "${file_id}")
+    #string(REPLACE "\\" "_" component_id "${component_id}")
+    return(PROPAGATE file_id file_name)
+endfunction()
+
+function(generate_wxs_dir dir_to_glob indent)
+    file(GLOB all_files "${dir_to_glob}/*")
+    set(files "")
+    set(dirs "")
+    foreach(file ${all_files})
+        if(IS_DIRECTORY ${file})
+            list(APPEND dirs ${file})
+        else()
+            list(APPEND files ${file})
+        endif()
+    endforeach()
+    set(components "")
+    set(component_refs "")
+    foreach(file ${files})
+        path_to_id_name(${file})
+        if(${file_id} STREQUAL VC_REDIST_X64_EXE)
+            continue()
+        endif()
+        list(APPEND components "
+            ${indent}<Component Id=\"${file_id}\" Guid=\"*\" Bitness=\"always64\">
+            ${indent}    <File Id=\"${file_id}\" Name=\"${file_name}\" Source=\"${file}\" />
+            ${indent}</Component>")
+        list(APPEND component_refs "
+          <ComponentRef Id=\"${file_id}\" />")
+    endforeach()
+    foreach(dir ${dirs})
+        generate_wxs_dir(${dir} "${indent}    ")
+        path_to_id_name(${dir})
+        list(APPEND components "
+            ${indent}<Directory Id=\"${file_id}\" Name=\"${file_name}\">
+            ${indent}    ${components_res}
+            ${indent}</Directory>")
+        list(APPEND component_refs ${component_refs_res})
+    endforeach()
+
+    set(components_res ${components})
+    set(component_refs_res ${component_refs})
+    return(PROPAGATE components_res component_refs_res)
+endfunction()
+
+function(generate_wxs output_file output_bundle_file)
+    generate_wxs_dir("${CMAKE_INSTALL_PREFIX}" "")
+    set(COMPONENTS ${components_res})
+    set(COMPONENT_REFS ${component_refs_res})
+    set(UPGRADE_CODE "E12D6C7A-8F57-479B-8AE9-49C411B82843")
+    configure_file("${WIX_TEMPLATE}" ${output_file} @ONLY)
+    configure_file("${WIX_BUNDLE_TEMPLATE}" ${output_bundle_file} @ONLY)
+    #configure_file("${LOGO_FILE}" "pen64.ico" COPYONLY)
+    file(READ "${LICENSE_TXT}" LICENSE_TEXT)
+    configure_file("${LICENSE_TEMPLATE}" "${LICENSE_RTF}" @ONLY)
+endfunction()
+
+generate_wxs("${WIX_OUTPUT}" "${WIX_BUNDLE_OUTPUT}")

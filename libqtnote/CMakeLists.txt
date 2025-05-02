@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.14.0)
 include(QtNoteMacro)
 project(libqtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
@@ -31,15 +31,17 @@ target_include_directories(qtnote PUBLIC
     )
 
 set_target_properties(qtnote PROPERTIES
-  PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
   VERSION ${QTNOTE_VERSION}
   SOVERSION ${QTNOTE_VERSION_MAJOR}
 )
 if(WIN32)
-set_target_properties(qtnote
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
-)
+    set_target_properties(qtnote PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+    )
+else()
+    set_target_properties(qtnote PROPERTIES
+        PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
+    )
 endif()
 target_link_libraries(qtnote PUBLIC Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::PrintSupport)
 if (APPLE)
@@ -50,7 +52,7 @@ if(WIN32)
     # Install only the DLL for Windows
     install(TARGETS qtnote
         RUNTIME
-            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            DESTINATION "."
             COMPONENT Libraries
     )
     windeployqt(qtnote)

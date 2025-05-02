@@ -39,7 +39,7 @@
 
         <Icon Id="DesktopIcon.exe" SourceFile="@CMAKE_INSTALL_PREFIX@/qtnote.exe" />
         <Icon Id="StartMenuIcon.exe" SourceFile="@CMAKE_INSTALL_PREFIX@/qtnote.exe" />
-        <Icon Id="icon.ico" SourceFile="@CMAKE_SOURCE_DIR@/src/win/pen64.ico" />
+        <Icon Id="icon.ico" SourceFile="@LOGO_FILE@" />
         <Property Id="ARPPRODUCTICON" Value="icon.ico" />
         <MajorUpgrade
             DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit."
