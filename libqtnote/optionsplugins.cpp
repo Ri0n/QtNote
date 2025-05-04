@@ -16,8 +16,6 @@ namespace QtNote {
 class ButtonDelegate : public QStyledItemDelegate {
     Q_OBJECT
 
-    enum ButtonRoles { ButtonRole = Qt::UserRole + 1 };
-
     QModelIndex sunken;
 
 public:

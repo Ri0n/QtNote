@@ -5,25 +5,40 @@
 
 namespace QtNote {
 
-class SpellEngineInterface {
+class DictionaryDownloader;
+
+class SpellEngineInterface : public QObject {
+    Q_OBJECT
 public:
     struct DictInfo {
         QLocale::Language language;
         QLocale::Country  country;
         QString           filename;
+        bool              isWritable = false; // can be deleted
+        bool              isLoaded   = false;
+
+        QLocale toLocale() const { return QLocale(language, country); }
     };
 
-    virtual ~SpellEngineInterface() { }
+    virtual QList<DictInfo> supportedLanguages() const = 0;
 
-    virtual QList<QLocale> supportedLanguages() const         = 0;
-    virtual bool           addLanguage(const QLocale &locale) = 0;
+    virtual bool            addLanguage(const QLocale &locale)    = 0;
+    virtual void            removeLanguage(const QLocale &locale) = 0;
+    virtual QList<DictInfo> loadedDicts() const                   = 0;
+
+    virtual bool                  canDownload(const QLocale &locale) const = 0; // can we ever try to download?
+    virtual DictionaryDownloader *download(const QLocale &locale)          = 0; // from internet?
+    virtual void                  removeDictionary(const QLocale &locale)  = 0;
 
     // true - good word, false - bad word
-    virtual bool            spell(const QString &word) const       = 0;
-    virtual void            addToDictionary(const QString &word)   = 0;
-    virtual QList<QString>  suggestions(const QString &word) const = 0;
-    virtual QList<DictInfo> loadedDicts() const                    = 0;
-    virtual QStringList     diagnostics() const                    = 0;
+    virtual bool           spell(const QString &word) const       = 0;
+    virtual void           addToDictionary(const QString &word)   = 0;
+    virtual QList<QString> suggestions(const QString &word) const = 0;
+
+    virtual QStringList diagnostics() const = 0;
+
+signals:
+    void availableDictsUpdated();
 };
 
 } // namespace QtNote

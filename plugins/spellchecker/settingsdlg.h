@@ -1,6 +1,8 @@
 #ifndef SETTINGSDLG_H
 #define SETTINGSDLG_H
 
+#include "spellcheckplugin.h"
+
 #include <QDialog>
 
 namespace Ui {
@@ -21,7 +23,8 @@ public:
     QList<QLocale> preferredList() const;
 
 private:
-    Ui::SettingsDlg *ui;
+    Ui::SettingsDlg              *ui;
+    QList<SpellCheckPlugin::Dict> dicts_;
 };
 
 }

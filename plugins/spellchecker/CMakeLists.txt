@@ -10,6 +10,11 @@ else()
     set(HUNSPELL_DEP  PkgConfig::Hunspell)
     set(HUNSPEL_ENABLED ${Hunspell_FOUND})
 endif()
+find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Network)
+if (NOT Qt${QT_DEFAULT_MAJOR_VERSION}Network_FOUND)
+    set(HUNSPEL_ENABLED FALSE)
+endif()
+
 
 add_qtnote_plugin(spellchecker "Check for spelling errors" ${HUNSPEL_ENABLED} unix macosx windows SOURCES
     engineinterface.cpp
@@ -24,6 +29,12 @@ add_qtnote_plugin(spellchecker "Check for spelling errors" ${HUNSPEL_ENABLED} un
     spellcheckplugin.h
 )
 
+target_sources(spellchecker
+  PRIVATE
+    hunspelldownloader.h hunspelldownloader.cpp
+    dictionarydownloader.h dictionarydownloader.cpp
+)
+
 
 if(WIN32)
     add_compile_definitions(spellchecker PRIVATE DICTSUBDIR=/spellcheck/myspell)
@@ -34,6 +45,7 @@ target_link_libraries(spellchecker
     Qt${QT_DEFAULT_MAJOR_VERSION}::Core
     Qt${QT_DEFAULT_MAJOR_VERSION}::Gui
     Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
+    Qt${QT_DEFAULT_MAJOR_VERSION}::Network
     ${HUNSPELL_DEP}
 )
 

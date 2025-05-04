@@ -10,6 +10,7 @@
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QTextCodec>
 #else
+#include <QNetworkAccessManager>
 #include <QStringDecoder>
 #include <QStringEncoder>
 #endif
@@ -21,6 +22,7 @@
 
 #include "pluginhostinterface.h"
 #ifdef Q_OS_WIN
+#include "hunspelldownloader.h"
 #include "qtnote_config.h"
 #include "utils.h"
 #endif
@@ -123,6 +125,7 @@ HunspellEngine::HunspellEngine(PluginHostInterface *host) : host(host)
 
 HunspellEngine::~HunspellEngine()
 {
+    delete qnam;
     foreach (const LangItem &li, languages) {
         delete li.hunspell;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -133,7 +136,7 @@ HunspellEngine::~HunspellEngine()
     QFile f(host->qtnoteDataDir() + QLatin1String("/spellcheck-custom.words"));
     if (f.open(QIODevice::WriteOnly)) {
         QDataStream out(&f);
-        for (auto w : runtimeDict.values()) {
+        for (auto &w : std::as_const(runtimeDict)) {
             out << w;
         }
     } else {
@@ -141,9 +144,9 @@ HunspellEngine::~HunspellEngine()
     }
 }
 
-QList<QLocale> HunspellEngine::supportedLanguages() const
+QList<HunspellEngine::DictInfo> HunspellEngine::supportedLanguages() const
 {
-    QMap<QString, QLocale> retHash;
+    QMap<QString, DictInfo> retHash;
     foreach (const QString &dictPath, dictPaths) {
         QDir dir(dictPath);
         if (!dir.exists()) {
@@ -154,11 +157,21 @@ QList<QLocale> HunspellEngine::supportedLanguages() const
         foreach (const QFileInfo &fi, dir.entryInfoList(QStringList() << "*.dic", QDir::Files)) {
             QLocale locale(fi.baseName());
             if (locale != QLocale::c()) {
+                DictInfo info;
+                info.filename = fi.filePath();
+                info.language = locale.language();
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                retHash.insert(locale.nativeLanguageName() + locale.nativeCountryName(), locale);
+                info.country = locale.country();
+                QString key  = locale.nativeLanguageName() + locale.nativeCountryName();
 #else
-                retHash.insert(locale.nativeLanguageName() + locale.nativeTerritoryName(), locale);
+                info.country = locale.territory();
+                QString key  = locale.nativeLanguageName() + locale.nativeTerritoryName();
 #endif
+                info.isLoaded   = std::ranges::any_of(languages, [&info](auto const &l) {
+                    return l.info.country == info.country && l.info.language == info.language;
+                });
+                info.isWritable = fi.isWritable();
+                retHash.insert(key, info);
                 addDiag(QObject::tr("Found %1 dictionary").arg(fi.baseName()));
             } else {
                 addDiag(QObject::tr("Ignore %1 dictionary as C locale").arg(fi.baseName()));
@@ -210,6 +223,45 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
     return false;
 }
 
+void HunspellEngine::removeLanguage(const QLocale &locale)
+{
+    int index = findLangItem(locale);
+    if (index != -1) {
+        delete languages[index].hunspell;
+        languages.removeAt(index);
+    }
+}
+
+bool HunspellEngine::canDownload(const QLocale &) const { return true; /* TODO check cache if it's already there */ }
+
+DictionaryDownloader *HunspellEngine::download(const QLocale &locale)
+{
+    if (!qnam) {
+        qnam = new QNetworkAccessManager(qApp);
+    }
+    auto storePath  = Utils::qtnoteDataDir() + QLatin1String(stringify(DICTSUBDIR));
+    auto downloader = new HunspellDownloader(locale, storePath, qnam, this);
+    connect(downloader, &HunspellDownloader::finished, this, [downloader, this]() {
+        if (!downloader->hasErrors()) {
+            emit availableDictsUpdated();
+        }
+    });
+    downloader->setAutoDelete(true);
+    downloader->start();
+    return downloader;
+}
+
+void HunspellEngine::removeDictionary(const QLocale &locale)
+{
+    removeLanguage(locale);
+    QString   language = locale.name();
+    QFileInfo aff, dic;
+    if (scanDictPaths(dictPaths, language, aff, dic)) {
+        QFile::remove(aff.filePath());
+        QFile::remove(dic.filePath());
+    }
+}
+
 bool HunspellEngine::spell(const QString &word) const
 {
     if (runtimeDict.size() && runtimeDict.contains(word)) {
@@ -219,7 +271,7 @@ bool HunspellEngine::spell(const QString &word) const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto ba = li.codec->fromUnicode(word); // byte array in dict's encoding
 #else
-        QByteArray ba     = li.encoder->encode(word);
+        QByteArray ba = li.encoder->encode(word);
 #endif
         if (li.hunspell->spell(std::string(ba.data(), size_t(ba.size()))) != 0) {
             return true;
@@ -237,7 +289,7 @@ QList<QString> HunspellEngine::suggestions(const QString &word) const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto result = li.hunspell->suggest(std::string(li.codec->fromUnicode(word)));
 #else
-        auto       result = li.hunspell->suggest(std::string(QByteArray(li.encoder->encode(word))));
+        auto result = li.hunspell->suggest(std::string(QByteArray(li.encoder->encode(word))));
 #endif
         for (auto &s : result) {
             QByteArray ba(s.data(), int(s.size()));
@@ -261,5 +313,20 @@ QList<SpellEngineInterface::DictInfo> HunspellEngine::loadedDicts() const
 }
 
 QStringList HunspellEngine::diagnostics() const { return QtNote::diagnostics; }
+
+int HunspellEngine::findLangItem(const QLocale &locale)
+{
+    for (int i = 0; i < languages.count(); i++) {
+        if (
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            languages[i].info.country == locale.country()
+#else
+            languages[i].info.country == locale.territory()
+#endif
+            && languages[i].info.language == locale.language())
+            return i;
+    }
+    return -1;
+}
 
 }

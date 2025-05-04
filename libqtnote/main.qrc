@@ -14,5 +14,6 @@
     </qresource>
     <qresource prefix="/svg">
         <file alias="qtnote">images/qtnote.svg</file>
+        <file alias="download">images/download.svg</file>
     </qresource>
 </RCC>

@@ -34,6 +34,7 @@ namespace QtNote {
 
 class SpellEngineInterface;
 class PluginHostInterface;
+class DictionaryDownloader;
 
 class SpellCheckPlugin : public QObject,
                          public PluginInterface,
@@ -46,6 +47,22 @@ class SpellCheckPlugin : public QObject,
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface QtNote::PluginOptionsTooltipInterface
                      QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
 public:
+    enum DictFlag {
+        DictNone           = 0,
+        DictUserSelected   = 0x1,
+        DictSystemSelected = 0x2,
+        DictActivated      = 0x4,
+        DictInstalled      = 0x8,
+        DictWritable       = 0x10, // locally installed / deletable
+        DictInstalling     = 0x20, // installation in progress
+    };
+    Q_DECLARE_FLAGS(DictFlags, DictFlag)
+
+    struct Dict {
+        QLocale   locale;
+        DictFlags flags;
+    };
+
     explicit SpellCheckPlugin(QObject *parent = 0);
     ~SpellCheckPlugin();
 
@@ -67,8 +84,16 @@ public:
     void populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu);
 
     inline SpellEngineInterface *engine() const { return sei; }
-    QList<QLocale>               preferredLanguages() const;
 
+    QList<QLocale> userLanguagePreferences() const;
+    QList<QLocale> systemLanguagePreferences() const;
+    QList<Dict>    dictionaries() const;
+
+    void                  removeDictionary(const QLocale &locale);
+    DictionaryDownloader *download(const QLocale &locale);
+
+signals:
+    void availableDictsUpdated();
 private slots:
     void noteWidgetCreated(QWidget *w);
     void settingsAccepted();
@@ -77,6 +102,8 @@ private:
     PluginHostInterface  *host;
     SpellEngineInterface *sei;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(SpellCheckPlugin::DictFlags)
 
 } // namespace QtNote
 

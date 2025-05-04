@@ -84,9 +84,7 @@ class SpellContextMenu : public QObject {
 
 public:
     SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor, QString wrongWord,
-                     QMenu *menu) :
-        QObject(menu),
-        sei(sei), te(te), cursor(cursor)
+                     QMenu *menu) : QObject(menu), sei(sei), te(te), cursor(cursor)
     {
         QList<QString>   suggestions = sei->suggestions(wrongWord);
         QList<QAction *> actions;
@@ -164,12 +162,17 @@ void SpellCheckPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 
 bool SpellCheckPlugin::init(Main *qtnote)
 {
-    sei = new HunspellEngine(host);
-    foreach (auto &l, preferredLanguages()) {
+    sei        = new HunspellEngine(host);
+    auto langs = userLanguagePreferences();
+    if (langs.empty()) {
+        langs = systemLanguagePreferences();
+    }
+    foreach (auto &l, langs) {
         sei->addLanguage(l);
     }
     hlExt = std::make_shared<SpellCheckHighlighterExtension>(sei);
-    connect(qtnote, SIGNAL(noteWidgetCreated(QWidget *)), SLOT(noteWidgetCreated(QWidget *)));
+    connect(qtnote, &Main::noteWidgetCreated, this, &SpellCheckPlugin::noteWidgetCreated);
+    connect(sei, &HunspellEngine::availableDictsUpdated, this, &SpellCheckPlugin::availableDictsUpdated);
     return true;
 }
 
@@ -226,28 +229,77 @@ void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent 
     }
 }
 
-QList<QLocale> SpellCheckPlugin::preferredLanguages() const
+QList<QLocale> SpellCheckPlugin::systemLanguagePreferences() const
+{
+    QLocale     systemLocale = QLocale::system();
+    QStringList uiLangs      = systemLocale.uiLanguages();
+
+    QList<QLocale> ret;
+    ret.reserve(uiLangs.size() + 1);
+    foreach (const QString &uiLang, uiLangs) {
+        auto locale = QLocale(uiLang);
+        if (!ret.contains(locale)) {
+            ret.append(locale);
+        }
+    }
+
+    QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
+    if (!ret.contains(enLocale)) {
+        ret.append(enLocale);
+    }
+    return ret;
+}
+
+void SpellCheckPlugin::removeDictionary(const QLocale &locale) { sei->removeDictionary(locale); }
+
+QList<SpellCheckPlugin::Dict> SpellCheckPlugin::dictionaries() const
+{
+    auto systemPrefs = systemLanguagePreferences();
+    auto userPrefs   = userLanguagePreferences();
+    auto downloaded  = sei->supportedLanguages();
+
+    QList<SpellCheckPlugin::Dict> ret;
+    for (auto const &d : std::as_const(downloaded)) {
+        DictFlags flags = DictInstalled;
+        flags |= (d.isWritable ? DictWritable : DictNone);
+        flags |= (d.isLoaded ? DictActivated : DictNone);
+        ret.emplaceBack(QLocale(d.language, d.country), flags);
+    }
+
+    QList<SpellCheckPlugin::Dict> systemPrefDicts;
+    for (auto const &locale : std::as_const(systemPrefs)) {
+        auto it = std::ranges::find_if(ret, [&locale](auto const &d) { return d.locale == locale; });
+        if (it != ret.end()) {
+            it->flags |= DictSystemSelected;
+            systemPrefDicts.push_back(*it);
+            ret.erase(it);
+        } else {
+            if (sei->canDownload(locale)) {
+                DictFlags flags = (DictSystemSelected | DictWritable);
+                systemPrefDicts.push_back({ locale, flags });
+            }
+        }
+    }
+    ret = systemPrefDicts + ret;
+
+    for (auto &d : ret) {
+        d.flags |= (userPrefs.contains(d.locale) ? DictUserSelected : DictNone);
+    }
+    return ret;
+}
+
+DictionaryDownloader *SpellCheckPlugin::download(const QLocale &locale) { return sei->download(locale); }
+
+QList<QLocale> SpellCheckPlugin::userLanguagePreferences() const
 {
     QSettings s;
     s.beginGroup(QLatin1String("plugins"));
     s.beginGroup(pluginId);
 
-    if (!s.contains(QLatin1String("langs"))) {
-        QHash<QString, QLocale> codes;
-        QLocale                 systemLocale = QLocale::system();
-        codes.insert(systemLocale.bcp47Name(), systemLocale);
-
-        QStringList uiLangs = systemLocale.uiLanguages();
-        foreach (const QString &uiLang, uiLangs) {
-            codes.insert(uiLang, QLocale(uiLang));
-        }
-
-        QLocale enLocale = QLocale(QLocale::English, QLocale::UnitedStates);
-        codes.insert(enLocale.bcp47Name(), enLocale);
-        s.setValue(QLatin1String("langs"), QStringList(codes.keys()));
-    }
+    auto           userPrefs = s.value(QLatin1String("langs")).toStringList();
     QList<QLocale> ret;
-    foreach (const QString &code, s.value(QLatin1String("langs")).toStringList()) {
+    ret.reserve(userPrefs.size());
+    foreach (const QString &code, userPrefs) {
         QLocale locale(code);
         if (locale != QLocale::c()) {
             ret.append(locale);

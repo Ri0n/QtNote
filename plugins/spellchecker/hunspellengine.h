@@ -9,12 +9,14 @@ class Hunspell;
 class QTextCodec;
 class QStringEncoder;
 class QStringDecoder;
+class QNetworkAccessManager;
 
 namespace QtNote {
 
 class PluginHostInterface;
 
 class HunspellEngine : public SpellEngineInterface {
+    Q_OBJECT
 public:
     struct LangItem {
         DictInfo  info;
@@ -30,8 +32,14 @@ public:
     HunspellEngine(PluginHostInterface *host);
     ~HunspellEngine();
 
-    QList<QLocale>  supportedLanguages() const override;
+    QList<DictInfo> supportedLanguages() const override;
     bool            addLanguage(const QLocale &locale) override;
+    void            removeLanguage(const QLocale &locale) override;
+
+    bool                  canDownload(const QLocale &locale) const override;
+    DictionaryDownloader *download(const QLocale &locale) override;
+    void                  removeDictionary(const QLocale &locale) override;
+
     bool            spell(const QString &word) const override;
     void            addToDictionary(const QString &word) override;
     QList<QString>  suggestions(const QString &word) const override;
@@ -40,10 +48,14 @@ public:
     QStringList diagnostics() const override;
 
 private:
-    PluginHostInterface *host;
-    QList<LangItem>      languages;
-    QSet<QString>        runtimeDict;
-    QStringList          dictPaths;
+    int findLangItem(const QLocale &locale);
+
+private:
+    PluginHostInterface   *host;
+    QList<LangItem>        languages;
+    QSet<QString>          runtimeDict;
+    QStringList            dictPaths;
+    QNetworkAccessManager *qnam = nullptr;
 };
 
 } // namespace QtNote
