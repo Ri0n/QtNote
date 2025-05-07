@@ -47,14 +47,7 @@ public:
                                 QObject *parent = nullptr);
     void start() override;
 
-private slots:
-    void onDirectoryListReceived(QNetworkReply *reply);
-
 private:
-    void    cacheDirectoryList();
-    bool    loadCachedDirectoryList();
-    void    fetchDirectoryListing();
-    void    parseDirectoryListing(const QByteArray &data);
     void    findAndDownloadDictionary();
     QString findBestMatchingDirectory() const;
 

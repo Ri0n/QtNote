@@ -28,11 +28,131 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QPointer>
 #include <QSaveFile>
 
 #include <memory>
 
 namespace QtNote {
+
+class DictListFetcher : public QObject {
+    Q_OBJECT
+
+    QString                savePath_;
+    QNetworkAccessManager *nam_;
+    QString                lastError_;
+    QDateTime              cacheDateTime_;
+
+public:
+    DictListFetcher(const QString &savePath, QNetworkAccessManager *nam, QObject *parent) :
+        QObject(parent), savePath_(savePath), nam_(nam)
+    {
+    }
+
+    void start()
+    {
+        auto dirs = loadCachedDirectoryList();
+        if (dirs.empty()) {
+            QUrl dictionariesUrl(QLatin1String("https://cgit.freedesktop.org/libreoffice/dictionaries/plain/"));
+            QNetworkReply *reply = nam_->get(QNetworkRequest(dictionariesUrl));
+            connect(reply, &QNetworkReply::finished, this, [this, reply]() { onDirectoryListReceived(reply); });
+            reply->setParent(this);
+        } else {
+            emit finished(dirs);
+            deleteLater();
+        }
+    }
+
+    QStringList loadCachedDirectoryList()
+    {
+        QFile cacheFile(savePath_ + QLatin1String("/directory_cache.json"));
+        if (!cacheFile.open(QIODevice::ReadOnly)) {
+            if (cacheFile.exists()) {
+                qWarning("Failed to load cached directory list: %s", qUtf8Printable(cacheFile.errorString()));
+                return {};
+            }
+        }
+
+        QJsonDocument doc         = QJsonDocument::fromJson(cacheFile.readAll());
+        auto          obj         = doc.object();
+        auto          ret         = obj[QLatin1String("directories")].toVariant().toStringList();
+        QDateTime     lastUpdated = QDateTime::fromString(doc[QLatin1String("last_updated")].toString(), Qt::ISODate);
+
+        if (!lastUpdated.isValid() || lastUpdated.daysTo(QDateTime::currentDateTime()) > 1) {
+            return {};
+        }
+        return ret;
+    }
+
+    void onDirectoryListReceived(QNetworkReply *reply)
+    {
+        reply->deleteLater();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            lastError_ = QLatin1String("Failed to fetch a list of dictioneries: ") + reply->errorString();
+            emit finished({});
+            deleteLater();
+            return;
+        }
+
+        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 304) {
+            loadCachedDirectoryList();
+            return;
+        }
+
+        auto dirs = parseDirectoryListing(reply->readAll());
+        cacheDirectoryList(dirs);
+        emit finished(dirs);
+        deleteLater();
+    }
+
+    QStringList parseDirectoryListing(const QByteArray &data)
+    {
+        QStringList dirs;
+        QTextStream stream(data);
+        QString     line;
+
+        const QString hrefPrefix    = QLatin1String("href='/libreoffice/dictionaries/plain/");
+        const int     hrefPrefixLen = hrefPrefix.length();
+
+        while (stream.readLineInto(&line)) {
+            int hrefPos = line.indexOf(hrefPrefix);
+            if (hrefPos == -1)
+                continue;
+
+            int start = hrefPos + hrefPrefixLen;
+            int end   = line.indexOf(QLatin1Char('\''), start);
+            if (end == -1)
+                continue;
+
+            QString item = line.mid(start, end - start);
+
+            if (item.endsWith(QLatin1Char('/'))) {
+                item.chop(1);
+                dirs << item;
+            }
+        }
+
+        return dirs;
+    }
+
+    void cacheDirectoryList(const QStringList &dirs)
+    {
+        QJsonObject cache;
+        cache[QLatin1String("last_updated")] = QDateTime::currentDateTime().toString(Qt::ISODate);
+        cache[QLatin1String("directories")]  = QJsonArray::fromStringList(dirs);
+
+        QFile cacheFile(savePath_ + QLatin1String("/directory_cache.json"));
+        if (cacheFile.open(QIODevice::WriteOnly)) {
+            cacheFile.write(QJsonDocument(cache).toJson());
+        }
+    }
+
+    inline const QString &lastError() const { return lastError_; }
+
+signals:
+    void finished(const QStringList &);
+};
 
 class AffDicDownloader : public QObject {
     Q_OBJECT
@@ -148,113 +268,20 @@ HunspellDownloader::HunspellDownloader(const QLocale &locale, const QString &sav
 
 void HunspellDownloader::start()
 {
-    if (loadCachedDirectoryList()) {
+    static QPointer<DictListFetcher> dirFetcher;
+
+    bool firstFetcher = !dirFetcher;
+    if (!dirFetcher) {
+        dirFetcher = new DictListFetcher(savePath_, nam_, this);
+    }
+    connect(dirFetcher, &DictListFetcher::finished, this, [this](const QStringList &dirList) {
+        emit progress(10);
+        cachedDirs_ = dirList;
         findAndDownloadDictionary();
-    } else {
-        fetchDirectoryListing();
+    });
+    if (firstFetcher) {
+        dirFetcher->start();
     }
-}
-
-void HunspellDownloader::cacheDirectoryList()
-{
-    QJsonObject cache;
-    cache[QLatin1String("last_updated")] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    cache[QLatin1String("directories")]  = QJsonArray::fromStringList(cachedDirs_);
-
-    QFile cacheFile(savePath_ + QLatin1String("/directory_cache.json"));
-    if (cacheFile.open(QIODevice::WriteOnly)) {
-        cacheFile.write(QJsonDocument(cache).toJson());
-    }
-}
-
-bool HunspellDownloader::loadCachedDirectoryList()
-{
-    QFile cacheFile(savePath_ + QLatin1String("/directory_cache.json"));
-    if (!cacheFile.open(QIODevice::ReadOnly)) {
-        if (cacheFile.exists()) {
-            qWarning("Failed to load cached directory list: %s", qUtf8Printable(cacheFile.errorString()));
-            return false;
-        }
-    }
-
-    QJsonDocument doc     = QJsonDocument::fromJson(cacheFile.readAll());
-    auto          obj     = doc.object();
-    cachedDirs_           = obj[QLatin1String("directories")].toVariant().toStringList();
-    QDateTime lastUpdated = QDateTime::fromString(doc[QLatin1String("last_updated")].toString(), Qt::ISODate);
-
-    if (!lastUpdated.isValid() || lastUpdated.daysTo(QDateTime::currentDateTime()) > 1) {
-        cachedDirs_.clear();
-        return false;
-    }
-    return true;
-}
-
-void HunspellDownloader::fetchDirectoryListing()
-{
-    QUrl            dictionariesUrl(QLatin1String("https://cgit.freedesktop.org/libreoffice/dictionaries/plain/"));
-    QNetworkRequest request(dictionariesUrl);
-
-    QFile cacheFile(savePath_ + QLatin1String("/directory_cache.json"));
-    if (cacheFile.exists() && cacheFile.open(QIODevice::ReadOnly)) {
-        QJsonDocument doc         = QJsonDocument::fromJson(cacheFile.readAll());
-        QDateTime     lastUpdated = QDateTime::fromString(doc[QLatin1String("last_updated")].toString(), Qt::ISODate);
-        request.setHeader(QNetworkRequest::IfModifiedSinceHeader, lastUpdated);
-    }
-
-    QNetworkReply *reply = nam_->get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onDirectoryListReceived(reply); });
-    reply->setParent(this);
-    emit progress(10);
-}
-
-void HunspellDownloader::parseDirectoryListing(const QByteArray &data)
-{
-    QStringList dirs;
-    QTextStream stream(data);
-    QString     line;
-
-    const QString hrefPrefix    = QLatin1String("href='/libreoffice/dictionaries/plain/");
-    const int     hrefPrefixLen = hrefPrefix.length();
-
-    while (stream.readLineInto(&line)) {
-        int hrefPos = line.indexOf(hrefPrefix);
-        if (hrefPos == -1)
-            continue;
-
-        int start = hrefPos + hrefPrefixLen;
-        int end   = line.indexOf(QLatin1Char('\''), start);
-        if (end == -1)
-            continue;
-
-        QString item = line.mid(start, end - start);
-
-        if (item.endsWith(QLatin1Char('/'))) {
-            item.chop(1);
-            dirs << item;
-        }
-    }
-
-    cachedDirs_ = dirs;
-}
-
-void HunspellDownloader::onDirectoryListReceived(QNetworkReply *reply)
-{
-    reply->deleteLater();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        lastError_ = QLatin1String("Failed to fetch a list of dictioneries: ") + reply->errorString();
-        emit finished();
-        return;
-    }
-
-    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 304) {
-        loadCachedDirectoryList();
-        return;
-    }
-
-    parseDirectoryListing(reply->readAll());
-    cacheDirectoryList();
-    findAndDownloadDictionary();
 }
 
 QString HunspellDownloader::findBestMatchingDirectory() const
