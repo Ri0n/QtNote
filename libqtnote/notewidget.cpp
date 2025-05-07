@@ -156,6 +156,11 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
 
+    QFont     defaultFont;
+    QSettings s;
+    defaultFont.fromString(s.value("ui.default-font").toString());
+    setFont(defaultFont);
+
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 
     ui->noteEdit->setText(""); // to force update event
@@ -414,6 +419,14 @@ void NoteWidget::updateFirstLineColor()
     }
 }
 
-void NoteWidget::rereadSettings() { updateFirstLineColor(); }
+void NoteWidget::rereadSettings()
+{
+    QFont     f;
+    QSettings s;
+    f.fromString(s.value("ui.default-font").toString());
+    setFont(f);
+
+    updateFirstLineColor();
+}
 
 } // namespace QtNote
