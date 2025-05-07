@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define OPTIONSDLG_H
 
 #include <QDialog>
+#include <QFont>
 #include <QMap>
 
 namespace Ui {
@@ -44,16 +45,19 @@ public:
 protected:
     void changeEvent(QEvent *e);
 
+public slots:
+    void accept();
+
+private slots:
+    void storage_doubleClicked(const QModelIndex &index);
+    void on_pbDefaultFontAdv_clicked();
+
 private:
     Ui::OptionsDlg *ui;
     Main           *qtnote;
     class PriorityModel;
     PriorityModel *priorityModel;
-
-public slots:
-    void accept();
-private slots:
-    void storage_doubleClicked(const QModelIndex &index);
+    QFont          defaultFont;
 };
 
 } // namespace QtNote

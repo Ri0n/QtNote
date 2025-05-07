@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFontDialog>
 #include <QSettings>
 #include <QStringListModel>
 
@@ -129,6 +130,29 @@ OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnot
     ui->spMenuNotesAmount->setValue(s.value("ui.menu-notes-amount", 15).toInt());
     ui->wTitleColor->setColor(QPalette::Text,
                               s.value("ui.title-color", Defaults::firstLineHighlightColor()).value<QColor>());
+    if (!defaultFont.fromString(s.value("ui.default-font").toString())) {
+        defaultFont = this->font();
+    }
+    ui->fcbDefaultFont->setCurrentFont(defaultFont);
+    auto dfPointSize = defaultFont.pointSizeF();
+    if (dfPointSize == -1) {
+        ui->fsbDefaultFontSize->setDecimals(0);
+        ui->fsbDefaultFontSize->setSuffix(QLatin1String(" px"));
+        ui->fsbDefaultFontSize->setValue(defaultFont.pixelSize());
+    } else {
+        ui->fsbDefaultFontSize->setDecimals(1);
+        ui->fsbDefaultFontSize->setSuffix(QLatin1String(" pt"));
+        ui->fsbDefaultFontSize->setValue(dfPointSize);
+    }
+    connect(ui->fcbDefaultFont, &QFontComboBox::currentFontChanged, this,
+            [this](const QFont &font) { defaultFont = font; });
+    connect(ui->fsbDefaultFontSize, &QDoubleSpinBox::valueChanged, this, [this](double value) {
+        if (defaultFont.pixelSize() == -1) {
+            defaultFont.setPointSizeF(value);
+        } else {
+            defaultFont.setPixelSize(value);
+        }
+    });
 
     foreach (const ShortcutsManager::ShortcutInfo &si, qtnote->shortcutsManager()->all()) {
         ShortcutEdit *se = new ShortcutEdit(qtnote, si.option);
@@ -141,7 +165,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnot
 
     resize(0, 0);
 
-    connect(ui->priorityView, SIGNAL(doubleClicked(QModelIndex)), SLOT(storage_doubleClicked(const QModelIndex &)));
+    connect(ui->priorityView, &QListView::doubleClicked, this, &OptionsDlg::storage_doubleClicked);
 }
 
 OptionsDlg::~OptionsDlg() { delete ui; }
@@ -180,6 +204,7 @@ void OptionsDlg::accept()
     s.setValue("ui.ask-on-delete", ui->ckAskDel->isChecked());
     s.setValue("ui.menu-notes-amount", ui->spMenuNotesAmount->value());
     s.setValue("ui.title-color", ui->wTitleColor->color());
+    s.setValue("ui.default-font", defaultFont.toString());
 
 #ifdef Q_OS_LINUX
     QDir home = QDir::home();
@@ -233,6 +258,17 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     dlg->setLayout(vl);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     dlg->show();
+}
+
+void OptionsDlg::on_pbDefaultFontAdv_clicked()
+{
+    bool  ok;
+    QFont font = QFontDialog::getFont(&ok, defaultFont, this);
+    if (ok) {
+        defaultFont = font;
+        ui->fcbDefaultFont->setCurrentFont(font);
+        ui->fsbDefaultFontSize->setValue(font.pixelSize() == -1 ? font.pointSizeF() : font.pixelSize());
+    }
 }
 
 } // namespace QtNote
