@@ -33,7 +33,7 @@ public:
     ~HunspellEngine();
 
     QList<DictInfo> supportedLanguages() const override;
-    bool            addLanguage(const QLocale &locale) override;
+    Error           addLanguage(const QLocale &locale) override;
     void            removeLanguage(const QLocale &locale) override;
 
     bool                  canDownload(const QLocale &locale) const override;
@@ -56,6 +56,7 @@ private:
     QSet<QString>          runtimeDict;
     QStringList            dictPaths;
     QNetworkAccessManager *qnam = nullptr;
+    QString                lastError_;
 };
 
 } // namespace QtNote

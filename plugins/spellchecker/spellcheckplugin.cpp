@@ -33,6 +33,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QtPlugin>
 #include <memory>
 
+#include "dictionarydownloader.h"
 #include "highlighterext.h"
 #include "hunspellengine.h"
 #include "noteedit.h"
@@ -167,8 +168,21 @@ bool SpellCheckPlugin::init(Main *qtnote)
     if (langs.empty()) {
         langs = systemLanguagePreferences();
     }
+    QSettings s;
+    s.beginGroup(QLatin1String("plugins"));
+    s.beginGroup(pluginId);
+    auto failedDownloads = s.value("failed-dl").toStringList();
+
     foreach (auto &l, langs) {
-        sei->addLanguage(l);
+        if (sei->addLanguage(l) == SpellEngineInterface::NotInstalledError && sei->canDownload(l)
+            && !failedDownloads.contains(l.name())) {
+            auto downloader = download(l);
+            connect(downloader, &DictionaryDownloader::finished, this, [this, l, downloader]() {
+                if (!downloader->hasErrors()) {
+                    sei->addLanguage(l);
+                }
+            });
+        }
     }
     hlExt = std::make_shared<SpellCheckHighlighterExtension>(sei);
     connect(qtnote, &Main::noteWidgetCreated, this, &SpellCheckPlugin::noteWidgetCreated);
@@ -288,7 +302,35 @@ QList<SpellCheckPlugin::Dict> SpellCheckPlugin::dictionaries() const
     return ret;
 }
 
-DictionaryDownloader *SpellCheckPlugin::download(const QLocale &locale) { return sei->download(locale); }
+DictionaryDownloader *SpellCheckPlugin::download(const QLocale &locale)
+{
+    auto downloader = sei->download(locale);
+    connect(downloader, &DictionaryDownloader::finished, this, [locale, downloader]() {
+        QSettings s;
+        s.beginGroup(QLatin1String("plugins"));
+        s.beginGroup(pluginId);
+        auto failedDownloads = s.value("failed-dl").toStringList();
+        auto name            = locale.name();
+        auto wasFailed       = failedDownloads.contains(name);
+
+        if (downloader->hasErrors()) {
+            if (!wasFailed) {
+                failedDownloads.append(name);
+                s.setValue("failed-dl", failedDownloads);
+            }
+        } else {
+            if (wasFailed) {
+                failedDownloads.removeOne(name);
+                if (failedDownloads.isEmpty()) {
+                    s.remove("failed-dl");
+                } else {
+                    s.setValue("failed-dl", failedDownloads);
+                }
+            }
+        }
+    });
+    return downloader;
+}
 
 QList<QLocale> SpellCheckPlugin::userLanguagePreferences() const
 {

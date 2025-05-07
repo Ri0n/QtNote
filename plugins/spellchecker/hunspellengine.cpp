@@ -181,7 +181,7 @@ QList<HunspellEngine::DictInfo> HunspellEngine::supportedLanguages() const
     return retHash.values();
 }
 
-bool HunspellEngine::addLanguage(const QLocale &locale)
+HunspellEngine::Error HunspellEngine::addLanguage(const QLocale &locale)
 {
     QString   language = locale.name();
     QFileInfo aff, dic;
@@ -211,16 +211,18 @@ bool HunspellEngine::addLanguage(const QLocale &locale)
 #endif
             li.info.filename = dic.filePath();
             languages.append(li);
-        } else {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-            delete li.encoder;
-            delete li.decoder;
-#endif
-            qDebug("Unsupported myspell dict encoding: \"%s\" for %s", codecName.data(), qPrintable(dic.fileName()));
+            return NoError;
         }
-        return true;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        delete li.encoder;
+        delete li.decoder;
+#endif
+        delete li.hunspell;
+        lastError_ = QString("Unsupported myspell dict encoding: \"%1\" for %2").arg(codecName, dic.fileName());
+        qWarning("%s", qUtf8Printable(lastError_));
+        return InitError;
     }
-    return false;
+    return NotInstalledError;
 }
 
 void HunspellEngine::removeLanguage(const QLocale &locale)

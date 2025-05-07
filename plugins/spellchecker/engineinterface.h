@@ -20,9 +20,15 @@ public:
         QLocale toLocale() const { return QLocale(language, country); }
     };
 
+    enum Error {
+        NoError,
+        NotInstalledError,
+        InitError // failed to load/init dict
+    };
+
     virtual QList<DictInfo> supportedLanguages() const = 0;
 
-    virtual bool            addLanguage(const QLocale &locale)    = 0;
+    virtual Error           addLanguage(const QLocale &locale)    = 0;
     virtual void            removeLanguage(const QLocale &locale) = 0;
     virtual QList<DictInfo> loadedDicts() const                   = 0;
 
