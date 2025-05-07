@@ -27,6 +27,7 @@ public:
         QStringEncoder *encoder = nullptr;
         QStringDecoder *decoder = nullptr;
 #endif
+        // TODO write destructor + move constructor
     };
 
     HunspellEngine(PluginHostInterface *host);

@@ -183,6 +183,9 @@ QList<HunspellEngine::DictInfo> HunspellEngine::supportedLanguages() const
 
 HunspellEngine::Error HunspellEngine::addLanguage(const QLocale &locale)
 {
+    if (findLangItem(locale) != -1) {
+        return NoError; // already added
+    }
     QString   language = locale.name();
     QFileInfo aff, dic;
     if (scanDictPaths(dictPaths, language, aff, dic)) {
@@ -230,6 +233,10 @@ void HunspellEngine::removeLanguage(const QLocale &locale)
     int index = findLangItem(locale);
     if (index != -1) {
         delete languages[index].hunspell;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        delete languages[index].encoder;
+        delete languages[index].decoder;
+#endif
         languages.removeAt(index);
     }
 }

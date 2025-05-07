@@ -357,9 +357,17 @@ void SpellCheckPlugin::settingsAccepted()
     QSettings s;
     s.beginGroup("plugins");
     s.beginGroup(pluginId);
+    const auto prevLangs = s.value(QLatin1String("langs")).toStringList();
+
     QStringList langs;
     foreach (const QLocale &locale, ret) {
         langs.append(locale.bcp47Name());
+        sei->addLanguage(locale);
+    }
+    for (const auto &p : prevLangs) {
+        if (!langs.contains(p)) {
+            sei->removeLanguage(QLocale(p));
+        }
     }
     s.setValue(QLatin1String("langs"), langs);
 }
