@@ -58,6 +58,9 @@ protected:
     bool event(QEvent *event) override;
 #endif
 
+private:
+    QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
+
 public slots:
     void save();
     void rereadSettings();
@@ -74,9 +77,14 @@ private slots:
     void updateFirstLineColor();
     void focusReceived();
 
+    void switchToText();
+    void switchToMarkdown();
+
 private:
     Ui::NoteWidget *ui = nullptr;
 
+    QAction                              *mdModeAct;
+    QAction                              *txtModeAct;
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
@@ -90,8 +98,6 @@ private:
     Features                              _features;
     bool                                  _trashRequested = false;
     bool                                  _changed        = false;
-
-    QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 };
 
 } // namespace QtNote

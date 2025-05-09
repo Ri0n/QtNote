@@ -31,6 +31,8 @@ class FirstLineHighlighter : public HighlighterExtension {
 public:
     using HighlighterExtension::HighlighterExtension;
 
+    void reset() { }
+
     void highlight(NoteHighlighter *nh, const QString &text)
     {
         Q_UNUSED(text)
@@ -53,6 +55,13 @@ class CurrentLinkHighlighter : public HighlighterExtension {
 public:
     CurrentLinkHighlighter(NoteWidget *nw) : noteWidget(nw) { }
 
+    void reset()
+    {
+        currentBlock  = {};
+        currentPos    = {};
+        currentLength = {};
+    }
+
     void init()
     {
         auto                                  ew = noteWidget->editWidget();
@@ -62,14 +71,21 @@ public:
             auto self = weak_self.lock();
             if (!self)
                 return;
-            auto &hlp = noteWidget->editWidget()->hoveredLinkPosition();
+            auto  ew  = noteWidget->editWidget();
+            auto &hlp = ew->hoveredLinkPosition();
+            ew->blockSignals(true);
             rehighlightLine(hlp.block, hlp.pos, hlp.length);
+            ew->blockSignals(false);
         });
 
         ew->connect(ew, &NoteEdit::linkUnhovered, ew, [this, weak_self]() {
             auto self = weak_self.lock();
-            if (self)
+            if (self) {
+                auto ew = noteWidget->editWidget();
+                ew->blockSignals(true);
                 rehighlightLine();
+                ew->blockSignals(false);
+            }
         });
     }
 
@@ -127,6 +143,15 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     act->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+
+    mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
+    tbar->addAction(mdModeAct);
+    connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
+    mdModeAct->setVisible(false); // we are initially in rich text mode
+
+    txtModeAct = initAction(":/svg/txt", tr("Text"), tr("Plain text mode"), "Ctrl+T");
+    tbar->addAction(txtModeAct);
+    connect(txtModeAct, &QAction::triggered, this, &NoteWidget::switchToText);
 
     act = initAction(":/icons/copy", tr("Copy"), tr("Copy note to clipboard"), "Ctrl+Shift+C");
     tbar->addAction(act);
@@ -282,13 +307,23 @@ void NoteWidget::textChanged()
 
 void NoteWidget::setText(QString text)
 {
-    ui->noteEdit->setPlainText(text);
+    if (mdModeAct->isVisible()) {
+        ui->noteEdit->setPlainText(text);
+    } else {
+        ui->noteEdit->setMarkdown(text);
+    }
     _changed = _noteId.isEmpty(); // force saving note if noteId is not set.
     _autosaveTimer.stop();        // timer not required atm
     _lastChangeElapsed.restart();
 }
 
-QString NoteWidget::text() { return ui->noteEdit->toPlainText().trimmed(); }
+QString NoteWidget::text()
+{
+    if (mdModeAct->isVisible()) {
+        return ui->noteEdit->toPlainText().trimmed();
+    }
+    return ui->noteEdit->toMarkdown().trimmed();
+}
 
 NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 
@@ -302,6 +337,42 @@ void NoteWidget::setNoteId(const QString &noteId)
 }
 
 void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
+
+void NoteWidget::switchToMarkdown()
+{
+    ui->noteEdit->blockSignals(true);
+    _linkHighlighter->reset();
+    auto txt = text();
+    qDebug() << "switchToMarkdown" << txt;
+    ui->noteEdit->setMarkdown(txt);
+    mdModeAct->setVisible(false);
+    txtModeAct->setVisible(true);
+    ui->noteEdit->blockSignals(false);
+}
+
+void NoteWidget::switchToText()
+{
+    ui->noteEdit->blockSignals(true);
+    _linkHighlighter->reset();
+    auto cursor = ui->noteEdit->textCursor();
+    cursor.clearSelection();
+    cursor.setPosition(0);
+    ui->noteEdit->setTextCursor(cursor);
+    // #if 0
+    auto md = ui->noteEdit->toMarkdown().trimmed();
+    qDebug() << "switchToText1 md=" << md;
+    ui->noteEdit->setPlainText(md);
+    qDebug() << "switchToText2 txt=" << ui->noteEdit->toPlainText();
+    QTimer::singleShot(0, this, [this]() {
+        qDebug() << "switchToText2" << ui->noteEdit->toHtml();
+        // ui->noteEdit->setTextColor(Qt::white);
+    });
+
+    mdModeAct->setVisible(true);
+    txtModeAct->setVisible(false);
+    // #endif
+    ui->noteEdit->blockSignals(false);
+}
 
 void NoteWidget::onCopyClicked()
 {

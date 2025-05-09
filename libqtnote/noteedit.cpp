@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFile>
 #include <QMenu>
 #include <QMimeData>
+#include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextCursor>
 #include <QTextLayout>
@@ -119,7 +120,7 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
     startPos = endPos = cur.positionInBlock();
     if (!blockText.length() || startPos >= blockText.size() || blockText[startPos].isSpace()
         || cursorRect(cur).right() + 5 < pos.x()) {
-        // +5 just to make it smooth in other case we will get kind of glitches while hovering a link
+        // +5 just to make it smooth in other case we will get kind of glitches while hovering a link.
         return QString();
     }
     while (!(startFound && endFound)) {
@@ -137,14 +138,27 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
             }
         }
     }
-    hlp.block       = cur.block();
-    hlp.pos         = startPos;
-    hlp.length      = endPos - startPos;
-    QString matched = blockText.mid(startPos, hlp.length);
-    if (matched.indexOf(QLatin1String("://")) > 0 || matched.startsWith("www.")) {
-        return matched;
+    hlp.block           = cur.block();
+    hlp.pos             = startPos;
+    hlp.length          = endPos - startPos;
+    QStringView matched = QStringView(blockText).mid(startPos, hlp.length);
+    auto        indx    = matched.indexOf(QLatin1String("://"));
+    if (indx == -1 && !matched.startsWith(QLatin1StringView("www."))) {
+        return {};
     }
-    return QString();
+    if (indx != -1) {
+        static QRegularExpression schemeRE { ".*([a-zA-Z][a-zA-Z0-9+.-]*)$",
+                                             QRegularExpression::InvertedGreedinessOption
+                                                 | QRegularExpression::CaseInsensitiveOption };
+        auto                      match = schemeRE.matchView(matched.sliced(0, indx));
+        if (match.hasMatch()) {
+            auto sz = match.capturedLength(1);
+            // qDebug() << matched << matched.size() << match.capturedStart(1);
+            hlp.length = matched.size() - match.capturedStart(1);
+            hlp.pos    = hlp.pos + indx - sz;
+        }
+    }
+    return QString(matched);
 }
 
 void NoteEdit::mousePressEvent(QMouseEvent *e)

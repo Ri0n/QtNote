@@ -37,7 +37,7 @@
 #include "trayimpl.h"
 #include "utils.h"
 
-// #define MAIN_DEBUG
+#define MAIN_DEBUG
 #ifdef MAIN_DEBUG
 #include <QDebug>
 #endif

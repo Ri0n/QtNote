@@ -60,6 +60,8 @@ public:
         expression = QRegularExpression("[[:alpha:]]{2,}", QRegularExpression::UseUnicodePropertiesOption);
     }
 
+    void reset() { }
+
     void highlight(NoteHighlighter *nh, const QString &text)
     {
         QTextCharFormat myClassFormat;
