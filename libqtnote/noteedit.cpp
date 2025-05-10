@@ -82,6 +82,7 @@ void NoteEdit::dropEvent(QDropEvent *e)
 
 void NoteEdit::focusInEvent(QFocusEvent *e)
 {
+    setLinkHighlightEnabled(unconditionalLinks || qApp->keyboardModifiers() & Qt::ControlModifier);
     emit focusReceived();
     QTextEdit::focusInEvent(e);
 }
@@ -110,18 +111,97 @@ void NoteEdit::focusOutEvent(QFocusEvent *e)
     QTextEdit::focusOutEvent(e);
 }
 
-QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
+QString NoteEdit::locateLinkAt(const QPoint &pos)
 {
-    auto cur        = cursorForPosition(pos);
+    QTextCursor cursor = cursorForPosition(pos);
+    if (cursor.isNull()) {
+        return {};
+    }
+    auto cr = cursorRect(cursor);
+    if (pos.y() < cr.top() || pos.y() >= cr.bottom()) {
+        // qDebug() << "ignore by y position";
+        return {};
+    }
+    // qDebug() << "mouse " << pos << " text cursor rect " << cr;
+    if (pos.x() < cr.left()) {
+        // Text cursor is on the right from mouse because. It was the closest to the mouse position.
+        // But this way while we may still pointing at a link, the text cursor could move to the
+        // next text fragment without any link. So we better take the previous position.
+        // TODO: consider rtl text?
+        cursor.movePosition(QTextCursor::PreviousCharacter);
+    }
+    auto link = linkifiedAnchorAt(cursor);
+    if (link.isEmpty()) {
+        link = unparsedAnchorAt(cursor);
+    }
+    if (link.isEmpty()) {
+        // hlp = {};
+    }
+    return link;
+}
+
+QString NoteEdit::linkifiedAnchorAt(const QTextCursor &cursor)
+{
+    QTextBlock    block = cursor.block();
+    QTextFragment startFrag;
+    QUrl          url;
+
+    QTextBlock::iterator centralIt = block.begin();
+    for (centralIt = block.begin(); !(centralIt.atEnd()); ++centralIt) {
+        startFrag = centralIt.fragment();
+        if (startFrag.contains(cursor.position())) {
+            // qDebug() << "found " << cursor.position() << " in fragment at " << startFrag.position() << " of length "
+            //          << startFrag.length() << " text: " << startFrag.text();
+            url = startFrag.charFormat().anchorHref();
+            break;
+        }
+    }
+
+    if (!url.isValid()) {
+        return {};
+    }
+
+    int start = startFrag.position();
+    int end   = start + startFrag.length();
+
+    // look for the beginning
+    auto beginIt = centralIt;
+    while (beginIt != block.begin()) {
+        --beginIt;
+        QTextFragment frag = beginIt.fragment();
+        if (frag.charFormat().anchorHref() == url) {
+            start = frag.position();
+        } else {
+            break;
+        }
+    }
+
+    auto endIt = centralIt;
+    for (++endIt; !(endIt.atEnd()); ++endIt) {
+        QTextFragment frag = endIt.fragment();
+        if (frag.charFormat().anchorHref() == url) {
+            end = frag.position() + frag.length();
+        } else {
+            break;
+        }
+    }
+
+    hlp.block  = block;
+    hlp.pos    = start - block.position();
+    hlp.length = end - start;
+
+    return block.text().sliced(hlp.pos, hlp.length);
+}
+
+QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
+{
     bool startFound = false;
     bool endFound   = false;
-    auto blockText  = cur.block().text();
+    auto blockText  = cursor.block().text();
     int  startPos, endPos;
-    startPos = endPos = cur.positionInBlock();
-    if (!blockText.length() || startPos >= blockText.size() || blockText[startPos].isSpace()
-        || cursorRect(cur).right() + 5 < pos.x()) {
-        // +5 just to make it smooth in other case we will get kind of glitches while hovering a link.
-        return QString();
+    startPos = endPos = cursor.positionInBlock();
+    if (!blockText.length() || startPos >= blockText.size() || blockText[startPos].isSpace()) {
+        return {};
     }
     while (!(startFound && endFound)) {
         if (!startFound) {
@@ -138,7 +218,7 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
             }
         }
     }
-    hlp.block           = cur.block();
+    hlp.block           = cursor.block();
     hlp.pos             = startPos;
     hlp.length          = endPos - startPos;
     QStringView matched = QStringView(blockText).mid(startPos, hlp.length);
@@ -146,6 +226,7 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
     if (indx == -1 && !matched.startsWith(QLatin1StringView("www."))) {
         return {};
     }
+    int hostShift = 0;
     if (indx != -1) {
         static QRegularExpression schemeRE { ".*([a-zA-Z][a-zA-Z0-9+.-]*)$",
                                              QRegularExpression::InvertedGreedinessOption
@@ -156,16 +237,26 @@ QString NoteEdit::unparsedAnchorAt(const QPoint &pos)
             // qDebug() << matched << matched.size() << match.capturedStart(1);
             hlp.length = matched.size() - match.capturedStart(1);
             hlp.pos    = hlp.pos + indx - sz;
+            matched    = QStringView(blockText).mid(hlp.pos, hlp.length);
+            hostShift  = match.capturedLength(1) + 3; // + ://
         }
     }
-    return QString(matched);
+    static QRegularExpression re(R"(^((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:/[^\s?#]*(?:\?[^\s#]*)?(?:\#[^\s]*)?)?).*)",
+                                 QRegularExpression::CaseInsensitiveOption);
+
+    auto match = re.matchView(matched.sliced(hostShift));
+    if (!match.hasMatch()) {
+        return {};
+    }
+    hlp.length = match.capturedLength(1) + hostShift;
+    return blockText.mid(hlp.pos, hlp.length);
 }
 
 void NoteEdit::mousePressEvent(QMouseEvent *e)
 {
     QString url;
-    if (e->modifiers() & Qt::ControlModifier && e->button() == Qt::LeftButton
-        && !(url = unparsedAnchorAt(e->pos())).isEmpty()) {
+    if ((unconditionalLinks || e->modifiers() & Qt::ControlModifier) && e->button() == Qt::LeftButton
+        && !(url = locateLinkAt(e->pos())).isEmpty()) {
         e->accept();
         QDesktopServices::openUrl(QUrl::fromUserInput(url));
         return;
@@ -176,7 +267,7 @@ void NoteEdit::mousePressEvent(QMouseEvent *e)
 void NoteEdit::mouseMoveEvent(QMouseEvent *e)
 {
     QString url;
-    if (!(url = unparsedAnchorAt(e->pos())).isEmpty()) {
+    if (!(url = locateLinkAt(e->pos())).isEmpty()) {
         viewport()->setCursor(Qt::PointingHandCursor);
         emit linkHovered();
     } else {
@@ -190,18 +281,24 @@ void NoteEdit::mouseMoveEvent(QMouseEvent *e)
 
 void NoteEdit::keyPressEvent(QKeyEvent *e)
 {
-    if (e->key() == Qt::Key_Control) {
-        setLinkHighlightEnabled(true);
+    if (unconditionalLinks || e->key() == Qt::Key_Control) {
+        setLinkHighlightEnabled(true); // enable mouse tracking
     }
     QTextEdit::keyPressEvent(e);
 }
 
 void NoteEdit::keyReleaseEvent(QKeyEvent *e)
 {
-    if (e->key() == Qt::Key_Control) {
+    if (!unconditionalLinks && e->key() == Qt::Key_Control) {
         setLinkHighlightEnabled(false);
     }
     QTextEdit::keyPressEvent(e);
+}
+
+void QtNote::NoteEdit::setUnconditionalLinks(bool enabled)
+{
+    unconditionalLinks = enabled;
+    setLinkHighlightEnabled(enabled); // we should rather
 }
 
 } // namespace QtNote

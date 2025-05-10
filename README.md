@@ -56,4 +56,14 @@ Qt Maintenance tool). The remaining magic should work automatically.
 ### Creating installer
 
 To build an installer wix.exe from WiX toolset also has to be in PATH. 
-Also enable burn_installer cmake target in build settings. Then do ctrl+b.
+
+Follow next steps after installing dependencies and configuring PATH:
+
+1. select release build in qt creator
+2. build it (ctrl + b)
+3. then update deployment configuration and 2 steps in exact order
+  * cmake install
+  * cmake build of `burn_installer` target
+4. try to run and this will execute the deployment.
+5. deployment creates QtNote installer, so check terminal for logs.
+    

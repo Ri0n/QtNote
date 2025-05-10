@@ -148,6 +148,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     tbar->addAction(mdModeAct);
     connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
     mdModeAct->setVisible(false); // we are initially in rich text mode
+    ui->noteEdit->setUnconditionalLinks(true);
 
     txtModeAct = initAction(":/svg/txt", tr("Text"), tr("Plain text mode"), "Ctrl+T");
     tbar->addAction(txtModeAct);
@@ -342,11 +343,10 @@ void NoteWidget::switchToMarkdown()
 {
     ui->noteEdit->blockSignals(true);
     _linkHighlighter->reset();
-    auto txt = text();
-    qDebug() << "switchToMarkdown" << txt;
-    ui->noteEdit->setMarkdown(txt);
+    ui->noteEdit->setMarkdown(text());
     mdModeAct->setVisible(false);
     txtModeAct->setVisible(true);
+    ui->noteEdit->setUnconditionalLinks(true);
     ui->noteEdit->blockSignals(false);
 }
 
@@ -354,23 +354,18 @@ void NoteWidget::switchToText()
 {
     ui->noteEdit->blockSignals(true);
     _linkHighlighter->reset();
+
     auto cursor = ui->noteEdit->textCursor();
     cursor.clearSelection();
     cursor.setPosition(0);
     ui->noteEdit->setTextCursor(cursor);
-    // #if 0
+
     auto md = ui->noteEdit->toMarkdown().trimmed();
-    qDebug() << "switchToText1 md=" << md;
     ui->noteEdit->setPlainText(md);
-    qDebug() << "switchToText2 txt=" << ui->noteEdit->toPlainText();
-    QTimer::singleShot(0, this, [this]() {
-        qDebug() << "switchToText2" << ui->noteEdit->toHtml();
-        // ui->noteEdit->setTextColor(Qt::white);
-    });
 
     mdModeAct->setVisible(true);
     txtModeAct->setVisible(false);
-    // #endif
+    ui->noteEdit->setUnconditionalLinks(false);
     ui->noteEdit->blockSignals(false);
 }
 

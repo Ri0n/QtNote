@@ -46,11 +46,13 @@ private:
 
     QList<QPointer<QObject>> menuHandlers;
     HoveredLinkPosition      hlp;
+    bool                     unconditionalLinks = false;
 
 public:
     explicit NoteEdit(QWidget *parent = nullptr);
     virtual void                      addContextMenuHandler(NoteContextMenuHandler *handler);
     inline const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
+    void                              setUnconditionalLinks(bool enabled);
 
 protected:
     void dropEvent(QDropEvent *e);
@@ -63,7 +65,9 @@ protected:
     void keyReleaseEvent(QKeyEvent *e);
 
 private:
-    QString unparsedAnchorAt(const QPoint &pos);
+    QString locateLinkAt(const QPoint &pos);
+    QString linkifiedAnchorAt(const QTextCursor &cursor);
+    QString unparsedAnchorAt(const QTextCursor &cursor);
     void    setLinkHighlightEnabled(bool state);
 
 signals:
