@@ -223,7 +223,7 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
     hlp.length          = endPos - startPos;
     QStringView matched = QStringView(blockText).mid(startPos, hlp.length);
     auto        indx    = matched.indexOf(QLatin1String("://"));
-#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
     if (indx == -1 && !matched.startsWith(QLatin1String("www."))) {
 #else
     if (indx == -1 && !matched.startsWith(QLatin1StringView("www."))) {
@@ -235,10 +235,10 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
         static QRegularExpression schemeRE { ".*([a-zA-Z][a-zA-Z0-9+.-]*)$",
                                              QRegularExpression::InvertedGreedinessOption
                                                  | QRegularExpression::CaseInsensitiveOption };
-#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
-        auto                      match = schemeRE.match(matched.left(indx));
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
+        auto match = schemeRE.match(matched.left(indx));
 #else
-        auto                      match = schemeRE.matchView(matched.left(indx));
+        auto match = schemeRE.matchView(matched.left(indx));
 #endif
         if (match.hasMatch()) {
             auto sz = match.capturedLength(1);
@@ -251,7 +251,7 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
     }
     static QRegularExpression re(R"(^((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:/[^\s?#]*(?:\?[^\s#]*)?(?:\#[^\s]*)?)?).*)",
                                  QRegularExpression::CaseInsensitiveOption);
-#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
     auto match = re.match(matched.mid(hostShift));
 #else
     auto match = re.matchView(matched.mid(hostShift));

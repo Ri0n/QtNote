@@ -10,8 +10,8 @@ else()
     set(HUNSPELL_DEP  PkgConfig::Hunspell)
     set(HUNSPEL_ENABLED ${Hunspell_FOUND})
 endif()
-find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Network)
-if (NOT Qt${QT_DEFAULT_MAJOR_VERSION}Network_FOUND)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network)
+if (NOT Qt${QT_VERSION_MAJOR}Network_FOUND)
     set(HUNSPEL_ENABLED FALSE)
 endif()
 
@@ -42,10 +42,10 @@ endif()
 
 target_link_libraries(spellchecker
     ${EXTRA_LINK_TARGET}
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Core
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Gui
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Network
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Gui
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Network
     ${HUNSPELL_DEP}
 )
 

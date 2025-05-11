@@ -9,8 +9,7 @@ add_qtnote_plugin(tomboy "Allows to load notes from Tomboy" ON unix macosx windo
     tomboystorage.cpp
     tomboystorage.h
 )
-
-find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Xml REQUIRED)
-target_link_libraries(tomboy ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::Xml)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Xml REQUIRED)
+target_link_libraries(tomboy ${EXTRA_LINK_TARGET} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Xml)
 
 install_qtnote_plugin(tomboy)

@@ -1,13 +1,13 @@
 #include <KGlobalAccel>
 #include <KNotification>
-#include <KStatusNotifierItem>
 #include <KWindowSystem>
-#ifndef OLD_K_FORCE_ACTIVATE
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) && !defined(OLD_K_FORCE_ACTIVATE)
 #include <KX11Extras>
 #endif
 
 #include <QAction>
 #include <QWidget>
+#include <QWindow>
 #include <QtPlugin>
 
 #include "kdeintegration.h"
@@ -54,7 +54,12 @@ void KDEIntegration::notifyError(const QString &msg)
 
 void KDEIntegration::activateWidget(QWidget *w)
 {
-#if OLD_K_FORCE_ACTIVATE
+    w->raise();
+    w->activateWindow();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (auto *window = w->windowHandle())
+        KWindowSystem::activateWindow(window);
+#elif defined(OLD_K_FORCE_ACTIVATE)
     KWindowSystem::forceActiveWindow(w->winId(), 0);
 #else
     KX11Extras::forceActiveWindow(w->winId(), 0);

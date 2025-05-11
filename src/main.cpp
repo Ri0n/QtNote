@@ -22,11 +22,70 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QBuffer>
 #include <QDataStream>
+#include <QSocketNotifier>
 #include <QStringList>
 #include <QtSingleApplication>
+#include <csignal>
+#include <cstring>
 #include <iostream>
 
+#ifdef Q_OS_UNIX
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 #include "qtnote.h"
+
+#ifdef Q_OS_UNIX
+namespace {
+int signalPipe[2] = { -1, -1 };
+
+void handleUnixSignal(int)
+{
+    const char byte = 1;
+    if (signalPipe[1] != -1) {
+        const ssize_t written = ::write(signalPipe[1], &byte, sizeof(byte));
+        (void)written;
+    }
+}
+
+void installUnixSignalHandler(int signal)
+{
+    struct sigaction action;
+    std::memset(&action, 0, sizeof(action));
+    action.sa_handler = handleUnixSignal;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    sigaction(signal, &action, nullptr);
+}
+
+QSocketNotifier *installUnixSignalHandlers(QObject *parent)
+{
+    if (::pipe(signalPipe) != 0)
+        return nullptr;
+
+    for (int fd : signalPipe) {
+        const int flags = ::fcntl(fd, F_GETFL, 0);
+        if (flags != -1)
+            ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    }
+
+    installUnixSignalHandler(SIGINT);
+    installUnixSignalHandler(SIGTERM);
+
+    auto *notifier = new QSocketNotifier(signalPipe[0], QSocketNotifier::Read, parent);
+    QObject::connect(notifier, &QSocketNotifier::activated, qApp, [notifier]() {
+        notifier->setEnabled(false);
+
+        char buffer[16];
+        while (::read(signalPipe[0], buffer, sizeof(buffer)) > 0) { }
+
+        QApplication::quit();
+    });
+    return notifier;
+}
+}
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -53,6 +112,10 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName("QtNote");
 
     QApplication::setQuitOnLastWindowClosed(false);
+
+#ifdef Q_OS_UNIX
+    installUnixSignalHandlers(&a);
+#endif
 
     QtNote::Main qtnote;
     if (qtnote.isOperable()) {

@@ -194,8 +194,8 @@ void PluginManager::loadPlugins()
 #ifdef Q_OS_OSX
     QString session = "macosx";
 #else
-    auto desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
-    QString session = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
+    auto    desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
+    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
 #endif
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];
@@ -338,8 +338,10 @@ void PluginManager::updateMetadata()
             continue;
         }
         PluginData::Ptr pd(new PluginData);
-        pd->fileName            = fileName;
-        tmpPlugins[pluginId]    = pd;
+        pd->fileName = fileName;
+#ifndef QTNOTE_DEVEL
+        tmpPlugins[pluginId] = pd;
+#endif
         file2data[pd->fileName] = pd;
         pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy").toInt();
         pd->loadStatus          = LS_Undefined;

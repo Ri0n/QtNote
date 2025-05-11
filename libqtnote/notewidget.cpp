@@ -184,7 +184,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
 
     QSettings s;
-    auto fs = s.value("ui.default-font").toString();
+    auto      fs = s.value("ui.default-font").toString();
     if (!fs.isEmpty()) {
         QFont defaultFont;
         defaultFont.fromString(fs);
@@ -415,10 +415,10 @@ void NoteWidget::switchToText()
 
     auto md = ui->noteEdit->toMarkdown().trimmed();
 
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // there is some bug in qt5 requiring this hack
     auto parts = md.split("\n    ```");
-    for (int i = 1; i < parts.count() - 1; i+=2) {
+    for (int i = 1; i < parts.count() - 1; i += 2) {
         parts[i].replace("\n\n", "\n");
     }
     md = parts.join("\n```");

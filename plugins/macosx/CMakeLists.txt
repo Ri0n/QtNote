@@ -7,7 +7,6 @@ add_qtnote_plugin(macosx "Mac OS X integration" ON macosx SOURCES
     macosxtray.cpp
     macosxtray.h
 )
-
-target_link_libraries(macosx ${EXTRA_LINK_TARGET} Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets)
+target_link_libraries(macosx ${EXTRA_LINK_TARGET} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets)
 
 install_qtnote_plugin(macosx)

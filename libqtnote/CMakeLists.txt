@@ -43,7 +43,7 @@ else()
         PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
     )
 endif()
-target_link_libraries(qtnote PUBLIC Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::PrintSupport)
+target_link_libraries(qtnote PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
 if (APPLE)
     target_link_libraries(qtnote PUBLIC "-framework CoreFoundation" "-framework Carbon")
 endif()
