@@ -20,8 +20,9 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(QtNoteMacro)
-message(STATUS "Version: QtNote-${QTNOTE_VERSION}")
-project(qtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
+set(APP_NAME qtnote)
+message(STATUS "Version: ${APP_NAME}-${QTNOTE_VERSION}")
+project(${APP_NAME} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
 
@@ -80,7 +81,6 @@ else()
 endif()
 
 message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
-set(APP_NAME qtnote)
 
 configure_file(qtnote_config.h.in qtnote_config.h)
 
