@@ -9,9 +9,10 @@ Moreover QtNote can work with Tomboy notes and it's not so hard add support of o
 Some features:
 * Quick access to notes from tray menu
 * Internal notes manager to handle multiple notes at once / search notes
-* Support for Tomboy notes
-* Create notes from selection by hotkey
-* Spell checking
+* Support for Tomboy/Gnote notes
+* Support for markdown
+* Create notes from selection by a hotkey
+* Spell checking (hunspell)
 * Cross-platform (tested on Linux and Windows with gcc and Visual Studio)
 * Other: configurable amount of notes in menu. configurable storage path, print note, save note dialog geometry
 
@@ -42,10 +43,6 @@ $ cmake -LA . | grep QTNOTE
 
 Check ./admin/{deb,rpm}build.sh scripts. You can start them w/o arguments.
 
-## Internationalization
-
-https://app.transifex.com/rion/qtnote
-
 ## Build on Microsoft Windows
 
 You need conan in your PATH. It's up to you how you install it. Then you need to enable
@@ -53,7 +50,7 @@ Conan support in Qt Creator plugins. You need cmake and ninja in PATH too becaus
 Qt Creator doesn't pass their locations to Conan (just add those installed by 
 Qt Maintenance tool). The remaining magic should work automatically.
 
-### Creating installer
+### Creating an installer
 
 To build an installer wix.exe from WiX toolset also has to be in PATH. 
 
@@ -62,8 +59,19 @@ Follow next steps after installing dependencies and configuring PATH:
 1. select release build in qt creator
 2. build it (ctrl + b)
 3. then update deployment configuration and 2 steps in exact order
-  * cmake install
-  * cmake build of `burn_installer` target
+   * cmake install
+   * cmake build of `burn_installer` target
 4. try to run and this will execute the deployment.
 5. deployment creates QtNote installer, so check terminal for logs.
+
+## Internationalization
+
+https://app.transifex.com/rion/qtnote
+
+### Planned major featues
+
+1. note encryption (not yet decided if own implementation or some integration)
+2. note tags + AI-based classification
+3. more plugins for various popular systems
+
     
