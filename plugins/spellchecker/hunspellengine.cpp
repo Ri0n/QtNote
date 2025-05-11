@@ -20,12 +20,10 @@
 #include <hunspell.hxx>
 #endif
 
-#include "pluginhostinterface.h"
-#ifdef Q_OS_WIN
 #include "hunspelldownloader.h"
+#include "pluginhostinterface.h"
 #include "qtnote_config.h"
 #include "utils.h"
-#endif
 
 namespace QtNote {
 
