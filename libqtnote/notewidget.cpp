@@ -343,7 +343,13 @@ void NoteWidget::switchToMarkdown()
 {
     ui->noteEdit->blockSignals(true);
     _linkHighlighter->reset();
-    ui->noteEdit->setMarkdown(text());
+    auto txt   = text();
+    auto nindx = txt.indexOf(QLatin1Char('\n'));
+    if (nindx == -1 || nindx == txt.size() - 1 || txt[nindx + 1] == QLatin1Char('\n')) {
+        ui->noteEdit->setMarkdown(txt);
+    } else {
+        ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + QStringView(txt).mid(nindx));
+    }
     mdModeAct->setVisible(false);
     txtModeAct->setVisible(true);
     ui->noteEdit->setUnconditionalLinks(true);
