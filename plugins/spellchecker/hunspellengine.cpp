@@ -252,6 +252,7 @@ DictionaryDownloader *HunspellEngine::download(const QLocale &locale)
     auto downloader = new HunspellDownloader(locale, storePath, qnam, this);
     connect(downloader, &HunspellDownloader::finished, this, [downloader, this]() {
         if (!downloader->hasErrors()) {
+            dictPaths = findDictPaths(); // downloader could create a dir
             emit availableDictsUpdated();
         }
     });
