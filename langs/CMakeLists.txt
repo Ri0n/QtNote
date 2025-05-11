@@ -1,9 +1,9 @@
 project(langs)
 file(GLOB qtnote_TRS "${CMAKE_CURRENT_SOURCE_DIR}/qtnote_*.ts")
 
-find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS LinguistTools REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS LinguistTools REQUIRED)
 
-if(Qt${QT_DEFAULT_MAJOR_VERSION}LinguistTools_VERSION VERSION_LESS 6.7.0)
+if(Qt${QT_VERSION_MAJOR}LinguistTools_VERSION VERSION_LESS 6.7.0)
     set(PROJECT_DIRS
     ${CMAKE_SOURCE_DIR}
     ${qtnotexe_SOURCE_DIR}
@@ -18,7 +18,7 @@ if(Qt${QT_DEFAULT_MAJOR_VERSION}LinguistTools_VERSION VERSION_LESS 6.7.0)
         string(REPLACE "@" "_" _SHORT_LANG ${_SHORT_LANG})
         add_custom_command(TARGET lupdate
             PRE_BUILD
-            COMMAND ${Qt${QT_DEFAULT_MAJOR_VERSION}_LUPDATE_EXECUTABLE}
+            COMMAND ${Qt${QT_VERSION_MAJOR}_LUPDATE_EXECUTABLE}
             ARGS -no-obsolete -recursive ${PROJECT_DIRS} -ts ${_LANG}
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
             VERBATIM

@@ -1,0 +1,27 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "rion4ik@gmail.com",
+                "Name": "Sergei Ilinykh",
+                "Name[ru]": "Сергей Ильиных"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Simple, quick access to your notes in the system tray. Supports reading notes from external sources, like Tomboy notes.",
+        "Description[ru]": "Простой и быстрый доступ к заметкам через системный трей. Поддерживает чтение заметок из внешних источников, таких как Tomboy.",
+        "EnabledByDefault": true,
+        "FormFactors": [
+            "desktop"
+        ],
+        "Icon": "qtnote",
+        "Id": "com.github.ri0n.qtnote",
+        "License": "GPL3",
+        "Name": "Note Keeper",
+        "Name[ru]": "Заметки",
+        "Website": "https://ri0n.github.io/QtNote"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": "true"
+}

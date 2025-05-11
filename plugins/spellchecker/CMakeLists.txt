@@ -32,9 +32,9 @@ add_library(spellchecker ${LIB_TYPE}
     )
 target_link_libraries(spellchecker
     ${EXTRA_LINK_TARGET}
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Core
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Gui
-    Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Gui
+    Qt${QT_VERSION_MAJOR}::Widgets
     ${HUNSPELL_DEP}
 )
 
