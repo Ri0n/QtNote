@@ -41,7 +41,7 @@ if(QT_SINGLE_APPLICATION_WIDGET)
     list(APPEND HEADERS qtsingleapplication.h)
 endif()
 
-add_library(QtSingleApplication ${SOURCES} ${HEADERS})
+add_library(QtSingleApplication STATIC ${SOURCES} ${HEADERS})
 target_include_directories(QtSingleApplication PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(QT_SINGLE_APPLICATION_INSTALL)
