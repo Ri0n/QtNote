@@ -144,7 +144,7 @@ QString NoteEdit::linkifiedAnchorAt(const QTextCursor &cursor)
 {
     QTextBlock    block = cursor.block();
     QTextFragment startFrag;
-    QUrl          url;
+    QString       url;
 
     QTextBlock::iterator centralIt = block.begin();
     for (centralIt = block.begin(); !(centralIt.atEnd()); ++centralIt) {
@@ -157,7 +157,7 @@ QString NoteEdit::linkifiedAnchorAt(const QTextCursor &cursor)
         }
     }
 
-    if (!url.isValid()) {
+    if (url.isEmpty()) {
         return {};
     }
 
@@ -190,7 +190,7 @@ QString NoteEdit::linkifiedAnchorAt(const QTextCursor &cursor)
     hlp.pos    = start - block.position();
     hlp.length = end - start;
 
-    return block.text().sliced(hlp.pos, hlp.length);
+    return block.text().mid(hlp.pos, hlp.length);
 }
 
 QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
@@ -223,7 +223,11 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
     hlp.length          = endPos - startPos;
     QStringView matched = QStringView(blockText).mid(startPos, hlp.length);
     auto        indx    = matched.indexOf(QLatin1String("://"));
+#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
+    if (indx == -1 && !matched.startsWith(QLatin1String("www."))) {
+#else
     if (indx == -1 && !matched.startsWith(QLatin1StringView("www."))) {
+#endif
         return {};
     }
     int hostShift = 0;
@@ -231,7 +235,11 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
         static QRegularExpression schemeRE { ".*([a-zA-Z][a-zA-Z0-9+.-]*)$",
                                              QRegularExpression::InvertedGreedinessOption
                                                  | QRegularExpression::CaseInsensitiveOption };
-        auto                      match = schemeRE.matchView(matched.sliced(0, indx));
+#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
+        auto                      match = schemeRE.match(matched.left(indx));
+#else
+        auto                      match = schemeRE.matchView(matched.left(indx));
+#endif
         if (match.hasMatch()) {
             auto sz = match.capturedLength(1);
             // qDebug() << matched << matched.size() << match.capturedStart(1);
@@ -243,8 +251,11 @@ QString NoteEdit::unparsedAnchorAt(const QTextCursor &cursor)
     }
     static QRegularExpression re(R"(^((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:/[^\s?#]*(?:\?[^\s#]*)?(?:\#[^\s]*)?)?).*)",
                                  QRegularExpression::CaseInsensitiveOption);
-
-    auto match = re.matchView(matched.sliced(hostShift));
+#if QT_VERSION < QT_VERSION_CHECK(6,5,0)
+    auto match = re.match(matched.mid(hostShift));
+#else
+    auto match = re.matchView(matched.mid(hostShift));
+#endif
     if (!match.hasMatch()) {
         return {};
     }

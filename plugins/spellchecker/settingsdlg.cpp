@@ -87,7 +87,7 @@ public:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         QTableWidgetItem(dict.locale.nativeLanguageName() + QLatin1String(" (") + dict.locale.nativeTerritoryName()
 #else
-        QListWidgetItem(locale.nativeLanguageName() + QLatin1String(" (") + locale.nativeCountryName()
+        QTableWidgetItem(dict.locale.nativeLanguageName() + QLatin1String(" (") + dict.locale.nativeCountryName()
 #endif
                          + QLatin1Char(')')),
         dict(dict)

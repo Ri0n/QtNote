@@ -279,7 +279,7 @@ QList<SpellCheckPlugin::Dict> SpellCheckPlugin::dictionaries() const
         DictFlags flags = DictInstalled;
         flags |= (d.isWritable ? DictWritable : DictNone);
         flags |= (d.isLoaded ? DictActivated : DictNone);
-        ret.emplaceBack(QLocale(d.language, d.country), flags);
+        ret.append({QLocale(d.language, d.country), flags});
     }
 
     QList<SpellCheckPlugin::Dict> systemPrefDicts;

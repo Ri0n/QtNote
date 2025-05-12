@@ -33,7 +33,7 @@ public:
     void                    setNote(const Note &note);
     QString                 text();
     inline const Features  &features() const { return _features; }
-    inline bool             isMarkdown() const; // current mode. may look a little ugly
+    bool                    isMarkdown() const; // current mode. may look a little ugly
     inline void             setFeatures(const Features &features) { _features = features; }
     virtual NoteEdit       *editWidget() const;
     inline NoteHighlighter *highlighter() const { return _highlighter; }

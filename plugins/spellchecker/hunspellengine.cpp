@@ -7,10 +7,10 @@
 #include <QSet>
 #include <QStandardPaths>
 #include <QString>
+#include <QNetworkAccessManager>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QTextCodec>
 #else
-#include <QNetworkAccessManager>
 #include <QStringDecoder>
 #include <QStringEncoder>
 #endif

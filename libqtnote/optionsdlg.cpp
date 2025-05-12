@@ -146,7 +146,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnot
     }
     connect(ui->fcbDefaultFont, &QFontComboBox::currentFontChanged, this,
             [this](const QFont &font) { defaultFont = font; });
-    connect(ui->fsbDefaultFontSize, &QDoubleSpinBox::valueChanged, this, [this](double value) {
+    connect(ui->fsbDefaultFontSize, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         if (defaultFont.pixelSize() == -1) {
             defaultFont.setPointSizeF(value);
         } else {

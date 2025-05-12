@@ -381,7 +381,11 @@ void NoteWidget::switchToMarkdown()
     if (nindx == -1 || nindx == txt.size() - 1 || txt[nindx + 1] == QLatin1Char('\n')) {
         ui->noteEdit->setMarkdown(txt);
     } else {
+#if QT_VERSION < QT_VERSION_CHECK(6,9,0)
+        ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + txt.mid(nindx));
+#else
         ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + QStringView(txt).mid(nindx));
+#endif
     }
     mdModeAct->setVisible(false);
     txtModeAct->setVisible(true);
