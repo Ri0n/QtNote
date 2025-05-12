@@ -19,15 +19,28 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include "note.h"
+// #include "note.h"
 #include "notedata.h"
+
 #include <QString>
 
 namespace QtNote {
 
 Note::Note() { }
 
+Note::~Note() { }
+
 Note::Note(NoteData *data) : d(QExplicitlySharedDataPointer<NoteData>(data)) { }
+
+Note::Note(const Note &note) : d(note.d) { }
+
+Note::Note(Note &&note) : d(std::move(note.d)) { }
+
+Note &Note::operator=(const Note &note)
+{
+    d = note.d;
+    return *this;
+}
 
 bool Note::isNull() { return !d; }
 
@@ -38,6 +51,8 @@ QString Note::text() const { return d->text(); }
 QString Note::title() const { return d->title(); }
 
 NoteData *Note::data() const { return d.data(); }
+
+Note::Format Note::format() const { return d->format(); }
 
 qint64 Note::lastChangeElapsed() const { return d->lastChangeElapsed(); }
 

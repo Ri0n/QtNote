@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QPropertyAnimation>
 #include <QSettings>
 
+#include "notemanager.h"
 #include "notemanagerdlg.h"
 #include "notesmodel.h"
 #include "notessearchmodel.h"
@@ -163,13 +164,17 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
     if (srcCurrent.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
         return;
     }
-    NoteWidget *nw = qtnote->noteWidget(srcCurrent.data(NotesModel::StorageIdRole).toString(),
-                                        srcCurrent.data(NotesModel::NoteIdRole).toString());
 
-    /* probably it's ok to just return if nw=0. stirage will be anyway invalidated on errors */
-    if (!nw) {
+    auto storageId = srcCurrent.data(NotesModel::StorageIdRole).toString();
+    auto noteId    = srcCurrent.data(NotesModel::NoteIdRole).toString();
+    auto note      = NoteManager::instance()->note(storageId, noteId);
+    if (note.isNull()) {
+        qWarning("failed to load note: %s", qPrintable(noteId));
         return;
     }
+
+    NoteWidget *nw = qtnote->noteWidget(storageId, noteId);
+    nw->setNote(note);
 
     if (ui->splitter->count() > 1) {
         delete ui->splitter->widget(ui->splitter->count() - 1);

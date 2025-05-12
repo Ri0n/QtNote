@@ -25,7 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSharedData>
 #include <QString>
 
-#include "qtnote_export.h"
+#include "note.h"
 
 namespace QtNote {
 
@@ -35,15 +35,17 @@ public:
 
     NoteData();
     virtual ~NoteData() { }
-    virtual void    remove() = 0;
-    virtual QString text() const;
-    virtual QString title() const;
-    virtual void    setText(const QString &text);
-    virtual qint64  lastChangeElapsed() const = 0;
+    virtual void         remove() = 0;
+    virtual Note::Format format() const;
+    virtual QString      text() const;
+    virtual QString      title() const;
+    virtual void         setText(const QString &text);
+    virtual qint64       lastChangeElapsed() const = 0;
 
 protected:
-    QString sTitle;
-    QString sText;
+    Note::Format format_;
+    QString      title_;
+    QString      text_;
 };
 
 } // namespace QtNote

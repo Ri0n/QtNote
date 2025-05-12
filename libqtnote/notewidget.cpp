@@ -16,6 +16,7 @@
 #include <QToolButton>
 
 #include "defaults.h"
+#include "note.h"
 #include "notehighlighter.h"
 #include "notewidget.h"
 #include "typeaheadfind.h"
@@ -311,10 +312,40 @@ void NoteWidget::setText(QString text)
     if (mdModeAct->isVisible()) {
         ui->noteEdit->setPlainText(text);
     } else {
-        ui->noteEdit->setMarkdown(text);
+        auto idx = text.indexOf('\n');
+        if (idx == -1 || idx + 1 == text.size() || text[idx + 1] == '\n') {
+            ui->noteEdit->setMarkdown(text);
+        } else {
+            ui->noteEdit->setMarkdown(text.left(idx) + '\n' + text.mid(idx));
+        }
     }
     _changed = _noteId.isEmpty(); // force saving note if noteId is not set.
     _autosaveTimer.stop();        // timer not required atm
+    _lastChangeElapsed.restart();
+}
+
+void NoteWidget::setNote(const Note &note)
+{
+    switch (note.format()) {
+    case Note::Html:
+        ui->noteEdit->setHtml(note.title() + QLatin1String("<br/>") + note.text());
+        ui->noteEdit->setMarkdown(ui->noteEdit->toMarkdown()); // to cleanup html
+        mdModeAct->setVisible(false);
+        txtModeAct->setVisible(true);
+        break;
+    case Note::Markdown:
+        ui->noteEdit->setMarkdown(note.title() + QLatin1String("\n\n") + note.text());
+        mdModeAct->setVisible(false);
+        txtModeAct->setVisible(true);
+        break;
+    case Note::PlainText:
+        ui->noteEdit->setPlainText(note.title() + QLatin1Char('\n') + note.text());
+        mdModeAct->setVisible(true);
+        txtModeAct->setVisible(false);
+        break;
+    }
+    _changed = false;
+    _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
 }
 
@@ -325,6 +356,8 @@ QString NoteWidget::text()
     }
     return ui->noteEdit->toMarkdown().trimmed();
 }
+
+bool NoteWidget::isMarkdown() const { return !mdModeAct->isVisible(); }
 
 NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 

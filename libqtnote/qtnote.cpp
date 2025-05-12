@@ -146,7 +146,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
     connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
     connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
-    connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(showNoteDialog(QString, QString)));
+    connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(openNoteDialog(QString, QString)));
 
     // TODO it's a little ugly. refactor
     QAction *actNoteFromSel = new QAction(_shortcutsManager->friendlyName(ShortcutsManager::SKNoteFromSelection), this);
@@ -207,7 +207,7 @@ void Main::showAbout()
 void Main::showNoteManager()
 {
     NoteManagerDlg *d = new NoteManagerDlg(this);
-    connect(d, SIGNAL(showNoteRequested(QString, QString)), SLOT(showNoteDialog(QString, QString)));
+    connect(d, &NoteManagerDlg::showNoteRequested, this, &Main::openNoteDialog);
     d->show();
     activateWidget(d);
 }
@@ -221,63 +221,53 @@ void Main::showOptions()
     activateWidget(d);
 }
 
-NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId, const QString &contents)
+NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId)
 {
-    Note note;
+    NoteWidget *w = new NoteWidget(storageId, noteId);
+
+    auto storageFormats = NoteManager::instance()->storage(storageId)->availableFormats();
+    w->setAcceptRichText(storageFormats.contains(Note::Markdown) || storageFormats.contains(Note::Html));
+
+    emit noteWidgetCreated(w);
+
     if (!noteId.isEmpty()) {
-        note = NoteManager::instance()->note(storageId, noteId);
+        Note note = NoteManager::instance()->note(storageId, noteId);
         if (note.isNull()) {
             qWarning("failed to load note: %s", qPrintable(noteId));
-            return 0;
+            delete w;
+            return nullptr;
         }
-    }
-
-    NoteWidget *w = new NoteWidget(storageId, noteId);
-    w->setAcceptRichText(NoteManager::instance()->storage(storageId)->isRichTextAllowed());
-    emit noteWidgetCreated(w);
-    if (noteId.isEmpty()) {
-        if (!contents.isEmpty()) {
-            w->setText(contents);
-        }
-    } else {
-#ifdef MAIN_DEBUG
-        qDebug() << "Main::noteWidget";
-#endif
-        if (note.text().startsWith(note.title())) {
-            w->setText(note.text());
-        } else {
-            w->setText(note.title() + "\n" + note.text());
-        }
+        w->setNote(note);
     }
 
     connect(this, SIGNAL(settingsUpdated()), w, SLOT(rereadSettings()));
     connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
     connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
     connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));
-    emit noteWidgetInitiated(w);
     return w;
 }
 
-void Main::showNoteDialog(const QString &storageId, const QString &noteId, const QString &contents)
+void Main::openNoteDialog(const QString &storageId, const QString &noteId)
 {
 
-    NoteDialog *dlg = nullptr;
-    if (!noteId.isEmpty()) {
-        // check if dialog for given storage and id is already opened
-        dlg = NoteDialog::findDialog(storageId, noteId);
-    }
-
+    NoteDialog *dlg = NoteDialog::findDialog(storageId, noteId);
     if (!dlg) {
-        auto nw = noteWidget(storageId, noteId, contents);
-        if (!nw) {
-            return;
-        }
-        dlg = new NoteDialog(nw);
-        dlg->setWindowIcon(NoteManager::instance()->storage(storageId)->noteIcon());
-        dlg->setWindowState(Qt::WindowNoState);
+        dlg = makeNoteDialog(storageId, noteId);
     }
     dlg->show();
     activateWidget(dlg);
+}
+
+NoteDialog *Main::makeNoteDialog(const QString &storageId, const QString &noteId)
+{
+    auto nw = noteWidget(storageId, noteId);
+    if (!nw) {
+        return nullptr;
+    }
+    auto dlg = new NoteDialog(nw);
+    dlg->setWindowIcon(NoteManager::instance()->storage(storageId)->noteIcon());
+    dlg->setWindowState(Qt::WindowNoState);
+    return dlg;
 }
 
 void Main::notifyError(const QString &text) { d->notifier->notifyError(text); }
@@ -306,7 +296,12 @@ void Main::unregisterStorage(NoteStorage::Ptr &storage)
     }
 }
 
-void Main::createNewNote() { showNoteDialog(NoteManager::instance()->defaultStorage()->systemName()); }
+void Main::createNewNote()
+{
+    auto dlg = makeNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
+    dlg->show();
+    activateWidget(dlg);
+}
 
 void Main::createNewNoteFromSelection()
 {
@@ -376,7 +371,10 @@ void Main::createNewNoteFromSelection()
     contents = QApplication::clipboard()->text();
 #endif
     if (contents.size()) {
-        showNoteDialog(NoteManager::instance()->defaultStorage()->systemName(), QString(), contents);
+        auto dlg = makeNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
+        dlg->weidget()->setText(contents);
+        dlg->show();
+        activateWidget(dlg);
     }
 }
 
@@ -408,12 +406,13 @@ void Main::note_saveRequested()
         }
         return;
     }
+    auto format = nw->isMarkdown() ? Note::Markdown : Note::PlainText;
     if (noteId.isEmpty()) {
-        noteId = storage->createNote(text);
+        noteId = storage->createNote(text, format);
         nw->setNoteId(noteId);
     } else {
         if (NoteManager::instance()->note(storageId, noteId).text() != text) {
-            QString newNoteId = storage->saveNote(noteId, text);
+            QString newNoteId = storage->saveNote(noteId, text, format);
             if (noteId != newNoteId) {
                 nw->setNoteId(newNoteId); // this will generate noteIdChanged
             }
@@ -429,11 +428,7 @@ void Main::note_invalidated()
     NoteWidget *nw   = static_cast<NoteWidget *>(sender());
     Note        note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
     if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
-        if (note.text().startsWith(note.title())) {
-            nw->setText(note.text());
-        } else {
-            nw->setText(note.title() + "\n" + note.text());
-        }
+        nw->setNote(note);
     }
 }
 

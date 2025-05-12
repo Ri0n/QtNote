@@ -39,6 +39,7 @@ class TrayImpl;
 class DEIntegrationInterface;
 class GlobalShortcutsInterface;
 class NotificationInterface;
+class NoteDialog;
 struct NoteListItem;
 
 class QTNOTE_EXPORT Main : public QObject {
@@ -49,8 +50,8 @@ public:
     inline bool isOperable() const { return _inited; }
     void        parseAppArguments(const QStringList &args);
 
-    NoteWidget  *noteWidget(const QString &storageId, const QString &noteId, const QString &contents = QString());
-    virtual void activateWidget(QWidget *w) const; // virtual for plugins
+    NoteWidget              *noteWidget(const QString &storageId, const QString &noteId = {});
+    virtual void             activateWidget(QWidget *w) const; // virtual for plugins
     inline ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
     inline PluginManager    *pluginManager() const { return _pluginManager; }
 
@@ -62,15 +63,16 @@ public:
     void registerStorage(NoteStorage::Ptr &storage);
     void unregisterStorage(NoteStorage::Ptr &storage);
 
+private:
+    NoteDialog *makeNoteDialog(const QString &storageId, const QString &noteId = {});
+
 signals:
     void noteWidgetCreated(QWidget *);
-    void noteWidgetInitiated(QWidget *);
     void settingsUpdated();
 
 public slots:
     void notifyError(const QString &);
-    void showNoteDialog(const QString &storageId, const QString &noteId = QString(),
-                        const QString &contents = QString());
+    void openNoteDialog(const QString &storageId, const QString &noteId);
     void appMessageReceived(const QString &message);
 
 private slots:

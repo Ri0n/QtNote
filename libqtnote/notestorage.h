@@ -63,6 +63,8 @@ public:
     virtual QIcon         noteIcon() const     = 0;
     virtual bool          isAccessible() const = 0;
 
+    virtual QList<Note::Format> availableFormats() const = 0;
+
     /* 0 - not limit */
     virtual QList<NoteListItem> noteList(int limit = 0) = 0;
 
@@ -70,11 +72,10 @@ public:
     virtual Note note(const QString &id) = 0;
 
     /* returns note id */
-    virtual QString createNote(const QString &text) = 0;
+    virtual QString createNote(const QString &text, Note::Format Format = Note::PlainText) = 0;
     /* returns updated note id or the same */
-    virtual QString saveNote(const QString &noteId, const QString &text) = 0;
-    virtual void    deleteNote(const QString &noteId)                    = 0;
-    virtual bool    isRichTextAllowed() const                            = 0;
+    virtual QString saveNote(const QString &noteId, const QString &text, Note::Format Format = Note::PlainText) = 0;
+    virtual void    deleteNote(const QString &noteId)                                                           = 0;
 
     virtual QWidget *settingsWidget() { return 0; }
     virtual QString  tooltip() { return QString(); }

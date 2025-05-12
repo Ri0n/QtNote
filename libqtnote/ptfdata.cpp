@@ -30,6 +30,7 @@ bool PTFData::fromFile(QString fn)
     QFile file(fn);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
+    format_ = fn.endsWith(".md", Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
     setText(QString::fromUtf8(file.readAll()));
     sFileName = fn;
     file.close();
@@ -47,7 +48,8 @@ bool PTFData::saveToFile(const QString &fileName)
         qWarning("Failed to write: %s\n", qPrintable(file.errorString()));
         return false;
     }
-    file.write(sText.toUtf8());
+    auto data = (title_ + QLatin1Char('\n') + text_).trimmed();
+    file.write(data.toUtf8());
     sFileName = fileName;
     file.close();
     dtLastChange = QFileInfo(file).lastModified();

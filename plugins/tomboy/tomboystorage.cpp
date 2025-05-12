@@ -40,7 +40,7 @@ static QString newId()
     return uid;
 }
 
-TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent) { fileExt = "note"; }
+TomboyStorage::TomboyStorage(QObject *parent) : FileStorage(parent) { fileExt.append("note"); }
 
 bool TomboyStorage::init()
 {
@@ -78,7 +78,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
 Note TomboyStorage::note(const QString &id)
 {
     if (!id.isEmpty()) {
-        QString   fileName = notesDir.absoluteFilePath(QString("%1.%2").arg(id, fileExt));
+        QString   fileName = notesDir.absoluteFilePath(QString("%1.note").arg(id));
         QFileInfo fi(fileName);
         if (fi.isWritable()) {
             TomboyData *noteData = new TomboyData;
@@ -90,13 +90,13 @@ Note TomboyStorage::note(const QString &id)
     return Note();
 }
 
-QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
+QString TomboyStorage::saveNote(const QString &noteId, const QString &text, Note::Format format)
 {
     TomboyData note;
     QString    newNoteId = noteId.isEmpty() ? newId() : noteId;
 
     note.setText(text);
-    auto baseName = QString(QLatin1String("%1.%2")).arg(newNoteId, fileExt);
+    auto baseName = QString(QLatin1String("%1.note")).arg(newNoteId);
     if (!note.saveToFile(notesDir.absoluteFilePath(baseName))) {
         handleFSError();
         return QString();
@@ -106,7 +106,12 @@ QString TomboyStorage::saveNote(const QString &noteId, const QString &text)
     return newNoteId;
 }
 
-bool TomboyStorage::isRichTextAllowed() const { return true; }
+QList<Note::Format> TomboyStorage::availableFormats() const
+{
+    static auto formats = QList<Note::Format>() << Note::Markdown;
+    // tomboy can't handle Markdown. so we need to convert on the fly somewhere
+    return formats;
+}
 
 QString TomboyStorage::findStorageDir() const
 {

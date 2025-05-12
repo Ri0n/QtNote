@@ -35,7 +35,7 @@ class QTNOTE_EXPORT FileStorage : public NoteStorage {
     Q_OBJECT
 public:
     FileStorage(QObject *parent);
-    QString             createNote(const QString &text) override;
+    QString             createNote(const QString &text, Note::Format Format = Note::PlainText) override;
     void                deleteNote(const QString &noteId) override;
     QWidget            *settingsWidget() override;
     QString             tooltip() override;
@@ -51,7 +51,7 @@ protected:
     void ensureChachePopulated();
 
 protected:
-    QString                      fileExt;
+    QStringList                  fileExt;
     QHash<QString, NoteListItem> cache;
     bool                         _cacheValid; /* last limit passed to noteList() */
     QDir                         notesDir;

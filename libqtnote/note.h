@@ -22,23 +22,31 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTE_H
 #define NOTE_H
 
-#include <QSharedPointer>
+#include <QExplicitlySharedDataPointer>
 
-// class NoteData;
-#include "notedata.h"
+#include "qtnote_export.h"
 
 namespace QtNote {
 
+class NoteData;
+
 class QTNOTE_EXPORT Note {
 public:
+    enum Format { Markdown, PlainText, Html };
+
     Note();
+    ~Note();
     Note(NoteData *data);
+    Note(const Note &note);
+    Note(Note &&note);
+    Note &operator=(const Note &note);
 
     bool      isNull();
     void      toTrash();
     QString   text() const;
     QString   title() const;
     NoteData *data() const;
+    Format    format() const;
     qint64    lastChangeElapsed() const;
 
 private:

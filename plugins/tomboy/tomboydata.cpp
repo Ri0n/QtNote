@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "tomboydata.h"
+
 #include <QIcon>
 #include <QtDebug>
 
@@ -37,8 +38,9 @@ bool TomboyData::fromFile(QString fn)
     file.close();
 
     QDomElement root = dom.documentElement();
-    sTitle           = nodeText(root.namedItem("title"));
-    sText            = nodeText(root.namedItem("text"));
+    title_           = nodeText(root.namedItem("title"));
+    text_            = nodeText(root.namedItem("text"));
+    format_          = QtNote::Note::Markdown;
     dtLastChange     = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
     // dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
     dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
@@ -61,14 +63,14 @@ bool TomboyData::saveToFile(const QString &fileName)
     note.setAttribute("xmlns", "http://beatniksoftware.com/tomboy");
     node = dom.createElement("title");
     note.appendChild(node);
-    text = dom.createTextNode(sTitle);
+    text = dom.createTextNode(title_);
     node.appendChild(text);
     node = dom.createElement("text");
     note.appendChild(node);
     node.setAttribute("xml:space", "preserve");
     node2 = dom.createElement("note-content");
     node2.setAttribute("version", "0.1");
-    text = dom.createTextNode(sText);
+    text = dom.createTextNode(text_);
     node2.appendChild(text);
     node.appendChild(node2);
 

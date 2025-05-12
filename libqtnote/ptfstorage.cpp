@@ -38,7 +38,7 @@ namespace QtNote {
 
 PTFStorage::PTFStorage(QObject *parent) : FileStorage(parent), icon(QLatin1String(":/icons/trayicon"))
 {
-    fileExt = "txt";
+    fileExt.append(QLatin1String("txt"));
 }
 
 bool PTFStorage::init()
@@ -82,36 +82,53 @@ QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 Note PTFStorage::note(const QString &noteId)
 {
     if (!noteId.isEmpty()) {
-        QString   fileName = QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId, fileExt));
-        QFileInfo fi(fileName);
-        if (fi.isWritable()) {
-            PTFData *noteData = new PTFData;
-            noteData->fromFile(fileName);
-            return Note(noteData);
+        QFileInfo fi;
+        for (auto const ext : { "md", "txt" }) {
+            fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(ext)));
+            if (fi.exists() || fi.isWritable()) {
+                PTFData *noteData = new PTFData;
+                noteData->fromFile(fi.filePath());
+                return Note(noteData);
+            }
         }
         handleFSError();
     }
     return Note();
 }
 
-QString PTFStorage::saveNote(const QString &noteId, const QString &text)
+QString PTFStorage::saveNote(const QString &noteId, const QString &text, Note::Format format)
 {
     PTFData note;
     QString newNoteId = noteId;
     note.setText(text);
-    if (!note.saveToFile(Utils::fileNameForText(notesDir, note.title(), fileExt, newNoteId))) {
+    auto ext = QString(QLatin1String(format == Note::Markdown ? "md" : "txt"));
+    if (!note.saveToFile(Utils::fileNameForText(notesDir, note.title(), ext, newNoteId))) {
         handleFSError();
         return QString();
     }
-    if (!noteId.isEmpty() && noteId != newNoteId) {
-        notesDir.remove(noteId + '.' + fileExt);
+    if (!noteId.isEmpty()) {
+        if (noteId != newNoteId) {
+            for (auto const ext : { ".md", ".txt" }) {
+                notesDir.remove(noteId + QLatin1String(ext));
+            }
+        } else {
+            for (auto const otherExt : { "md", "txt" }) {
+                if (ext != otherExt) {
+                    notesDir.remove(noteId + QLatin1Char('.') + QLatin1String(otherExt));
+                }
+            }
+        }
     }
     NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange);
     putToCache(item, noteId); // noteId is old one. new one is in item.id
     return newNoteId;
 }
 
-bool PTFStorage::isRichTextAllowed() const { return false; }
+QList<Note::Format> PTFStorage::availableFormats() const
+{
+    static auto formats = QList<Note::Format>() << Note::Markdown << Note::PlainText;
+    return formats;
+}
 
 QString PTFStorage::findStorageDir() const { return Utils::qtnoteDataDir() + QLatin1Char('/') + systemName(); }
 

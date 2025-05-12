@@ -19,25 +19,36 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include "filestorage.h"
+#include "filestoragesettingswidget.h"
+
 #include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QSettings>
 #include <QUuid>
 
-#include "filestorage.h"
-#include "filestoragesettingswidget.h"
+#include <ranges>
 
 namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent) : NoteStorage(parent), _cacheValid(false) { }
 
-QString FileStorage::createNote(const QString &text) { return saveNote(QString(), text); }
+QString FileStorage::createNote(const QString &text, Note::Format Format) { return saveNote(QString(), text, Format); }
 
 void FileStorage::deleteNote(const QString &noteId)
 {
     auto r = cache.find(noteId);
-    if (r != cache.end() && notesDir.remove(QString("%1.%2").arg(noteId, fileExt))) {
+    if (r == cache.end()) {
+        return;
+    }
+    bool deleted = false;
+    for (auto const &ext : std::as_const(fileExt)) {
+        if (notesDir.remove(QString("%1.%2").arg(noteId, ext))) {
+            deleted = true;
+        }
+    }
+    if (deleted) {
         NoteListItem item = r.value();
         cache.erase(r);
         emit noteRemoved(item);
@@ -111,7 +122,13 @@ void FileStorage::ensureChachePopulated()
         return;
     }
     if (isAccessible()) {
-        QFileInfoList files = notesDir.entryInfoList(QStringList(QString("*.") + fileExt), QDir::Files, QDir::Time);
+        QStringList wcards;
+        // could be done with ranges but see https://bugreports.qt.io/browse/QTBUG-120924
+        for (auto const &ext : std::as_const(fileExt)) {
+            wcards.append(QLatin1String("*.") + ext);
+        }
+
+        QFileInfoList files = notesDir.entryInfoList(wcards, QDir::Files, QDir::Time);
         auto          ret   = noteListFromInfoList(files);
         cache.clear();
         for (auto &n : ret) {
