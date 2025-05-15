@@ -361,7 +361,11 @@ bool NoteWidget::isMarkdown() const { return !mdModeAct->isVisible(); }
 
 NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 
-void NoteWidget::setAcceptRichText(bool state) { ui->noteEdit->setAcceptRichText(state); }
+void NoteWidget::setAcceptRichText(bool state)
+{
+    _features.setFlag(RichText, state);
+    ui->noteEdit->setAcceptRichText(state);
+}
 
 void NoteWidget::setNoteId(const QString &noteId)
 {
@@ -376,12 +380,14 @@ void NoteWidget::switchToMarkdown()
 {
     ui->noteEdit->blockSignals(true);
     _linkHighlighter->reset();
+    ui->noteEdit->setAcceptRichText(true);
+
     auto txt   = text();
     auto nindx = txt.indexOf(QLatin1Char('\n'));
     if (nindx == -1 || nindx == txt.size() - 1 || txt[nindx + 1] == QLatin1Char('\n')) {
         ui->noteEdit->setMarkdown(txt);
     } else {
-#if QT_VERSION < QT_VERSION_CHECK(6,9,0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
         ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + txt.mid(nindx));
 #else
         ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + QStringView(txt).mid(nindx));
@@ -397,6 +403,7 @@ void NoteWidget::switchToText()
 {
     ui->noteEdit->blockSignals(true);
     _linkHighlighter->reset();
+    ui->noteEdit->setAcceptRichText(false);
 
     auto cursor = ui->noteEdit->textCursor();
     cursor.clearSelection();
@@ -448,17 +455,17 @@ void NoteWidget::onPrintClicked()
 
 void NoteWidget::onSaveClicked()
 {
-    enum Format { Text, RichText };
+    enum class Format { Text, RichText };
     static QMap<Format, QString> allFormats;
     if (allFormats.isEmpty()) {
-        allFormats.insert(Text, tr("Text files (*.txt)"));
-        allFormats.insert(RichText, tr("HTML files (*.html)"));
+        allFormats.insert(Format::Text, tr("Text files (*.txt)"));
+        allFormats.insert(Format::RichText, tr("HTML files (*.html)"));
     }
 
     if (_extFileName.isEmpty() || !QFile::exists(_extFileName)) {
-        QStringList filters = QStringList() << allFormats[Text];
+        QStringList filters = QStringList() << allFormats[Format::Text];
         if (_features & RichText) {
-            filters << allFormats[RichText];
+            filters << allFormats[Format::RichText];
         }
         _extFileName = QFileDialog::getSaveFileName(this, tr("Save Note As"),
                                                     QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
@@ -469,7 +476,7 @@ void NoteWidget::onSaveClicked()
         if (f.open(QIODevice::WriteOnly)) {
             QString text;
             Format  format = allFormats.key(_extSelecteFilter);
-            if (format == RichText) {
+            if (format == Format::RichText) {
                 text = ui->noteEdit->toHtml();
             } else {
                 text = ui->noteEdit->toPlainText();

@@ -23,7 +23,7 @@ class QTNOTE_EXPORT NoteWidget : public QWidget {
     Q_OBJECT
 
 public:
-    enum Feature { RichText };
+    enum Feature { RichText = 1 };
     Q_DECLARE_FLAGS(Features, Feature)
 
     explicit NoteWidget(const QString &storageId, const QString &noteId);
