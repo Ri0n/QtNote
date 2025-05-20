@@ -411,6 +411,16 @@ void NoteWidget::switchToText()
     ui->noteEdit->setTextCursor(cursor);
 
     auto md = ui->noteEdit->toMarkdown().trimmed();
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+    // there is some bug in qt5 requiring this hack
+    auto parts = md.split("\n    ```");
+    for (int i = 1; i < parts.count() - 1; i+=2) {
+        parts[i].replace("\n\n", "\n");
+    }
+    md = parts.join("\n```");
+#endif
+
     ui->noteEdit->setPlainText(md);
 
     mdModeAct->setVisible(true);
