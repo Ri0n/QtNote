@@ -39,6 +39,7 @@ namespace QtNote {
 PTFStorage::PTFStorage(QObject *parent) : FileStorage(parent), icon(QLatin1String(":/icons/trayicon"))
 {
     fileExt.append(QLatin1String("txt"));
+    fileExt.append(QLatin1String("md"));
 }
 
 bool PTFStorage::init()
@@ -83,7 +84,7 @@ Note PTFStorage::note(const QString &noteId)
 {
     if (!noteId.isEmpty()) {
         QFileInfo fi;
-        for (auto const ext : { "md", "txt" }) {
+        for (auto const ext : std::as_const(fileExt)) {
             fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(ext)));
             if (fi.exists() || fi.isWritable()) {
                 PTFData *noteData = new PTFData;
@@ -108,13 +109,13 @@ QString PTFStorage::saveNote(const QString &noteId, const QString &text, Note::F
     }
     if (!noteId.isEmpty()) {
         if (noteId != newNoteId) {
-            for (auto const ext : { ".md", ".txt" }) {
-                notesDir.remove(noteId + QLatin1String(ext));
+            for (auto const &ext : std::as_const(fileExt)) {
+                notesDir.remove(noteId + QLatin1Char('.') + ext);
             }
         } else {
-            for (auto const otherExt : { "md", "txt" }) {
+            for (auto const &otherExt : std::as_const(fileExt)) {
                 if (ext != otherExt) {
-                    notesDir.remove(noteId + QLatin1Char('.') + QLatin1String(otherExt));
+                    notesDir.remove(noteId + QLatin1Char('.') + otherExt);
                 }
             }
         }

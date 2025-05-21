@@ -183,10 +183,13 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
 
-    QFont     defaultFont;
     QSettings s;
-    defaultFont.fromString(s.value("ui.default-font").toString());
-    setFont(defaultFont);
+    auto fs = s.value("ui.default-font").toString();
+    if (!fs.isEmpty()) {
+        QFont defaultFont;
+        defaultFont.fromString(fs);
+        setFont(defaultFont);
+    }
 
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
 

@@ -1,10 +1,9 @@
-qtnote (3.2.96) UNRELEASED; urgency=medium
+qtnote (3.2.99) UNRELEASED; urgency=medium
 
   * Ubuntu 22.04 compat
-  * New release
-  * New release
+  * Markdown support
 
- -- Sergei Ilinykh <rion4ik@gmail.com>  Mon, 12 May 2025 15:17:25 +0300
+ -- Sergei Ilinykh <rion4ik@gmail.com>  Wed, 21 May 2025 01:41:27 +0300
 
 qtnote (3.2.0) noble; urgency=medium
 
