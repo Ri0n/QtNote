@@ -8,7 +8,7 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
-import com.github.ri0n.qtnote 1.0 as QtNote
+import plasma.applet.com.github.ri0n.qtnote 1.0 as QtNote
 
 PlasmoidItem {
     id: root
@@ -46,9 +46,20 @@ PlasmoidItem {
     fullRepresentation: FullRepresentation {
         plasmoidItem: root
         notesModel: notesModel
+        newNoteAction: newNoteAction
     }
 
     Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            id: newNoteAction
+            text: qsTr("New Note")
+            icon.name: "list-add-symbolic"
+            priority: PlasmaCore.Action.HighPriority
+            onTriggered: {
+                notesModel.createNote();
+                root.expanded = false;
+            }
+        },
         PlasmaCore.Action {
             text: qsTr("Configure QtNote...")
             icon.name: "configure"
@@ -63,6 +74,12 @@ PlasmoidItem {
             text: qsTr("About QtNote")
             icon.name: "help-about"
             onTriggered: notesModel.showAbout()
+        },
+        PlasmaCore.Action {
+            text: qsTr("Close QtNote")
+            icon.name: "window-close"
+            visible: notesModel.available
+            onTriggered: notesModel.quit()
         }
     ]
 }

@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
@@ -18,25 +19,30 @@ PlasmaExtras.Representation {
 
     required property PlasmoidItem plasmoidItem
     required property var notesModel
+    required property var newNoteAction
 
     collapseMarginsHint: true
     implicitWidth: Kirigami.Units.gridUnit * 18
     implicitHeight: Kirigami.Units.gridUnit * 22
 
-    header: PlasmaExtras.BasicPlasmoidHeading {
-        leftPadding: mirrored ? 0 : Kirigami.Units.smallSpacing
-        rightPadding: mirrored ? Kirigami.Units.smallSpacing : 0
+    readonly property bool hasFilter: filterField.text.length > 0
 
-        PlasmaComponents3.ToolButton {
-            icon.name: "list-add-symbolic"
-            text: qsTr("New Note")
-            display: PlasmaComponents3.AbstractButton.IconOnly
-            onClicked: {
-                root.notesModel.createNote();
-                root.plasmoidItem.expanded = false;
+    header: PlasmaExtras.PlasmoidHeading {
+        visible: true
+
+        contentItem: RowLayout {
+            spacing: Kirigami.Units.smallSpacing
+
+            PlasmaExtras.SearchField {
+                id: filterField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search notes")
+                onTextChanged: notesView.currentIndex = 0
+                onAccepted: if (notesView.currentIndex >= 0) {
+                    const sourceIndex = notesView.model.mapToSource(notesView.model.index(notesView.currentIndex, 0));
+                    root.notesModel.openNote(sourceIndex.row);
+                }
             }
-            PlasmaComponents3.ToolTip.text: text
-            PlasmaComponents3.ToolTip.visible: hovered
         }
     }
 
@@ -45,9 +51,17 @@ PlasmaExtras.Representation {
 
         ListView {
             id: notesView
+            readonly property var proxyModel: notesProxy
 
             clip: true
-            model: root.notesModel
+            model: notesProxy
+
+            KItemModels.KSortFilterProxyModel {
+                id: notesProxy
+                sourceModel: root.notesModel
+                filterRoleName: "title"
+                filterRegularExpression: RegExp(filterField.text, "i")
+            }
 
             delegate: PlasmaComponents3.ItemDelegate {
                 id: noteDelegate
@@ -62,7 +76,8 @@ PlasmaExtras.Representation {
                 Accessible.description: qsTr("Stored in %1").arg(storageId)
 
                 onClicked: {
-                    root.notesModel.openNote(index);
+                    const sourceIndex = notesView.proxyModel.mapToSource(notesView.proxyModel.index(index, 0));
+                    root.notesModel.openNote(sourceIndex.row);
                     root.plasmoidItem.expanded = false;
                 }
             }
@@ -73,9 +88,11 @@ PlasmaExtras.Representation {
                 visible: notesView.count === 0 && !root.notesModel.loading
                 iconName: root.notesModel.available ? "edit-none" : "network-disconnect"
                 text: root.notesModel.available
-                    ? qsTr("No notes yet")
+                    ? root.hasFilter
+                        ? qsTr("No notes match the search")
+                        : qsTr("No notes yet")
                     : qsTr("QtNote is not running")
-                helpfulAction: newNoteAction
+                helpfulAction: placeholderNewNoteAction
             }
 
             PlasmaComponents3.BusyIndicator {
@@ -87,9 +104,10 @@ PlasmaExtras.Representation {
     }
 
     QQC2.Action {
-        id: newNoteAction
-        text: qsTr("Create a Note")
-        icon.name: "list-add"
-        onTriggered: root.notesModel.createNote()
+        id: placeholderNewNoteAction
+
+        text: root.newNoteAction.text
+        icon.name: root.newNoteAction.icon.name
+        onTriggered: root.newNoteAction.trigger()
     }
 }

@@ -8,8 +8,10 @@ if(UNIXLIKE AND QT_VERSION_MAJOR GREATER_EQUAL 6)
     find_package(ECM QUIET NO_MODULE)
     if(ECM_FOUND)
         set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+        find_package(KF6Config QUIET)
+        find_package(KF6CoreAddons QUIET)
         find_package(Plasma 6.0 QUIET)
-        if(Plasma_FOUND)
+        if(KF6Config_FOUND AND KF6CoreAddons_FOUND AND Plasma_FOUND)
             set(qtnote_plasmoid_buildable ON)
         endif()
     endif()
@@ -18,10 +20,13 @@ endif()
 if(qtnote_plasmoid_buildable)
     qt_policy(SET QTP0001 NEW)
     include(KDEInstallDirs)
+    include("${Plasma_DIR}/PlasmaMacros.cmake")
+
+    set(qtnote_plasmoid_id com.github.ri0n.qtnote)
 
     install(
         DIRECTORY plasmoid/package/
-        DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/com.github.ri0n.qtnote
+        DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/${qtnote_plasmoid_id}
         COMPONENT Executable
         PATTERN ".svn" EXCLUDE
         PATTERN "*.qmlc" EXCLUDE
@@ -30,20 +35,35 @@ if(qtnote_plasmoid_buildable)
         PATTERN "dummydata" EXCLUDE
     )
 
-    set(qtnote_qml_module_dir
-        ${CMAKE_CURRENT_BINARY_DIR}/qml/com/github/ri0n/qtnote
-    )
-    qt_add_qml_module(plasmoid_qtnote
-        URI com.github.ri0n.qtnote
-        VERSION 1.0
-        PLUGIN_TARGET plasmoid_qtnote
-        OUTPUT_DIRECTORY ${qtnote_qml_module_dir}
-        SOURCES
+    set(PLASMA_SKIP_APPLET_INSTALL ON)
+    plasma_add_applet(${qtnote_plasmoid_id}
+        QML_SOURCES
+            plasmoid/package/contents/ui/main.qml
+            plasmoid/package/contents/ui/CompactRepresentation.qml
+            plasmoid/package/contents/ui/FullRepresentation.qml
+        CPP_SOURCES
+            plasmoid/appletplugin.cpp
             plasmoid/plasmoid.cpp
             plasmoid/plasmoid.h
+        QML_ARGS
+            VERSION 1.0
     )
-    target_include_directories(plasmoid_qtnote PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plasmoid)
-    target_link_libraries(plasmoid_qtnote PRIVATE Qt6::Core Qt6::DBus Qt6::Qml)
+    unset(PLASMA_SKIP_APPLET_INSTALL)
+
+    add_custom_target(plasmoid_qtnote DEPENDS ${qtnote_plasmoid_id})
+    set_target_properties(${qtnote_plasmoid_id} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/plasma/applets"
+    )
+    target_include_directories(${qtnote_plasmoid_id} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plasmoid)
+    target_link_libraries(${qtnote_plasmoid_id} PRIVATE
+        Qt6::Core Qt6::DBus Qt6::Qml
+        KF6::CoreAddons Plasma::Plasma
+    )
+    install(
+        TARGETS ${qtnote_plasmoid_id}
+        DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets
+        COMPONENT Executable
+    )
 
     if(QTNOTE_DEVEL)
         set(qtnote_devel_qml_module_dir
@@ -65,19 +85,6 @@ if(qtnote_plasmoid_buildable)
             QTNOTE_DEVEL_TRANSLATIONSDIR="${CMAKE_BINARY_DIR}/translations"
         )
     endif()
-
-    install(
-        TARGETS plasmoid_qtnote
-        DESTINATION ${KDE_INSTALL_QMLDIR}/com/github/ri0n/qtnote
-        COMPONENT Executable
-    )
-    install(
-        FILES
-            ${qtnote_qml_module_dir}/qmldir
-            ${qtnote_qml_module_dir}/plasmoid_qtnote.qmltypes
-        DESTINATION ${KDE_INSTALL_QMLDIR}/com/github/ri0n/qtnote
-        COMPONENT Executable
-    )
 else()
     message(STATUS "Plasma 6 development files not found; the QtNote plasmoid will not be built")
 endif()

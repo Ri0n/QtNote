@@ -441,7 +441,7 @@ bool KDEIntegrationTray::updateDevelopmentMainQml(const QString &sourcePath, con
     QByteArray content = source.readAll();
     source.close();
 
-    content.replace("import com.github.ri0n.qtnote 1.0 as QtNote", "import \"QtNote\" as QtNote");
+    content.replace("import plasma.applet.com.github.ri0n.qtnote 1.0 as QtNote", "import \"QtNote\" as QtNote");
 
     const QString iconPath
         = QFileInfo(QFileInfo(sourcePath)
