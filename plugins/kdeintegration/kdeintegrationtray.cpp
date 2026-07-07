@@ -37,9 +37,11 @@ namespace QtNote {
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 namespace {
-    constexpr auto ServiceName = "com.github.ri0n.QtNote";
-    constexpr auto ObjectPath  = "/QtNote";
-    constexpr auto PlasmoidId  = "com.github.ri0n.qtnote";
+    constexpr auto ServiceName          = "com.github.ri0n.QtNote";
+    constexpr auto ObjectPath           = "/QtNote";
+    constexpr auto PlasmoidId           = "com.github.ri0n.qtnote";
+    constexpr int  DefaultNotesPageSize = 50;
+    constexpr int  MaxNotesPageSize     = 200;
 #ifdef QTNOTE_DEVEL
     constexpr auto DevelopmentPlasmoidPackageSetting = "developmentPlasmoidPackageLink";
     constexpr auto DevelopmentPlasmoidQmlSetting     = "developmentPlasmoidQmlLinks";
@@ -98,16 +100,16 @@ KDEIntegrationTray::~KDEIntegrationTray()
     }
 }
 
-QString KDEIntegrationTray::notesJson() const
+QString KDEIntegrationTray::notesJson(int offset, int limit, const QString &query) const
 {
-    const int count = qMax(0, QSettings().value("ui.menu-notes-amount", 15).toInt());
-    if (count == 0)
-        return QStringLiteral("[]");
+    offset = qMax(0, offset);
+    limit  = limit > 0 ? qMin(limit, MaxNotesPageSize) : DefaultNotesPageSize;
 
-    const auto notes = NoteManager::instance()->noteList(count);
+    const auto notes = NoteManager::instance()->noteList(offset, limit + 1, query);
 
     QJsonArray result;
-    for (const auto &note : notes) {
+    for (int i = 0, count = qMin(limit, notes.size()); i < count; ++i) {
+        const auto &note = notes.at(i);
         result.append(QJsonObject {
             { "id", note.id },
             { "storageId", note.storageId },
@@ -115,7 +117,11 @@ QString KDEIntegrationTray::notesJson() const
             { "modified", note.lastModify.toUTC().toString(Qt::ISODateWithMs) },
         });
     }
-    return QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact));
+    return QString::fromUtf8(QJsonDocument(QJsonObject {
+                                               { "notes", result },
+                                               { "hasMore", notes.size() > limit },
+                                           })
+                                 .toJson(QJsonDocument::Compact));
 }
 
 void KDEIntegrationTray::openNote(const QString &storageId, const QString &noteId)

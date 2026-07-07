@@ -66,6 +66,11 @@ NotesModel::NotesModel(QObject *parent) : QAbstractListModel(parent)
 {
     loadTranslations();
 
+    m_queryRefreshTimer = new QTimer(this);
+    m_queryRefreshTimer->setSingleShot(true);
+    m_queryRefreshTimer->setInterval(250);
+    connect(m_queryRefreshTimer, &QTimer::timeout, this, &NotesModel::refresh);
+
     auto bus         = QDBusConnection::sessionBus();
     m_serviceWatcher = new QDBusServiceWatcher(
         QLatin1String(ServiceName), bus,
@@ -116,57 +121,138 @@ QHash<int, QByteArray> NotesModel::roleNames() const
     };
 }
 
-bool NotesModel::available() const { return m_available; }
-bool NotesModel::loading() const { return m_loading; }
+bool    NotesModel::available() const { return m_available; }
+bool    NotesModel::loading() const { return m_loading; }
+bool    NotesModel::loadingMore() const { return m_loadingMore; }
+bool    NotesModel::hasMore() const { return m_hasMore; }
+QString NotesModel::query() const { return m_query; }
+
+void NotesModel::setQuery(const QString &query)
+{
+    const QString normalizedQuery = query.trimmed();
+    if (m_query == normalizedQuery)
+        return;
+
+    m_query = normalizedQuery;
+    emit queryChanged();
+
+    ++m_requestSerial;
+    if (m_available && m_interface)
+        setLoading(true);
+    setLoadingMore(false);
+    m_queryRefreshTimer->start();
+}
 
 void NotesModel::refresh()
 {
+    m_queryRefreshTimer->stop();
     if (!m_available || !m_interface) {
         startBackend();
         return;
     }
 
-    setLoading(true);
+    requestPage(0, false);
+}
+
+void NotesModel::loadMore()
+{
+    if (!m_available || !m_interface) {
+        startBackend();
+        return;
+    }
+    if (!m_hasMore || m_loading || m_loadingMore)
+        return;
+
+    requestPage(m_items.size(), true);
+}
+
+bool NotesModel::parseNotesResponse(const QString &response, QList<Item> *items, bool *hasMore) const
+{
+    QJsonParseError error;
+    const auto      document = QJsonDocument::fromJson(response.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !document.isObject()) {
+        qCWarning(logPlasmoid) << "Invalid notes response:" << error.errorString();
+        return false;
+    }
+
+    const auto object     = document.object();
+    const auto notesValue = object.value(QStringLiteral("notes"));
+    if (!notesValue.isArray()) {
+        qCWarning(logPlasmoid) << "Invalid notes response: missing notes array";
+        return false;
+    }
+
+    const auto notes = notesValue.toArray();
+    items->clear();
+    items->reserve(notes.size());
+    for (const auto &value : notes) {
+        const auto object = value.toObject();
+        Item       item {
+            object.value(QStringLiteral("id")).toString(),
+            object.value(QStringLiteral("storageId")).toString(),
+            object.value(QStringLiteral("title")).toString(),
+            object.value(QStringLiteral("modified")).toString(),
+        };
+        if (!item.id.isEmpty() && !item.storageId.isEmpty())
+            items->append(std::move(item));
+    }
+    *hasMore = object.value(QStringLiteral("hasMore")).toBool(false);
+    return true;
+}
+
+void NotesModel::requestPage(int offset, bool append)
+{
+    if (append) {
+        setLoadingMore(true);
+    } else {
+        setLoading(true);
+        setLoadingMore(false);
+    }
+
     const quint64 requestSerial = ++m_requestSerial;
-    auto         *watcher = new QDBusPendingCallWatcher(m_interface->asyncCall(QStringLiteral("notesJson")), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher, requestSerial]() {
+    auto         *watcher       = new QDBusPendingCallWatcher(
+        m_interface->asyncCall(QStringLiteral("notesJson"), offset, m_pageSize, m_query), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher, requestSerial, append]() {
         const QDBusPendingReply<QString> reply = *watcher;
         watcher->deleteLater();
         if (requestSerial != m_requestSerial)
             return;
 
-        setLoading(false);
+        if (append)
+            setLoadingMore(false);
+        else
+            setLoading(false);
+
         if (reply.isError()) {
             qCWarning(logPlasmoid) << "Failed to fetch notes:" << reply.error().message();
-            return;
-        }
-
-        QJsonParseError error;
-        const auto      document = QJsonDocument::fromJson(reply.value().toUtf8(), &error);
-        if (error.error != QJsonParseError::NoError || !document.isArray()) {
-            qCWarning(logPlasmoid) << "Invalid notes response:" << error.errorString();
+            setHasMore(false);
             return;
         }
 
         QList<Item> items;
-        const auto  array = document.array();
-        items.reserve(array.size());
-        for (const auto &value : array) {
-            const auto object = value.toObject();
-            Item       item {
-                object.value(QStringLiteral("id")).toString(),
-                object.value(QStringLiteral("storageId")).toString(),
-                object.value(QStringLiteral("title")).toString(),
-                object.value(QStringLiteral("modified")).toString(),
-            };
-            if (!item.id.isEmpty() && !item.storageId.isEmpty())
-                items.append(std::move(item));
+        bool        hasMore = false;
+        if (!parseNotesResponse(reply.value(), &items, &hasMore)) {
+            setHasMore(false);
+            return;
         }
 
-        beginResetModel();
-        m_items = std::move(items);
-        endResetModel();
-        emit countChanged();
+        if (append) {
+            if (!items.isEmpty()) {
+                const int first = m_items.size();
+                beginInsertRows({}, first, first + items.size() - 1);
+                for (auto &item : items)
+                    m_items.append(std::move(item));
+                endInsertRows();
+                emit countChanged();
+            }
+        } else {
+            beginResetModel();
+            m_items = std::move(items);
+            endResetModel();
+            emit countChanged();
+        }
+
+        setHasMore(hasMore);
     });
 }
 
@@ -196,7 +282,10 @@ void NotesModel::serviceRegistered()
 void NotesModel::serviceUnregistered()
 {
     ++m_requestSerial;
+    m_queryRefreshTimer->stop();
     setLoading(false);
+    setLoadingMore(false);
+    setHasMore(false);
     setAvailable(false);
     delete m_interface;
     m_interface = nullptr;
@@ -222,6 +311,22 @@ void NotesModel::setLoading(bool loading)
         return;
     m_loading = loading;
     emit loadingChanged();
+}
+
+void NotesModel::setLoadingMore(bool loadingMore)
+{
+    if (m_loadingMore == loadingMore)
+        return;
+    m_loadingMore = loadingMore;
+    emit loadingMoreChanged();
+}
+
+void NotesModel::setHasMore(bool hasMore)
+{
+    if (m_hasMore == hasMore)
+        return;
+    m_hasMore = hasMore;
+    emit hasMoreChanged();
 }
 
 void NotesModel::call(const QString &method)

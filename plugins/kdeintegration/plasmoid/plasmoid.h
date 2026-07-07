@@ -7,6 +7,7 @@
 
 class QDBusInterface;
 class QDBusServiceWatcher;
+class QTimer;
 
 class NotesModel : public QAbstractListModel {
     Q_OBJECT
@@ -14,6 +15,9 @@ class NotesModel : public QAbstractListModel {
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
+    Q_PROPERTY(bool loadingMore READ loadingMore NOTIFY loadingMoreChanged)
+    Q_PROPERTY(bool hasMore READ hasMore NOTIFY hasMoreChanged)
+    Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
 
 public:
     enum Role {
@@ -30,10 +34,15 @@ public:
     QVariant               data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    bool available() const;
-    bool loading() const;
+    bool    available() const;
+    bool    loading() const;
+    bool    loadingMore() const;
+    bool    hasMore() const;
+    QString query() const;
+    void    setQuery(const QString &query);
 
     Q_INVOKABLE void refresh();
+    Q_INVOKABLE void loadMore();
     Q_INVOKABLE void openNote(int row);
     Q_INVOKABLE void createNote();
     Q_INVOKABLE void showNoteManager();
@@ -45,6 +54,9 @@ signals:
     void countChanged();
     void availableChanged();
     void loadingChanged();
+    void loadingMoreChanged();
+    void hasMoreChanged();
+    void queryChanged();
 
 private slots:
     void serviceRegistered();
@@ -60,6 +72,10 @@ private:
 
     void setAvailable(bool available);
     void setLoading(bool loading);
+    void setLoadingMore(bool loadingMore);
+    void setHasMore(bool hasMore);
+    bool parseNotesResponse(const QString &response, QList<Item> *items, bool *hasMore) const;
+    void requestPage(int offset, bool append);
     void call(const QString &method);
     void createInterface();
     bool startBackend();
@@ -67,13 +83,18 @@ private:
     void runPendingCall();
 
     QList<Item>          m_items;
-    QDBusInterface      *m_interface      = nullptr;
-    QDBusServiceWatcher *m_serviceWatcher = nullptr;
+    QDBusInterface      *m_interface         = nullptr;
+    QDBusServiceWatcher *m_serviceWatcher    = nullptr;
+    QTimer              *m_queryRefreshTimer = nullptr;
     QString              m_pendingCall;
+    QString              m_query;
     bool                 m_available     = false;
     bool                 m_loading       = false;
+    bool                 m_loadingMore   = false;
+    bool                 m_hasMore       = false;
     bool                 m_starting      = false;
     quint64              m_requestSerial = 0;
+    int                  m_pageSize      = 50;
 };
 
 #endif

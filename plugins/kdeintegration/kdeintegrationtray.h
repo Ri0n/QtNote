@@ -28,7 +28,7 @@ signals:
     Q_SCRIPTABLE void notesChanged();
 
 public slots:
-    Q_SCRIPTABLE QString notesJson() const;
+    Q_SCRIPTABLE QString notesJson(int offset, int limit, const QString &query) const;
     Q_SCRIPTABLE void    openNote(const QString &storageId, const QString &noteId);
     Q_SCRIPTABLE void    createNote();
     Q_SCRIPTABLE void    showNoteManager();

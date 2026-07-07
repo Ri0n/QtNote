@@ -8,7 +8,6 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
@@ -25,7 +24,7 @@ PlasmaExtras.Representation {
     implicitWidth: Kirigami.Units.gridUnit * 18
     implicitHeight: Kirigami.Units.gridUnit * 22
 
-    readonly property bool hasFilter: filterField.text.length > 0
+    readonly property bool hasFilter: root.notesModel.query.length > 0
 
     header: PlasmaExtras.PlasmoidHeading {
         visible: true
@@ -37,10 +36,12 @@ PlasmaExtras.Representation {
                 id: filterField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Search notes")
-                onTextChanged: notesView.currentIndex = 0
+                onTextChanged: {
+                    notesView.currentIndex = 0;
+                    root.notesModel.query = text;
+                }
                 onAccepted: if (notesView.currentIndex >= 0) {
-                    const sourceIndex = notesView.model.mapToSource(notesView.model.index(notesView.currentIndex, 0));
-                    root.notesModel.openNote(sourceIndex.row);
+                    root.notesModel.openNote(notesView.currentIndex);
                 }
             }
         }
@@ -51,17 +52,23 @@ PlasmaExtras.Representation {
 
         ListView {
             id: notesView
-            readonly property var proxyModel: notesProxy
 
             clip: true
-            model: notesProxy
+            model: root.notesModel
 
-            KItemModels.KSortFilterProxyModel {
-                id: notesProxy
-                sourceModel: root.notesModel
-                filterRoleName: "title"
-                filterRegularExpression: RegExp(filterField.text, "i")
+            function maybeLoadMore() {
+                if (root.notesModel.hasMore
+                    && !root.notesModel.loading
+                    && !root.notesModel.loadingMore
+                    && contentY + height >= contentHeight - Kirigami.Units.gridUnit * 4) {
+                    root.notesModel.loadMore();
+                }
             }
+
+            onContentYChanged: maybeLoadMore()
+            onContentHeightChanged: maybeLoadMore()
+            onHeightChanged: maybeLoadMore()
+            onCountChanged: maybeLoadMore()
 
             delegate: PlasmaComponents3.ItemDelegate {
                 id: noteDelegate
@@ -76,16 +83,29 @@ PlasmaExtras.Representation {
                 Accessible.description: qsTr("Stored in %1").arg(storageId)
 
                 onClicked: {
-                    const sourceIndex = notesView.proxyModel.mapToSource(notesView.proxyModel.index(index, 0));
-                    root.notesModel.openNote(sourceIndex.row);
+                    root.notesModel.openNote(index);
                     root.plasmoidItem.expanded = false;
+                }
+            }
+
+            footer: Item {
+                implicitWidth: footerBusyIndicator.implicitWidth
+                height: root.notesModel.loadingMore ? Kirigami.Units.gridUnit * 2 : 0
+
+                PlasmaComponents3.BusyIndicator {
+                    id: footerBusyIndicator
+
+                    x: Math.max(0, (notesView.width - width) / 2)
+                    anchors.verticalCenter: parent.verticalCenter
+                    running: root.notesModel.loadingMore
+                    visible: running
                 }
             }
 
             PlasmaExtras.PlaceholderMessage {
                 anchors.centerIn: parent
                 width: Math.max(0, parent.width - Kirigami.Units.gridUnit * 2)
-                visible: notesView.count === 0 && !root.notesModel.loading
+                visible: notesView.count === 0 && !root.notesModel.loading && !root.notesModel.loadingMore
                 iconName: root.notesModel.available ? "edit-none" : "network-disconnect"
                 text: root.notesModel.available
                     ? root.hasFilter

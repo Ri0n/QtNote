@@ -65,6 +65,7 @@ public:
     bool loadAll();
 
     virtual QList<NoteListItem> noteList(int count = -1) const; // virtual for plugins
+    QList<NoteListItem>         noteList(int offset, int limit, const QString &titleFilter) const;
 
     Note note(const QString &storageId, const QString &noteId);
 

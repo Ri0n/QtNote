@@ -169,6 +169,30 @@ QList<NoteListItem> NoteManager::noteList(int count) const
     return ret.mid(0, count);
 }
 
+QList<NoteListItem> NoteManager::noteList(int offset, int limit, const QString &titleFilter) const
+{
+    offset = qMax(0, offset);
+    if (limit <= 0)
+        return {};
+
+    const QString filter = titleFilter.trimmed();
+    auto          notes  = filter.isEmpty() ? noteList(offset + limit) : noteList(-1);
+
+    if (!filter.isEmpty()) {
+        QList<NoteListItem> filtered;
+        filtered.reserve(notes.size());
+        for (const auto &note : std::as_const(notes)) {
+            if (note.title.contains(filter, Qt::CaseInsensitive))
+                filtered.append(note);
+        }
+        notes = std::move(filtered);
+    }
+
+    if (offset >= notes.size())
+        return {};
+    return notes.mid(offset, limit);
+}
+
 Note NoteManager::note(const QString &storageId, const QString &noteId)
 {
     if (!storageId.isEmpty() && !noteId.isEmpty()) {

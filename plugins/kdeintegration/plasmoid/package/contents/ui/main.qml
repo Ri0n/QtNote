@@ -25,7 +25,9 @@ PlasmoidItem {
     toolTipSubText: notesModel.available
         ? notesModel.count === 1
             ? qsTr("1 recent note")
-            : qsTr("%1 recent notes").arg(notesModel.count)
+            : notesModel.hasMore
+                ? qsTr("%1+ recent notes").arg(notesModel.count)
+                : qsTr("%1 recent notes").arg(notesModel.count)
         : qsTr("QtNote is not running")
 
     onExpandedChanged: {
