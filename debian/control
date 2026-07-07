@@ -23,6 +23,7 @@ Description: QtNote development files
 Package: qtnote
 Architecture: any
 Depends: libqtnote3 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Recommends: wl-clipboard
 Description: Note-taking application written with Qt in mind.
  It's mostly Tomboy clone but with less features. So it's app
  which lives in your system tray and allows you to make notes quickly

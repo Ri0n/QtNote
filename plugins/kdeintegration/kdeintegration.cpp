@@ -6,6 +6,8 @@
 #endif
 
 #include <QAction>
+#include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QWidget>
 #include <QWindow>
 #include <QtPlugin>
@@ -16,6 +18,8 @@
 #include "qtnote_config.h"
 
 namespace QtNote {
+
+Q_LOGGING_CATEGORY(logKdeIntegration, "qtnote.kdeintegration")
 
 static const QLatin1String pluginId("kde_de");
 
@@ -74,25 +78,38 @@ bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequenc
         act->setObjectName(id);
         _shortcuts.insert(id, act);
     }
-    KGlobalAccel::setGlobalShortcut(act, key);
+    const bool registered = KGlobalAccel::setGlobalShortcut(act, key);
+    if (!registered) {
+        qCWarning(logKdeIntegration).noquote()
+            << "registerGlobalShortcut failed"
+            << "id=" << id << "text=" << action->text() << "key=" << key.toString(QKeySequence::NativeText)
+            << "platform=" << QGuiApplication::platformName();
+    }
     connect(act, SIGNAL(triggered()), action, SLOT(trigger()), Qt::UniqueConnection);
-    return true;
+    return registered;
 }
 
 bool KDEIntegration::updateGlobalShortcut(const QString &id, const QKeySequence &key)
 {
     auto act = _shortcuts.value(id);
     if (!act) {
+        qCWarning(logKdeIntegration) << "updateGlobalShortcut: no action for id" << id
+                                     << "key=" << key.toString(QKeySequence::NativeText);
         return false;
     }
-    KGlobalAccel::setGlobalShortcut(act, key);
-    return true;
+    const bool registered = KGlobalAccel::setGlobalShortcut(act, key);
+    if (!registered) {
+        qCWarning(logKdeIntegration).noquote() << "updateGlobalShortcut failed"
+                                               << "id=" << id << "key=" << key.toString(QKeySequence::NativeText);
+    }
+    return registered;
 }
 
 void KDEIntegration::setGlobalShortcutEnabled(const QString &id, bool enabled)
 {
     auto act = _shortcuts.value(id);
     if (!act) {
+        qCWarning(logKdeIntegration) << "setGlobalShortcutEnabled: no action for id" << id << "enabled=" << enabled;
         return;
     }
     act->setEnabled(enabled);

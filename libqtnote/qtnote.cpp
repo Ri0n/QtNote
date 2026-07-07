@@ -4,14 +4,17 @@
 #include <QDataStream>
 #include <QDialog>
 #include <QDir>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QLoggingCategory>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPluginLoader>
 #include <QProcess>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTranslator>
@@ -45,6 +48,8 @@
 void initResources() { Q_INIT_RESOURCE(main); }
 
 namespace QtNote {
+
+Q_LOGGING_CATEGORY(logMain, "qtnote.main")
 
 class Main::Private : public QObject {
     Q_OBJECT
@@ -307,7 +312,31 @@ void Main::createNewNoteFromSelection()
 {
     QString contents;
 #ifdef Q_OS_LINUX
-    contents = QApplication::clipboard()->text(QClipboard::Selection);
+    const QString platformName = QGuiApplication::platformName();
+    if (platformName.contains(QLatin1String("wayland"), Qt::CaseInsensitive)) {
+        const QString wlPaste = QStandardPaths::findExecutable(QStringLiteral("wl-paste"));
+        if (wlPaste.isEmpty()) {
+            qCWarning(logMain) << "wl-paste not found, falling back to QClipboard::Selection";
+            contents = QApplication::clipboard()->text(QClipboard::Selection);
+        } else {
+            QProcess proc;
+            proc.start(wlPaste, { QStringLiteral("-p") });
+            if (!proc.waitForStarted()) {
+                qCWarning(logMain) << "failed to start wl-paste:" << proc.errorString();
+            } else if (!proc.waitForFinished(3000)) {
+                qCWarning(logMain) << "wl-paste timed out";
+                proc.kill();
+                proc.waitForFinished();
+            } else if (proc.exitStatus() != QProcess::NormalExit || proc.exitCode() != 0) {
+                qCWarning(logMain) << "wl-paste failed" << proc.exitStatus() << proc.exitCode()
+                                   << proc.readAllStandardError();
+            } else {
+                contents = QString::fromUtf8(proc.readAllStandardOutput());
+            }
+        }
+    } else {
+        contents = QApplication::clipboard()->text(QClipboard::Selection);
+    }
 #endif
 #ifdef Q_OS_WIN
     int            n = 0;
@@ -370,6 +399,10 @@ void Main::createNewNoteFromSelection()
 
     contents = QApplication::clipboard()->text();
 #endif
+    if (contents.isEmpty()) {
+        qCWarning(logMain) << "createNewNoteFromSelection: empty selection, nothing to create";
+        return;
+    }
     if (contents.size()) {
         auto dlg = makeNoteDialog(NoteManager::instance()->defaultStorage()->systemName());
         dlg->weidget()->setText(contents);

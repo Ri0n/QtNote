@@ -1,10 +1,14 @@
+#include <QAction>
 #include <QList>
+#include <QLoggingCategory>
 #include <QSettings>
 
 #include "globalshortcutsinterface.h"
 #include "shortcutsmanager.h"
 
 namespace QtNote {
+
+Q_LOGGING_CATEGORY(logShortcuts, "qtnote.shortcuts")
 
 const char *ShortcutsManager::SKNoteFromSelection = "note-from-selection";
 
@@ -97,7 +101,8 @@ bool ShortcutsManager::registerGlobal(const char *option, QAction *action)
     if (gs) {
         QKeySequence ks = key(option);
         if (!ks.isEmpty()) {
-            if (gs->registerGlobalShortcut(option, ks, action)) {
+            const bool registered = gs->registerGlobalShortcut(option, ks, action);
+            if (registered) {
                 globals.append(QLatin1String(option));
                 return true;
             }
