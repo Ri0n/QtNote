@@ -61,6 +61,7 @@ public:
     Main                     *q;
     DEIntegrationInterface   *de;
     TrayImpl                 *tray;
+    bool                      externalTrayAvailable;
     GlobalShortcutsInterface *globalShortcuts;
     NotificationInterface    *notifier;
 #ifdef QTNOTE_DBUS_AVAILABLE
@@ -68,7 +69,7 @@ public:
 #endif
 
     Private(Main *parent) :
-        QObject(parent), q(parent), de(0), tray(0), globalShortcuts(0), notifier(0)
+        QObject(parent), q(parent), de(0), tray(0), externalTrayAvailable(false), globalShortcuts(0), notifier(0)
 #ifdef QTNOTE_DBUS_AVAILABLE
         ,
         dbus(0)
@@ -128,7 +129,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     // TODO load translations from plugins;
     if (!d->de) {
         pluginError = tr("Desktop integration plugin is not loaded");
-    } else if (!d->tray) {
+    } else if (!d->tray && !d->externalTrayAvailable) {
         pluginError = tr("Tray icon is not initialized");
     } else if (!d->notifier) {
         pluginError = tr("Notifications plugin is not loaded");
@@ -304,6 +305,8 @@ void Main::notifyError(const QString &text) { d->notifier->notifyError(text); }
 void Main::activateWidget(QWidget *w) const { d->de->activateWidget(w); }
 
 void Main::setTrayImpl(TrayImpl *tray) { d->tray = tray; }
+
+void Main::setExternalTrayAvailable(bool available) { d->externalTrayAvailable = available; }
 
 void Main::setDesktopImpl(DEIntegrationInterface *de) { d->de = de; }
 

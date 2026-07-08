@@ -27,6 +27,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 #include <QStringList>
 
+#include <utility>
+
 #include "notewidget.h"
 #include "pluginhost.h"
 #include "pluginmanager.h"
@@ -171,6 +173,7 @@ void PluginManager::loadPlugins()
 
     QMap<PluginFeature, FeaturedPlugin> featurePriority;
     QList<PluginData::Ptr>              regularPlugins;
+    bool                                nativeExternalTrayAvailable = false;
 
     QSettings                  s;
     QStringList                prioritizedList = s.value("plugins-priority").toStringList();
@@ -192,19 +195,48 @@ void PluginManager::loadPlugins()
      * like tray integration, global shortcuts integrtion etc.
      */
 #ifdef Q_OS_OSX
-    QString session = "macosx";
+    QStringList sessionCandidates { QStringLiteral("macosx") };
 #else
-    auto    desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
-    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
+    const QString xdgCurrentDesktop = QString::fromLocal8Bit(qgetenv("XDG_CURRENT_DESKTOP"));
+    const QString xdgSessionDesktop = QString::fromLocal8Bit(qgetenv("XDG_SESSION_DESKTOP"));
+    const QString desktopSession    = QString::fromLocal8Bit(qgetenv("DESKTOP_SESSION"));
+    const QString gnomeSessionId    = QString::fromLocal8Bit(qgetenv("GNOME_DESKTOP_SESSION_ID"));
+    const QString xdgSessionType    = QString::fromLocal8Bit(qgetenv("XDG_SESSION_TYPE"));
+
+    QStringList sessionCandidates;
+    for (const auto &component : xdgCurrentDesktop.split(QLatin1Char(':'), Qt::SkipEmptyParts))
+        sessionCandidates.append(component.toLower());
+    if (!xdgSessionDesktop.isEmpty())
+        sessionCandidates.append(xdgSessionDesktop.toLower());
+    if (!desktopSession.isEmpty())
+        sessionCandidates.append(desktopSession.toLower());
+    if (!gnomeSessionId.isEmpty())
+        sessionCandidates.append(QStringLiteral("gnome"));
+    sessionCandidates.removeDuplicates();
+
+    qInfo().noquote() << "Desktop environment detection:"
+                      << "XDG_CURRENT_DESKTOP=" << xdgCurrentDesktop << "XDG_SESSION_DESKTOP=" << xdgSessionDesktop
+                      << "DESKTOP_SESSION=" << desktopSession << "GNOME_DESKTOP_SESSION_ID=" << gnomeSessionId
+                      << "XDG_SESSION_TYPE=" << xdgSessionType
+                      << "candidates=" << sessionCandidates.join(QLatin1Char(','));
 #endif
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];
         QStringList     deList = pd->metadata.extra["de"].toStringList();
-        bool            native = deList.contains(session);
+        bool            native = false;
+        for (const auto &session : std::as_const(sessionCandidates)) {
+            if (deList.contains(session)) {
+                native = true;
+                break;
+            }
+        }
 
         if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty())) {
             continue;
         }
+
+        if (native && pd->metadata.extra.value(QLatin1String("externalTray")).toBool())
+            nativeExternalTrayAvailable = true;
 
         auto f = FirstFeature;
         while (f != LastFeature) {
@@ -225,7 +257,12 @@ void PluginManager::loadPlugins()
     }
 
     /* set most desirable tray implementation */
-    QStringList trayPlugins = featurePriority[TrayIcon].native + featurePriority[TrayIcon].base;
+    if (nativeExternalTrayAvailable)
+        qtnote->setExternalTrayAvailable(true);
+
+    QStringList trayPlugins = featurePriority[TrayIcon].native;
+    if (!nativeExternalTrayAvailable || !trayPlugins.isEmpty())
+        trayPlugins += featurePriority[TrayIcon].base;
     foreach (const QString &plugin, trayPlugins) {
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd)) {

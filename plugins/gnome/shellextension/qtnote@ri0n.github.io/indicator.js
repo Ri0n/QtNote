@@ -16,6 +16,7 @@ export const QtNoteIndicator = GObject.registerClass(
 class QtNoteIndicator extends PanelMenu.Button {
     _init(extension, dbus) {
         super._init(0.0, 'QtNote');
+        this.add_style_class_name('qtnote-panel-button');
 
         this._dbus = dbus;
         this._middleButtonPressed = false;
@@ -24,7 +25,7 @@ class QtNoteIndicator extends PanelMenu.Button {
 
         this.add_child(new St.Icon({
             gicon: Gio.icon_new_for_string(`${extension.path}/icons/qtnote.svg`),
-            style_class: 'system-status-icon',
+            style_class: 'system-status-icon qtnote-panel-icon',
         }));
 
         this.connect('captured-event', this._onCapturedEvent.bind(this));

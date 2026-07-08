@@ -23,7 +23,7 @@ public:
         QKeySequence key;
     };
 
-    static const char *SKNoteFromSelection;
+    inline static constexpr const char *SKNoteFromSelection = "note-from-selection";
 
     explicit ShortcutsManager(GlobalShortcutsInterface *gs, QObject *parent = 0);
     // const QMap<QString, QString> &optionsMap() const;

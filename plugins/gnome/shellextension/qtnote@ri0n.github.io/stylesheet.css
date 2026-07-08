@@ -2,6 +2,16 @@
     SPDX-License-Identifier: GPL-3.0-only
 */
 
+#panel .panel-button.qtnote-panel-button {
+    -natural-hpadding: 8px;
+    -minimum-hpadding: 5px;
+}
+
+#panel .panel-button.qtnote-panel-button .system-status-icon.qtnote-panel-icon {
+    padding: 0 3px;
+    margin: 0 2px;
+}
+
 .qtnote-popup {
     spacing: 6px;
     padding: 6px 0;

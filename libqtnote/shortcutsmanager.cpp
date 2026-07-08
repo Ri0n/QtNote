@@ -10,8 +10,6 @@ namespace QtNote {
 
 Q_LOGGING_CATEGORY(logShortcuts, "qtnote.shortcuts")
 
-const char *ShortcutsManager::SKNoteFromSelection = "note-from-selection";
-
 struct BaseInfo {
     QString name;
     QString defaultKey;

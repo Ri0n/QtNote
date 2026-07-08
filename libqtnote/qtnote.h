@@ -57,6 +57,7 @@ public:
     inline PluginManager    *pluginManager() const { return _pluginManager; }
 
     void setTrayImpl(TrayImpl *tray);
+    void setExternalTrayAvailable(bool available);
     void setDesktopImpl(DEIntegrationInterface *de);
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
     void setNotificationImpl(NotificationInterface *notifier);

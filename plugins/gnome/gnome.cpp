@@ -19,75 +19,27 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QAction>
-#include <QKeySequence>
-#include <QLoggingCategory>
+#include <QMessageBox>
 #include <QProcess>
+#include <QSettings>
 #include <QStandardPaths>
-#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QWidget>
 #include <QtPlugin>
 
 #include "gnome.h"
-#include "gnometray.h"
 #include "qtnote_config.h"
-#include "shortcutsmanager.h"
 #include "x11util.h"
 
 namespace QtNote {
 
 static const QLatin1String pluginId("gnome_de");
-static const QLatin1String noteFromSelectionShortcutId(ShortcutsManager::SKNoteFromSelection);
-static const QLatin1String gnomeShellShortcutSchema("org.gnome.shell.extensions.qtnote");
-
-Q_LOGGING_CATEGORY(logGnomeIntegration, "qtnote.gnomeintegration")
-
-namespace {
-
-    QString acceleratorFromKeySequence(const QKeySequence &key)
-    {
-        if (key.isEmpty())
-            return {};
-
-        const auto parts  = key.toString(QKeySequence::PortableText).split(QLatin1Char(','));
-        const auto tokens = parts.constFirst().split(QLatin1Char('+'), Qt::SkipEmptyParts);
-        if (tokens.isEmpty())
-            return {};
-
-        QString accelerator;
-        for (int i = 0; i < tokens.size() - 1; ++i) {
-            const auto token = tokens.at(i);
-            if (token == QLatin1String("Ctrl"))
-                accelerator += QLatin1String("<Ctrl>");
-            else if (token == QLatin1String("Alt"))
-                accelerator += QLatin1String("<Alt>");
-            else if (token == QLatin1String("Shift"))
-                accelerator += QLatin1String("<Shift>");
-            else if (token == QLatin1String("Meta"))
-                accelerator += QLatin1String("<Super>");
-            else
-                accelerator += QLatin1Char('<') + token + QLatin1Char('>');
-        }
-        accelerator += tokens.constLast();
-        return accelerator;
-    }
-
-    QString shellExtensionSchemasDir()
-    {
-#ifdef QTNOTE_GNOME_SHELL_EXTENSION_DIR
-        return QStringLiteral(QTNOTE_GNOME_SHELL_EXTENSION_DIR "/schemas");
-#else
-        return {};
-#endif
-    }
-
-} // namespace
+static const QLatin1String shellExtensionId("qtnote@ri0n.github.io");
 
 //------------------------------------------------------------
 // GnomePlugin
 //------------------------------------------------------------
-GnomePlugin::GnomePlugin(QObject *parent) : QObject(parent), _tray(0) { }
+GnomePlugin::GnomePlugin(QObject *parent) : QObject(parent) { }
 
 int GnomePlugin::metadataVersion() const { return MetadataVersion; }
 
@@ -104,23 +56,81 @@ PluginMetadata GnomePlugin::metadata()
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
     md.extra.insert("de", QStringList() << "gnome");
+    md.extra.insert("externalTray", true);
     return md;
 }
 
-void GnomePlugin::setHost(PluginHostInterface *host) { this->host = host; }
-
-TrayImpl *GnomePlugin::initTray(Main *qtnote)
+void GnomePlugin::setHost(PluginHostInterface *host)
 {
-    _tray = new GnomeTray(qtnote, this);
-    return _tray;
+    this->host = host;
+    QTimer::singleShot(0, this, &GnomePlugin::askEnableShellExtension);
 }
 
 void GnomePlugin::notifyError(const QString &msg)
 {
-    // TODO ue libnotify instead or what is gnome-way
-    if (_tray) {
-        _tray->sti->showMessage(tr("Error"), msg, QSystemTrayIcon::Warning);
+    // TODO use libnotify for native GNOME notifications.
+    QMessageBox::warning(nullptr, tr("Error"), msg);
+}
+
+void GnomePlugin::askEnableShellExtension()
+{
+    if (!isShellExtensionInstalled() || isShellExtensionEnabled())
+        return;
+
+    QSettings settings;
+    settings.beginGroup(QLatin1String("gnomeintegration"));
+    if (settings.value(QLatin1String("shellExtensionEnableAsked"), false).toBool())
+        return;
+    settings.setValue(QLatin1String("shellExtensionEnableAsked"), true);
+
+    auto result = QMessageBox::question(nullptr, tr("Enable QtNote GNOME Extension"),
+                                        tr("QtNote can enable a native GNOME Shell indicator. "
+                                           "It provides Wayland-friendly access to recent notes."),
+                                        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (result == QMessageBox::Yes && !enableShellExtension()) {
+        QMessageBox::warning(nullptr, tr("Enable QtNote GNOME Extension"),
+                             tr("Failed to enable the QtNote GNOME Shell extension. "
+                                "You may need to log out and log back in before enabling it."));
     }
+}
+
+bool GnomePlugin::isShellExtensionInstalled() const
+{
+    return !QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                      QLatin1String("gnome-shell/extensions/") + shellExtensionId
+                                          + QLatin1String("/metadata.json"),
+                                      QStandardPaths::LocateFile)
+                .isEmpty();
+}
+
+bool GnomePlugin::isShellExtensionEnabled() const
+{
+    const QString executable = QStandardPaths::findExecutable(QLatin1String("gnome-extensions"));
+    if (executable.isEmpty())
+        return false;
+
+    QProcess process;
+    process.start(executable, { QLatin1String("info"), shellExtensionId });
+    if (!process.waitForFinished(3000))
+        return false;
+
+    const QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).toLower();
+    return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
+        && output.contains(QLatin1String("state: enabled"));
+}
+
+bool GnomePlugin::enableShellExtension() const
+{
+    const QString executable = QStandardPaths::findExecutable(QLatin1String("gnome-extensions"));
+    if (executable.isEmpty())
+        return false;
+
+    QProcess process;
+    process.start(executable, { QLatin1String("enable"), shellExtensionId });
+    if (!process.waitForFinished(5000))
+        return false;
+
+    return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
 }
 
 void GnomePlugin::activateWidget(QWidget *w)
@@ -130,96 +140,6 @@ void GnomePlugin::activateWidget(QWidget *w)
     connect(timer, SIGNAL(timeout()), SLOT(activator()));
     timer->setProperty("widget", QVariant::fromValue<QWidget *>(w));
     timer->start(100);
-}
-
-bool GnomePlugin::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)
-{
-    Q_UNUSED(action)
-
-    if (id != noteFromSelectionShortcutId) {
-        qCWarning(logGnomeIntegration) << "unsupported global shortcut id" << id;
-        return false;
-    }
-
-    _shortcuts.insert(id, key);
-    _shortcutEnabled.insert(id, true);
-    if (!setShellShortcut(id, key))
-        qCWarning(logGnomeIntegration)
-            << "global shortcut will use the GNOME Shell schema default until settings are updated"
-            << "id=" << id;
-    return true;
-}
-
-bool GnomePlugin::updateGlobalShortcut(const QString &id, const QKeySequence &key)
-{
-    if (id != noteFromSelectionShortcutId) {
-        qCWarning(logGnomeIntegration) << "unsupported global shortcut id" << id;
-        return false;
-    }
-
-    _shortcuts.insert(id, key);
-    if (!_shortcutEnabled.value(id, true))
-        return true;
-
-    return setShellShortcut(id, key);
-}
-
-void GnomePlugin::setGlobalShortcutEnabled(const QString &id, bool enabled)
-{
-    if (id != noteFromSelectionShortcutId) {
-        qCWarning(logGnomeIntegration) << "unsupported global shortcut id" << id << "enabled=" << enabled;
-        return;
-    }
-
-    _shortcutEnabled.insert(id, enabled);
-    setShellShortcut(id, enabled ? _shortcuts.value(id) : QKeySequence());
-}
-
-bool GnomePlugin::setShellShortcut(const QString &id, const QKeySequence &key)
-{
-    const QString schemasDir = shellExtensionSchemasDir();
-    if (schemasDir.isEmpty()) {
-        qCWarning(logGnomeIntegration) << "GNOME Shell extension schemas directory is not configured";
-        return false;
-    }
-
-    const QString gsettings = QStandardPaths::findExecutable(QStringLiteral("gsettings"));
-    if (gsettings.isEmpty()) {
-        qCWarning(logGnomeIntegration) << "gsettings executable was not found";
-        return false;
-    }
-
-    const QString accelerator = acceleratorFromKeySequence(key);
-    const QString value = accelerator.isEmpty() ? QStringLiteral("[]") : QStringLiteral("['%1']").arg(accelerator);
-
-    QProcess proc;
-    proc.start(gsettings,
-               {
-                   QStringLiteral("--schemadir"),
-                   schemasDir,
-                   QStringLiteral("set"),
-                   gnomeShellShortcutSchema,
-                   id,
-                   value,
-               });
-    if (!proc.waitForStarted()) {
-        qCWarning(logGnomeIntegration) << "failed to start gsettings:" << proc.errorString();
-        return false;
-    }
-    if (!proc.waitForFinished(3000)) {
-        proc.kill();
-        proc.waitForFinished();
-        qCWarning(logGnomeIntegration) << "gsettings timed out while updating shortcut" << id;
-        return false;
-    }
-    if (proc.exitStatus() != QProcess::NormalExit || proc.exitCode() != 0) {
-        qCWarning(logGnomeIntegration).noquote() << "failed to update GNOME Shell shortcut"
-                                                 << "id=" << id << "value=" << value << "exitCode=" << proc.exitCode()
-                                                 << "stderr=" << QString::fromUtf8(proc.readAllStandardError());
-        return false;
-    }
-
-    return true;
 }
 
 void GnomePlugin::activator()

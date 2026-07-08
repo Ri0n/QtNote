@@ -43,6 +43,7 @@ PluginMetadata KDEIntegration::metadata()
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
     md.extra.insert("de", QStringList() << "kde");
+    md.extra.insert("externalTray", true);
     return md;
 }
 
