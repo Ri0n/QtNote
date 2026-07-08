@@ -1,8 +1,11 @@
 #include <QAction>
 #include <QApplication>
 #include <QMenu>
+#include <QMessageBox>
 #include <QMetaType>
+#include <QProcess>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
@@ -16,6 +19,10 @@ typedef QPair<QString, QString> NoteIdent;
 Q_DECLARE_METATYPE(NoteIdent)
 
 namespace QtNote {
+
+namespace {
+    constexpr auto ShellExtensionId = "qtnote@ri0n.github.io";
+}
 
 GnomeTray::GnomeTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(qtnote), contextMenu(0)
 {
@@ -61,9 +68,72 @@ GnomeTray::GnomeTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(q
 
     menuUpdateTimer->start();
     sti->show();
+
+    QTimer::singleShot(0, this, &GnomeTray::askEnableShellExtension);
 }
 
 GnomeTray::~GnomeTray() { }
+
+void GnomeTray::askEnableShellExtension()
+{
+    if (!isShellExtensionInstalled() || isShellExtensionEnabled())
+        return;
+
+    QSettings settings;
+    settings.beginGroup(QLatin1String("gnomeintegration"));
+    if (settings.value(QLatin1String("shellExtensionEnableAsked"), false).toBool())
+        return;
+    settings.setValue(QLatin1String("shellExtensionEnableAsked"), true);
+
+    auto result = QMessageBox::question(nullptr, tr("Enable QtNote GNOME Extension"),
+                                        tr("QtNote can enable a native GNOME Shell indicator. "
+                                           "It provides Wayland-friendly access to recent notes."),
+                                        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (result == QMessageBox::Yes && !enableShellExtension()) {
+        QMessageBox::warning(nullptr, tr("Enable QtNote GNOME Extension"),
+                             tr("Failed to enable the QtNote GNOME Shell extension. "
+                                "You may need to log out and log back in before enabling it."));
+    }
+}
+
+bool GnomeTray::isShellExtensionInstalled() const
+{
+    return !QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                      QLatin1String("gnome-shell/extensions/") + QLatin1String(ShellExtensionId)
+                                          + QLatin1String("/metadata.json"),
+                                      QStandardPaths::LocateFile)
+                .isEmpty();
+}
+
+bool GnomeTray::isShellExtensionEnabled() const
+{
+    const QString executable = QStandardPaths::findExecutable(QLatin1String("gnome-extensions"));
+    if (executable.isEmpty())
+        return false;
+
+    QProcess process;
+    process.start(executable, { QLatin1String("info"), QLatin1String(ShellExtensionId) });
+    if (!process.waitForFinished(3000))
+        return false;
+
+    const QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).toLower();
+    return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
+        && output.contains(QLatin1String("state: enabled"));
+}
+
+bool GnomeTray::enableShellExtension() const
+{
+    const QString executable = QStandardPaths::findExecutable(QLatin1String("gnome-extensions"));
+    if (executable.isEmpty())
+        return false;
+
+    QProcess process;
+    process.start(executable, { QLatin1String("enable"), QLatin1String(ShellExtensionId) });
+    if (!process.waitForFinished(5000))
+        return false;
+
+    return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
+}
 
 void GnomeTray::rebuildMenu()
 {

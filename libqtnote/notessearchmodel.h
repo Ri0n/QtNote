@@ -27,6 +27,9 @@ protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
 private slots:
     void noteFound(const QString &storageId, const QString &noteId);
+
+private:
+    void invalidateRowsFilter();
 };
 
 } // namespace QtNote

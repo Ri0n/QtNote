@@ -1,0 +1,62 @@
+/*
+    SPDX-License-Identifier: GPL-3.0-only
+*/
+
+.qtnote-popup {
+    spacing: 6px;
+    padding: 6px 0;
+}
+
+.qtnote-actions {
+    margin: 0 8px 2px;
+    spacing: 6px;
+}
+
+.qtnote-action-button {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 0;
+}
+
+.qtnote-action-icon {
+    icon-size: 16px;
+}
+
+.qtnote-action-plus {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.qtnote-search-entry {
+    margin: 0 8px 4px;
+    min-width: 260px;
+}
+
+.qtnote-scroll-view {
+    max-height: 420px;
+    min-width: 280px;
+}
+
+.qtnote-notes-list {
+    spacing: 1px;
+}
+
+.qtnote-note-row {
+    border-radius: 6px;
+    padding: 7px 10px;
+    text-align: left;
+}
+
+.qtnote-note-row:hover,
+.qtnote-note-row:focus {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.qtnote-load-more-row {
+    font-weight: bold;
+}
+
+.qtnote-message {
+    padding: 14px 18px;
+    color: #c0c0c0;
+}

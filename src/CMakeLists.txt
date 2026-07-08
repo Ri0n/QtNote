@@ -26,7 +26,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${QTNOTE_VERSION}" # version
     MACOSX_BUNDLE_BUNDLE_VERSION "${QTNOTE_VERSION}" # git tag
-    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2010-2024 Sergei Ilinykh"
+    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2010-2026 Sergei Ilinykh"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.ri0n.qtnote"
 )
 if (WIN32)
@@ -46,6 +46,12 @@ else(WIN32)
     install(TARGETS ${PROJECT_NAME} RUNTIME
             DESTINATION "${CMAKE_INSTALL_BINDIR}"
             COMPONENT Executable)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/com.github.ri0n.QtNote.service.in
+        ${CMAKE_CURRENT_BINARY_DIR}/com.github.ri0n.QtNote.service
+        @ONLY
+    )
     install(FILES ${CMAKE_SOURCE_DIR}/qtnote.desktop DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/applications COMPONENT Executable)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/com.github.ri0n.QtNote.service DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/services COMPONENT Executable)
     install(FILES ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/icons/hicolor/scalable/apps COMPONENT Executable)
 endif()

@@ -1,4 +1,8 @@
 include(QtNoteMacro)
+include(GNUInstallDirs)
+
+set(qtnote_gnome_shell_extension_uuid qtnote@ri0n.github.io)
+set(qtnote_gnome_gettext_domain qtnote-gnome)
 
 add_qtnote_plugin(gnome "Gnome integration" ON unix SOURCES
     gnome.cpp
@@ -15,4 +19,55 @@ if (UNIXLIKE  AND ${QT_VERSION_MAJOR} LESS 6)
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
     target_link_libraries(gnome Qt${QT_VERSION_MAJOR}::X11Extras)
 endif()
+
+install(
+    DIRECTORY shellextension/${qtnote_gnome_shell_extension_uuid}/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}
+    COMPONENT Executable
+    PATTERN "po" EXCLUDE
+)
+
+install(
+    FILES ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}/icons
+    COMPONENT Executable
+)
+
+find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt)
+if(GETTEXT_MSGFMT_EXECUTABLE)
+    file(GLOB qtnote_gnome_PO_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/shellextension/${qtnote_gnome_shell_extension_uuid}/po/*.po"
+    )
+
+    set(qtnote_gnome_MO_FILES)
+    foreach(qtnote_gnome_PO_FILE ${qtnote_gnome_PO_FILES})
+        get_filename_component(qtnote_gnome_LANG ${qtnote_gnome_PO_FILE} NAME_WE)
+        set(qtnote_gnome_MO_FILE
+            "${CMAKE_CURRENT_BINARY_DIR}/shellextension-locale/${qtnote_gnome_LANG}/LC_MESSAGES/${qtnote_gnome_gettext_domain}.mo"
+        )
+        add_custom_command(
+            OUTPUT ${qtnote_gnome_MO_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                    "${CMAKE_CURRENT_BINARY_DIR}/shellextension-locale/${qtnote_gnome_LANG}/LC_MESSAGES"
+            COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} --check --output-file=${qtnote_gnome_MO_FILE} ${qtnote_gnome_PO_FILE}
+            DEPENDS ${qtnote_gnome_PO_FILE}
+            VERBATIM
+        )
+        list(APPEND qtnote_gnome_MO_FILES ${qtnote_gnome_MO_FILE})
+
+        install(
+            FILES ${qtnote_gnome_MO_FILE}
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}/locale/${qtnote_gnome_LANG}/LC_MESSAGES
+            COMPONENT Executable
+        )
+    endforeach()
+
+    if(qtnote_gnome_MO_FILES)
+        add_custom_target(qtnote_gnome_shell_extension_translations ALL DEPENDS ${qtnote_gnome_MO_FILES})
+        add_dependencies(gnome qtnote_gnome_shell_extension_translations)
+    endif()
+else()
+    message(WARNING "msgfmt was not found, GNOME Shell extension translations will not be built")
+endif()
+
 install_qtnote_plugin(gnome)

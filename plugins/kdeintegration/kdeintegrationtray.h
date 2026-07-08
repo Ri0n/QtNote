@@ -15,31 +15,15 @@ class Main;
 
 class KDEIntegrationTray : public TrayImpl {
     Q_OBJECT
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    Q_CLASSINFO("D-Bus Interface", "com.github.ri0n.QtNote")
-#endif
 
 public:
     explicit KDEIntegrationTray(Main *qtnote, QObject *parent);
     ~KDEIntegrationTray() override;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-signals:
-    Q_SCRIPTABLE void notesChanged();
-
-public slots:
-    Q_SCRIPTABLE QString notesJson(int offset, int limit, const QString &query) const;
-    Q_SCRIPTABLE void    openNote(const QString &storageId, const QString &noteId);
-    Q_SCRIPTABLE void    createNote();
-    Q_SCRIPTABLE void    showNoteManager();
-    Q_SCRIPTABLE void    showOptions();
-    Q_SCRIPTABLE void    showAbout();
-    Q_SCRIPTABLE void    quit();
-
 private:
     void askAddPlasmoid();
     void addPlasmoidToPanel();
-    bool isPlasmaSession() const;
     bool isPlasmoidInstalled() const;
 #ifdef QTNOTE_DEVEL
     bool ensureDevelopmentPlasmoidLinks();
@@ -54,8 +38,6 @@ private:
     bool updateDevelopmentFileContent(const QString &filePath, const QByteArray &content);
     bool updateDevelopmentLink(const QString &sourcePath, const QString &linkPath);
 #endif
-
-    bool registeredService = false;
 #else
 private slots:
     void showNotes(bool active, const QPoint &pos);

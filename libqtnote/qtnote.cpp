@@ -36,6 +36,9 @@
 #include "ptfstorage.h"
 #include "qtnote.h"
 #include "qtnote_config.h"
+#ifdef QTNOTE_DBUS_AVAILABLE
+#include "qtnotedbus.h"
+#endif
 #include "shortcutsmanager.h"
 #include "trayimpl.h"
 #include "utils.h"
@@ -60,8 +63,18 @@ public:
     TrayImpl                 *tray;
     GlobalShortcutsInterface *globalShortcuts;
     NotificationInterface    *notifier;
+#ifdef QTNOTE_DBUS_AVAILABLE
+    QtNoteDBus *dbus;
+#endif
 
-    Private(Main *parent) : QObject(parent), q(parent), de(0), globalShortcuts(0), notifier(0) { }
+    Private(Main *parent) :
+        QObject(parent), q(parent), de(0), tray(0), globalShortcuts(0), notifier(0)
+#ifdef QTNOTE_DBUS_AVAILABLE
+        ,
+        dbus(0)
+#endif
+    {
+    }
 };
 
 Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(false)
@@ -152,6 +165,16 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
     connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
     connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(openNoteDialog(QString, QString)));
+
+#ifdef QTNOTE_DBUS_AVAILABLE
+    d->dbus = new QtNoteDBus(this, this);
+    connect(d->dbus, &QtNoteDBus::quitRequested, this, &Main::exitQtNote);
+    connect(d->dbus, &QtNoteDBus::createNoteRequested, this, &Main::createNewNote);
+    connect(d->dbus, &QtNoteDBus::noteManagerRequested, this, &Main::showNoteManager);
+    connect(d->dbus, &QtNoteDBus::optionsRequested, this, &Main::showOptions);
+    connect(d->dbus, &QtNoteDBus::aboutRequested, this, &Main::showAbout);
+    connect(d->dbus, &QtNoteDBus::openNoteRequested, this, &Main::openNoteDialog);
+#endif
 
     // TODO it's a little ugly. refactor
     QAction *actNoteFromSel = new QAction(_shortcutsManager->friendlyName(ShortcutsManager::SKNoteFromSelection), this);

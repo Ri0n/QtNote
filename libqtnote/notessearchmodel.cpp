@@ -2,6 +2,8 @@
 #include "notemanager.h"
 #include "notesmodel.h"
 
+#include <QtGlobal>
+
 namespace QtNote {
 
 NotesSearchModel::NotesSearchModel(QObject *parent) : QSortFilterProxyModel(parent), _searchInBody(false)
@@ -48,7 +50,7 @@ void NotesSearchModel::setSearchInBody(bool allow)
         _finder->abort();
         if (_foundCache.count()) {
             _foundCache.clear();
-            invalidateFilter();
+            invalidateRowsFilter();
         }
     }
 }
@@ -61,6 +63,16 @@ void NotesSearchModel::noteFound(const QString &storageId, const QString &noteId
         _foundCache[storageId] << noteId;
     }
     static_cast<NotesModel *>(sourceModel())->invalidateNote(storageId, noteId);
+}
+
+void NotesSearchModel::invalidateRowsFilter()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+    beginFilterChange();
+    endFilterChange(QSortFilterProxyModel::Direction::Rows);
+#else
+    invalidateFilter();
+#endif
 }
 
 } // namespace QtNote

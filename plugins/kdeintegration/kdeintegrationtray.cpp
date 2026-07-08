@@ -8,9 +8,6 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QMessageBox>
 #include <QProcess>
 #include <QStandardPaths>
@@ -37,11 +34,7 @@ namespace QtNote {
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 namespace {
-    constexpr auto ServiceName          = "com.github.ri0n.QtNote";
-    constexpr auto ObjectPath           = "/QtNote";
-    constexpr auto PlasmoidId           = "com.github.ri0n.qtnote";
-    constexpr int  DefaultNotesPageSize = 50;
-    constexpr int  MaxNotesPageSize     = 200;
+    constexpr auto PlasmoidId = "com.github.ri0n.qtnote";
 #ifdef QTNOTE_DEVEL
     constexpr auto DevelopmentPlasmoidPackageSetting = "developmentPlasmoidPackageLink";
     constexpr auto DevelopmentPlasmoidQmlSetting     = "developmentPlasmoidQmlLinks";
@@ -52,34 +45,15 @@ namespace {
 
 KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) : TrayImpl(parent)
 {
-    auto *manager = NoteManager::instance();
-    connect(manager, &NoteManager::storageAdded, this, &KDEIntegrationTray::notesChanged);
-    connect(manager, &NoteManager::storageRemoved, this, &KDEIntegrationTray::notesChanged);
-    connect(manager, qOverload<NoteStorage::Ptr>(&NoteManager::storageChanged), this,
-            &KDEIntegrationTray::notesChanged);
-    connect(qtnote, &Main::settingsUpdated, this, &KDEIntegrationTray::notesChanged);
-
-    auto bus = QDBusConnection::sessionBus();
-    if (!bus.registerObject(QLatin1String(ObjectPath), this,
-                            QDBusConnection::ExportScriptableSlots | QDBusConnection::ExportScriptableSignals)) {
-        qWarning("Failed to register the QtNote D-Bus object: %s", qPrintable(bus.lastError().message()));
-        return;
-    }
-
-    registeredService = bus.registerService(QLatin1String(ServiceName));
-    if (!registeredService) {
-        qWarning("Failed to register the QtNote D-Bus service: %s", qPrintable(bus.lastError().message()));
-        bus.unregisterObject(QLatin1String(ObjectPath));
-    }
+    Q_UNUSED(qtnote)
 
 #ifdef QTNOTE_DEVEL
-    auto *plasmaShellWatcher = new QDBusServiceWatcher(QLatin1String("org.kde.plasmashell"), bus,
-                                                       QDBusServiceWatcher::WatchForRegistration, this);
+    auto *plasmaShellWatcher
+        = new QDBusServiceWatcher(QLatin1String("org.kde.plasmashell"), QDBusConnection::sessionBus(),
+                                  QDBusServiceWatcher::WatchForRegistration, this);
     connect(plasmaShellWatcher, &QDBusServiceWatcher::serviceRegistered, this, [this] {
-        if (isPlasmaSession()) {
-            QTimer::singleShot(1500, this, &KDEIntegrationTray::resetDevelopmentPlasmoidOnPanel);
-            QTimer::singleShot(3500, this, &KDEIntegrationTray::resetDevelopmentPlasmoidOnPanel);
-        }
+        QTimer::singleShot(1500, this, &KDEIntegrationTray::resetDevelopmentPlasmoidOnPanel);
+        QTimer::singleShot(3500, this, &KDEIntegrationTray::resetDevelopmentPlasmoidOnPanel);
     });
 #endif
 
@@ -89,63 +63,21 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) : TrayImpl
 KDEIntegrationTray::~KDEIntegrationTray()
 {
 #ifdef QTNOTE_DEVEL
-    if (isPlasmaSession())
-        removeDevelopmentPlasmoidFromPanel();
+    removeDevelopmentPlasmoidFromPanel();
     cleanupDevelopmentPlasmoidLinks();
 #endif
-    if (registeredService) {
-        auto bus = QDBusConnection::sessionBus();
-        bus.unregisterObject(QLatin1String(ObjectPath));
-        bus.unregisterService(QLatin1String(ServiceName));
-    }
 }
-
-QString KDEIntegrationTray::notesJson(int offset, int limit, const QString &query) const
-{
-    offset = qMax(0, offset);
-    limit  = limit > 0 ? qMin(limit, MaxNotesPageSize) : DefaultNotesPageSize;
-
-    const auto notes = NoteManager::instance()->noteList(offset, limit + 1, query);
-
-    QJsonArray result;
-    for (int i = 0, count = qMin(limit, notes.size()); i < count; ++i) {
-        const auto &note = notes.at(i);
-        result.append(QJsonObject {
-            { "id", note.id },
-            { "storageId", note.storageId },
-            { "title", note.title },
-            { "modified", note.lastModify.toUTC().toString(Qt::ISODateWithMs) },
-        });
-    }
-    return QString::fromUtf8(QJsonDocument(QJsonObject {
-                                               { "notes", result },
-                                               { "hasMore", notes.size() > limit },
-                                           })
-                                 .toJson(QJsonDocument::Compact));
-}
-
-void KDEIntegrationTray::openNote(const QString &storageId, const QString &noteId)
-{
-    if (!storageId.isEmpty() && !noteId.isEmpty())
-        emit showNoteTriggered(storageId, noteId);
-}
-
-void KDEIntegrationTray::createNote() { emit newNoteTriggered(); }
-void KDEIntegrationTray::showNoteManager() { emit noteManagerTriggered(); }
-void KDEIntegrationTray::showOptions() { emit optionsTriggered(); }
-void KDEIntegrationTray::showAbout() { emit aboutTriggered(); }
-void KDEIntegrationTray::quit() { emit exitTriggered(); }
 
 void KDEIntegrationTray::askAddPlasmoid()
 {
 #ifdef QTNOTE_DEVEL
-    if (!registeredService || !isPlasmaSession() || !ensureDevelopmentPlasmoidLinks())
+    if (!ensureDevelopmentPlasmoidLinks())
         return;
 
     resetDevelopmentPlasmoidOnPanel();
     return;
 #else
-    if (!registeredService || !isPlasmaSession() || !isPlasmoidInstalled())
+    if (!isPlasmoidInstalled())
         return;
 
     QSettings settings;
@@ -211,14 +143,6 @@ if (!found) {
     }
 
     plasmaShell.asyncCall(QLatin1String("evaluateScript"), script.arg(QLatin1String(PlasmoidId)));
-}
-
-bool KDEIntegrationTray::isPlasmaSession() const
-{
-    const auto desktop = QString::fromLocal8Bit(qgetenv("XDG_CURRENT_DESKTOP")).toLower();
-    const auto session = QString::fromLocal8Bit(qgetenv("DESKTOP_SESSION")).toLower();
-    return desktop.contains(QLatin1String("kde")) || desktop.contains(QLatin1String("plasma"))
-        || session.contains(QLatin1String("plasma"));
 }
 
 bool KDEIntegrationTray::isPlasmoidInstalled() const

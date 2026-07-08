@@ -25,10 +25,15 @@ signals:
 public slots:
 
 private slots:
+    void askEnableShellExtension();
     void rebuildMenu();
     void noteSelected();
 
 private:
+    bool isShellExtensionInstalled() const;
+    bool isShellExtensionEnabled() const;
+    bool enableShellExtension() const;
+
     friend class GnomePlugin;
     Main               *qtnote;
     QSystemTrayIcon    *sti = nullptr;

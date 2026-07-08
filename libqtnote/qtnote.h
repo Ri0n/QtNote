@@ -40,6 +40,7 @@ class DEIntegrationInterface;
 class GlobalShortcutsInterface;
 class NotificationInterface;
 class NoteDialog;
+class QtNoteDBus;
 struct NoteListItem;
 
 class QTNOTE_EXPORT Main : public QObject {
