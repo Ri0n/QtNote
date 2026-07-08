@@ -28,5 +28,7 @@ MouseArea {
     Kirigami.Icon {
         anchors.fill: parent
         source: Plasmoid.icon
+        isMask: true
+        color: Kirigami.Theme.textColor
     }
 }

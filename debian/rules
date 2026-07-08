@@ -2,9 +2,17 @@
 
 #export DH_VERBOSE = 1
 
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifneq ($(CCACHE),)
+CCACHE_CMAKE_ARGS := \
+	-DCMAKE_C_COMPILER_LAUNCHER=$(CCACHE) \
+	-DCMAKE_CXX_COMPILER_LAUNCHER=$(CCACHE)
+endif
+
 %:
 	dh $@ --buildsystem=cmake
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		-DQT_DEFAULT_MAJOR_VERSION=6
+		-DQT_DEFAULT_MAJOR_VERSION=6 \
+		$(CCACHE_CMAKE_ARGS)

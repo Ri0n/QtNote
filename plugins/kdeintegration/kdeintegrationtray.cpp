@@ -26,6 +26,7 @@
 #include "kdeintegrationtray.h"
 #include "notemanager.h"
 #include "qtnote.h"
+#include "trayiconutils.h"
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include "utils.h"
 #endif
@@ -376,9 +377,9 @@ bool KDEIntegrationTray::updateDevelopmentMainQml(const QString &sourcePath, con
     const QString iconPath
         = QFileInfo(QFileInfo(sourcePath)
                         .dir()
-                        .absoluteFilePath(QLatin1String("../../../../../../libqtnote/images/qtnote.svg")))
+                        .absoluteFilePath(QLatin1String("../../../../../../libqtnote/images/qtnote-symbolic.svg")))
               .canonicalFilePath();
-    content.replace("Plasmoid.icon: \"qtnote\"",
+    content.replace("Plasmoid.icon: \"qtnote-symbolic\"",
                     "Plasmoid.icon: \"" + QUrl::fromLocalFile(iconPath).toEncoded() + "\"");
 
     QFileInfo fileInfo(filePath);
@@ -514,7 +515,7 @@ bool KDEIntegrationTray::updateDevelopmentPackage(const QString &sourcePath, con
 KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) : TrayImpl(parent), qtnote(qtnote)
 {
     sni = new KStatusNotifierItem("qtnote", this);
-    sni->setIconByName("qtnote");
+    sni->setIconByName(TrayIconUtils::themedTrayIconName());
     sni->setStatus(KStatusNotifierItem::Active);
     sni->setTitle("Notes");
 

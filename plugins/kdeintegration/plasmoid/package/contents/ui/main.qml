@@ -17,7 +17,7 @@ PlasmoidItem {
     switchWidth: Kirigami.Units.gridUnit * 16
     switchHeight: Kirigami.Units.gridUnit * 12
 
-    Plasmoid.icon: "qtnote"
+    Plasmoid.icon: "qtnote-symbolic"
     Plasmoid.status: notesModel.available
         ? PlasmaCore.Types.ActiveStatus
         : PlasmaCore.Types.PassiveStatus

@@ -8,6 +8,7 @@
 #include "baseintegrationtray.h"
 #include "pluginhostinterface.h"
 #include "qtnote.h"
+#include "trayiconutils.h"
 #include "utils.h"
 
 namespace QtNote {
@@ -31,7 +32,7 @@ BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, PluginHostInterface *host
     contextMenu->addAction(actQuit);
 
     tray = new QSystemTrayIcon(this);
-    tray->setIcon(QIcon(":/icons/trayicon"));
+    TrayIconUtils::setupSystemTrayIcon(tray);
     tray->show();
     tray->setContextMenu(contextMenu);
 

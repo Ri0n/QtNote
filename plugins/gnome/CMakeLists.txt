@@ -26,7 +26,9 @@ install(
 )
 
 install(
-    FILES ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg
+    FILES
+        ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote.svg
+        ${CMAKE_SOURCE_DIR}/libqtnote/images/qtnote-symbolic.svg
     DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}/icons
     COMPONENT Executable
 )

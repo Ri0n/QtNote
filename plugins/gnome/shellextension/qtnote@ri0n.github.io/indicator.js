@@ -3,7 +3,6 @@
 */
 
 import Clutter from 'gi://Clutter';
-import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
@@ -26,7 +25,7 @@ class QtNoteIndicator extends PanelMenu.Button {
         this._popup = new NotesPopup(this.menu, this._model, this._dbus);
 
         this.add_child(new St.Icon({
-            gicon: Gio.icon_new_for_string(`${extension.path}/icons/qtnote.svg`),
+            icon_name: 'qtnote-symbolic',
             style_class: 'system-status-icon qtnote-panel-icon',
         }));
 
