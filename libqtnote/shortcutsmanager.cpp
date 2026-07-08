@@ -96,14 +96,19 @@ QList<ShortcutsManager::ShortcutInfo> ShortcutsManager::all() const
 
 QString ShortcutsManager::friendlyName(const QString &option) const { return shortcuts.value(option).name; }
 
+QStringList ShortcutsManager::globalShortcutIds() const { return globalActions.keys(); }
+
 bool ShortcutsManager::registerGlobal(const char *option, QAction *action)
 {
+    const QString optionName = QLatin1String(option);
+    globalActions.insert(optionName, action);
+
     if (gs) {
         QKeySequence ks = key(option);
         if (!ks.isEmpty()) {
             const bool registered = gs->registerGlobalShortcut(option, ks, action);
             if (registered) {
-                globals.append(QLatin1String(option));
+                globals.append(optionName);
                 return true;
             }
         }
@@ -116,6 +121,16 @@ void ShortcutsManager::setShortcutEnable(const QString &option, bool enabled)
     if (globals.contains(option) && gs) {
         return gs->setGlobalShortcutEnabled(option, enabled);
     }
+}
+
+void ShortcutsManager::triggerGlobal(const QString &option)
+{
+    auto *action = globalActions.value(option);
+    if (!action) {
+        qCWarning(logShortcuts) << "triggerGlobal: no action for option" << option;
+        return;
+    }
+    action->trigger();
 }
 
 } // namespace QtNote

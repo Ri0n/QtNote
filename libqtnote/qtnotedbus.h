@@ -24,8 +24,10 @@ public:
 
 signals:
     Q_SCRIPTABLE void notesChanged();
+    Q_SCRIPTABLE void globalShortcutsChanged();
 
     void createNoteRequested();
+    void globalShortcutActivated(const QString &id);
     void noteManagerRequested();
     void optionsRequested();
     void aboutRequested();
@@ -34,15 +36,18 @@ signals:
 
 public slots:
     Q_SCRIPTABLE QString notesJson(int offset, int limit, const QString &query) const;
+    Q_SCRIPTABLE QString globalShortcutsJson() const;
     Q_SCRIPTABLE void    openNote(const QString &storageId, const QString &noteId);
     Q_SCRIPTABLE void    createNote();
+    Q_SCRIPTABLE void    activateGlobalShortcut(const QString &id);
     Q_SCRIPTABLE void    showNoteManager();
     Q_SCRIPTABLE void    showOptions();
     Q_SCRIPTABLE void    showAbout();
     Q_SCRIPTABLE void    quit();
 
 private:
-    bool m_registeredService = false;
+    Main *m_qtnote;
+    bool  m_registeredService = false;
 };
 
 } // namespace QtNote

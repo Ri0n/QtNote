@@ -32,6 +32,7 @@ public:
     bool                setKey(const QString &option, const QKeySequence &seq);
     QList<ShortcutInfo> all() const;
     QString             friendlyName(const QString &option) const;
+    QStringList         globalShortcutIds() const;
 
     bool registerGlobal(const char *option, QAction *action);
     void setShortcutEnable(const QString &option, bool enabled = true);
@@ -40,10 +41,12 @@ signals:
     void shortcutChanged(const QString &opt);
 
 public slots:
+    void triggerGlobal(const QString &option);
 
 private:
     GlobalShortcutsInterface *gs;
     QStringList               globals;
+    QHash<QString, QAction *> globalActions;
 };
 
 } // namespace QtNote

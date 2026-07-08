@@ -193,11 +193,11 @@ void OptionsDlg::accept()
             continue;
         }
         QString option = w->objectName().mid(sizeof("shortcut-") - 1);
-        qtnote->shortcutsManager()->setShortcutEnable(option, true);
         if (!qtnote->shortcutsManager()->setKey(option, w->sequence())) {
             qtnote->notifyError(
                 tr("Failed to update shortcut for \"%1\"").arg(qtnote->shortcutsManager()->friendlyName(option)));
         }
+        qtnote->shortcutsManager()->setShortcutEnable(option, true);
     }
 
     QSettings s;

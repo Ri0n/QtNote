@@ -170,6 +170,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     d->dbus = new QtNoteDBus(this, this);
     connect(d->dbus, &QtNoteDBus::quitRequested, this, &Main::exitQtNote);
     connect(d->dbus, &QtNoteDBus::createNoteRequested, this, &Main::createNewNote);
+    connect(d->dbus, &QtNoteDBus::globalShortcutActivated, _shortcutsManager, &ShortcutsManager::triggerGlobal);
     connect(d->dbus, &QtNoteDBus::noteManagerRequested, this, &Main::showNoteManager);
     connect(d->dbus, &QtNoteDBus::optionsRequested, this, &Main::showOptions);
     connect(d->dbus, &QtNoteDBus::aboutRequested, this, &Main::showAbout);

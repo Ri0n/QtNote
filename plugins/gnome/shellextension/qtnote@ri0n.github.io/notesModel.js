@@ -102,7 +102,11 @@ export class NotesModel {
             if (requestSerial !== this._requestSerial)
                 return;
 
-            logError(error, 'Failed to fetch QtNote notes');
+            const errorMessage = String(error);
+            if (!errorMessage.includes('org.freedesktop.DBus.Error.UnknownObject')
+                && !errorMessage.includes('org.freedesktop.DBus.Error.ServiceUnknown')) {
+                logError(error, 'Failed to fetch QtNote notes');
+            }
             this.available = false;
             this.hasMore = false;
             if (!append)

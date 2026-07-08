@@ -17,16 +17,23 @@ const QTNOTE_IFACE_XML = `
       <arg type="s" name="query" direction="in"/>
       <arg type="s" name="response" direction="out"/>
     </method>
+    <method name="globalShortcutsJson">
+      <arg type="s" name="response" direction="out"/>
+    </method>
     <method name="openNote">
       <arg type="s" name="storageId" direction="in"/>
       <arg type="s" name="noteId" direction="in"/>
     </method>
     <method name="createNote"/>
+    <method name="activateGlobalShortcut">
+      <arg type="s" name="id" direction="in"/>
+    </method>
     <method name="showNoteManager"/>
     <method name="showOptions"/>
     <method name="showAbout"/>
     <method name="quit"/>
     <signal name="notesChanged"/>
+    <signal name="globalShortcutsChanged"/>
   </interface>
 </node>`;
 
@@ -57,11 +64,34 @@ export class QtNoteDBusClient {
         this._signalIds.push(id);
     }
 
+    onGlobalShortcutsChanged(callback) {
+        const id = this._proxy.connectSignal('globalShortcutsChanged', callback);
+        this._signalIds.push(id);
+    }
+
     notesJson(offset, limit, query) {
         return new Promise((resolve, reject) => {
             this._proxy.call(
                 'notesJson',
                 new GLib.Variant('(iis)', [offset, limit, query]),
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                (proxy, result) => {
+                    try {
+                        resolve(proxy.call_finish(result).deepUnpack()[0]);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+        });
+    }
+
+    globalShortcutsJson() {
+        return new Promise((resolve, reject) => {
+            this._proxy.call(
+                'globalShortcutsJson',
+                null,
                 Gio.DBusCallFlags.NONE,
                 -1,
                 null,
@@ -98,6 +128,10 @@ export class QtNoteDBusClient {
 
     createNote() {
         this._call('createNote');
+    }
+
+    activateGlobalShortcut(id) {
+        this._call('activateGlobalShortcut', new GLib.Variant('(s)', [id]));
     }
 
     showNoteManager() {

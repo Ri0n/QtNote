@@ -13,6 +13,7 @@
 
 #include "notemanager.h"
 #include "qtnote.h"
+#include "shortcutsmanager.h"
 
 namespace QtNote {
 
@@ -21,15 +22,44 @@ namespace {
     constexpr auto ObjectPath           = "/QtNote";
     constexpr int  DefaultNotesPageSize = 50;
     constexpr int  MaxNotesPageSize     = 200;
+
+    QString acceleratorFromKeySequence(const QKeySequence &key)
+    {
+        if (key.isEmpty())
+            return {};
+
+        const auto parts  = key.toString(QKeySequence::PortableText).split(QLatin1Char(','));
+        const auto tokens = parts.constFirst().split(QLatin1Char('+'), Qt::SkipEmptyParts);
+        if (tokens.isEmpty())
+            return {};
+
+        QString accelerator;
+        for (int i = 0; i < tokens.size() - 1; ++i) {
+            const auto token = tokens.at(i);
+            if (token == QLatin1String("Ctrl"))
+                accelerator += QLatin1String("<Ctrl>");
+            else if (token == QLatin1String("Alt"))
+                accelerator += QLatin1String("<Alt>");
+            else if (token == QLatin1String("Shift"))
+                accelerator += QLatin1String("<Shift>");
+            else if (token == QLatin1String("Meta"))
+                accelerator += QLatin1String("<Super>");
+            else
+                accelerator += QLatin1Char('<') + token + QLatin1Char('>');
+        }
+        accelerator += tokens.constLast();
+        return accelerator;
+    }
 }
 
-QtNoteDBus::QtNoteDBus(Main *qtnote, QObject *parent) : QObject(parent)
+QtNoteDBus::QtNoteDBus(Main *qtnote, QObject *parent) : QObject(parent), m_qtnote(qtnote)
 {
     auto *manager = NoteManager::instance();
     connect(manager, &NoteManager::storageAdded, this, &QtNoteDBus::notesChanged);
     connect(manager, &NoteManager::storageRemoved, this, &QtNoteDBus::notesChanged);
     connect(manager, qOverload<NoteStorage::Ptr>(&NoteManager::storageChanged), this, &QtNoteDBus::notesChanged);
     connect(qtnote, &Main::settingsUpdated, this, &QtNoteDBus::notesChanged);
+    connect(qtnote, &Main::settingsUpdated, this, &QtNoteDBus::globalShortcutsChanged);
 
     auto bus = QDBusConnection::sessionBus();
     if (!bus.registerObject(QLatin1String(ObjectPath), this,
@@ -79,6 +109,19 @@ QString QtNoteDBus::notesJson(int offset, int limit, const QString &query) const
                                  .toJson(QJsonDocument::Compact));
 }
 
+QString QtNoteDBus::globalShortcutsJson() const
+{
+    QJsonArray result;
+    const auto ids = m_qtnote->shortcutsManager()->globalShortcutIds();
+    for (const auto &id : ids) {
+        result.append(QJsonObject {
+            { "id", id },
+            { "accelerator", acceleratorFromKeySequence(m_qtnote->shortcutsManager()->key(id)) },
+        });
+    }
+    return QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact));
+}
+
 void QtNoteDBus::openNote(const QString &storageId, const QString &noteId)
 {
     if (!storageId.isEmpty() && !noteId.isEmpty())
@@ -86,6 +129,11 @@ void QtNoteDBus::openNote(const QString &storageId, const QString &noteId)
 }
 
 void QtNoteDBus::createNote() { emit createNoteRequested(); }
+void QtNoteDBus::activateGlobalShortcut(const QString &id)
+{
+    if (!id.isEmpty())
+        emit globalShortcutActivated(id);
+}
 void QtNoteDBus::showNoteManager() { emit noteManagerRequested(); }
 void QtNoteDBus::showOptions() { emit optionsRequested(); }
 void QtNoteDBus::showAbout() { emit aboutRequested(); }

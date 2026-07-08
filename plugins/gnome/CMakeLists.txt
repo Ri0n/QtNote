@@ -3,6 +3,9 @@ include(GNUInstallDirs)
 
 set(qtnote_gnome_shell_extension_uuid qtnote@ri0n.github.io)
 set(qtnote_gnome_gettext_domain qtnote-gnome)
+set(qtnote_gnome_shell_extension_dir
+    "${CMAKE_INSTALL_FULL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}"
+)
 
 add_qtnote_plugin(gnome "Gnome integration" ON unix SOURCES
     gnome.cpp
@@ -15,6 +18,9 @@ add_qtnote_plugin(gnome "Gnome integration" ON unix SOURCES
 )
 
 target_link_libraries(gnome ${EXTRA_LINK_TARGET} Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets)
+target_compile_definitions(gnome PRIVATE
+    QTNOTE_GNOME_SHELL_EXTENSION_DIR="${qtnote_gnome_shell_extension_dir}"
+)
 if (UNIXLIKE  AND ${QT_VERSION_MAJOR} LESS 6)
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
     target_link_libraries(gnome Qt${QT_VERSION_MAJOR}::X11Extras)
@@ -32,6 +38,39 @@ install(
     DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}/icons
     COMPONENT Executable
 )
+
+find_program(GLIB_COMPILE_SCHEMAS_EXECUTABLE glib-compile-schemas)
+if(GLIB_COMPILE_SCHEMAS_EXECUTABLE)
+    set(qtnote_gnome_SCHEMA_DIR
+        "${CMAKE_CURRENT_SOURCE_DIR}/shellextension/${qtnote_gnome_shell_extension_uuid}/schemas"
+    )
+    set(qtnote_gnome_COMPILED_SCHEMA_DIR
+        "${CMAKE_CURRENT_BINARY_DIR}/shellextension-schemas"
+    )
+    set(qtnote_gnome_COMPILED_SCHEMA
+        "${qtnote_gnome_COMPILED_SCHEMA_DIR}/gschemas.compiled"
+    )
+
+    file(GLOB qtnote_gnome_SCHEMA_FILES "${qtnote_gnome_SCHEMA_DIR}/*.gschema.xml")
+    add_custom_command(
+        OUTPUT ${qtnote_gnome_COMPILED_SCHEMA}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${qtnote_gnome_COMPILED_SCHEMA_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy ${qtnote_gnome_SCHEMA_FILES} ${qtnote_gnome_COMPILED_SCHEMA_DIR}
+        COMMAND ${GLIB_COMPILE_SCHEMAS_EXECUTABLE} ${qtnote_gnome_COMPILED_SCHEMA_DIR}
+        DEPENDS ${qtnote_gnome_SCHEMA_FILES}
+        VERBATIM
+    )
+    add_custom_target(qtnote_gnome_shell_extension_schemas ALL DEPENDS ${qtnote_gnome_COMPILED_SCHEMA})
+    add_dependencies(gnome qtnote_gnome_shell_extension_schemas)
+
+    install(
+        FILES ${qtnote_gnome_COMPILED_SCHEMA}
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/gnome-shell/extensions/${qtnote_gnome_shell_extension_uuid}/schemas
+        COMPONENT Executable
+    )
+else()
+    message(WARNING "glib-compile-schemas was not found, GNOME Shell extension settings schema will not be compiled")
+endif()
 
 find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt)
 if(GETTEXT_MSGFMT_EXECUTABLE)

@@ -4,5 +4,6 @@
   "description": "QtNote panel indicator",
   "shell-version": ["45", "46", "47", "48", "49", "50"],
   "url": "https://github.com/Ri0n/QtNote",
-  "gettext-domain": "qtnote-gnome"
+  "gettext-domain": "qtnote-gnome",
+  "settings-schema": "org.gnome.shell.extensions.qtnote"
 }
