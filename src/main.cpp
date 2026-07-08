@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QBuffer>
 #include <QDataStream>
+#include <QGuiApplication>
 #include <QSocketNotifier>
 #include <QStringList>
 #include <QtSingleApplication>
@@ -110,6 +111,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setOrganizationName("R-Soft"); // get rid of useless dirs
     QCoreApplication::setApplicationName("QtNote");
+    QGuiApplication::setDesktopFileName("qtnote");
 
     QApplication::setQuitOnLastWindowClosed(false);
 

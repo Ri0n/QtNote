@@ -5,6 +5,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -20,6 +21,7 @@ class QtNoteIndicator extends PanelMenu.Button {
 
         this._dbus = dbus;
         this._middleButtonPressed = false;
+        this._focusSourceId = 0;
         this._model = new NotesModel(this._dbus);
         this._popup = new NotesPopup(this.menu, this._model, this._dbus);
 
@@ -34,11 +36,16 @@ class QtNoteIndicator extends PanelMenu.Button {
                 return;
 
             this._model.refresh();
-            this._popup.focusSearch();
+            this._scheduleSearchFocus();
         });
     }
 
     destroy() {
+        if (this._focusSourceId) {
+            GLib.source_remove(this._focusSourceId);
+            this._focusSourceId = 0;
+        }
+
         this._popup?.destroy();
         this._popup = null;
 
@@ -46,6 +53,18 @@ class QtNoteIndicator extends PanelMenu.Button {
         this._model = null;
 
         super.destroy();
+    }
+
+    _scheduleSearchFocus() {
+        if (this._focusSourceId)
+            GLib.source_remove(this._focusSourceId);
+
+        this._focusSourceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+            this._focusSourceId = 0;
+            if (this.menu.isOpen)
+                this._popup.focusSearch();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _onCapturedEvent(actor, event) {

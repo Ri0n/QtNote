@@ -5,6 +5,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+import {QtNoteWindowActivator} from './windowActivation.js';
+
 const BUS_NAME = 'com.github.ri0n.QtNote';
 const OBJECT_PATH = '/QtNote';
 
@@ -50,9 +52,13 @@ export class QtNoteDBusClient {
             QtNoteInterfaceInfo.name,
             null);
         this._signalIds = [];
+        this._windowActivator = new QtNoteWindowActivator();
     }
 
     destroy() {
+        this._windowActivator?.destroy();
+        this._windowActivator = null;
+
         for (const id of this._signalIds)
             this._proxy.disconnectSignal(id);
         this._signalIds = [];
@@ -105,7 +111,7 @@ export class QtNoteDBusClient {
         });
     }
 
-    _call(method, parameters = null) {
+    _call(method, parameters = null, activateWindow = false) {
         this._proxy.call(
             method,
             parameters,
@@ -115,6 +121,8 @@ export class QtNoteDBusClient {
             (proxy, result) => {
                 try {
                     proxy.call_finish(result);
+                    if (activateWindow)
+                        this._windowActivator.requestActivation();
                 } catch (error) {
                     logError(error, `Failed to call QtNote.${method}`);
                     return;
@@ -123,27 +131,27 @@ export class QtNoteDBusClient {
     }
 
     openNote(storageId, noteId) {
-        this._call('openNote', new GLib.Variant('(ss)', [storageId, noteId]));
+        this._call('openNote', new GLib.Variant('(ss)', [storageId, noteId]), true);
     }
 
     createNote() {
-        this._call('createNote');
+        this._call('createNote', null, true);
     }
 
     activateGlobalShortcut(id) {
-        this._call('activateGlobalShortcut', new GLib.Variant('(s)', [id]));
+        this._call('activateGlobalShortcut', new GLib.Variant('(s)', [id]), true);
     }
 
     showNoteManager() {
-        this._call('showNoteManager');
+        this._call('showNoteManager', null, true);
     }
 
     showOptions() {
-        this._call('showOptions');
+        this._call('showOptions', null, true);
     }
 
     showAbout() {
-        this._call('showAbout');
+        this._call('showAbout', null, true);
     }
 
     quit() {

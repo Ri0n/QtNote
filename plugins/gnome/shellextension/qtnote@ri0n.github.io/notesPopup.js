@@ -73,6 +73,7 @@ export class NotesPopup {
 
     focusSearch() {
         this._searchEntry.grab_key_focus();
+        this._searchEntry.clutter_text.grab_key_focus();
     }
 
     _addAction(label, iconName, callback) {

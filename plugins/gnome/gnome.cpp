@@ -19,12 +19,14 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QGuiApplication>
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QWidget>
+#include <QWindow>
 #include <QtPlugin>
 
 #include "freedesktopnotifier.h"
@@ -150,9 +152,13 @@ void GnomePlugin::activator()
     QTimer  *timer = (QTimer *)sender();
     QWidget *w     = sender()->property("widget").value<QWidget *>();
 
-    w->activateWindow();
+    w->showNormal();
     w->raise();
-    // X11Util::forceActivateWindow(w->winId());
+    w->activateWindow();
+    if (auto *window = w->windowHandle())
+        window->requestActivate();
+    if (QGuiApplication::platformName() == QLatin1String("xcb"))
+        X11Util::forceActivateWindow(w->winId());
     timer->deleteLater();
 }
 
