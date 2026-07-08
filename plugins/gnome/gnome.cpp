@@ -27,6 +27,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QWidget>
 #include <QtPlugin>
 
+#include "freedesktopnotifier.h"
 #include "gnome.h"
 #include "qtnote_config.h"
 #include "x11util.h"
@@ -68,7 +69,9 @@ void GnomePlugin::setHost(PluginHostInterface *host)
 
 void GnomePlugin::notifyError(const QString &msg)
 {
-    // TODO use libnotify for native GNOME notifications.
+    if (FreedesktopNotifier::notifyError(tr("Error"), msg))
+        return;
+
     QMessageBox::warning(nullptr, tr("Error"), msg);
 }
 
