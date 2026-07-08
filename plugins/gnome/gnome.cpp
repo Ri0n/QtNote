@@ -54,7 +54,7 @@ PluginMetadata GnomePlugin::metadata()
     md.name        = "Gnome Integration";
     md.description = tr("Integrtion with gnome-only features");
     md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
-    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.version     = 0x01000000;     // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");

@@ -43,6 +43,7 @@ public:
 signals:
 
 public slots:
+    void activator();
 
 private:
     QHash<QString, QAction *> _shortcuts;

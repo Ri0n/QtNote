@@ -7,6 +7,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
+#include <QFutureWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -18,7 +19,11 @@
 #include <QStandardPaths>
 #include <QTimer>
 #include <QTranslator>
+#include <QWindow>
 #include <utility>
+
+#include <KWaylandExtras>
+#include <KWindowSystem>
 
 #include "qtnote_config.h"
 
@@ -256,18 +261,30 @@ void NotesModel::requestPage(int offset, bool append)
     });
 }
 
-void NotesModel::openNote(int row)
+void NotesModel::openNote(int row, QWindow *activationWindow)
 {
     if (!m_available || !m_interface || row < 0 || row >= m_items.size())
         return;
     const auto &item = m_items.at(row);
-    m_interface->asyncCall(QStringLiteral("openNote"), item.storageId, item.id);
+    callWithActivationToken(QStringLiteral("openNote"), { item.storageId, item.id }, activationWindow);
 }
 
-void NotesModel::createNote() { callOrStart(QStringLiteral("createNote")); }
-void NotesModel::showNoteManager() { callOrStart(QStringLiteral("showNoteManager")); }
-void NotesModel::showOptions() { callOrStart(QStringLiteral("showOptions")); }
-void NotesModel::showAbout() { callOrStart(QStringLiteral("showAbout")); }
+void NotesModel::createNote(QWindow *activationWindow)
+{
+    callWithActivationToken(QStringLiteral("createNote"), {}, activationWindow);
+}
+void NotesModel::showNoteManager(QWindow *activationWindow)
+{
+    callWithActivationToken(QStringLiteral("showNoteManager"), {}, activationWindow);
+}
+void NotesModel::showOptions(QWindow *activationWindow)
+{
+    callWithActivationToken(QStringLiteral("showOptions"), {}, activationWindow);
+}
+void NotesModel::showAbout(QWindow *activationWindow)
+{
+    callWithActivationToken(QStringLiteral("showAbout"), {}, activationWindow);
+}
 void NotesModel::quit() { call(QStringLiteral("quit")); }
 
 void NotesModel::serviceRegistered()
@@ -333,6 +350,40 @@ void NotesModel::call(const QString &method)
 {
     if (m_available && m_interface)
         m_interface->asyncCall(method);
+}
+
+void NotesModel::callWithActivationToken(const QString &method, const QVariantList &arguments,
+                                         QWindow *activationWindow)
+{
+    if (!m_available || !m_interface) {
+        if (arguments.isEmpty())
+            callOrStart(method);
+        return;
+    }
+
+    auto callMethod = [this, method, arguments]() {
+        if (!m_available || !m_interface)
+            return;
+
+        m_interface->asyncCallWithArgumentList(method, arguments);
+    };
+
+    if (!activationWindow || !KWindowSystem::isPlatformWayland()) {
+        callMethod();
+        return;
+    }
+
+    auto *watcher = new QFutureWatcher<QString>(this);
+    connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher, callMethod]() {
+        const QString token = watcher->result();
+        watcher->deleteLater();
+
+        if (!token.isEmpty() && m_available && m_interface)
+            m_interface->asyncCall(QStringLiteral("setXdgActivationToken"), token);
+
+        callMethod();
+    });
+    watcher->setFuture(KWaylandExtras::xdgActivationToken(activationWindow, QStringLiteral("qtnote")));
 }
 
 bool NotesModel::startBackend()

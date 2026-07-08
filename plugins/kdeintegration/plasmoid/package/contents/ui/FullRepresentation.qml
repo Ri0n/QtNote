@@ -7,6 +7,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
@@ -25,6 +26,43 @@ PlasmaExtras.Representation {
     implicitHeight: Kirigami.Units.gridUnit * 22
 
     readonly property bool hasFilter: root.notesModel.query.length > 0
+    property int focusAttempts: 0
+
+    function focusFilter() {
+        focusAttempts = 0;
+        filterFocusTimer.restart();
+    }
+
+    Timer {
+        id: filterFocusTimer
+
+        interval: 80
+        repeat: true
+        onTriggered: {
+            ++root.focusAttempts;
+            root.forceActiveFocus(Qt.PopupFocusReason);
+            filterField.forceActiveFocus(Qt.PopupFocusReason);
+            if (filterField.contentItem) {
+                filterField.contentItem.forceActiveFocus(Qt.PopupFocusReason);
+            }
+
+            if (filterField.activeFocus || root.focusAttempts >= 10) {
+                stop();
+            }
+        }
+    }
+
+    Connections {
+        target: root.plasmoidItem
+
+        function onExpandedChanged() {
+            if (root.plasmoidItem.expanded) {
+                root.focusFilter();
+            } else {
+                filterFocusTimer.stop();
+            }
+        }
+    }
 
     header: PlasmaExtras.PlasmoidHeading {
         visible: true
@@ -41,7 +79,7 @@ PlasmaExtras.Representation {
                     root.notesModel.query = text;
                 }
                 onAccepted: if (notesView.currentIndex >= 0) {
-                    root.notesModel.openNote(notesView.currentIndex);
+                    root.notesModel.openNote(notesView.currentIndex, root.Window.window);
                 }
             }
         }
@@ -83,7 +121,7 @@ PlasmaExtras.Representation {
                 Accessible.description: qsTr("Stored in %1").arg(storageId)
 
                 onClicked: {
-                    root.notesModel.openNote(index);
+                    root.notesModel.openNote(index, root.Window.window);
                     root.plasmoidItem.expanded = false;
                 }
             }

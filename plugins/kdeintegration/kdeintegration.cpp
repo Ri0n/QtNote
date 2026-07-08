@@ -8,6 +8,8 @@
 #include <QAction>
 #include <QGuiApplication>
 #include <QLoggingCategory>
+#include <QTimer>
+#include <QVariant>
 #include <QWidget>
 #include <QWindow>
 #include <QtPlugin>
@@ -38,7 +40,7 @@ PluginMetadata KDEIntegration::metadata()
     md.name        = "KDE Integration";
     md.description = tr("Provide native look and feel for KDE users");
     md.author      = "Sergei Ilinykh <rion4ik@gmail.com>";
-    md.version     = 0x010000;       // plugin's version 0xXXYYZZPP
+    md.version     = 0x01000000;     // plugin's version 0xXXYYZZPP
     md.minVersion  = 0x020300;       // minimum compatible version of QtNote
     md.maxVersion  = QTNOTE_VERSION; // maximum compatible version of QtNote
     md.homepage    = QUrl("http://ri0n.github.io/QtNote");
@@ -59,16 +61,34 @@ void KDEIntegration::notifyError(const QString &msg)
 
 void KDEIntegration::activateWidget(QWidget *w)
 {
+    QTimer *timer = new QTimer(this);
+    timer->setSingleShot(true);
+    connect(timer, SIGNAL(timeout()), SLOT(activator()));
+    timer->setProperty("widget", QVariant::fromValue<QWidget *>(w));
+    timer->start(100);
+}
+
+void KDEIntegration::activator()
+{
+    QTimer  *timer = (QTimer *)sender();
+    QWidget *w     = sender()->property("widget").value<QWidget *>();
+
+    w->showNormal();
     w->raise();
     w->activateWindow();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    if (auto *window = w->windowHandle())
+    if (auto *window = w->windowHandle()) {
+        if (KWindowSystem::isPlatformWayland())
+            KWindowSystem::updateStartupId(window);
+        window->requestActivate();
         KWindowSystem::activateWindow(window);
+    }
 #elif defined(OLD_K_FORCE_ACTIVATE)
     KWindowSystem::forceActiveWindow(w->winId(), 0);
 #else
     KX11Extras::forceActiveWindow(w->winId(), 0);
 #endif
+    timer->deleteLater();
 }
 
 bool KDEIntegration::registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action)

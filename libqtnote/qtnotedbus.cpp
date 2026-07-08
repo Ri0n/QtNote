@@ -4,6 +4,7 @@
 
 #include "qtnotedbus.h"
 
+#include <QByteArray>
 #include <QDBusConnection>
 #include <QDBusError>
 #include <QJsonArray>
@@ -126,6 +127,12 @@ void QtNoteDBus::openNote(const QString &storageId, const QString &noteId)
 {
     if (!storageId.isEmpty() && !noteId.isEmpty())
         emit openNoteRequested(storageId, noteId);
+}
+
+void QtNoteDBus::setXdgActivationToken(const QString &token)
+{
+    if (!token.isEmpty())
+        qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
 }
 
 void QtNoteDBus::createNote() { emit createNoteRequested(); }

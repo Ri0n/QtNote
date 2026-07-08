@@ -3,6 +3,8 @@
 
 #include <QAbstractListModel>
 #include <QString>
+#include <QVariantList>
+#include <QWindow>
 #include <qqmlintegration.h>
 
 class QDBusInterface;
@@ -43,11 +45,11 @@ public:
 
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
-    Q_INVOKABLE void openNote(int row);
-    Q_INVOKABLE void createNote();
-    Q_INVOKABLE void showNoteManager();
-    Q_INVOKABLE void showOptions();
-    Q_INVOKABLE void showAbout();
+    Q_INVOKABLE void openNote(int row, QWindow *activationWindow = nullptr);
+    Q_INVOKABLE void createNote(QWindow *activationWindow = nullptr);
+    Q_INVOKABLE void showNoteManager(QWindow *activationWindow = nullptr);
+    Q_INVOKABLE void showOptions(QWindow *activationWindow = nullptr);
+    Q_INVOKABLE void showAbout(QWindow *activationWindow = nullptr);
     Q_INVOKABLE void quit();
 
 signals:
@@ -77,6 +79,7 @@ private:
     bool parseNotesResponse(const QString &response, QList<Item> *items, bool *hasMore) const;
     void requestPage(int offset, bool append);
     void call(const QString &method);
+    void callWithActivationToken(const QString &method, const QVariantList &arguments, QWindow *activationWindow);
     void createInterface();
     bool startBackend();
     void callOrStart(const QString &method);

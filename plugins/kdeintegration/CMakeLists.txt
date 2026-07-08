@@ -10,8 +10,9 @@ if(UNIXLIKE AND QT_VERSION_MAJOR GREATER_EQUAL 6)
         set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
         find_package(KF6Config QUIET)
         find_package(KF6CoreAddons QUIET)
+        find_package(KF6WindowSystem QUIET)
         find_package(Plasma 6.0 QUIET)
-        if(KF6Config_FOUND AND KF6CoreAddons_FOUND AND Plasma_FOUND)
+        if(KF6Config_FOUND AND KF6CoreAddons_FOUND AND KF6WindowSystem_FOUND AND Plasma_FOUND)
             set(qtnote_plasmoid_buildable ON)
         endif()
     endif()
@@ -57,7 +58,7 @@ if(qtnote_plasmoid_buildable)
     target_include_directories(${qtnote_plasmoid_id} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plasmoid)
     target_link_libraries(${qtnote_plasmoid_id} PRIVATE
         Qt6::Core Qt6::DBus Qt6::Qml
-        KF6::CoreAddons Plasma::Plasma
+        KF6::CoreAddons KF6::WindowSystem Plasma::Plasma
     )
     install(
         TARGETS ${qtnote_plasmoid_id}
@@ -79,7 +80,7 @@ if(qtnote_plasmoid_buildable)
                 plasmoid/plasmoid.h
         )
         target_include_directories(plasmoid_qtnote_devel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plasmoid)
-        target_link_libraries(plasmoid_qtnote_devel PRIVATE Qt6::Core Qt6::DBus Qt6::Qml)
+        target_link_libraries(plasmoid_qtnote_devel PRIVATE Qt6::Core Qt6::DBus Qt6::Qml KF6::WindowSystem)
         target_compile_definitions(plasmoid_qtnote_devel PRIVATE
             QTNOTE_DEVEL_EXECUTABLE="$<TARGET_FILE:qtnoteexe>"
             QTNOTE_DEVEL_TRANSLATIONSDIR="${CMAKE_BINARY_DIR}/translations"

@@ -5,6 +5,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
@@ -46,6 +47,8 @@ PlasmoidItem {
     }
 
     fullRepresentation: FullRepresentation {
+        id: fullRepresentation
+
         plasmoidItem: root
         notesModel: notesModel
         newNoteAction: newNoteAction
@@ -58,24 +61,24 @@ PlasmoidItem {
             icon.name: "list-add-symbolic"
             priority: PlasmaCore.Action.HighPriority
             onTriggered: {
-                notesModel.createNote();
+                notesModel.createNote(root.Window.window);
                 root.expanded = false;
             }
         },
         PlasmaCore.Action {
             text: qsTr("Configure QtNote...")
             icon.name: "configure"
-            onTriggered: notesModel.showOptions()
+            onTriggered: notesModel.showOptions(root.Window.window)
         },
         PlasmaCore.Action {
             text: qsTr("Note Manager")
             icon.name: "view-list-details"
-            onTriggered: notesModel.showNoteManager()
+            onTriggered: notesModel.showNoteManager(root.Window.window)
         },
         PlasmaCore.Action {
             text: qsTr("About QtNote")
             icon.name: "help-about"
-            onTriggered: notesModel.showAbout()
+            onTriggered: notesModel.showAbout(root.Window.window)
         },
         PlasmaCore.Action {
             text: qsTr("Close QtNote")
