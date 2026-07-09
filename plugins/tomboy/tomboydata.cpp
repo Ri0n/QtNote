@@ -20,9 +20,12 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "tomboydata.h"
+#include "tomboystorage.h"
 
 #include <QIcon>
 #include <QtDebug>
+
+namespace QtNote {
 
 bool TomboyData::fromFile(QString fn)
 {
@@ -41,7 +44,7 @@ bool TomboyData::fromFile(QString fn)
     title_           = nodeText(root.namedItem("title"));
     text_            = nodeText(root.namedItem("text"));
     format_          = QtNote::Note::Markdown;
-    dtLastChange     = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+    lastChange_      = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
     // dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
     dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
     iCursor  = nodeText(root.namedItem("cursor-position")).toInt();
@@ -49,6 +52,22 @@ bool TomboyData::fromFile(QString fn)
     iHeight  = nodeText(root.namedItem("height")).toInt();
 
     return true;
+}
+
+QString TomboyData::storageId() const { return TomboyStorage::storageId; }
+
+bool TomboyData::load() { }
+
+bool TomboyData::save()
+{
+    QString newNoteId = noteData->id_.isEmpty() ? newId() : noteData->id_;
+
+    note.setText(text);
+    auto baseName = QString(QLatin1String("%1.note")).arg(newNoteId);
+    if (!note.saveToFile(notesDir.absoluteFilePath(baseName))) {
+        handleFSError();
+        return false;
+    }
 }
 
 bool TomboyData::saveToFile(const QString &fileName)
@@ -70,7 +89,13 @@ bool TomboyData::saveToFile(const QString &fileName)
     node.setAttribute("xml:space", "preserve");
     node2 = dom.createElement("note-content");
     node2.setAttribute("version", "0.1");
+
+    // our text is in Markdown format because TomboyStorage::saveNote accepts just it
+    // we need to convert to Tomboy format
+    auto fragment = markdownToTomboy(text_);
+
     text = dom.createTextNode(text_);
+
     node2.appendChild(text);
     node.appendChild(node2);
 
@@ -88,8 +113,6 @@ bool TomboyData::saveToFile(const QString &fileName)
 
 void TomboyData::remove() { QFile(sFileName).remove(); }
 
-qint64 TomboyData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
-
 QString TomboyData::nodeText(QDomNode node)
 {
     QString  ret;
@@ -105,3 +128,5 @@ QString TomboyData::nodeText(QDomNode node)
     }
     return ret;
 }
+
+} // namespace QtNote

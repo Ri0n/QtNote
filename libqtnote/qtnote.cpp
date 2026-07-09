@@ -221,29 +221,14 @@ void Main::showOptions()
     activateWidget(d);
 }
 
-NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId)
+NoteWidget *Main::noteWidget(const Note &note)
 {
-    NoteWidget *w = new NoteWidget(storageId, noteId);
-
-    auto storageFormats = NoteManager::instance()->storage(storageId)->availableFormats();
-    w->setAcceptRichText(storageFormats.contains(Note::Markdown) || storageFormats.contains(Note::Html));
-
-    emit noteWidgetCreated(w);
-
-    if (!noteId.isEmpty()) {
-        Note note = NoteManager::instance()->note(storageId, noteId);
-        if (note.isNull()) {
-            qWarning("failed to load note: %s", qPrintable(noteId));
-            delete w;
-            return nullptr;
-        }
-        w->setNote(note);
-    }
+    NoteWidget *w = new NoteWidget(note);
+    emit        noteWidgetCreated(w);
 
     connect(this, SIGNAL(settingsUpdated()), w, SLOT(rereadSettings()));
     connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
     connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
-    connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));
     return w;
 }
 
@@ -285,7 +270,7 @@ void Main::setNotificationImpl(NotificationInterface *notifier) { d->notifier = 
 void Main::registerStorage(NoteStorage::Ptr &storage)
 {
     NoteManager::instance()->registerStorage(storage);
-    connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(note_removed(NoteListItem)));
+    connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(note_removed(Note)));
     connect(storage.data(), SIGNAL(storageErorr(QString)), SLOT(notifyError(QString)));
 }
 
@@ -386,7 +371,7 @@ void Main::note_trashRequested()
 #ifdef MAIN_DEBUG
         qDebug() << "Main::note_trashRequested";
 #endif
-        storage->deleteNote(nw->noteId());
+        storage->removeNote(nw->noteId());
     }
 }
 
@@ -395,46 +380,11 @@ void Main::note_saveRequested()
 #ifdef MAIN_DEBUG
     qDebug() << "Main::note_saveRequested";
 #endif
-    NoteWidget *nw        = static_cast<NoteWidget *>(sender());
-    QString     storageId = nw->storageId();
-    QString     noteId    = nw->noteId();
-    QString     text      = nw->text();
-    auto        storage   = NoteManager::instance()->storage(storageId);
-    if (text.isEmpty()) { // delete empty note
-        if (!noteId.isEmpty()) {
-            storage->deleteNote(noteId);
-        }
-        return;
-    }
-    auto format = nw->isMarkdown() ? Note::Markdown : Note::PlainText;
-    if (noteId.isEmpty()) {
-        noteId = storage->createNote(text, format);
-        nw->setNoteId(noteId);
-    } else {
-        if (NoteManager::instance()->note(storageId, noteId).text() != text) {
-            QString newNoteId = storage->saveNote(noteId, text, format);
-            if (noteId != newNoteId) {
-                nw->setNoteId(newNoteId); // this will generate noteIdChanged
-            }
-        }
-    }
 }
 
-void Main::note_invalidated()
+void Main::note_removed(const Note &note)
 {
-#ifdef MAIN_DEBUG
-    qDebug() << "Main::note_invalidated";
-#endif
-    NoteWidget *nw   = static_cast<NoteWidget *>(sender());
-    Note        note = NoteManager::instance()->note(nw->storageId(), nw->noteId());
-    if (!note.isNull() && nw->lastChangeElapsed() > note.lastChangeElapsed()) {
-        nw->setNote(note);
-    }
-}
-
-void Main::note_removed(const NoteListItem &noteItem)
-{
-    NoteDialog *dlg = NoteDialog::findDialog(noteItem.storageId, noteItem.id);
+    NoteDialog *dlg = NoteDialog::findDialog(note.storageId(), note.id());
     if (dlg) {
 #ifdef MAIN_DEBUG
         qDebug() << "Main::note_removed";

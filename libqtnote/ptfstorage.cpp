@@ -59,7 +59,7 @@ bool PTFStorage::init()
 
 bool PTFStorage::isAccessible() const { return notesDir.isReadable(); }
 
-const QString PTFStorage::systemName() const { return QLatin1String("ptf"); }
+const QString PTFStorage::systemName() const { return storageId; }
 
 const QString PTFStorage::name() const { return tr("Plain Text Storage"); }
 
@@ -67,27 +67,29 @@ QIcon PTFStorage::storageIcon() const { return icon; }
 
 QIcon PTFStorage::noteIcon() const { return icon; }
 
-QList<NoteListItem> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
+QList<Note> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 {
-    QList<NoteListItem> ret;
+    QList<Note> ret;
     foreach (const QFileInfo &fi, files) {
-        PTFData note;
-        if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange);
-            ret.append(li);
+        auto noteData = new PTFData(this);
+        auto note     = Note(noteData);
+        if (noteData->fromFile(fi.canonicalFilePath())) {
+            ret.append(note);
         }
     }
     return ret;
 }
 
+Note PTFStorage::createNote() { return Note(new PTFData(this)); }
+
 Note PTFStorage::note(const QString &noteId)
 {
     if (!noteId.isEmpty()) {
         QFileInfo fi;
-        for (auto const ext : std::as_const(fileExt)) {
-            fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId).arg(ext)));
+        for (auto const &ext : std::as_const(fileExt)) {
+            fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId, ext)));
             if (fi.exists() || fi.isWritable()) {
-                PTFData *noteData = new PTFData;
+                PTFData *noteData = new PTFData(this);
                 noteData->fromFile(fi.filePath());
                 return Note(noteData);
             }
@@ -97,32 +99,39 @@ Note PTFStorage::note(const QString &noteId)
     return Note();
 }
 
-QString PTFStorage::saveNote(const QString &noteId, const QString &text, Note::Format format)
+bool PTFStorage::saveNote(const Note &note)
 {
-    PTFData note;
-    QString newNoteId = noteId;
-    note.setText(text);
-    auto ext = QString(QLatin1String(format == Note::Markdown ? "md" : "txt"));
-    if (!note.saveToFile(Utils::fileNameForText(notesDir, note.title(), ext, newNoteId))) {
-        handleFSError();
-        return QString();
+    if (note.isEmpty()) {
+        if (!note.id().isEmpty()) {
+            removeNote(note.id()); // TODO check errors?
+        }
+        return true;
     }
-    if (!noteId.isEmpty()) {
-        if (noteId != newNoteId) {
+
+    QString  oldNoteId = note.id();
+    PTFData *noteData  = static_cast<PTFData *>(note.data());
+    QString  newNoteId = oldNoteId;
+    auto     ext       = QString(QLatin1String(note.format() == Note::Markdown ? "md" : "txt"));
+    if (!noteData->saveToFile(Utils::fileNameForText(notesDir, note.title(), ext, newNoteId))) {
+        handleFSError();
+        return false;
+    }
+    noteData->setId(newNoteId);
+    if (!oldNoteId.isEmpty()) {
+        if (oldNoteId != newNoteId) {
             for (auto const &ext : std::as_const(fileExt)) {
-                notesDir.remove(noteId + QLatin1Char('.') + ext);
+                notesDir.remove(oldNoteId + QLatin1Char('.') + ext);
             }
         } else {
             for (auto const &otherExt : std::as_const(fileExt)) {
                 if (ext != otherExt) {
-                    notesDir.remove(noteId + QLatin1Char('.') + otherExt);
+                    notesDir.remove(oldNoteId + QLatin1Char('.') + otherExt);
                 }
             }
         }
     }
-    NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange);
-    putToCache(item, noteId); // noteId is old one. new one is in item.id
-    return newNoteId;
+    putToCache(note, oldNoteId); // noteId is old one. new one is in item.id
+    return true;
 }
 
 QList<Note::Format> PTFStorage::availableFormats() const
@@ -131,6 +140,8 @@ QList<Note::Format> PTFStorage::availableFormats() const
     return formats;
 }
 
-QString PTFStorage::findStorageDir() const { return Utils::qtnoteDataDir() + QLatin1Char('/') + systemName(); }
+QString PTFStorage::findStorageDir() const { return Utils::qtnoteDataDir() + QLatin1Char('/') + storageId; }
+
+QString PTFStorage::storageId = QStringLiteral("ptf");
 
 } // namespace QtNote

@@ -68,8 +68,8 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     QMenu menu;
     menu.addAction(actNew);
     menu.addSeparator();
-    QSettings           s;
-    QList<NoteListItem> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
+    QSettings   s;
+    QList<Note> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
     for (int i = 0; i < notes.count(); i++) {
         menu.addAction(host->noteManager()->storage(notes[i].storageId)->noteIcon(),
                        host->utilsCuttedDots(notes[i].title, 48).replace('&', "&&"))
@@ -115,8 +115,8 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     currentMenu  = nullptr;
 
     if (act && act != actNew) {
-        NoteListItem &note = notes[act->data().toInt()];
-        emit          showNoteTriggered(note.storageId, note.id);
+        Note &note = notes[act->data().toInt()];
+        emit  showNoteTriggered(note.storageId, note.id);
     }
 }
 

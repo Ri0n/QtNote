@@ -58,7 +58,7 @@ public:
     explicit PluginManager(Main *parent);
     ~PluginManager();
 
-    template <class T> inline T *castInterface(const PluginData::Ptr &pd) const
+    template <class T> T *castInterface(const PluginData::Ptr &pd) const
     {
         if (pd->loadStatus && pd->loadStatus < LS_Errors) {
             return qobject_cast<T *>(pd->instance);
@@ -66,25 +66,25 @@ public:
         return 0;
     }
 
-    void              loadPlugins();
-    inline LoadPolicy loadPolicy(const QString &pluginId) const { return plugins[pluginId]->loadPolicy; }
-    inline LoadStatus loadStatus(const QString &pluginId) const { return plugins[pluginId]->loadStatus; }
-    inline bool       isLoaded(const QString &pluginId) const
+    void       loadPlugins();
+    LoadPolicy loadPolicy(const QString &pluginId) const { return plugins[pluginId]->loadPolicy; }
+    LoadStatus loadStatus(const QString &pluginId) const { return plugins[pluginId]->loadStatus; }
+    bool       isLoaded(const QString &pluginId) const
     {
         auto ls = plugins[pluginId]->loadStatus;
         return ls && ls < LS_Errors;
     }
-    void                         setLoadPolicy(const QString &pluginId, LoadPolicy lp);
-    inline int                   pluginsCount() const { return plugins.size(); }
-    QStringList                  pluginsIds() const;
-    inline const PluginMetadata &metadata(const QString &pluginId) const { return plugins[pluginId]->metadata; }
-    inline QString               filename(const QString &pluginId) const { return plugins[pluginId]->fileName; }
-    QString                      tooltip(const QString &pluginId) const;
-    inline bool                  canOptionsDialog(const QString &pluginId) const
+    void                  setLoadPolicy(const QString &pluginId, LoadPolicy lp);
+    int                   pluginsCount() const { return plugins.size(); }
+    QStringList           pluginsIds() const;
+    const PluginMetadata &metadata(const QString &pluginId) const { return plugins[pluginId]->metadata; }
+    QString               filename(const QString &pluginId) const { return plugins[pluginId]->fileName; }
+    QString               tooltip(const QString &pluginId) const;
+    bool                  canOptionsDialog(const QString &pluginId) const
     {
         return castInterface<PluginOptionsInterface>(plugins[pluginId]) != 0;
     }
-    inline QDialog *optionsDialog(const QString &pluginId) const
+    QDialog *optionsDialog(const QString &pluginId) const
     {
         auto plugin = castInterface<PluginOptionsInterface>(plugins[pluginId]);
         if (plugin) {

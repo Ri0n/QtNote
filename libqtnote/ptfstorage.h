@@ -34,17 +34,22 @@ class PTFStorage : public FileStorage {
 
 public:
     PTFStorage(QObject *parent = 0);
-    bool                init();
-    bool                isAccessible() const;
-    const QString       systemName() const;
-    const QString       name() const;
-    QIcon               storageIcon() const;
-    QIcon               noteIcon() const;
-    QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
-    Note                note(const QString &noteId);
-    QString             saveNote(const QString &noteId, const QString &text, Note::Format Format = Note::PlainText);
-    QList<Note::Format> availableFormats() const;
-    QString             findStorageDir() const;
+    bool          init() override;
+    bool          isAccessible() const override;
+    const QString systemName() const override;
+    const QString name() const override;
+    QIcon         storageIcon() const override;
+    QIcon         noteIcon() const override;
+    QList<Note>   noteListFromInfoList(const QFileInfoList &) override;
+
+    Note createNote() override;
+    Note note(const QString &noteId) override;
+    bool saveNote(const Note &note) override;
+
+    QList<Note::Format> availableFormats() const override;
+    QString             findStorageDir() const override;
+
+    static QString storageId;
 };
 
 } // namespace QtNote

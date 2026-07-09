@@ -67,9 +67,9 @@ GnomeTray::~GnomeTray() { }
 
 void GnomeTray::rebuildMenu()
 {
-    uint                h = 0;
-    QSettings           s;
-    QList<NoteListItem> notes = NoteManager::instance()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
+    uint        h = 0;
+    QSettings   s;
+    QList<Note> notes = NoteManager::instance()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
     for (int i = 0; i < notes.count(); i++) {
         h ^= qHash(notes[i].title);
     }

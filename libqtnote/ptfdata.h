@@ -32,15 +32,16 @@ namespace QtNote {
 
 class PTFData : public NoteData {
 public:
-    bool fromFile(QString);
+    using NoteData::NoteData;
+    bool fromFile(const QString &fileName);
     bool saveToFile(const QString &fileName);
 
-    void   remove() override;
-    qint64 lastChangeElapsed() const override;
+    QString storageId() const override;
+    bool    load() override;
+    bool    save() override;
+    void    remove() override;
 
-    QString   sFileName;
-    QDateTime dtLastChange;
-    QDateTime dtCreate;
+    QString sFileName;
 };
 
 }

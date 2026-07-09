@@ -173,8 +173,7 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
         return;
     }
 
-    NoteWidget *nw = qtnote->noteWidget(storageId, noteId);
-    nw->setNote(note);
+    NoteWidget *nw = qtnote->noteWidget(note);
 
     if (ui->splitter->count() > 1) {
         delete ui->splitter->widget(ui->splitter->count() - 1);

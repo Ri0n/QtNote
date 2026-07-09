@@ -25,7 +25,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMap>
 
 #include "filestorage.h"
-#include "tomboydata.h"
 
 namespace QtNote {
 
@@ -34,17 +33,22 @@ class TomboyStorage : public FileStorage {
     Q_DISABLE_COPY(TomboyStorage)
 public:
     TomboyStorage(QObject *parent);
-    bool                init();
-    bool                isAccessible() const;
-    const QString       systemName() const;
-    const QString       name() const;
-    QIcon               storageIcon() const;
-    QIcon               noteIcon() const;
-    QList<NoteListItem> noteListFromInfoList(const QFileInfoList &);
-    Note                note(const QString &id);
-    QString             saveNote(const QString &noteId, const QString &text, Note::Format format = Note::PlainText);
-    QString             findStorageDir() const;
-    QList<Note::Format> availableFormats() const;
+    bool          init() override;
+    bool          isAccessible() const override;
+    const QString systemName() const override;
+    const QString name() const override;
+    QIcon         storageIcon() const override;
+    QIcon         noteIcon() const override;
+    QList<Note>   noteListFromInfoList(const QFileInfoList &) override;
+
+    Note createNote() override;
+    Note note(const QString &id) override;
+    bool saveNote(const Note &note) override;
+
+    QString             findStorageDir() const override;
+    QList<Note::Format> availableFormats() const override;
+
+    static QString storageId;
 };
 
 } // namespace

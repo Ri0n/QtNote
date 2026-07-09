@@ -42,7 +42,7 @@ protected:
 public:
     NoteFinder(NoteStorage &storage) : QObject(&storage), _storage(storage) { }
 
-    inline NoteStorage &storage() const { return _storage; }
+    NoteStorage &storage() const { return _storage; }
 
 signals:
     void found(const QString &noteId);
@@ -58,8 +58,8 @@ void NoteFinder::start(const QString &text)
     auto nl = _storage.noteList();
     for (auto &n : std::as_const(nl)) {
         // text always returns plain text
-        if (_storage.note(n.id).text().contains(text)) {
-            emit found(n.id);
+        if (_storage.note(n.id()).text().contains(text)) {
+            emit found(n.id());
         }
     }
 
@@ -130,10 +130,10 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     }
 
     connect(storage.data(), SIGNAL(invalidated()), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteModified(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteIdChanged(NoteListItem, QString)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteAdded(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteModified(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
 
     storage->init();
     emit storageAdded(storage);
@@ -159,9 +159,9 @@ bool NoteManager::loadAll()
 
 void NoteManager::storageChanged() { emit storageChanged(_storages[((NoteStorage *)sender())->systemName()]); }
 
-QList<NoteListItem> NoteManager::noteList(int count) const
+QList<Note> NoteManager::noteList(int count) const
 {
-    QList<NoteListItem> ret;
+    QList<Note> ret;
     foreach (NoteStorage::Ptr storage, prioritizedStorages()) {
         ret += storage->noteList(count);
     }

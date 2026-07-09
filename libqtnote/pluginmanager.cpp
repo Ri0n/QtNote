@@ -102,12 +102,9 @@ public:
         }
     }
 
-    inline bool isFinished() const
-    {
-        return pluginsIt == plugins.constEnd() && pluginsDirsIt == pluginsDirs.constEnd();
-    }
+    bool isFinished() const { return pluginsIt == plugins.constEnd() && pluginsDirsIt == pluginsDirs.constEnd(); }
 
-    inline QString fileName() const
+    QString fileName() const
     {
         if (pluginsIt != plugins.constEnd()) {
             return currentDir.absoluteFilePath(*pluginsIt);
@@ -194,8 +191,8 @@ void PluginManager::loadPlugins()
 #ifdef Q_OS_OSX
     QString session = "macosx";
 #else
-    auto desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
-    QString session = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
+    auto    desktopComponents = QString(qgetenv("XDG_CURRENT_DESKTOP")).split(":");
+    QString session           = desktopComponents.isEmpty() ? QString {} : desktopComponents.last().toLower();
 #endif
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];

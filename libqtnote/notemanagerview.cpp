@@ -48,7 +48,7 @@ void NoteManagerView::removeSelected()
         NoteStorage::Ptr storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
         QString          noteId  = index.data(NotesModel::NoteIdRole).toString();
         if (storage && !noteId.isEmpty()) {
-            storage->deleteNote(noteId);
+            storage->removeNote(noteId);
         }
     }
 }

@@ -6,6 +6,7 @@
 #include <QWidget>
 
 #include "highlighterext.h"
+#include "note.h"
 
 namespace Ui {
 class NoteWidget;
@@ -17,7 +18,6 @@ namespace QtNote {
 
 class NoteEdit;
 class NoteHighlighter;
-class Note;
 
 class QTNOTE_EXPORT NoteWidget : public QWidget {
     Q_OBJECT
@@ -26,33 +26,28 @@ public:
     enum Feature { RichText = 1 };
     Q_DECLARE_FLAGS(Features, Feature)
 
-    explicit NoteWidget(const QString &storageId, const QString &noteId);
+    explicit NoteWidget(const Note &note = {});
     ~NoteWidget();
 
-    void                    setText(QString text);
-    void                    setNote(const Note &note);
-    QString                 text();
-    inline const Features  &features() const { return _features; }
-    bool                    isMarkdown() const; // current mode. may look a little ugly
-    inline void             setFeatures(const Features &features) { _features = features; }
-    virtual NoteEdit       *editWidget() const;
-    inline NoteHighlighter *highlighter() const { return _highlighter; }
-    void                    setAcceptRichText(bool state);
-    inline QString          storageId() const { return _storageId; }
-    inline QString          noteId() const { return _noteId; }
-    void                    setNoteId(const QString &noteId);
-    inline const QString   &firstLine() const { return _firstLine; }
-    inline qint64           lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
-    inline bool             isTrashRequested() const { return _trashRequested; }
-    inline void             setTrashRequested(bool state) { _trashRequested = state; }
-    void                    rehighlight();
+    void              setText(QString text);
+    QString           text();
+    const Features   &features() const { return _features; }
+    bool              isMarkdown() const; // current mode. may look a little ugly
+    void              setFeatures(const Features &features) { _features = features; }
+    virtual NoteEdit *editWidget() const;
+    NoteHighlighter  *highlighter() const { return _highlighter; }
+    void              setAcceptRichText(bool state);
+    Note              note() const { return _note; }
+    const QString    &firstLine() const { return _firstLine; }
+    qint64            lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
+    bool              isTrashRequested() const { return _trashRequested; }
+    void              setTrashRequested(bool state) { _trashRequested = state; }
+    void              rehighlight();
 
 signals:
     void firstLineChanged();
     void trashRequested();
-    void saveRequested();
     void noteIdChanged(const QString &oldId, const QString &newId);
-    void invalidated(); // emited when we are unsure we have the latest data
 
 protected:
     void changeEvent(QEvent *e) override;
@@ -62,6 +57,8 @@ protected:
 #endif
 
 private:
+    void     initFromNote();
+    void     setContents(const QString &title, const QString &body, Note::Format format);
     QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 
 public slots:
@@ -91,8 +88,7 @@ private:
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
-    QString                               _storageId;
-    QString                               _noteId;
+    Note                                  _note;
     QString                               _firstLine;
     QString                               _extFileName;
     QString                               _extSelecteFilter;

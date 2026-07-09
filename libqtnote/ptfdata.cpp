@@ -20,23 +20,30 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "ptfdata.h"
+#include "notemanager.h"
+#include "ptfstorage.h"
+#include "utils.h"
+
 #include <QFileInfo>
 #include <QIcon>
 
 namespace QtNote {
 
-bool PTFData::fromFile(QString fn)
+bool PTFData::fromFile(const QString &fileName)
 {
-    QFile file(fn);
+    QFileInfo fi(fileName);
+    QFile     file(fileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
-    format_ = fn.endsWith(".md", Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
-    setText(QString::fromUtf8(file.readAll()));
-    sFileName = fn;
+    id_ = fi.completeBaseName();
+    format_
+        = fi.suffix().toLower().endsWith(QLatin1String("md"), Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
+    title_ = QString::fromUtf8(file.readLine()).trimmed();
+
+    sFileName = fileName;
     file.close();
-    QFileInfo fi(fn);
-    dtCreate     = fi.birthTime();
-    dtLastChange = fi.lastModified();
+
+    lastChange_ = fi.lastModified();
 
     return true;
 }
@@ -52,12 +59,34 @@ bool PTFData::saveToFile(const QString &fileName)
     file.write(data.toUtf8());
     sFileName = fileName;
     file.close();
-    dtLastChange = QFileInfo(file).lastModified();
+    lastChange_ = QFileInfo(file).lastModified();
     return true;
 }
 
-void PTFData::remove() { QFile(sFileName).remove(); }
+QString PTFData::storageId() const { return PTFStorage::storageId; }
 
-qint64 PTFData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
+bool PTFData::load()
+{
+    auto  fs   = static_cast<FileStorage *>(storage_);
+    auto  data = fs->loadNoteData(*this);
+    QFile file(sFileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    auto data               = QString::fromUtf8(file.readAll());
+    std::tie(title_, text_) = Utils::splitTitle(data);
+    loaded_                 = true;
+    return true;
+}
+
+bool PTFData::save()
+{
+    if (!loaded_) {
+        qWarning("can't save not loaded note");
+        return false;
+    }
+    return storage_->saveNote(this);
+}
+
+void PTFData::remove() { storage_->removeNote(id_); }
 
 } // namespace QtNote

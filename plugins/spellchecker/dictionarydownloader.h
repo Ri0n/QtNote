@@ -29,13 +29,13 @@ namespace QtNote {
 class DictionaryDownloader : public QObject {
     Q_OBJECT
 public:
-    inline DictionaryDownloader(const QLocale &locale, QObject *parent) : QObject(parent), locale_(locale) { }
+    DictionaryDownloader(const QLocale &locale, QObject *parent) : QObject(parent), locale_(locale) { }
 
     virtual void start() = 0;
 
-    inline void           setAutoDelete(bool enabled) { autoDelete_ = enabled; }
-    inline bool           hasErrors() const { return !lastError_.isEmpty(); }
-    inline const QString &lastError() const { return lastError_; }
+    void           setAutoDelete(bool enabled) { autoDelete_ = enabled; }
+    bool           hasErrors() const { return !lastError_.isEmpty(); }
+    const QString &lastError() const { return lastError_; }
 signals:
     void finished();
     void progress(int progress); // 0..100

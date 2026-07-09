@@ -54,7 +54,7 @@ bool TomboyStorage::init()
 
 bool TomboyStorage::isAccessible() const { return notesDir.isReadable(); }
 
-const QString TomboyStorage::systemName() const { return "tomboy"; }
+const QString TomboyStorage::systemName() const { return storageId; }
 
 const QString TomboyStorage::name() const { return tr("Tomboy Storage"); }
 
@@ -62,18 +62,20 @@ QIcon TomboyStorage::storageIcon() const { return QIcon(":/icons/tomboy"); }
 
 QIcon TomboyStorage::noteIcon() const { return QIcon(":/icons/tomboynote"); }
 
-QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
+QList<Note> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
 {
-    QList<NoteListItem> ret;
+    QList<Note> ret;
     foreach (const QFileInfo &fi, files) {
         TomboyData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange);
+            Note li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange);
             ret.append(li);
         }
     }
     return ret;
 }
+
+Note TomboyStorage::createNote() { return Note(new TomboyData()); }
 
 Note TomboyStorage::note(const QString &id)
 {
@@ -90,18 +92,19 @@ Note TomboyStorage::note(const QString &id)
     return Note();
 }
 
-QString TomboyStorage::saveNote(const QString &noteId, const QString &text, Note::Format format)
+bool TomboyStorage::saveNote(const Note &noteData)
 {
+    // availableFormats returns just markdown, so format is markdown
     TomboyData note;
-    QString    newNoteId = noteId.isEmpty() ? newId() : noteId;
+    QString    newNoteId = noteData->id_.isEmpty() ? newId() : noteData->id_;
 
     note.setText(text);
     auto baseName = QString(QLatin1String("%1.note")).arg(newNoteId);
     if (!note.saveToFile(notesDir.absoluteFilePath(baseName))) {
         handleFSError();
-        return QString();
+        return false;
     }
-    NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange);
+    Note item(newNoteId, systemName(), note.title(), note.dtLastChange);
     putToCache(item, noteId);
     return newNoteId;
 }
@@ -136,5 +139,7 @@ QString TomboyStorage::findStorageDir() const
     }
     return QString();
 }
+
+QString TomboyStorage::storageId = QStringLiteral("tomboy");
 
 } // namespace QtNote

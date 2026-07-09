@@ -28,7 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 class NMMItem;
-struct NoteListItem;
+struct Note;
 
 class NotesModel : public QAbstractItemModel {
     Q_OBJECT
@@ -63,9 +63,9 @@ public slots:
 private slots:
     void storageAdded(const NoteStorage::Ptr &);
     void storageRemoved(const NoteStorage::Ptr &);
-    void noteAdded(const NoteListItem &);
-    void noteModified(const NoteListItem &);
-    void noteRemoved(const NoteListItem &);
+    void noteAdded(const Note &);
+    void noteModified(const Note &);
+    void noteRemoved(const Note &);
 
     void storageInvalidated();
 
