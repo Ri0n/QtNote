@@ -2,12 +2,12 @@ include(QtNoteMacro)
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network REQUIRED)
 
-add_qtnote_plugin(googlespeech "Google Cloud Speech-to-Text backend" ON unix macosx windows SOURCES
-    googlespeechplugin.cpp
-    googlespeechplugin.h
+add_qtnote_plugin(gemini "Gemini API speech recognition backend" ON unix macosx windows SOURCES
+    geminiplugin.cpp
+    geminiplugin.h
 )
 
-target_link_libraries(googlespeech
+target_link_libraries(gemini
     ${EXTRA_LINK_TARGET}
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
@@ -15,4 +15,4 @@ target_link_libraries(googlespeech
     Qt${QT_VERSION_MAJOR}::Network
 )
 
-install_qtnote_plugin(googlespeech)
+install_qtnote_plugin(gemini)

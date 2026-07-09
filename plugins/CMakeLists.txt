@@ -7,7 +7,7 @@ set(plugins_list
     spellchecker
     tomboy
     gnome
-    googlespeech
+    gemini
 )
 
 foreach(plugin ${plugins_list})

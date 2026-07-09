@@ -307,7 +307,10 @@ void OptionsPlugins::pluginClicked(const QModelIndex &index)
             auto &md = qtnote->pluginManager()->metadata(id);
             d->setWindowTitle(md.name + QStringLiteral(": ") + tr("Settings"));
             d->setWindowIcon(md.icon);
-            connect(d, SIGNAL(accepted()), qtnote, SIGNAL(settingsUpdated()));
+            connect(d, &QDialog::accepted, this, [this, id]() {
+                qDebug() << "Plugin settings accepted:" << id << "emitting settingsUpdated";
+                emit qtnote->settingsUpdated();
+            });
             d->show();
             d->raise();
         }

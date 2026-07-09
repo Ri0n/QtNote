@@ -365,13 +365,20 @@ QList<SpeechRecognitionProviderInterface *> PluginManager::speechRecognitionProv
     for (const auto &pluginId : ids) {
         auto pd = plugins.value(pluginId);
         if (!pd) {
+            qDebug() << "Speech recognition provider scan: missing plugin data" << pluginId;
             continue;
         }
         auto provider = castInterface<SpeechRecognitionProviderInterface>(pd);
         if (provider) {
+            qDebug() << "Speech recognition provider scan:" << pluginId << "status" << pd->loadStatus << "ready"
+                     << provider->isSpeechRecognitionReady();
             ret.append(provider);
+        } else {
+            qDebug() << "Speech recognition provider scan:" << pluginId << "status" << pd->loadStatus
+                     << "no speech interface";
         }
     }
+    qDebug() << "Speech recognition providers found:" << ret.size();
     return ret;
 }
 
@@ -380,9 +387,11 @@ SpeechRecognitionProviderInterface *PluginManager::speechRecognitionProvider() c
     const auto providers = speechRecognitionProviders();
     for (auto provider : providers) {
         if (provider->isSpeechRecognitionReady()) {
+            qDebug() << "Selected speech recognition provider" << provider;
             return provider;
         }
     }
+    qDebug() << "No ready speech recognition provider found";
     return nullptr;
 }
 

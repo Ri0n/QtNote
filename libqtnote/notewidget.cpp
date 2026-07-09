@@ -1,6 +1,7 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCryptographicHash>
+#include <QDebug>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QGuiApplication>
@@ -19,6 +20,7 @@
 #include <QUuid>
 
 #include "defaults.h"
+#include "iconutils.h"
 #include "note.h"
 #include "notehighlighter.h"
 #include "notewidget.h"
@@ -32,6 +34,18 @@ namespace QtNote {
 
 static std::shared_ptr<HighlighterExtension> firstLineHighlighter;
 static QColor                                firstLineColor;
+
+namespace {
+    QAction *initAction(const QIcon icon, const QString &title, const QString &toolTip, const char *hotkey,
+                        QWidget *parent)
+    {
+        QAction *act = new QAction(icon, title, parent);
+        act->setToolTip(toolTip);
+        act->setShortcut(QKeySequence(QLatin1String(hotkey)));
+        act->setShortcutContext(Qt::WindowShortcut);
+        return act;
+    }
+}
 
 class FirstLineHighlighter : public HighlighterExtension {
 public:
@@ -184,22 +198,32 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 
     tbar->addSeparator();
 
-    speechRecorder = new SpeechAudioRecorder(this);
-    speechButton   = new QToolButton(tbar);
-    speechButton->setIcon(QIcon::fromTheme(QLatin1String("audio-input-microphone")));
-    speechButton->setText(tr("Mic"));
-    speechButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    speechButton->setToolTip(tr("Hold to dictate text"));
-    speechButton->setAutoRaise(true);
-    speechButton->setVisible(false);
-    tbar->addWidget(speechButton);
-    connect(speechButton, &QToolButton::pressed, this, &NoteWidget::startSpeechRecognition);
-    connect(speechButton, &QToolButton::released, this, &NoteWidget::finishSpeechRecognition);
+    speechRecorder  = new SpeechAudioRecorder(this);
+    auto speechIcon = QIcon::fromTheme(QLatin1String("audio-input-microphone"));
+    if (speechIcon.isNull()) {
+        speechIcon = IconUtils::symbolicIcon(QLatin1String(":/svg/microphone"));
+        qDebug() << "Speech microphone theme icon is missing, using bundled fallback icon";
+    } else {
+        qDebug() << "Speech microphone theme icon loaded";
+    }
+    speechIdleIcon = speechIcon;
+    speechAction   = QtNote::initAction(speechIcon, tr("Mic"), tr("Hold to dictate text"), "", this);
+    speechAction->setVisible(false);
+    tbar->addAction(speechAction);
+    speechButton = qobject_cast<QToolButton *>(tbar->widgetForAction(speechAction));
+    if (speechButton) {
+        speechButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        speechButton->setAutoRaise(true);
+        connect(speechButton, &QToolButton::pressed, this, &NoteWidget::startSpeechRecognition);
+        connect(speechButton, &QToolButton::released, this, &NoteWidget::finishSpeechRecognition);
+        qDebug() << "Speech microphone toolbar button created for action" << speechAction;
+    } else {
+        qDebug() << "Speech microphone toolbar button was not created for action" << speechAction;
+    }
     connect(speechRecorder, &SpeechAudioRecorder::elapsedChanged, this, &NoteWidget::updateSpeechRecognitionProgress);
     connect(speechRecorder, &SpeechAudioRecorder::maxDurationReached, this, &NoteWidget::finishSpeechRecognition);
-    connect(speechRecorder, &SpeechAudioRecorder::failed, this, [this](const QString &error) {
-        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), error, speechButton);
-    });
+    connect(speechRecorder, &SpeechAudioRecorder::failed, this,
+            [this](const QString &error) { showSpeechRecognitionError(error); });
 
     act = initAction(":/icons/trash", tr("Delete"), tr("Delete note"), "Ctrl+D");
     tbar->addAction(act);
@@ -243,11 +267,7 @@ NoteWidget::~NoteWidget()
 
 QAction *NoteWidget::initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey)
 {
-    QAction *act = new QAction(icon ? QIcon(icon) : QIcon(), title, this);
-    act->setToolTip(toolTip);
-    act->setShortcut(QKeySequence(QLatin1String(hotkey)));
-    act->setShortcutContext(Qt::WindowShortcut);
-    return act;
+    return QtNote::initAction(icon ? QIcon(icon) : QIcon(), title, toolTip, hotkey, this);
 }
 
 void NoteWidget::changeEvent(QEvent *e)
@@ -395,6 +415,8 @@ void NoteWidget::setAcceptRichText(bool state)
 void NoteWidget::setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider)
 {
     speechProvider = provider;
+    qDebug() << "Speech recognition provider set for note" << _storageId << _noteId << "provider" << provider << "ready"
+             << (provider ? provider->isSpeechRecognitionReady() : false);
     updateSpeechRecognitionAction();
 }
 
@@ -409,12 +431,16 @@ void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
 
 void NoteWidget::startSpeechRecognition()
 {
+    if (speechRecognitionBusy) {
+        return;
+    }
     if (!speechProvider || !speechProvider->isSpeechRecognitionReady() || !speechRecorder->isAvailable()) {
         updateSpeechRecognitionAction();
         return;
     }
     if (speechJob) {
         speechJob->cancel();
+        speechJob->deleteLater();
         speechJob.clear();
     }
 
@@ -422,8 +448,7 @@ void NoteWidget::startSpeechRecognition()
     auto maxMs   = caps.maxOneShotDurationMs > 0 ? caps.maxOneShotDurationMs : 60000;
     auto started = speechRecorder->start(maxMs);
     if (!started) {
-        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), speechRecorder->errorString(),
-                           speechButton);
+        showSpeechRecognitionError(speechRecorder->errorString());
     }
 }
 
@@ -447,21 +472,33 @@ void NoteWidget::finishSpeechRecognition()
 
     speechJob = speechProvider->recognizeSpeech(audio, request);
     if (!speechJob) {
+        showSpeechRecognitionError(tr("Speech recognition provider did not start a recognition job"));
         return;
     }
-    connect(speechJob, &SpeechRecognitionJob::finished, this, [this](const QString &text) {
+    speechRecognitionBusy = true;
+    updateSpeechRecognitionAction();
+    if (speechButton) {
+        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), tr("Recognizing speech..."),
+                           speechButton, QRect(), 3000);
+    }
+    auto job = speechJob;
+    connect(job, &SpeechRecognitionJob::finished, this, [this, job](const QString &text) {
         appendRecognizedText(text);
-        if (speechJob) {
-            speechJob->deleteLater();
+        if (speechJob == job) {
             speechJob.clear();
         }
+        speechRecognitionBusy = false;
+        updateSpeechRecognitionAction();
+        job->deleteLater();
     });
-    connect(speechJob, &SpeechRecognitionJob::failed, this, [this](const QString &error) {
-        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), error, speechButton);
-        if (speechJob) {
-            speechJob->deleteLater();
+    connect(job, &SpeechRecognitionJob::failed, this, [this, job](const QString &error) {
+        showSpeechRecognitionError(error);
+        if (speechJob == job) {
             speechJob.clear();
         }
+        speechRecognitionBusy = false;
+        updateSpeechRecognitionAction();
+        job->deleteLater();
     });
 }
 
@@ -472,8 +509,11 @@ void NoteWidget::cancelSpeechRecognition()
     }
     if (speechJob) {
         speechJob->cancel();
+        speechJob->deleteLater();
         speechJob.clear();
     }
+    speechRecognitionBusy = false;
+    updateSpeechRecognitionAction();
     QToolTip::hideText();
 }
 
@@ -486,6 +526,17 @@ void NoteWidget::updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDur
     auto seconds     = (remainingMs + 999) / 1000;
     QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())),
                        tr("%n second(s) left", nullptr, int(seconds)), speechButton);
+}
+
+void NoteWidget::showSpeechRecognitionError(const QString &error)
+{
+    if (error.isEmpty()) {
+        return;
+    }
+    if (speechButton) {
+        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), error, speechButton, QRect(),
+                           6000);
+    }
 }
 
 void NoteWidget::switchToMarkdown()
@@ -665,20 +716,38 @@ void NoteWidget::rereadSettings()
     setFont(f);
 
     updateFirstLineColor();
+    updateSpeechRecognitionAction();
 }
 
 void NoteWidget::updateSpeechRecognitionAction()
 {
-    if (!speechButton || !speechRecorder) {
+    if (!speechAction || !speechButton || !speechRecorder) {
+        qDebug() << "Speech recognition action skipped: action, button or recorder is missing" << speechAction
+                 << speechButton << speechRecorder;
         return;
     }
-    auto language  = speechRecognitionLanguage();
-    bool available = speechProvider && speechProvider->isSpeechRecognitionReady() && speechRecorder->isAvailable()
-        && (!language.isEmpty() || speechProvider->speechRecognitionCapabilities().languages.isEmpty());
-    speechButton->setVisible(available);
-    speechButton->setEnabled(available);
-    if (available) {
-        speechButton->setToolTip(language.isEmpty() ? tr("Hold to dictate text")
+    auto language          = speechRecognitionLanguage();
+    auto recorderAvailable = speechRecorder->isAvailable();
+    auto providerReady     = speechProvider && speechProvider->isSpeechRecognitionReady();
+    auto caps = speechProvider ? speechProvider->speechRecognitionCapabilities() : SpeechRecognitionCapabilities();
+    bool languageSupported = !language.isEmpty() || caps.languages.isEmpty();
+    bool available         = providerReady && recorderAvailable && languageSupported;
+    qDebug() << "Speech recognition action update:"
+             << "provider" << speechProvider << "providerReady" << providerReady << "recorderAvailable"
+             << recorderAvailable << "language" << language << "capsLanguages" << caps.languages << "languageSupported"
+             << languageSupported << "busy" << speechRecognitionBusy << "visible"
+             << (available || speechRecognitionBusy);
+    speechAction->setVisible(available || speechRecognitionBusy);
+    speechAction->setEnabled(available && !speechRecognitionBusy);
+    speechButton->setEnabled(available && !speechRecognitionBusy);
+    if (speechRecognitionBusy) {
+        speechAction->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
+        speechAction->setToolTip(tr("Recognizing speech..."));
+    } else {
+        speechAction->setIcon(speechIdleIcon);
+    }
+    if (available && !speechRecognitionBusy) {
+        speechAction->setToolTip(language.isEmpty() ? tr("Hold to dictate text")
                                                     : tr("Hold to dictate text (%1)").arg(language));
     }
 }

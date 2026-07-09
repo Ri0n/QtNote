@@ -2,6 +2,7 @@
 #define NOTEWIDGET_H
 
 #include <QElapsedTimer>
+#include <QIcon>
 #include <QPointer>
 #include <QTimer>
 #include <QWidget>
@@ -13,6 +14,7 @@ class NoteWidget;
 }
 
 class TypeAheadFindBar;
+class QAction;
 class QToolButton;
 
 namespace QtNote {
@@ -95,6 +97,7 @@ private slots:
 
 private:
     void    updateSpeechRecognitionAction();
+    void    showSpeechRecognitionError(const QString &error);
     void    appendRecognizedText(const QString &text);
     QString speechRecognitionLanguage() const;
     QString normalizeSpeechRecognitionLanguage(const QString &language) const;
@@ -104,6 +107,8 @@ private:
 
     QAction                              *mdModeAct;
     QAction                              *txtModeAct;
+    QAction                              *speechAction = nullptr;
+    QIcon                                 speechIdleIcon;
     QToolButton                          *speechButton   = nullptr;
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;
     SpeechAudioRecorder                  *speechRecorder = nullptr;
@@ -120,8 +125,9 @@ private:
     QTimer                                _autosaveTimer;
     QElapsedTimer                         _lastChangeElapsed;
     Features                              _features;
-    bool                                  _trashRequested = false;
-    bool                                  _changed        = false;
+    bool                                  _trashRequested       = false;
+    bool                                  _changed              = false;
+    bool                                  speechRecognitionBusy = false;
 };
 
 } // namespace QtNote

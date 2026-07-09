@@ -1,15 +1,11 @@
 #include "trayiconutils.h"
 
+#include "iconutils.h"
+
+#include <QColor>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QSystemTrayIcon>
-
-#ifdef Q_OS_WIN
-#include <QColor>
-#include <QPainter>
-#include <QPalette>
-#include <QPixmap>
-#endif
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
 #include <QStyleHints>
@@ -24,45 +20,10 @@ namespace {
     constexpr auto SymbolicTrayIconPath = ":/icons/trayicon-symbolic";
 
 #ifdef Q_OS_WIN
-    bool isDarkColorScheme()
-    {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        const auto scheme = QGuiApplication::styleHints()->colorScheme();
-        if (scheme == Qt::ColorScheme::Dark)
-            return true;
-        if (scheme == Qt::ColorScheme::Light)
-            return false;
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        return QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
-#else
-        return false;
-#endif
-    }
-
-    QPixmap tintedSymbolicPixmap(int size, const QColor &color)
-    {
-        QPixmap pixmap = QIcon(SymbolicTrayIconPath).pixmap(size, size);
-        if (pixmap.isNull())
-            return pixmap;
-
-        QPainter painter(&pixmap);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(pixmap.rect(), color);
-        return pixmap;
-    }
-
     QIcon windowsTrayIcon()
     {
-        QIcon        icon;
-        const QColor color = isDarkColorScheme() ? Qt::white : Qt::black;
-
-        for (int size : { 16, 20, 24, 32, 48 }) {
-            const QPixmap pixmap = tintedSymbolicPixmap(size, color);
-            if (!pixmap.isNull())
-                icon.addPixmap(pixmap);
-        }
+        const QColor color = IconUtils::isDarkColorScheme() ? Qt::white : Qt::black;
+        auto         icon  = IconUtils::tintedSymbolicIcon(QLatin1String(SymbolicTrayIconPath), color);
 
         return icon.isNull() ? QIcon(ColorTrayIconPath) : icon;
     }

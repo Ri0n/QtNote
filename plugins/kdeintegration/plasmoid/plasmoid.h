@@ -96,6 +96,7 @@ private:
     bool                 m_loadingMore   = false;
     bool                 m_hasMore       = false;
     bool                 m_starting      = false;
+    bool                 m_quitRequested = false;
     quint64              m_requestSerial = 0;
     int                  m_pageSize      = 50;
 };

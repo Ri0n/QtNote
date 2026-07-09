@@ -1,5 +1,7 @@
 #include "speechaudiorecorder.h"
 
+#include <QDebug>
+
 #ifdef QTNOTE_MULTIMEDIA_AVAILABLE
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QMediaDevices>
@@ -12,6 +14,13 @@ namespace QtNote {
 
 SpeechAudioRecorder::SpeechAudioRecorder(QObject *parent) : QObject(parent)
 {
+    qDebug() << "Speech audio recorder created. Multimedia available:"
+#ifdef QTNOTE_MULTIMEDIA_AVAILABLE
+             << true
+#else
+             << false
+#endif
+        ;
     progressTimer.setInterval(250);
     connect(&progressTimer, &QTimer::timeout, this, [this]() {
         auto ms = elapsedMs();
@@ -28,11 +37,18 @@ bool SpeechAudioRecorder::isAvailable() const
 {
 #ifdef QTNOTE_MULTIMEDIA_AVAILABLE
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    return !QMediaDevices::defaultAudioInput().isNull();
+    auto device    = QMediaDevices::defaultAudioInput();
+    auto available = !device.isNull();
+    qDebug() << "Speech audio recorder availability:" << available << "default input" << device.description();
+    return available;
 #else
-    return !QAudioDeviceInfo::defaultInputDevice().isNull();
+    auto device    = QAudioDeviceInfo::defaultInputDevice();
+    auto available = !device.isNull();
+    qDebug() << "Speech audio recorder availability:" << available << "default input" << device.deviceName();
+    return available;
 #endif
 #else
+    qDebug() << "Speech audio recorder availability: false, QtMultimedia is not available";
     return false;
 #endif
 }
@@ -75,6 +91,7 @@ bool SpeechAudioRecorder::start(int maxDurationMs)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto device = QMediaDevices::defaultAudioInput();
     if (!device.isFormatSupported(requestedFormat)) {
+        qDebug() << "Requested speech audio format is not supported, using preferred format";
         requestedFormat = device.preferredFormat();
     }
     audioInput = new QAudioSource(device, requestedFormat, this);
@@ -86,6 +103,7 @@ bool SpeechAudioRecorder::start(int maxDurationMs)
 #else
     auto device = QAudioDeviceInfo::defaultInputDevice();
     if (!device.isFormatSupported(requestedFormat)) {
+        qDebug() << "Requested speech audio format is not supported, using nearest format";
         requestedFormat = device.nearestFormat(requestedFormat);
     }
     audioInput = new QAudioInput(device, requestedFormat, this);
@@ -104,6 +122,9 @@ bool SpeechAudioRecorder::start(int maxDurationMs)
 #else
     activeBitsPerSample = requestedFormat.sampleSize();
 #endif
+    qDebug() << "Speech audio recording started:"
+             << "sampleRate" << activeSampleRate << "channels" << activeChannels << "bitsPerSample"
+             << activeBitsPerSample << "maxDurationMs" << maxDuration;
     elapsed.start();
     progressTimer.start();
     return true;
@@ -127,6 +148,9 @@ SpeechRecognitionAudio SpeechAudioRecorder::stop()
     audio.sampleRate    = activeSampleRate;
     audio.channels      = activeChannels;
     audio.bitsPerSample = activeBitsPerSample;
+    qDebug() << "Speech audio recording stopped:"
+             << "bytes" << audio.data.size() << "durationMs" << audio.durationMs << "sampleRate" << audio.sampleRate
+             << "channels" << audio.channels << "bitsPerSample" << audio.bitsPerSample;
     cleanup();
     return audio;
 }

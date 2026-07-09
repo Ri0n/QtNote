@@ -152,6 +152,8 @@ void NotesModel::refresh()
 {
     m_queryRefreshTimer->stop();
     if (!m_available || !m_interface) {
+        if (m_quitRequested)
+            return;
         startBackend();
         return;
     }
@@ -162,6 +164,8 @@ void NotesModel::refresh()
 void NotesModel::loadMore()
 {
     if (!m_available || !m_interface) {
+        if (m_quitRequested)
+            return;
         startBackend();
         return;
     }
@@ -285,10 +289,16 @@ void NotesModel::showAbout(QWindow *activationWindow)
 {
     callWithActivationToken(QStringLiteral("showAbout"), {}, activationWindow);
 }
-void NotesModel::quit() { call(QStringLiteral("quit")); }
+void NotesModel::quit()
+{
+    m_quitRequested = true;
+    m_pendingCall.clear();
+    call(QStringLiteral("quit"));
+}
 
 void NotesModel::serviceRegistered()
 {
+    m_quitRequested = false;
     createInterface();
     m_starting = false;
     setAvailable(true);
@@ -355,6 +365,7 @@ void NotesModel::call(const QString &method)
 void NotesModel::callWithActivationToken(const QString &method, const QVariantList &arguments,
                                          QWindow *activationWindow)
 {
+    m_quitRequested = false;
     if (!m_available || !m_interface) {
         if (arguments.isEmpty())
             callOrStart(method);
@@ -388,6 +399,8 @@ void NotesModel::callWithActivationToken(const QString &method, const QVariantLi
 
 bool NotesModel::startBackend()
 {
+    if (m_quitRequested)
+        return false;
     if (m_starting)
         return true;
 
@@ -421,6 +434,7 @@ bool NotesModel::startBackend()
 
 void NotesModel::callOrStart(const QString &method)
 {
+    m_quitRequested = false;
     if (m_available && m_interface) {
         m_interface->asyncCall(method);
         return;
