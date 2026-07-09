@@ -257,6 +257,7 @@ NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId)
 
     auto storageFormats = NoteManager::instance()->storage(storageId)->availableFormats();
     w->setAcceptRichText(storageFormats.contains(Note::Markdown) || storageFormats.contains(Note::Html));
+    w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider());
 
     emit noteWidgetCreated(w);
 
@@ -271,6 +272,8 @@ NoteWidget *Main::noteWidget(const QString &storageId, const QString &noteId)
     }
 
     connect(this, SIGNAL(settingsUpdated()), w, SLOT(rereadSettings()));
+    connect(this, &Main::settingsUpdated, w,
+            [this, w]() { w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider()); });
     connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
     connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
     connect(w, SIGNAL(invalidated()), SLOT(note_invalidated()));

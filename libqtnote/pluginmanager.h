@@ -3,11 +3,13 @@
 
 #include <QDateTime>
 #include <QLibrary>
+#include <QList>
 #include <QObject>
 #include <QSharedPointer>
 
 #include "../plugins/pluginoptionsinterface.h"
 #include "../plugins/qtnoteplugininterface.h"
+#include "speechrecognitionprovider.h"
 
 namespace QtNote {
 
@@ -92,6 +94,8 @@ public:
         }
         return 0;
     }
+    QList<SpeechRecognitionProviderInterface *> speechRecognitionProviders() const;
+    SpeechRecognitionProviderInterface         *speechRecognitionProvider() const;
 
 signals:
 

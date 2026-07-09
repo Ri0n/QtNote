@@ -1,5 +1,6 @@
 #include <QCheckBox>
 #include <QClipboard>
+#include <QCryptographicHash>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QGuiApplication>
@@ -14,11 +15,15 @@
 #include <QStyle>
 #include <QTextFragment>
 #include <QToolButton>
+#include <QToolTip>
+#include <QUuid>
 
 #include "defaults.h"
 #include "note.h"
 #include "notehighlighter.h"
 #include "notewidget.h"
+#include "speechaudiorecorder.h"
+#include "speechrecognitionprovider.h"
 #include "typeaheadfind.h"
 #include "ui_notewidget.h"
 #include "utils.h"
@@ -178,6 +183,23 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
     findButton->addAction(act);
 
     tbar->addSeparator();
+
+    speechRecorder = new SpeechAudioRecorder(this);
+    speechButton   = new QToolButton(tbar);
+    speechButton->setIcon(QIcon::fromTheme(QLatin1String("audio-input-microphone")));
+    speechButton->setText(tr("Mic"));
+    speechButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    speechButton->setToolTip(tr("Hold to dictate text"));
+    speechButton->setAutoRaise(true);
+    speechButton->setVisible(false);
+    tbar->addWidget(speechButton);
+    connect(speechButton, &QToolButton::pressed, this, &NoteWidget::startSpeechRecognition);
+    connect(speechButton, &QToolButton::released, this, &NoteWidget::finishSpeechRecognition);
+    connect(speechRecorder, &SpeechAudioRecorder::elapsedChanged, this, &NoteWidget::updateSpeechRecognitionProgress);
+    connect(speechRecorder, &SpeechAudioRecorder::maxDurationReached, this, &NoteWidget::finishSpeechRecognition);
+    connect(speechRecorder, &SpeechAudioRecorder::failed, this, [this](const QString &error) {
+        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), error, speechButton);
+    });
 
     act = initAction(":/icons/trash", tr("Delete"), tr("Delete note"), "Ctrl+D");
     tbar->addAction(act);
@@ -370,6 +392,12 @@ void NoteWidget::setAcceptRichText(bool state)
     ui->noteEdit->setAcceptRichText(state);
 }
 
+void NoteWidget::setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider)
+{
+    speechProvider = provider;
+    updateSpeechRecognitionAction();
+}
+
 void NoteWidget::setNoteId(const QString &noteId)
 {
     QString old = _noteId;
@@ -378,6 +406,87 @@ void NoteWidget::setNoteId(const QString &noteId)
 }
 
 void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
+
+void NoteWidget::startSpeechRecognition()
+{
+    if (!speechProvider || !speechProvider->isSpeechRecognitionReady() || !speechRecorder->isAvailable()) {
+        updateSpeechRecognitionAction();
+        return;
+    }
+    if (speechJob) {
+        speechJob->cancel();
+        speechJob.clear();
+    }
+
+    auto caps    = speechProvider->speechRecognitionCapabilities();
+    auto maxMs   = caps.maxOneShotDurationMs > 0 ? caps.maxOneShotDurationMs : 60000;
+    auto started = speechRecorder->start(maxMs);
+    if (!started) {
+        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), speechRecorder->errorString(),
+                           speechButton);
+    }
+}
+
+void NoteWidget::finishSpeechRecognition()
+{
+    if (!speechRecorder || !speechRecorder->isRecording()) {
+        return;
+    }
+
+    auto audio = speechRecorder->stop();
+    QToolTip::hideText();
+    if (audio.data.isEmpty() || !speechProvider || !speechProvider->isSpeechRecognitionReady()) {
+        updateSpeechRecognitionAction();
+        return;
+    }
+
+    SpeechRecognitionRequest request;
+    request.contextId = speechContextId();
+    request.language  = speechRecognitionLanguage();
+    request.locale    = request.language.isEmpty() ? QLocale() : QLocale(request.language);
+
+    speechJob = speechProvider->recognizeSpeech(audio, request);
+    if (!speechJob) {
+        return;
+    }
+    connect(speechJob, &SpeechRecognitionJob::finished, this, [this](const QString &text) {
+        appendRecognizedText(text);
+        if (speechJob) {
+            speechJob->deleteLater();
+            speechJob.clear();
+        }
+    });
+    connect(speechJob, &SpeechRecognitionJob::failed, this, [this](const QString &error) {
+        QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())), error, speechButton);
+        if (speechJob) {
+            speechJob->deleteLater();
+            speechJob.clear();
+        }
+    });
+}
+
+void NoteWidget::cancelSpeechRecognition()
+{
+    if (speechRecorder) {
+        speechRecorder->cancel();
+    }
+    if (speechJob) {
+        speechJob->cancel();
+        speechJob.clear();
+    }
+    QToolTip::hideText();
+}
+
+void NoteWidget::updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDurationMs)
+{
+    if (!speechButton || maxDurationMs <= 0) {
+        return;
+    }
+    auto remainingMs = qMax<qint64>(0, maxDurationMs - elapsedMs);
+    auto seconds     = (remainingMs + 999) / 1000;
+    QToolTip::showText(speechButton->mapToGlobal(QPoint(0, -speechButton->height())),
+                       tr("%n second(s) left", nullptr, int(seconds)), speechButton);
+}
 
 void NoteWidget::switchToMarkdown()
 {
@@ -556,6 +665,107 @@ void NoteWidget::rereadSettings()
     setFont(f);
 
     updateFirstLineColor();
+}
+
+void NoteWidget::updateSpeechRecognitionAction()
+{
+    if (!speechButton || !speechRecorder) {
+        return;
+    }
+    auto language  = speechRecognitionLanguage();
+    bool available = speechProvider && speechProvider->isSpeechRecognitionReady() && speechRecorder->isAvailable()
+        && (!language.isEmpty() || speechProvider->speechRecognitionCapabilities().languages.isEmpty());
+    speechButton->setVisible(available);
+    speechButton->setEnabled(available);
+    if (available) {
+        speechButton->setToolTip(language.isEmpty() ? tr("Hold to dictate text")
+                                                    : tr("Hold to dictate text (%1)").arg(language));
+    }
+}
+
+void NoteWidget::appendRecognizedText(const QString &text)
+{
+    auto trimmed = text.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+
+    auto cursor = ui->noteEdit->textCursor();
+    if (!cursor.atBlockStart() && !cursor.document()->isEmpty()) {
+        cursor.insertText(QLatin1String(" "));
+    }
+    cursor.insertText(trimmed);
+    ui->noteEdit->setTextCursor(cursor);
+}
+
+QString NoteWidget::speechRecognitionLanguage() const
+{
+    if (!speechProvider) {
+        return QString();
+    }
+
+    auto caps          = speechProvider->speechRecognitionCapabilities();
+    auto supportedList = caps.languages;
+    for (auto &language : supportedList) {
+        language = normalizeSpeechRecognitionLanguage(language);
+    }
+    supportedList.removeAll(QString());
+    supportedList.removeDuplicates();
+
+    auto systemLanguage = normalizeSpeechRecognitionLanguage(QLocale().name());
+    if (supportedList.isEmpty()) {
+        return systemLanguage;
+    }
+
+    if (supportedList.contains(systemLanguage, Qt::CaseInsensitive)) {
+        return systemLanguage;
+    }
+
+    auto languageOnly = systemLanguage.section(QLatin1Char('-'), 0, 0);
+    for (const auto &supported : supportedList) {
+        if (supported.section(QLatin1Char('-'), 0, 0).compare(languageOnly, Qt::CaseInsensitive) == 0) {
+            return supported;
+        }
+    }
+
+    auto preferred = normalizeSpeechRecognitionLanguage(caps.preferredLanguage);
+    if (!preferred.isEmpty() && supportedList.contains(preferred, Qt::CaseInsensitive)) {
+        return preferred;
+    }
+
+    return supportedList.value(0);
+}
+
+QString NoteWidget::normalizeSpeechRecognitionLanguage(const QString &language) const
+{
+    auto normalized = language.trimmed();
+    normalized.replace(QLatin1Char('_'), QLatin1Char('-'));
+    if (normalized.isEmpty()) {
+        return QString();
+    }
+
+    auto parts = normalized.split(QLatin1Char('-'), Qt::SkipEmptyParts);
+    if (parts.isEmpty()) {
+        return QString();
+    }
+
+    parts[0] = parts[0].toLower();
+    if (parts.size() > 1) {
+        parts[1] = parts[1].toUpper();
+    }
+    return parts.join(QLatin1Char('-'));
+}
+
+QString NoteWidget::speechContextId() const
+{
+    if (!_noteId.isEmpty()) {
+        auto key = _storageId.toUtf8() + '\0' + _noteId.toUtf8();
+        return QString::fromLatin1(QCryptographicHash::hash(key, QCryptographicHash::Sha256).toHex());
+    }
+    if (localSpeechContextId.isEmpty()) {
+        const_cast<NoteWidget *>(this)->localSpeechContextId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    }
+    return localSpeechContextId;
 }
 
 } // namespace QtNote

@@ -2,6 +2,7 @@
 #define NOTEWIDGET_H
 
 #include <QElapsedTimer>
+#include <QPointer>
 #include <QTimer>
 #include <QWidget>
 
@@ -12,12 +13,16 @@ class NoteWidget;
 }
 
 class TypeAheadFindBar;
+class QToolButton;
 
 namespace QtNote {
 
 class NoteEdit;
 class NoteHighlighter;
 class Note;
+class SpeechAudioRecorder;
+class SpeechRecognitionJob;
+class SpeechRecognitionProviderInterface;
 
 class QTNOTE_EXPORT NoteWidget : public QWidget {
     Q_OBJECT
@@ -38,6 +43,7 @@ public:
     virtual NoteEdit       *editWidget() const;
     inline NoteHighlighter *highlighter() const { return _highlighter; }
     void                    setAcceptRichText(bool state);
+    void                    setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider);
     inline QString          storageId() const { return _storageId; }
     inline QString          noteId() const { return _noteId; }
     void                    setNoteId(const QString &noteId);
@@ -82,12 +88,27 @@ private slots:
 
     void switchToText();
     void switchToMarkdown();
+    void startSpeechRecognition();
+    void finishSpeechRecognition();
+    void cancelSpeechRecognition();
+    void updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDurationMs);
 
 private:
+    void    updateSpeechRecognitionAction();
+    void    appendRecognizedText(const QString &text);
+    QString speechRecognitionLanguage() const;
+    QString normalizeSpeechRecognitionLanguage(const QString &language) const;
+    QString speechContextId() const;
+
     Ui::NoteWidget *ui = nullptr;
 
     QAction                              *mdModeAct;
     QAction                              *txtModeAct;
+    QToolButton                          *speechButton   = nullptr;
+    SpeechRecognitionProviderInterface   *speechProvider = nullptr;
+    SpeechAudioRecorder                  *speechRecorder = nullptr;
+    QPointer<SpeechRecognitionJob>        speechJob;
+    QString                               localSpeechContextId;
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;

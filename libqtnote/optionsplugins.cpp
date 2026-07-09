@@ -3,6 +3,7 @@
 #include <QDialog>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSettings>
 #include <QStyledItemDelegate>
 #include <QTransform>
 
@@ -223,12 +224,36 @@ public:
         return false;
     }
 
+    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent,
+                  int destinationChild) override
+    {
+        if (sourceParent.isValid() || destinationParent.isValid() || count != 1 || sourceRow < 0
+            || sourceRow >= pluginIds.size() || destinationChild < 0 || destinationChild > pluginIds.size()
+            || destinationChild == sourceRow || destinationChild == sourceRow + 1) {
+            return false;
+        }
+
+        beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild);
+        pluginIds.move(sourceRow, destinationChild > sourceRow ? destinationChild - 1 : destinationChild);
+        endMoveRows();
+
+        QSettings().setValue(QLatin1String("plugins-priority"), pluginIds);
+        return true;
+    }
+
+    Qt::DropActions supportedDropActions() const override { return Qt::MoveAction; }
+
     Qt::ItemFlags flags(const QModelIndex &index) const
     {
-        if (index.column() == 0) {
-            return QAbstractTableModel::flags(index) | Qt::ItemIsUserTristate | Qt::ItemIsUserCheckable;
+        if (!index.isValid()) {
+            return QAbstractTableModel::flags(index) | Qt::ItemIsDropEnabled;
         }
-        return QAbstractTableModel::flags(index);
+
+        auto flags = QAbstractTableModel::flags(index) | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+        if (index.column() == 0) {
+            flags |= Qt::ItemIsUserTristate | Qt::ItemIsUserCheckable;
+        }
+        return flags;
     }
 
     QString pluginId(int row) const { return pluginIds.at(row); }
@@ -259,6 +284,10 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
 
     pluginsModel = new PluginsModel(qtnote, this);
     ui->tblPlugins->setModel(pluginsModel);
+    ui->tblPlugins->setDragDropMode(QAbstractItemView::InternalMove);
+    ui->tblPlugins->setDefaultDropAction(Qt::MoveAction);
+    ui->tblPlugins->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tblPlugins->setSelectionMode(QAbstractItemView::SingleSelection);
     ButtonDelegate *btnsDelegate = new ButtonDelegate();
     ui->tblPlugins->setItemDelegateForColumn(2, btnsDelegate);
     ui->tblPlugins->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -278,6 +307,7 @@ void OptionsPlugins::pluginClicked(const QModelIndex &index)
             auto &md = qtnote->pluginManager()->metadata(id);
             d->setWindowTitle(md.name + QStringLiteral(": ") + tr("Settings"));
             d->setWindowIcon(md.icon);
+            connect(d, SIGNAL(accepted()), qtnote, SIGNAL(settingsUpdated()));
             d->show();
             d->raise();
         }

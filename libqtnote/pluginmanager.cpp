@@ -358,6 +358,34 @@ QString PluginManager::tooltip(const QString &pluginId) const
     return QString();
 }
 
+QList<SpeechRecognitionProviderInterface *> PluginManager::speechRecognitionProviders() const
+{
+    QList<SpeechRecognitionProviderInterface *> ret;
+    const auto                                  ids = pluginsIds();
+    for (const auto &pluginId : ids) {
+        auto pd = plugins.value(pluginId);
+        if (!pd) {
+            continue;
+        }
+        auto provider = castInterface<SpeechRecognitionProviderInterface>(pd);
+        if (provider) {
+            ret.append(provider);
+        }
+    }
+    return ret;
+}
+
+SpeechRecognitionProviderInterface *PluginManager::speechRecognitionProvider() const
+{
+    const auto providers = speechRecognitionProviders();
+    for (auto provider : providers) {
+        if (provider->isSpeechRecognitionReady()) {
+            return provider;
+        }
+    }
+    return nullptr;
+}
+
 void PluginManager::updateMetadata()
 {
     QSettings                       s;
