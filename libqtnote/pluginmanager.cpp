@@ -44,6 +44,29 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+static PluginManager::LoadPolicy defaultLoadPolicy(const PluginMetadata &metadata)
+{
+    const auto value = metadata.extra.value(QLatin1String("defaultLoadPolicy"));
+    const auto text  = value.toString().toLower();
+    if (text == QLatin1String("enabled")) {
+        return PluginManager::LP_Enabled;
+    }
+    if (text == QLatin1String("disabled")) {
+        return PluginManager::LP_Disabled;
+    }
+    if (!text.isEmpty() && text != QLatin1String("auto")) {
+        qWarning() << "Unknown plugin default load policy" << text;
+    }
+
+    if (value.type() != QVariant::String && value.canConvert<int>()) {
+        const auto policy = value.toInt();
+        if (policy >= PluginManager::LP_Auto && policy <= PluginManager::LP_Disabled) {
+            return PluginManager::LoadPolicy(policy);
+        }
+    }
+    return PluginManager::LP_Auto;
+}
+
 class PluginsIterator {
     QDir                        currentDir;
     QStringList                 pluginsDirs;
@@ -339,10 +362,12 @@ QString PluginManager::iconsCacheDir() const { return Utils::qtnoteDataDir() + "
 void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPolicy lp)
 {
     QSettings s;
-    plugins[pluginId]->loadPolicy = lp;
+    plugins[pluginId]->loadPolicy         = lp;
+    plugins[pluginId]->loadPolicyExplicit = true;
     s.beginGroup("plugins");
     s.beginGroup(pluginId);
     s.setValue("loadPolicy", (int)lp);
+    s.setValue("loadPolicyExplicit", true);
 }
 
 QStringList PluginManager::pluginsIds() const { return QSettings().value("plugins-priority").toStringList(); }
@@ -417,7 +442,8 @@ void PluginManager::updateMetadata()
         tmpPlugins[pluginId] = pd;
 #endif
         file2data[pd->fileName] = pd;
-        pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy").toInt();
+        pd->loadPolicyExplicit  = s.value("loadPolicyExplicit", false).toBool();
+        pd->loadPolicy          = (LoadPolicy)s.value("loadPolicy", LP_Auto).toInt();
         pd->loadStatus          = LS_Undefined;
         pd->modifyTime
             = QDateTime::fromSecsSinceEpoch(s.value("lastModify").toUInt()); // if 0 then we have staled cache. it's ok
@@ -497,13 +523,15 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
         }
 
         if (!cache) {
-            cache             = PluginData::Ptr(new PluginData);
-            cache->loadPolicy = LP_Auto;
+            cache = PluginData::Ptr(new PluginData);
         }
         cache->instance   = loadStatus == LS_Loaded ? plugin : 0;
         cache->fileName   = fileName;
         cache->modifyTime = QFileInfo(fileName).lastModified();
         cache->metadata   = md;
+        if (!cache->loadPolicyExplicit) {
+            cache->loadPolicy = defaultLoadPolicy(md);
+        }
         cache->features &= 0;
         if (qobject_cast<TrayInterface *>(plugin)) {
             cache->features |= TrayIcon;
@@ -524,6 +552,7 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
         s.setValue("metaversion", qnp->metadataVersion());
         s.setValue("id", md.id);
         s.setValue("loadPolicy", cache->loadPolicy);
+        s.setValue("loadPolicyExplicit", cache->loadPolicyExplicit);
         s.setValue("filename", cache->fileName);
         s.setValue("lastModify", cache->modifyTime.toSecsSinceEpoch());
         s.setValue("features", (uint)cache->features);
