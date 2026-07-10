@@ -54,6 +54,7 @@ public:
     bool              isTrashRequested() const { return _trashRequested; }
     void              setTrashRequested(bool state) { _trashRequested = state; }
     void              rehighlight();
+    void              findText(const QString &text, bool focusFindBar = true);
 
 signals:
     void firstLineChanged();

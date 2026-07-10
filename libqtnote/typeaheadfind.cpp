@@ -233,6 +233,21 @@ void TypeAheadFindBar::setMode(TypeAheadFindBar::Mode mode)
 
 TypeAheadFindBar::Mode TypeAheadFindBar::mode() const { return d->mode; }
 
+void TypeAheadFindBar::search(const QString &text, bool focus)
+{
+    setMode(Find);
+    if (!isVisible()) {
+        show();
+        emit visibilityChanged(true);
+    }
+    d->le_find->setText(text);
+    textChanged(text);
+    if (focus) {
+        d->le_find->setFocus();
+        d->le_find->selectAll();
+    }
+}
+
 /**
  * \brief Destroys the toolbar.
  */

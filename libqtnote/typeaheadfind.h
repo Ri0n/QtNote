@@ -36,6 +36,7 @@ public:
     void init();
     void setMode(Mode mode);
     Mode mode() const;
+    void search(const QString &text, bool focus = true);
 
 public slots:
     void open();

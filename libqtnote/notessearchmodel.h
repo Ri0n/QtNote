@@ -19,6 +19,8 @@ class NotesSearchModel : public QSortFilterProxyModel {
 
 public:
     NotesSearchModel(QObject *parent = 0);
+    bool searchInBody() const { return _searchInBody; }
+    bool hasBodyMatch(const QString &storageId, const QString &noteId) const;
 public slots:
     void setSearchText(const QString &text);
     void setSearchInBody(bool allow);

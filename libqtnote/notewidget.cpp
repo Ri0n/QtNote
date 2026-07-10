@@ -458,6 +458,8 @@ bool NoteWidget::isMarkdown() const { return !mdModeAct->isVisible(); }
 
 NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 
+void NoteWidget::findText(const QString &text, bool focusFindBar) { findBar->search(text, focusFindBar); }
+
 void NoteWidget::setAcceptRichText(bool state)
 {
     _features.setFlag(RichText, state);

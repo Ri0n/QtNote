@@ -13,6 +13,11 @@ NotesSearchModel::NotesSearchModel(QObject *parent) : QSortFilterProxyModel(pare
     connect(_finder, SIGNAL(found(QString, QString)), SLOT(noteFound(QString, QString)));
 }
 
+bool NotesSearchModel::hasBodyMatch(const QString &storageId, const QString &noteId) const
+{
+    return _foundCache.contains(storageId) && _foundCache[storageId].contains(noteId);
+}
+
 void NotesSearchModel::setSearchText(const QString &text)
 {
     _text = text;

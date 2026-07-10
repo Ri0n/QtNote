@@ -174,7 +174,11 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
         return;
     }
 
-    NoteWidget *nw = qtnote->noteWidget(note);
+    NoteWidget *nw         = qtnote->noteWidget(note);
+    const auto  searchText = ui->leFilter->text().trimmed();
+    if (searchModel->searchInBody() && !searchText.isEmpty() && searchModel->hasBodyMatch(storageId, noteId)) {
+        nw->findText(searchText, false);
+    }
 
     if (ui->splitter->count() > 1) {
         delete ui->splitter->widget(ui->splitter->count() - 1);
