@@ -1,6 +1,8 @@
 #include <QAbstractTableModel>
+#include <QDataStream>
 #include <QDebug>
 #include <QDialog>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSettings>
@@ -80,6 +82,8 @@ public:
 
 class PluginsModel : public QAbstractTableModel {
     Q_OBJECT
+
+    static constexpr auto MimeType = "application/qtnote.plugin.id";
 
     Main       *qtnote;
     QStringList pluginIds; // by priority
@@ -224,6 +228,56 @@ public:
         return false;
     }
 
+    QStringList mimeTypes() const override { return { QLatin1String(MimeType) }; }
+
+    QMimeData *mimeData(const QModelIndexList &indexes) const override
+    {
+        if (indexes.isEmpty()) {
+            return nullptr;
+        }
+
+        const auto row = indexes.first().row();
+        if (row < 0 || row >= pluginIds.size()) {
+            return nullptr;
+        }
+
+        auto        mimeData = new QMimeData();
+        QByteArray  encodedData;
+        QDataStream out(&encodedData, QIODevice::WriteOnly);
+        out << pluginIds.at(row);
+        mimeData->setData(QLatin1String(MimeType), encodedData);
+        return mimeData;
+    }
+
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column,
+                      const QModelIndex &parent) override
+    {
+        Q_UNUSED(column);
+
+        if (action == Qt::IgnoreAction) {
+            return true;
+        }
+        if (action != Qt::MoveAction || !data->hasFormat(QLatin1String(MimeType))) {
+            return false;
+        }
+
+        QString     pluginId;
+        QByteArray  encodedData = data->data(QLatin1String(MimeType));
+        QDataStream in(&encodedData, QIODevice::ReadOnly);
+        in >> pluginId;
+
+        const auto sourceRow = pluginIds.indexOf(pluginId);
+        if (sourceRow < 0) {
+            return false;
+        }
+
+        int destinationRow = row;
+        if (destinationRow < 0) {
+            destinationRow = parent.isValid() ? parent.row() : pluginIds.size();
+        }
+        return moveRows(QModelIndex(), sourceRow, 1, QModelIndex(), destinationRow);
+    }
+
     bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent,
                   int destinationChild) override
     {
@@ -241,6 +295,7 @@ public:
         return true;
     }
 
+    Qt::DropActions supportedDragActions() const override { return Qt::MoveAction; }
     Qt::DropActions supportedDropActions() const override { return Qt::MoveAction; }
 
     Qt::ItemFlags flags(const QModelIndex &index) const
