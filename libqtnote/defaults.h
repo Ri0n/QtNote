@@ -7,7 +7,7 @@ namespace QtNote {
 
 class Defaults {
 public:
-    static inline QColor firstLineHighlightColor() { return QColor(255, 0, 0, 180); }
+    static QColor firstLineHighlightColor() { return QColor(255, 0, 0, 180); }
 };
 
 }

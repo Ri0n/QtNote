@@ -33,8 +33,8 @@ class ShortcutEdit : public QLineEdit {
     Q_OBJECT
 public:
     explicit ShortcutEdit(Main *qtnote, const QString &option, QWidget *parent = nullptr);
-    inline const QKeySequence &sequence() const { return _seq; }
-    inline void                setSequence(const QKeySequence &seq)
+    const QKeySequence &sequence() const { return _seq; }
+    void                setSequence(const QKeySequence &seq)
     {
         _seq = seq;
         setText(seq.toString(QKeySequence::PortableText));

@@ -97,11 +97,11 @@ QString QtNoteDBus::notesJson(int offset, int limit, const QString &query) const
     for (int i = 0, count = qMin(limit, notes.size()); i < count; ++i) {
         const auto &note = notes.at(i);
         result.append(QJsonObject {
-            { "id", note.id },
-            { "storageId", note.storageId },
-            { "title", note.title },
-            { "tags", QJsonArray::fromStringList(note.tags) },
-            { "modified", note.lastModify.toUTC().toString(Qt::ISODateWithMs) },
+            { "id", note.id() },
+            { "storageId", note.storageId() },
+            { "title", note.title() },
+            { "tags", QJsonArray::fromStringList(note.tags()) },
+            { "modified", note.lastChangeUTC().toUTC().toString(Qt::ISODateWithMs) },
         });
     }
     return QString::fromUtf8(QJsonDocument(QJsonObject {

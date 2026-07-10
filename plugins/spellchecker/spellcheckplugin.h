@@ -83,7 +83,7 @@ public:
     // NoteContextMenuHandler
     void populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu);
 
-    inline SpellEngineInterface *engine() const { return sei; }
+    SpellEngineInterface *engine() const { return sei; }
 
     QList<QLocale> userLanguagePreferences() const;
     QList<QLocale> systemLanguagePreferences() const;

@@ -25,12 +25,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QExplicitlySharedDataPointer>
 #include <QString>
 #include <QStringList>
+#include <qdatetime.h>
 
 #include "qtnote_export.h"
 
 namespace QtNote {
 
 class NoteData;
+class NoteStorage;
 
 class QTNOTE_EXPORT Note {
 public:
@@ -43,18 +45,36 @@ public:
     Note(Note &&note);
     Note &operator=(const Note &note);
 
-    bool        isNull();
-    void        toTrash();
-    QString     text() const;
-    QString     title() const;
-    QStringList tags() const;
-    NoteData   *data() const;
-    Format      format() const;
-    qint64      lastChangeElapsed() const;
+    bool isNull() const;
+    bool isEmpty() const;
+    bool isLoaded() const;
+
+    bool save();
+    bool load(); // by default nothing is loaded (i.e. text() returns a null string)
+    void remove();
+
+    void setTitle(const QString &title);
+    void setText(const QString &text, Format format);
+
+    NoteStorage *storage() const;
+    QString      storageId() const;
+    QString      id() const;
+    QString      text() const;
+    QString      title() const;
+    QStringList  tags() const;
+    NoteData    *data() const;
+    Format       format() const;
+    QDateTime    lastChangeUTC() const;
+    bool         isUpdated() const;
 
 private:
     QExplicitlySharedDataPointer<NoteData> d;
 };
+
+inline bool noteListItemModifyComparer(const Note &a, const Note &b)
+{
+    return a.lastChangeUTC() > b.lastChangeUTC(); // backward order
+}
 
 } // namespace QtNote
 

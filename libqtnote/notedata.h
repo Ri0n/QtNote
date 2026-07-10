@@ -30,19 +30,34 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+class NoteStorage;
+
 class QTNOTE_EXPORT NoteData : public QSharedData {
 public:
-    static const int TitleLength = 256;
+    static constexpr int TitleLength = 256;
 
-    NoteData();
-    virtual ~NoteData() { }
-    virtual void         remove() = 0;
-    virtual Note::Format format() const;
-    virtual QString      text() const;
-    virtual QString      title() const;
-    virtual QStringList  tags() const;
-    virtual void         setText(const QString &text);
-    virtual qint64       lastChangeElapsed() const = 0;
+    NoteData(NoteStorage *storage) : storage_(storage) { }
+    virtual ~NoteData() = default;
+
+    virtual QString storageId() const = 0;
+    virtual bool    load()            = 0; // load `text_` field.
+    virtual void    remove()          = 0;
+
+    void setId(const QString &newId) { id_ = newId; }
+    void unload()
+    {
+        text_   = {}; // should reset capacity
+        loaded_ = false;
+    }
+    void setText(const QString &text, Note::Format format)
+    {
+        loaded_ = true;
+        text_   = text;
+        format_ = format;
+        tags_   = tagsFromText(text_);
+    }
+
+    QStringList tags() const;
 
     static QStringList tagsFromLine(const QString &line);
     static QStringList tagsFromText(const QString &text);
@@ -50,10 +65,16 @@ public:
 protected:
     void setTags(const QStringList &tags);
 
-    Note::Format format_;
+    friend class Note;
+    friend class NoteStorage;
+    NoteStorage *storage_ = nullptr;
+    bool         loaded_ { false };
+    Note::Format format_; // format of the text_ field
+    QString      id_;     // this can match with title sometimes
     QString      title_;
     QString      text_;
     QStringList  tags_;
+    QDateTime    lastChange_;
 };
 
 } // namespace QtNote

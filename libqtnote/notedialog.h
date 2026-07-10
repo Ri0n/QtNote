@@ -41,7 +41,7 @@ public:
 
     static NoteDialog *findDialog(const QString &storageId, const QString &noteId);
 
-    inline NoteWidget *weidget() { return noteWidget; }
+    NoteWidget *weidget() { return noteWidget; }
 
 protected:
     void changeEvent(QEvent *e);

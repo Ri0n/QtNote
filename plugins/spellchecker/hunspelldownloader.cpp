@@ -148,7 +148,7 @@ public:
         }
     }
 
-    inline const QString &lastError() const { return lastError_; }
+    const QString &lastError() const { return lastError_; }
 
 signals:
     void finished(const QStringList &);
@@ -203,10 +203,10 @@ public:
         connect(affReply_, &QNetworkReply::readyRead, this, &AffDicDownloader::handleReadyRead);
     }
 
-    inline QString dicPath() const { return dicFile_.fileName(); }
-    inline QString affPath() const { return affFile_.fileName(); }
-    inline QString lastError() const { return lastError_; }
-    inline bool    hasErrors() const { return !lastError_.isEmpty(); }
+    QString dicPath() const { return dicFile_.fileName(); }
+    QString affPath() const { return affFile_.fileName(); }
+    QString lastError() const { return lastError_; }
+    bool    hasErrors() const { return !lastError_.isEmpty(); }
 
 signals:
     void finished();

@@ -20,28 +20,31 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "ptfdata.h"
+#include "notemanager.h"
+#include "ptfstorage.h"
+#include "utils.h"
+
 #include <QFileInfo>
 #include <QIcon>
 
 namespace QtNote {
 
-bool PTFData::fromFile(QString fn, bool indexOnly)
+bool PTFData::fromFile(const QString &fileName)
 {
-    QFile file(fn);
+    QFileInfo fi(fileName);
+    QFile     file(fileName);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
-    format_ = fn.endsWith(".md", Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
-    if (indexOnly) {
-        title_ = QString::fromUtf8(file.readLine()).trimmed();
-        setTags(tagsFromLine(QString::fromUtf8(file.readLine())));
-    } else {
-        setText(QString::fromUtf8(file.readAll()));
-    }
-    sFileName = fn;
+    id_ = fi.completeBaseName();
+    format_
+        = fi.suffix().toLower().endsWith(QLatin1String("md"), Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
+    title_ = QString::fromUtf8(file.readLine()).trimmed();
+    setTags(tagsFromLine(QString::fromUtf8(file.readLine())));
+
+    sFileName = fileName;
     file.close();
-    QFileInfo fi(fn);
-    dtCreate     = fi.birthTime();
-    dtLastChange = fi.lastModified();
+
+    lastChange_ = fi.lastModified();
 
     return true;
 }
@@ -57,12 +60,24 @@ bool PTFData::saveToFile(const QString &fileName)
     file.write(data.toUtf8());
     sFileName = fileName;
     file.close();
-    dtLastChange = QFileInfo(file).lastModified();
+    lastChange_ = QFileInfo(file).lastModified();
     return true;
 }
 
-void PTFData::remove() { QFile(sFileName).remove(); }
+QString PTFData::storageId() const { return PTFStorage::storageId; }
 
-qint64 PTFData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
+bool PTFData::load()
+{
+    QFile file(sFileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    auto data               = QString::fromUtf8(file.readAll());
+    std::tie(title_, text_) = Utils::splitTitle(data);
+    setTags(tagsFromText(text_));
+    loaded_ = true;
+    return true;
+}
+
+void PTFData::remove() { storage_->removeNote(id_); }
 
 } // namespace QtNote

@@ -28,15 +28,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 #include <QUuid>
 
-#include <ranges>
-
 namespace QtNote {
 
 FileStorage::FileStorage(QObject *parent) : NoteStorage(parent), _cacheValid(false) { }
 
-QString FileStorage::createNote(const QString &text, Note::Format Format) { return saveNote(QString(), text, Format); }
-
-void FileStorage::deleteNote(const QString &noteId)
+void FileStorage::removeNote(const QString &noteId)
 {
     auto r = cache.find(noteId);
     if (r == cache.end()) {
@@ -49,7 +45,7 @@ void FileStorage::deleteNote(const QString &noteId)
         }
     }
     if (deleted) {
-        NoteListItem item = r.value();
+        Note item = r.value();
         cache.erase(r);
         emit noteRemoved(item);
     }
@@ -63,21 +59,21 @@ void FileStorage::handleFSError()
     emit invalidated();
 }
 
-void FileStorage::putToCache(const NoteListItem &note, const QString &oldNoteId)
+void FileStorage::putToCache(const Note &note, const QString &oldNoteId)
 {
     bool isModify;
     bool idChange = false;
 
     ensureChachePopulated();
 
-    if (!oldNoteId.isEmpty() && oldNoteId != note.id) {
+    if (!oldNoteId.isEmpty() && oldNoteId != note.id()) {
         isModify = cache.contains(oldNoteId);
         idChange = true;
     } else {
-        isModify = cache.contains(note.id);
+        isModify = cache.contains(note.id());
     }
 
-    cache.insert(note.id, note);
+    cache.insert(note.id(), note);
     if (isModify) {
         if (idChange) {
             cache.remove(oldNoteId);
@@ -132,7 +128,7 @@ void FileStorage::ensureChachePopulated()
         auto          ret   = noteListFromInfoList(files);
         cache.clear();
         for (auto &n : ret) {
-            cache.insert(n.id, n);
+            cache.insert(n.id(), n);
         }
         _cacheValid = true;
     } else {
@@ -140,10 +136,10 @@ void FileStorage::ensureChachePopulated()
     }
 }
 
-QList<NoteListItem> FileStorage::noteList(int limit)
+QList<Note> FileStorage::noteList(int limit)
 {
     ensureChachePopulated();
-    QList<NoteListItem> ret = cache.values();
+    QList<Note> ret = cache.values();
     std::sort(ret.begin(), ret.end(), noteListItemModifyComparer);
     // probably sort is unnecesary here if the only accessor is notemanager which also does sorting.
     return limit ? ret.mid(0, limit) : ret;

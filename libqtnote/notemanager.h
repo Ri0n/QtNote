@@ -64,8 +64,8 @@ public:
     void unregisterStorage(NoteStorage::Ptr storage);
     bool loadAll();
 
-    virtual QList<NoteListItem> noteList(int count = -1) const; // virtual for plugins
-    QList<NoteListItem>         noteList(int offset, int limit, const QString &titleFilter) const;
+    virtual QList<Note> noteList(int count = -1) const; // virtual for plugins
+    QList<Note>         noteList(int offset, int limit, const QString &titleFilter) const;
 
     Note note(const QString &storageId, const QString &noteId);
 
@@ -73,7 +73,7 @@ public:
     const std::list<NoteStorage::Ptr>     prioritizedStorages(bool withInvalid = false) const;
 
     virtual NoteStorage::Ptr storage(const QString &storageId) const; // virtual for plugins
-    inline NoteStorage::Ptr  defaultStorage() const
+    NoteStorage::Ptr         defaultStorage() const
     {
         return prioritizedStorages().empty() ? NoteStorage::Ptr() : prioritizedStorages().front();
     }

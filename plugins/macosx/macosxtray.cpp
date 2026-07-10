@@ -84,11 +84,11 @@ MacOSXTray::~MacOSXTray()
 
 void MacOSXTray::rebuildMenu()
 {
-    uint                h = 0;
-    QSettings           s;
-    QList<NoteListItem> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
+    uint        h = 0;
+    QSettings   s;
+    QList<Note> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
     for (int i = 0; i < notes.count(); i++) {
-        h ^= qHash(notes[i].title);
+        h ^= qHash(notes[i].title());
     }
 
     if (h == menuUpdateHash) {
@@ -100,10 +100,10 @@ void MacOSXTray::rebuildMenu()
     contextMenu->addAction(actNew);
     contextMenu->addSeparator();
     for (int i = 0; i < notes.count(); i++) {
-        QAction *act = contextMenu->addAction(host->noteManager()->storage(notes[i].storageId)->noteIcon(),
-                                              host->utilsCuttedDots(notes[i].title, 48).replace('&', "&&"));
+        QAction *act = contextMenu->addAction(notes[i].storage()->noteIcon(),
+                                              host->utilsCuttedDots(notes[i].title(), 48).replace('&', "&&"));
         QVariant v;
-        v.setValue<NoteIdent>(NoteIdent(notes[i].storageId, notes[i].id));
+        v.setValue<NoteIdent>(NoteIdent(notes[i].storageId(), notes[i].id()));
         act->setData(v);
         connect(act, SIGNAL(triggered()), SLOT(noteSelected()));
     }

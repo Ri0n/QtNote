@@ -25,7 +25,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDateTime>
 #include <QIcon>
 #include <QObject> // just for compatibility with qt<4.6
-#include <QStringList>
 
 #include "note.h"
 #include "qtnote_export.h"
@@ -34,24 +33,6 @@ namespace QtNote {
 
 class NoteStorage;
 class NoteFinder;
-
-struct NoteListItem {
-    NoteListItem(const QString &id_, const QString &storageId_, const QString &title_, const QDateTime &lastModify_,
-                 const QStringList &tags_ = {}) :
-        id(id_), storageId(storageId_), title(title_), tags(tags_), lastModify(lastModify_)
-    {
-    }
-    QString     id;
-    QString     storageId;
-    QString     title;
-    QStringList tags;
-    QDateTime   lastModify;
-};
-
-inline bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b)
-{
-    return a.lastModify > b.lastModify; // backward order
-}
 
 class QTNOTE_EXPORT NoteStorage : public QObject {
     Q_OBJECT
@@ -69,25 +50,23 @@ public:
     virtual QList<Note::Format> availableFormats() const = 0;
 
     /* 0 - not limit */
-    virtual QList<NoteListItem> noteList(int limit = 0) = 0;
+    virtual QList<Note> noteList(int limit = 0) = 0;
 
     /* should return null note (d=0) if not is not found */
     virtual Note note(const QString &id) = 0;
 
-    /* returns note id */
-    virtual QString createNote(const QString &text, Note::Format Format = Note::PlainText) = 0;
-    /* returns updated note id or the same */
-    virtual QString saveNote(const QString &noteId, const QString &text, Note::Format Format = Note::PlainText) = 0;
-    virtual void    deleteNote(const QString &noteId)                                                           = 0;
+    virtual Note createNote()                      = 0;
+    virtual bool saveNote(const Note &note)        = 0;
+    virtual void removeNote(const QString &noteId) = 0;
 
     virtual QWidget *settingsWidget() { return 0; }
     virtual QString  tooltip() { return QString(); }
 
 signals:
-    void noteAdded(const NoteListItem &);
-    void noteModified(const NoteListItem &);
-    void noteRemoved(const NoteListItem &);
-    void noteIdChanged(const NoteListItem &note, const QString &oldNoteId);
+    void noteAdded(const Note &);
+    void noteModified(const Note &);
+    void noteRemoved(const Note &);
+    void noteIdChanged(const Note &note, const QString &oldNoteId);
     void invalidated();
     void storageErorr(const QString &);
 };

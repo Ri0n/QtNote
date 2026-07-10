@@ -127,12 +127,9 @@ public:
         }
     }
 
-    inline bool isFinished() const
-    {
-        return pluginsIt == plugins.constEnd() && pluginsDirsIt == pluginsDirs.constEnd();
-    }
+    bool isFinished() const { return pluginsIt == plugins.constEnd() && pluginsDirsIt == pluginsDirs.constEnd(); }
 
-    inline QString fileName() const
+    QString fileName() const
     {
         if (pluginsIt != plugins.constEnd()) {
             return currentDir.absoluteFilePath(*pluginsIt);

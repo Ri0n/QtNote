@@ -41,20 +41,20 @@ class GlobalShortcutsInterface;
 class NotificationInterface;
 class NoteDialog;
 class QtNoteDBus;
-struct NoteListItem;
+class Note;
 
 class QTNOTE_EXPORT Main : public QObject {
     Q_OBJECT
 public:
     explicit Main(QObject *parent = 0);
     ~Main();
-    inline bool isOperable() const { return _inited; }
-    void        parseAppArguments(const QStringList &args);
+    bool isOperable() const { return _inited; }
+    void parseAppArguments(const QStringList &args);
 
-    NoteWidget              *noteWidget(const QString &storageId, const QString &noteId = {});
-    virtual void             activateWidget(QWidget *w) const; // virtual for plugins
-    inline ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
-    inline PluginManager    *pluginManager() const { return _pluginManager; }
+    NoteWidget       *noteWidget(const Note &note);
+    virtual void      activateWidget(QWidget *w) const; // virtual for plugins
+    ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
+    PluginManager    *pluginManager() const { return _pluginManager; }
 
     void setTrayImpl(TrayImpl *tray);
     void setExternalTrayAvailable(bool available);
@@ -86,8 +86,7 @@ private slots:
     void createNewNoteFromSelection();
     void note_trashRequested();
     void note_saveRequested();
-    void note_invalidated();
-    void note_removed(const NoteListItem &noteItem);
+    void note_removed(const Note &noteItem);
 
 private:
     class Private;

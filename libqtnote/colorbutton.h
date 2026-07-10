@@ -10,8 +10,8 @@ class ColorButton : public QWidget {
 public:
     explicit ColorButton(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 
-    void          setColor(QPalette::ColorRole role, const QColor &color);
-    inline QColor color() const { return _color; }
+    void   setColor(QPalette::ColorRole role, const QColor &color);
+    QColor color() const { return _color; }
 signals:
 
 public slots:

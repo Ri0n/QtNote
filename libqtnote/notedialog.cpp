@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSettings>
 
 #include "notedialog.h"
+#include "notestorage.h"
 #include "notewidget.h"
 #include "typeaheadfind.h"
 #include "ui_notedialog.h"
@@ -54,14 +55,16 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     setLayout(l);
 
     QRect rect;
-    if (!noteWidget->noteId().isEmpty()) {
-        rect = QSettings().value(QString("geometry.%1.%2").arg(noteWidget->storageId(), noteWidget->noteId())).toRect();
+    if (!noteWidget->note().id().isEmpty()) {
+        auto note = noteWidget->note();
+        rect      = QSettings().value(QString("geometry.%1.%2").arg(note.storageId(), note.id())).toRect();
         if (!rect.isValid() || !screen()->geometry().contains(rect)) {
             rect = {};
         }
 
-        Q_ASSERT(!NoteDialog::findDialog(noteWidget->storageId(), noteWidget->noteId()));
-        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()), this);
+        Q_ASSERT(!NoteDialog::findDialog(noteWidget->note().storageId(), noteWidget->note().id()));
+        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->note().storageId(), noteWidget->note().id()),
+                                   this);
     }
     if (rect.isEmpty()) {
         QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
@@ -77,7 +80,7 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     connect(noteWidget, &NoteWidget::trashRequested, this, &NoteDialog::trashRequested);
     connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
         if (oldId.isEmpty() && !newId.isEmpty()) {
-            NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->storageId(), newId), this);
+            NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->note().storageId(), newId), this);
         }
     });
     connect(noteWidget, &NoteWidget::firstLineChanged, this, &NoteDialog::firstLineChanged);
@@ -116,15 +119,17 @@ void NoteDialog::done(int r)
     if (!noteWidget->isTrashRequested()) { // do it first to update noteWidget::noteId
         noteWidget->save();
     }
-    if (!noteWidget->noteId().isEmpty()) {
+    if (!noteWidget->note().id().isEmpty()) {
         QSettings s;
-        QString   key = QString("geometry.%1.%2").arg(noteWidget->storageId(), noteWidget->noteId());
+        QString   key
+            = QString("geometry.%1.%2").arg(noteWidget->note().storage()->systemName(), noteWidget->note().id());
         if (noteWidget->isTrashRequested()) {
             s.remove(key);
         } else {
             s.setValue(key, geometry());
         }
-        NoteDialog::dialogs.remove(QPair<QString, QString>(noteWidget->storageId(), noteWidget->noteId()));
+        NoteDialog::dialogs.remove(
+            QPair<QString, QString>(noteWidget->note().storage()->systemName(), noteWidget->note().id()));
     }
     QDialog::done(r);
 }

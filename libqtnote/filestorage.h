@@ -35,26 +35,25 @@ class QTNOTE_EXPORT FileStorage : public NoteStorage {
     Q_OBJECT
 public:
     FileStorage(QObject *parent);
-    QString             createNote(const QString &text, Note::Format Format = Note::PlainText) override;
-    void                deleteNote(const QString &noteId) override;
-    QWidget            *settingsWidget() override;
-    QString             tooltip() override;
-    QList<NoteListItem> noteList(int limit = 0) override;
-
-    virtual QString             findStorageDir() const                      = 0;
-    virtual QList<NoteListItem> noteListFromInfoList(const QFileInfoList &) = 0;
-
-    void putToCache(const NoteListItem &note, const QString &oldNoteId);
+    void            removeNote(const QString &noteId) override;
+    QWidget        *settingsWidget() override;
+    QString         tooltip() override;
+    QList<Note>     noteList(int limit = 0) override;
+    virtual QString findStorageDir() const = 0;
 
 protected:
+    virtual QList<Note> noteListFromInfoList(const QFileInfoList &) = 0;
+
+    void putToCache(const Note &note, const QString &oldNoteId);
+
     void handleFSError();
     void ensureChachePopulated();
 
 protected:
-    QStringList                  fileExt;
-    QHash<QString, NoteListItem> cache;
-    bool                         _cacheValid; /* last limit passed to noteList() */
-    QDir                         notesDir;
+    QStringList          fileExt;
+    QHash<QString, Note> cache;
+    bool                 _cacheValid; /* last limit passed to noteList() */
+    QDir                 notesDir;
 };
 
 }

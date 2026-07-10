@@ -19,15 +19,15 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include "utils.h"
+
 #include <QColor>
 #include <QDir>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 
-#include "utils.h"
-
-Utils::Utils() { }
+namespace QtNote {
 
 QString Utils::cuttedDots(const QString &src, int length)
 {
@@ -96,3 +96,20 @@ QString Utils::fileNameForText(const QDir &dir, const QString &text, const QStri
     }
     return fileName;
 }
+
+std::pair<QString, QString> Utils::splitTitle(const QString &text)
+{
+    auto    trimmed = text.trimmed();
+    auto    idx     = trimmed.indexOf(QLatin1Char('\n'));
+    QString title;
+    QString body;
+    if (idx == -1) {
+        title = trimmed;
+    } else {
+        title = trimmed.left(idx);
+        body  = trimmed.mid(idx + 1).trimmed();
+    }
+    return { title, body };
+}
+
+} // namespace QtNote

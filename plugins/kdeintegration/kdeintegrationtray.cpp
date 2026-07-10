@@ -575,8 +575,7 @@ void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
     QSettings settings;
     auto      notes = NoteManager::instance()->noteList(settings.value("ui.menu-notes-amount", 15).toInt());
     for (int i = 0; i < notes.count(); ++i) {
-        menu.addAction(NoteManager::instance()->storage(notes[i].storageId)->noteIcon(),
-                       Utils::cuttedDots(notes[i].title, 48).replace('&', "&&"))
+        menu.addAction(notes[i].storage()->noteIcon(), Utils::cuttedDots(notes[i].title(), 48).replace('&', "&&"))
             ->setData(i);
     }
 
@@ -606,7 +605,7 @@ void KDEIntegrationTray::showNotes(bool active, const QPoint &pos)
 
     if (action && action != actNew) {
         const auto &note = notes[action->data().toInt()];
-        emit        showNoteTriggered(note.storageId, note.id);
+        emit        showNoteTriggered(note.storageId(), note.id());
     }
 }
 

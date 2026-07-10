@@ -42,8 +42,8 @@ public:
     void disableExtension(ExtType type);
     void enableExtension(ExtType type);
 
-    inline QTextBlock currentBlock() const { return QSyntaxHighlighter::currentBlock(); }
-    virtual void      addFormat(int start, int count, const QTextCharFormat &format); // virtual for plugins
+    QTextBlock   currentBlock() const { return QSyntaxHighlighter::currentBlock(); }
+    virtual void addFormat(int start, int count, const QTextCharFormat &format); // virtual for plugins
 
 signals:
 

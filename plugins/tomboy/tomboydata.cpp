@@ -20,9 +20,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "tomboydata.h"
+#include "tomboystorage.h"
 
+#include <QFileInfo>
 #include <QIcon>
 #include <QtDebug>
+
+namespace QtNote {
 
 bool TomboyData::fromFile(QString fn)
 {
@@ -43,7 +47,9 @@ bool TomboyData::fromFile(QString fn)
     format_          = QtNote::Note::Markdown;
     xmlTags_         = tagsFromNode(root.namedItem("tags"));
     setTags(searchableTags(xmlTags_));
-    dtLastChange = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+    lastChange_ = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+    id_         = QFileInfo(fn).completeBaseName();
+    loaded_     = true;
     // dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
     dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
     iCursor  = nodeText(root.namedItem("cursor-position")).toInt();
@@ -52,6 +58,10 @@ bool TomboyData::fromFile(QString fn)
 
     return true;
 }
+
+QString TomboyData::storageId() const { return TomboyStorage::storageId; }
+
+bool TomboyData::load() { return fromFile(sFileName); }
 
 bool TomboyData::saveToFile(const QString &fileName)
 {
@@ -72,7 +82,9 @@ bool TomboyData::saveToFile(const QString &fileName)
     node.setAttribute("xml:space", "preserve");
     node2 = dom.createElement("note-content");
     node2.setAttribute("version", "0.1");
+
     text = dom.createTextNode(text_);
+
     node2.appendChild(text);
     node.appendChild(node2);
     auto tags = xmlTags_;
@@ -105,8 +117,6 @@ bool TomboyData::saveToFile(const QString &fileName)
 }
 
 void TomboyData::remove() { QFile(sFileName).remove(); }
-
-qint64 TomboyData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
 
 QString TomboyData::nodeText(QDomNode node) const
 {
@@ -150,3 +160,5 @@ QStringList TomboyData::searchableTags(const QStringList &tags) const
     }
     return ret;
 }
+
+} // namespace QtNote

@@ -23,6 +23,7 @@
 #include "iconutils.h"
 #include "note.h"
 #include "notehighlighter.h"
+#include "notestorage.h"
 #include "notewidget.h"
 #include "speechaudiorecorder.h"
 #include "speechrecognitionprovider.h"
@@ -138,10 +139,14 @@ public:
     }
 };
 
-NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
-    ui(new Ui::NoteWidget), _storageId(storageId), _noteId(noteId)
+NoteWidget::NoteWidget(const Note &note) : ui(new Ui::NoteWidget), _note(note)
 {
     ui->setupUi(this);
+
+    if (!_note.isNull() && _note.storage()) {
+        auto storageFormats = _note.storage()->availableFormats();
+        setAcceptRichText(storageFormats.contains(Note::Markdown) || storageFormats.contains(Note::Html));
+    }
 
     setFocusProxy(ui->noteEdit);
     // ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
@@ -257,6 +262,7 @@ NoteWidget::NoteWidget(const QString &storageId, const QString &noteId) :
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     connect(qGuiApp, &QGuiApplication::paletteChanged, this, [this](const QPalette &) { updateFirstLineColor(); });
 #endif
+    initFromNote();
 }
 
 NoteWidget::~NoteWidget()
@@ -312,11 +318,29 @@ void NoteWidget::onReplaceTriggered()
 
 void NoteWidget::save()
 {
-    if (_changed) {
-        _changed = false;
-        emit saveRequested();
-        _lastChangeElapsed.restart();
+    if (!_changed) {
+        return;
     }
+    _changed = false;
+
+    auto txt    = text();
+    auto format = isMarkdown() ? Note::Markdown : Note::PlainText;
+    auto oldId  = _note.id();
+
+    auto const &[title, body] = Utils::splitTitle(txt);
+
+    auto changed = (title != _note.title()) || (body != _note.text());
+    _note.setTitle(title);
+    _note.setText(body, format);
+    if (oldId.isEmpty() || changed) {
+        if (_note.save()) {
+            if (oldId != _note.id()) {
+                emit noteIdChanged(oldId, _note.id());
+            }
+        }
+    }
+
+    _lastChangeElapsed.restart();
 }
 
 void NoteWidget::autosave()
@@ -330,8 +354,9 @@ void NoteWidget::autosave()
 
 void NoteWidget::focusReceived()
 {
-    if (!_trashRequested) {
-        emit invalidated();
+    if (!_trashRequested && !_note.isUpdated()) {
+        _note.load();
+        initFromNote();
     }
 }
 
@@ -364,34 +389,51 @@ void NoteWidget::setText(QString text)
             ui->noteEdit->setMarkdown(text.left(idx) + '\n' + text.mid(idx));
         }
     }
-    _changed = _noteId.isEmpty(); // force saving note if noteId is not set.
-    _autosaveTimer.stop();        // timer not required atm
+    _changed = _note.id().isEmpty(); // force saving note if noteId is not set.
+    _autosaveTimer.stop();           // timer not required atm
     _lastChangeElapsed.restart();
 }
 
-void NoteWidget::setNote(const Note &note)
+void NoteWidget::initFromNote() { setContents(_note.title(), _note.text(), _note.format()); }
+
+void NoteWidget::setContents(const QString &title, const QString &body, Note::Format format)
 {
-    switch (note.format()) {
+    ui->noteEdit->blockSignals(true);
+    _linkHighlighter->reset();
+
+    auto cursor = ui->noteEdit->textCursor();
+    cursor.clearSelection();
+    cursor.setPosition(0);
+    ui->noteEdit->setTextCursor(cursor);
+
+    switch (format) {
     case Note::Html:
-        ui->noteEdit->setHtml(note.title() + QLatin1String("<br/>") + note.text());
+        ui->noteEdit->setHtml(title + QLatin1String("<br/>") + body);
         ui->noteEdit->setMarkdown(ui->noteEdit->toMarkdown()); // to cleanup html
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
+        ui->noteEdit->setAcceptRichText(true);
+        ui->noteEdit->setUnconditionalLinks(true);
         break;
     case Note::Markdown:
-        ui->noteEdit->setMarkdown(note.title() + QLatin1String("\n\n") + note.text());
+        ui->noteEdit->setMarkdown(title + QLatin1String("\n\n") + body);
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
+        ui->noteEdit->setAcceptRichText(true);
+        ui->noteEdit->setUnconditionalLinks(true);
         break;
     case Note::PlainText:
-        ui->noteEdit->setPlainText(note.title() + QLatin1Char('\n') + note.text());
+        ui->noteEdit->setPlainText(title + QLatin1Char('\n') + body);
         mdModeAct->setVisible(true);
         txtModeAct->setVisible(false);
+        ui->noteEdit->setAcceptRichText(false);
+        ui->noteEdit->setUnconditionalLinks(false);
         break;
     }
     _changed = false;
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
+    ui->noteEdit->blockSignals(false);
 }
 
 QString NoteWidget::text()
@@ -415,16 +457,19 @@ void NoteWidget::setAcceptRichText(bool state)
 void NoteWidget::setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider)
 {
     speechProvider = provider;
-    qDebug() << "Speech recognition provider set for note" << _storageId << _noteId << "provider" << provider << "ready"
-             << (provider ? provider->isSpeechRecognitionReady() : false);
+    qDebug() << "Speech recognition provider set for note" << storageId() << noteId() << "provider" << provider
+             << "ready" << (provider ? provider->isSpeechRecognitionReady() : false);
     updateSpeechRecognitionAction();
 }
 
-void NoteWidget::setNoteId(const QString &noteId)
+void NoteWidget::setNote(const Note &note)
 {
-    QString old = _noteId;
-    _noteId     = noteId;
-    emit noteIdChanged(old, noteId);
+    const auto oldId = _note.id();
+    _note            = note;
+    initFromNote();
+    if (oldId != _note.id()) {
+        emit noteIdChanged(oldId, _note.id());
+    }
 }
 
 void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
@@ -541,55 +586,14 @@ void NoteWidget::showSpeechRecognitionError(const QString &error)
 
 void NoteWidget::switchToMarkdown()
 {
-    ui->noteEdit->blockSignals(true);
-    _linkHighlighter->reset();
-    ui->noteEdit->setAcceptRichText(true);
-
-    auto txt   = text();
-    auto nindx = txt.indexOf(QLatin1Char('\n'));
-    if (nindx == -1 || nindx == txt.size() - 1 || txt[nindx + 1] == QLatin1Char('\n')) {
-        ui->noteEdit->setMarkdown(txt);
-    } else {
-#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
-        ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + txt.mid(nindx));
-#else
-        ui->noteEdit->setMarkdown(txt.left(nindx) + QLatin1Char('\n') + QStringView(txt).mid(nindx));
-#endif
-    }
-    mdModeAct->setVisible(false);
-    txtModeAct->setVisible(true);
-    ui->noteEdit->setUnconditionalLinks(true);
-    ui->noteEdit->blockSignals(false);
+    auto const &[title, body] = Utils::splitTitle(text());
+    setContents(title, body, Note::Markdown);
 }
 
 void NoteWidget::switchToText()
 {
-    ui->noteEdit->blockSignals(true);
-    _linkHighlighter->reset();
-    ui->noteEdit->setAcceptRichText(false);
-
-    auto cursor = ui->noteEdit->textCursor();
-    cursor.clearSelection();
-    cursor.setPosition(0);
-    ui->noteEdit->setTextCursor(cursor);
-
-    auto md = ui->noteEdit->toMarkdown().trimmed();
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    // there is some bug in qt5 requiring this hack
-    auto parts = md.split("\n    ```");
-    for (int i = 1; i < parts.count() - 1; i += 2) {
-        parts[i].replace("\n\n", "\n");
-    }
-    md = parts.join("\n```");
-#endif
-
-    ui->noteEdit->setPlainText(md);
-
-    mdModeAct->setVisible(true);
-    txtModeAct->setVisible(false);
-    ui->noteEdit->setUnconditionalLinks(false);
-    ui->noteEdit->blockSignals(false);
+    auto const &[title, body] = Utils::splitTitle(text());
+    setContents(title, body, Note::PlainText);
 }
 
 void NoteWidget::onCopyClicked()
@@ -827,8 +831,8 @@ QString NoteWidget::normalizeSpeechRecognitionLanguage(const QString &language) 
 
 QString NoteWidget::speechContextId() const
 {
-    if (!_noteId.isEmpty()) {
-        auto key = _storageId.toUtf8() + '\0' + _noteId.toUtf8();
+    if (!noteId().isEmpty()) {
+        auto key = storageId().toUtf8() + '\0' + noteId().toUtf8();
         return QString::fromLatin1(QCryptographicHash::hash(key, QCryptographicHash::Sha256).toHex());
     }
     if (localSpeechContextId.isEmpty()) {

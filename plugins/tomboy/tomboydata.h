@@ -29,20 +29,24 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFile>
 #include <QPointer>
 
+namespace QtNote {
+
 class TomboyData : public QtNote::NoteData {
 public:
-    bool fromFile(QString);
+    using NoteData::NoteData;
 
-    bool   saveToFile(const QString &fileName);
-    void   remove() override;
-    qint64 lastChangeElapsed() const override;
+    bool fromFile(QString);
+    bool saveToFile(const QString &fileName);
+
+    QString storageId() const override;
+    bool    load() override;
+    void    remove() override;
 
     QString     nodeText(QDomNode node) const;
     QStringList tagsFromNode(QDomNode node) const;
     QStringList searchableTags(const QStringList &tags) const;
 
-    QString   sFileName;
-    QDateTime dtLastChange;
+    QString sFileName;
 
 protected:
     QDateTime   dtCreate;
@@ -51,5 +55,7 @@ protected:
     int         iHeight;
     QStringList xmlTags_;
 };
+
+} // namespace QtNote
 
 #endif // TOMBOYDATA_H

@@ -21,6 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 // #include "note.h"
 #include "notedata.h"
+#include "notemanager.h"
 
 #include <QString>
 #include <QStringList>
@@ -43,20 +44,56 @@ Note &Note::operator=(const Note &note)
     return *this;
 }
 
-bool Note::isNull() { return !d; }
+bool Note::isNull() const { return !d; }
 
-void Note::toTrash() { d->remove(); }
+bool Note::isEmpty() const { return isNull() || (d->title_.isEmpty() && d->text_.isEmpty()); }
 
-QString Note::text() const { return d->text(); }
+bool Note::isLoaded() const { return d->loaded_; }
 
-QString Note::title() const { return d->title(); }
+bool Note::save()
+{
+    auto storage = NoteManager::instance()->storage(d->storageId());
+    if (storage) {
+        return storage->saveNote(*this);
+    }
+    qWarning("failed to save note. storage not found");
+    return false;
+}
+
+bool Note::load() { return d->load(); }
+
+void Note::remove() { d->remove(); }
+
+void Note::setTitle(const QString &title) { d->title_ = title; }
+
+void Note::setText(const QString &text, Format format) { d->setText(text, format); }
+
+NoteStorage *Note::storage() const { return d->storage_; }
+
+QString Note::storageId() const { return d->storageId(); }
+
+QString Note::id() const { return d->id_; }
+
+QString Note::text() const { return d->text_; }
+
+QString Note::title() const { return d->title_; }
 
 QStringList Note::tags() const { return d->tags(); }
 
 NoteData *Note::data() const { return d.data(); }
 
-Note::Format Note::format() const { return d->format(); }
+Note::Format Note::format() const { return d->format_; }
 
-qint64 Note::lastChangeElapsed() const { return d->lastChangeElapsed(); }
+QDateTime Note::lastChangeUTC() const { return d->lastChange_; }
+
+bool Note::isUpdated() const
+{
+    if (isNull() || id().isEmpty() || !storage()) {
+        return true;
+    }
+
+    auto freshNote = storage()->note(id());
+    return freshNote.isNull() || freshNote.lastChangeUTC() <= lastChangeUTC();
+}
 
 } // namespace QtNote

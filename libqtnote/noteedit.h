@@ -50,9 +50,9 @@ private:
 
 public:
     explicit NoteEdit(QWidget *parent = nullptr);
-    virtual void                      addContextMenuHandler(NoteContextMenuHandler *handler);
-    inline const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
-    void                              setUnconditionalLinks(bool enabled);
+    virtual void               addContextMenuHandler(NoteContextMenuHandler *handler);
+    const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
+    void                       setUnconditionalLinks(bool enabled);
 
 protected:
     void dropEvent(QDropEvent *e);

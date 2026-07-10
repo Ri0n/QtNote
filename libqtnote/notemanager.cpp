@@ -30,9 +30,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 namespace {
-    bool noteMatchesFilter(const NoteListItem &note, const QString &filter)
+    bool noteMatchesFilter(const Note &note, const QString &filter)
     {
-        if (note.title.contains(filter, Qt::CaseInsensitive)) {
+        if (note.title().contains(filter, Qt::CaseInsensitive)) {
             return true;
         }
 
@@ -44,7 +44,7 @@ namespace {
             return false;
         }
 
-        for (const auto &tag : note.tags) {
+        for (const auto &tag : note.tags()) {
             if (tag.contains(tagFilter, Qt::CaseInsensitive)) {
                 return true;
             }
@@ -66,7 +66,7 @@ protected:
 public:
     NoteFinder(NoteStorage &storage) : QObject(&storage), _storage(storage) { }
 
-    inline NoteStorage &storage() const { return _storage; }
+    NoteStorage &storage() const { return _storage; }
 
 signals:
     void found(const QString &noteId);
@@ -82,8 +82,8 @@ void NoteFinder::start(const QString &text)
     auto nl = _storage.noteList();
     for (auto &n : std::as_const(nl)) {
         // text always returns plain text
-        if (_storage.note(n.id).text().contains(text)) {
-            emit found(n.id);
+        if (_storage.note(n.id()).text().contains(text)) {
+            emit found(n.id());
         }
     }
 
@@ -154,10 +154,10 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     }
 
     connect(storage.data(), SIGNAL(invalidated()), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteAdded(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteModified(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteRemoved(NoteListItem)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteIdChanged(NoteListItem, QString)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteAdded(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteModified(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
+    connect(storage.data(), SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
 
     storage->init();
     emit storageAdded(storage);
@@ -183,9 +183,9 @@ bool NoteManager::loadAll()
 
 void NoteManager::storageChanged() { emit storageChanged(_storages[((NoteStorage *)sender())->systemName()]); }
 
-QList<NoteListItem> NoteManager::noteList(int count) const
+QList<Note> NoteManager::noteList(int count) const
 {
-    QList<NoteListItem> ret;
+    QList<Note> ret;
     foreach (NoteStorage::Ptr storage, prioritizedStorages()) {
         ret += storage->noteList(count);
     }
@@ -193,7 +193,7 @@ QList<NoteListItem> NoteManager::noteList(int count) const
     return ret.mid(0, count);
 }
 
-QList<NoteListItem> NoteManager::noteList(int offset, int limit, const QString &titleFilter) const
+QList<Note> NoteManager::noteList(int offset, int limit, const QString &titleFilter) const
 {
     offset = qMax(0, offset);
     if (limit <= 0)
@@ -203,7 +203,7 @@ QList<NoteListItem> NoteManager::noteList(int offset, int limit, const QString &
     auto          notes  = filter.isEmpty() ? noteList(offset + limit) : noteList(-1);
 
     if (!filter.isEmpty()) {
-        QList<NoteListItem> filtered;
+        QList<Note> filtered;
         filtered.reserve(notes.size());
         for (const auto &note : std::as_const(notes)) {
             if (noteMatchesFilter(note, filter))
