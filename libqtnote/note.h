@@ -23,6 +23,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTE_H
 
 #include <QExplicitlySharedDataPointer>
+#include <QString>
+#include <QStringList>
 
 #include "qtnote_export.h"
 
@@ -41,13 +43,14 @@ public:
     Note(Note &&note);
     Note &operator=(const Note &note);
 
-    bool      isNull();
-    void      toTrash();
-    QString   text() const;
-    QString   title() const;
-    NoteData *data() const;
-    Format    format() const;
-    qint64    lastChangeElapsed() const;
+    bool        isNull();
+    void        toTrash();
+    QString     text() const;
+    QString     title() const;
+    QStringList tags() const;
+    NoteData   *data() const;
+    Format      format() const;
+    qint64      lastChangeElapsed() const;
 
 private:
     QExplicitlySharedDataPointer<NoteData> d;

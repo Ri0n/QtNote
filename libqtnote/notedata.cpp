@@ -31,6 +31,17 @@ QString NoteData::title() const { return title_; }
 
 QString NoteData::text() const { return text_; }
 
+QStringList NoteData::tags() const
+{
+    auto ret = tags_;
+    for (const auto &tag : tagsFromText(text_)) {
+        if (!ret.contains(tag)) {
+            ret.append(tag);
+        }
+    }
+    return ret;
+}
+
 void NoteData::setText(const QString &text)
 {
     auto trimmed = text.trimmed();
@@ -46,6 +57,36 @@ void NoteData::setText(const QString &text)
         text_  = (title_.mid(NoteData::TitleLength) + QLatin1Char('\n') + text_).trimmed();
         title_ = title_.left(NoteData::TitleLength).trimmed();
     }
+    tags_ = tagsFromText(text_);
 }
+
+QStringList NoteData::tagsFromLine(const QString &line)
+{
+    const auto tokens = line.trimmed().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    if (tokens.isEmpty()) {
+        return {};
+    }
+
+    QStringList tags;
+    tags.reserve(tokens.size());
+    for (const auto &token : tokens) {
+        if (!token.startsWith(QLatin1Char('*')) || token.size() == 1) {
+            return {};
+        }
+        const auto tag = token.mid(1);
+        if (!tags.contains(tag)) {
+            tags.append(tag);
+        }
+    }
+    return tags;
+}
+
+QStringList NoteData::tagsFromText(const QString &text)
+{
+    const auto idx = text.indexOf(QLatin1Char('\n'));
+    return tagsFromLine(idx == -1 ? text : text.left(idx));
+}
+
+void NoteData::setTags(const QStringList &tags) { tags_ = tags; }
 
 }

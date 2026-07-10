@@ -25,13 +25,18 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
-bool PTFData::fromFile(QString fn)
+bool PTFData::fromFile(QString fn, bool indexOnly)
 {
     QFile file(fn);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
     format_ = fn.endsWith(".md", Qt::CaseInsensitive) ? Note::Markdown : Note::PlainText;
-    setText(QString::fromUtf8(file.readAll()));
+    if (indexOnly) {
+        title_ = QString::fromUtf8(file.readLine()).trimmed();
+        setTags(tagsFromLine(QString::fromUtf8(file.readLine())));
+    } else {
+        setText(QString::fromUtf8(file.readAll()));
+    }
     sFileName = fn;
     file.close();
     QFileInfo fi(fn);

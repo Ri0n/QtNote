@@ -8,6 +8,7 @@ set(plugins_list
     tomboy
     gnome
     gemini
+    openaiwhisper
 )
 
 foreach(plugin ${plugins_list})

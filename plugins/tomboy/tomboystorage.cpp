@@ -68,7 +68,7 @@ QList<NoteListItem> TomboyStorage::noteListFromInfoList(const QFileInfoList &fil
     foreach (const QFileInfo &fi, files) {
         TomboyData note;
         if (note.fromFile(fi.canonicalFilePath())) {
-            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange);
+            NoteListItem li(fi.completeBaseName(), systemName(), note.title(), note.dtLastChange, note.tags());
             ret.append(li);
         }
     }
@@ -101,7 +101,7 @@ QString TomboyStorage::saveNote(const QString &noteId, const QString &text, Note
         handleFSError();
         return QString();
     }
-    NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange);
+    NoteListItem item(newNoteId, systemName(), note.title(), note.dtLastChange, note.tags());
     putToCache(item, noteId);
     return newNoteId;
 }

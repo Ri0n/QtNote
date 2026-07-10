@@ -37,16 +37,19 @@ public:
     void   remove() override;
     qint64 lastChangeElapsed() const override;
 
-    QString nodeText(QDomNode node);
+    QString     nodeText(QDomNode node) const;
+    QStringList tagsFromNode(QDomNode node) const;
+    QStringList searchableTags(const QStringList &tags) const;
 
     QString   sFileName;
     QDateTime dtLastChange;
 
 protected:
-    QDateTime dtCreate;
-    int       iCursor;
-    int       iWidth;
-    int       iHeight;
+    QDateTime   dtCreate;
+    int         iCursor;
+    int         iWidth;
+    int         iHeight;
+    QStringList xmlTags_;
 };
 
 #endif // TOMBOYDATA_H

@@ -41,7 +41,9 @@ bool TomboyData::fromFile(QString fn)
     title_           = nodeText(root.namedItem("title"));
     text_            = nodeText(root.namedItem("text"));
     format_          = QtNote::Note::Markdown;
-    dtLastChange     = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
+    xmlTags_         = tagsFromNode(root.namedItem("tags"));
+    setTags(searchableTags(xmlTags_));
+    dtLastChange = QDateTime::fromString(nodeText(root.namedItem("last-change-date")), Qt::ISODate);
     // dtLastMetadataChange = QDateTime::fromString(nodeText(root.namedItem("last-metadata-change-date")), Qt::ISODate);
     dtCreate = QDateTime::fromString(nodeText(root.namedItem("create-date")), Qt::ISODate);
     iCursor  = nodeText(root.namedItem("cursor-position")).toInt();
@@ -73,6 +75,22 @@ bool TomboyData::saveToFile(const QString &fileName)
     text = dom.createTextNode(text_);
     node2.appendChild(text);
     node.appendChild(node2);
+    auto tags = xmlTags_;
+    for (const auto &tag : this->tags()) {
+        if (!tags.contains(tag)) {
+            tags.append(tag);
+        }
+    }
+    if (!tags.isEmpty()) {
+        node = dom.createElement("tags");
+        note.appendChild(node);
+        for (const auto &tag : tags) {
+            node2 = dom.createElement("tag");
+            text  = dom.createTextNode(tag);
+            node2.appendChild(text);
+            node.appendChild(node2);
+        }
+    }
 
     sFileName = fileName;
     ;
@@ -90,7 +108,7 @@ void TomboyData::remove() { QFile(sFileName).remove(); }
 
 qint64 TomboyData::lastChangeElapsed() const { return dtLastChange.msecsTo(QDateTime::currentDateTime()); }
 
-QString TomboyData::nodeText(QDomNode node)
+QString TomboyData::nodeText(QDomNode node) const
 {
     QString  ret;
     QDomNode child = node.firstChild();
@@ -102,6 +120,33 @@ QString TomboyData::nodeText(QDomNode node)
             ret += nodeText(child);
         }
         child = child.nextSibling();
+    }
+    return ret;
+}
+
+QStringList TomboyData::tagsFromNode(QDomNode node) const
+{
+    QStringList ret;
+    auto        child = node.firstChild();
+    while (!child.isNull()) {
+        if (child.isElement() && child.nodeName() == QLatin1String("tag")) {
+            auto tag = nodeText(child).trimmed();
+            if (!tag.isEmpty() && !ret.contains(tag)) {
+                ret.append(tag);
+            }
+        }
+        child = child.nextSibling();
+    }
+    return ret;
+}
+
+QStringList TomboyData::searchableTags(const QStringList &tags) const
+{
+    QStringList ret;
+    for (const auto &tag : tags) {
+        if (!tag.startsWith(QLatin1String("system:")) && !ret.contains(tag)) {
+            ret.append(tag);
+        }
     }
     return ret;
 }

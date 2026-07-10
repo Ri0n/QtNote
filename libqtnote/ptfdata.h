@@ -32,7 +32,7 @@ namespace QtNote {
 
 class PTFData : public NoteData {
 public:
-    bool fromFile(QString);
+    bool fromFile(QString, bool indexOnly = false);
     bool saveToFile(const QString &fileName);
 
     void   remove() override;

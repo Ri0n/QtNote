@@ -29,6 +29,30 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+namespace {
+    bool noteMatchesFilter(const NoteListItem &note, const QString &filter)
+    {
+        if (note.title.contains(filter, Qt::CaseInsensitive)) {
+            return true;
+        }
+
+        auto tagFilter = filter;
+        if (tagFilter.startsWith(QLatin1Char('*'))) {
+            tagFilter.remove(0, 1);
+        }
+        if (tagFilter.isEmpty()) {
+            return false;
+        }
+
+        for (const auto &tag : note.tags) {
+            if (tag.contains(tagFilter, Qt::CaseInsensitive)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 /**
  * @brief Notes search class.
  * Search object is owned by storage and self-destroyed on search-end
@@ -182,7 +206,7 @@ QList<NoteListItem> NoteManager::noteList(int offset, int limit, const QString &
         QList<NoteListItem> filtered;
         filtered.reserve(notes.size());
         for (const auto &note : std::as_const(notes)) {
-            if (note.title.contains(filter, Qt::CaseInsensitive))
+            if (noteMatchesFilter(note, filter))
                 filtered.append(note);
         }
         notes = std::move(filtered);

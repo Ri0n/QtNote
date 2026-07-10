@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDateTime>
 #include <QIcon>
 #include <QObject> // just for compatibility with qt<4.6
+#include <QStringList>
 
 #include "note.h"
 #include "qtnote_export.h"
@@ -35,14 +36,16 @@ class NoteStorage;
 class NoteFinder;
 
 struct NoteListItem {
-    NoteListItem(const QString &id_, const QString &storageId_, const QString &title_, const QDateTime &lastModify_) :
-        id(id_), storageId(storageId_), title(title_), lastModify(lastModify_)
+    NoteListItem(const QString &id_, const QString &storageId_, const QString &title_, const QDateTime &lastModify_,
+                 const QStringList &tags_ = {}) :
+        id(id_), storageId(storageId_), title(title_), tags(tags_), lastModify(lastModify_)
     {
     }
-    QString   id;
-    QString   storageId;
-    QString   title;
-    QDateTime lastModify;
+    QString     id;
+    QString     storageId;
+    QString     title;
+    QStringList tags;
+    QDateTime   lastModify;
 };
 
 inline bool noteListItemModifyComparer(const NoteListItem &a, const NoteListItem &b)

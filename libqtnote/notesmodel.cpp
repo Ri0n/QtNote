@@ -37,7 +37,7 @@ public:
     }
 
     NMMItem(const NoteListItem &note, NMMItem *parent) :
-        parent(parent), type(NotesModel::ItemNote), title(note.title), id(note.id)
+        parent(parent), type(NotesModel::ItemNote), title(note.title), id(note.id), tags(note.tags)
     {
     }
 
@@ -66,6 +66,7 @@ public:
     QList<NMMItem *>     children;
     QString              title;
     QString              id;
+    QStringList          tags;
 };
 
 void debug(const QString &prefix, NMMItem *item)
@@ -175,6 +176,7 @@ void NotesModel::noteModified(const NoteListItem &note)
     if (index.isValid()) {
         NMMItem *noteItem = static_cast<NMMItem *>(index.internalPointer());
         noteItem->title   = note.title;
+        noteItem->tags    = note.tags;
         emit dataChanged(index, index);
     }
 }
@@ -274,6 +276,11 @@ QVariant NotesModel::data(const QModelIndex &index, int role) const
                 return "";
             }
             return item->id;
+        case TagsRole:
+            if (item->type == ItemStorage) {
+                return QStringList();
+            }
+            return item->tags;
         }
     }
     return QVariant();

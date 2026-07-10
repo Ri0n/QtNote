@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedata.h"
 
 #include <QString>
+#include <QStringList>
 
 namespace QtNote {
 
@@ -49,6 +50,8 @@ void Note::toTrash() { d->remove(); }
 QString Note::text() const { return d->text(); }
 
 QString Note::title() const { return d->title(); }
+
+QStringList Note::tags() const { return d->tags(); }
 
 NoteData *Note::data() const { return d.data(); }
 

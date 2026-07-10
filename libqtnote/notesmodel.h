@@ -33,7 +33,7 @@ struct NoteListItem;
 class NotesModel : public QAbstractItemModel {
     Q_OBJECT
 public:
-    enum DataRole { StorageIdRole = Qt::UserRole + 1, NoteIdRole, ItemTypeRole };
+    enum DataRole { StorageIdRole = Qt::UserRole + 1, NoteIdRole, ItemTypeRole, TagsRole };
 
     enum ItemType { ItemStorage, ItemNote };
 

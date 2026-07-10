@@ -28,9 +28,9 @@ bool NotesSearchModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
     if (!sourceParent.isValid()) {
         return true; // include storages
     }
+    QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
     if (_searchInBody) {
-        QModelIndex index     = sourceModel()->index(sourceRow, 0, sourceParent);
-        QString     storageId = sourceModel()->data(index, NotesModel::StorageIdRole).toString();
+        QString storageId = sourceModel()->data(index, NotesModel::StorageIdRole).toString();
         if (_foundCache.contains(storageId)) {
             QString noteId = sourceModel()->data(index, NotesModel::NoteIdRole).toString();
             if (_foundCache[storageId].contains(noteId)) {
@@ -38,7 +38,25 @@ bool NotesSearchModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
             }
         }
     }
-    return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
+    if (QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent)) {
+        return true;
+    }
+
+    auto filter = _text.trimmed();
+    if (filter.startsWith(QLatin1Char('*'))) {
+        filter.remove(0, 1);
+    }
+    if (filter.isEmpty()) {
+        return false;
+    }
+
+    const auto tags = sourceModel()->data(index, NotesModel::TagsRole).toStringList();
+    for (const auto &tag : tags) {
+        if (tag.contains(filter, Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void NotesSearchModel::setSearchInBody(bool allow)
