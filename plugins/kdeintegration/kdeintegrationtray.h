@@ -22,8 +22,10 @@ public:
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 private:
-    void askAddPlasmoid();
+    void ensurePlasmoidInSystemTray();
     void addPlasmoidToPanel();
+    void addPlasmoidToSystemTray();
+    bool isPlasmoidRegisteredInSystemTray() const;
     bool isPlasmoidInstalled() const;
 #ifdef QTNOTE_DEVEL
     bool ensureDevelopmentPlasmoidLinks();

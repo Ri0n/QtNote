@@ -20,7 +20,7 @@ PlasmoidItem {
     Plasmoid.icon: "qtnote-symbolic"
     Plasmoid.status: notesModel.available
         ? PlasmaCore.Types.ActiveStatus
-        : PlasmaCore.Types.PassiveStatus
+        : PlasmaCore.Types.HiddenStatus
 
     toolTipMainText: qsTr("Notes")
     toolTipSubText: notesModel.available
