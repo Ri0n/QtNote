@@ -10,6 +10,7 @@ set(plugins_list
     gemini
     openaiwhisper
     nextcloud
+    xmpppubsub
 )
 
 foreach(plugin ${plugins_list})
