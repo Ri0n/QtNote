@@ -87,6 +87,7 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) : QDialog(0), ui(new Ui::NoteManage
     searchModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
 
     ui->notesTree->setModel(searchModel);
+    ui->notesTree->setSortingEnabled(false);
 
     QSettings   s;
     bool        expandAll = false;

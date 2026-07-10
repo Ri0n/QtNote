@@ -92,6 +92,12 @@ void KDEIntegrationTray::ensurePlasmoidInSystemTray()
 
 void KDEIntegrationTray::addPlasmoidToPanel()
 {
+#ifdef QTNOTE_DEVEL
+    if (isPlasmoidRegisteredInSystemTray()) {
+        return;
+    }
+#endif
+
     static const auto script = QStringLiteral(R"(
 var pluginId = "%1";
 

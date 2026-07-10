@@ -48,7 +48,7 @@ bool Note::isNull() const { return !d; }
 
 bool Note::isEmpty() const { return isNull() || (d->title_.isEmpty() && d->text_.isEmpty()); }
 
-bool Note::isLoaded() const { return d->loaded_; }
+bool Note::isLoaded() const { return !isNull() && d->loaded_; }
 
 bool Note::save()
 {

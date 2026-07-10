@@ -81,8 +81,15 @@ void NoteFinder::start(const QString &text)
 {
     auto nl = _storage.noteList();
     for (auto &n : std::as_const(nl)) {
+        auto note = _storage.note(n.id());
+        if (note.isNull()) {
+            continue;
+        }
+        if (!note.isLoaded() && !note.load()) {
+            continue;
+        }
         // text always returns plain text
-        if (_storage.note(n.id()).text().contains(text)) {
+        if (note.text().contains(text, Qt::CaseInsensitive)) {
             emit found(n.id());
         }
     }

@@ -394,7 +394,17 @@ void NoteWidget::setText(QString text)
     _lastChangeElapsed.restart();
 }
 
-void NoteWidget::initFromNote() { setContents(_note.title(), _note.text(), _note.format()); }
+void NoteWidget::initFromNote()
+{
+    if (_note.isNull()) {
+        setContents(QString(), QString(), Note::PlainText);
+        return;
+    }
+    if (!_note.isLoaded()) {
+        _note.load();
+    }
+    setContents(_note.title(), _note.text(), _note.format());
+}
 
 void NoteWidget::setContents(const QString &title, const QString &body, Note::Format format)
 {

@@ -23,6 +23,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QMimeData>
 #include <QStringList>
 
+#include <algorithm>
+
 #include "notemanager.h"
 #include "notesmodel.h"
 
@@ -37,7 +39,8 @@ public:
     }
 
     NMMItem(const Note &note, NMMItem *parent) :
-        parent(parent), type(NotesModel::ItemNote), title(note.title()), id(note.id()), tags(note.tags())
+        parent(parent), type(NotesModel::ItemNote), title(note.title()), id(note.id()), tags(note.tags()),
+        lastChange(note.lastChangeUTC())
     {
     }
 
@@ -50,7 +53,25 @@ public:
             foreach (const Note &note, storage->noteList()) {
                 children.append(new NMMItem(note, this));
             }
+            sortChildren();
         }
+    }
+
+    void sortChildren()
+    {
+        std::sort(children.begin(), children.end(),
+                  [](const NMMItem *a, const NMMItem *b) { return a->lastChange > b->lastChange; });
+    }
+
+    int insertPosition(const Note &note) const
+    {
+        const auto lastChange = note.lastChangeUTC();
+        for (int i = 0; i < children.size(); ++i) {
+            if (lastChange > children.at(i)->lastChange) {
+                return i;
+            }
+        }
+        return children.size();
     }
 
     QIcon icon()
@@ -67,6 +88,7 @@ public:
     QString              title;
     QString              id;
     QStringList          tags;
+    QDateTime            lastChange;
 };
 
 void debug(const QString &prefix, NMMItem *item)
@@ -162,9 +184,9 @@ void NotesModel::noteAdded(const Note &item)
     QModelIndex parentIndex = storageIndex(item.storage()->systemName());
     if (parentIndex.isValid()) {
         NMMItem *storage = static_cast<NMMItem *>(parentIndex.internalPointer());
-        int      len     = rowCount(parentIndex);
-        beginInsertRows(parentIndex, len, len);
-        storage->children.append(new NMMItem(item, storage));
+        int      pos     = storage->insertPosition(item);
+        beginInsertRows(parentIndex, pos, pos);
+        storage->children.insert(pos, new NMMItem(item, storage));
         endInsertRows();
         emit statsChanged();
     }
@@ -174,9 +196,14 @@ void NotesModel::noteModified(const Note &note)
 {
     QModelIndex index = noteIndex(note.storage()->systemName(), note.id());
     if (index.isValid()) {
-        NMMItem *noteItem = static_cast<NMMItem *>(index.internalPointer());
-        noteItem->title   = note.title();
-        noteItem->tags    = note.tags();
+        NMMItem *noteItem    = static_cast<NMMItem *>(index.internalPointer());
+        noteItem->title      = note.title();
+        noteItem->tags       = note.tags();
+        noteItem->lastChange = note.lastChangeUTC();
+        emit layoutAboutToBeChanged();
+        noteItem->parent->sortChildren();
+        emit layoutChanged();
+        index = noteIndex(note.storage()->systemName(), note.id());
         emit dataChanged(index, index);
     }
 }

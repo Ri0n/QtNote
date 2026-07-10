@@ -2,12 +2,35 @@ include(QtNoteMacro)
 
 set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
 
+function(qtnote_kde_adopt_cmake_install_dirs)
+    foreach(dir_name
+            BINDIR
+            SBINDIR
+            LIBDIR
+            LIBEXECDIR
+            INCLUDEDIR
+            LOCALSTATEDIR
+            SHAREDSTATEDIR
+            DATAROOTDIR
+            DATADIR
+            LOCALEDIR
+            MANDIR
+            INFODIR
+            SYSCONFDIR)
+        if(NOT DEFINED KDE_INSTALL_${dir_name} AND DEFINED CMAKE_INSTALL_${dir_name})
+            set(KDE_INSTALL_${dir_name} "${CMAKE_INSTALL_${dir_name}}" CACHE PATH
+                "Install path adopted from CMAKE_INSTALL_${dir_name}" FORCE)
+        endif()
+    endforeach()
+endfunction()
+
 set(qtnote_plasmoid_buildable OFF)
 if(UNIXLIKE AND QT_VERSION_MAJOR GREATER_EQUAL 6)
     find_package(Qt6 REQUIRED COMPONENTS DBus Qml)
     find_package(ECM QUIET NO_MODULE)
     if(ECM_FOUND)
         set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+        qtnote_kde_adopt_cmake_install_dirs()
         find_package(KF6Config QUIET)
         find_package(KF6CoreAddons QUIET)
         find_package(KF6WindowSystem QUIET)

@@ -58,7 +58,7 @@ static PluginManager::LoadPolicy defaultLoadPolicy(const PluginMetadata &metadat
         qWarning() << "Unknown plugin default load policy" << text;
     }
 
-    if (value.type() != QVariant::String && value.canConvert<int>()) {
+    if (value.userType() != QMetaType::QString && value.canConvert<int>()) {
         const auto policy = value.toInt();
         if (policy >= PluginManager::LP_Auto && policy <= PluginManager::LP_Disabled) {
             return PluginManager::LoadPolicy(policy);

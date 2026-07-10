@@ -262,7 +262,6 @@ NoteWidget *Main::noteWidget(const Note &note)
     connect(this, &Main::settingsUpdated, w,
             [this, w]() { w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider()); });
     connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
-    connect(w, SIGNAL(saveRequested()), SLOT(note_saveRequested()));
     return w;
 }
 
@@ -449,13 +448,6 @@ void Main::note_trashRequested()
 #endif
         storage->removeNote(nw->noteId());
     }
-}
-
-void Main::note_saveRequested()
-{
-#ifdef MAIN_DEBUG
-    qDebug() << "Main::note_saveRequested";
-#endif
 }
 
 void Main::note_removed(const Note &note)

@@ -85,7 +85,6 @@ private slots:
     void createNewNote();
     void createNewNoteFromSelection();
     void note_trashRequested();
-    void note_saveRequested();
     void note_removed(const Note &noteItem);
 
 private:
