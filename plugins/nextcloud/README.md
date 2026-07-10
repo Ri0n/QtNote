@@ -1,0 +1,51 @@
+# QtNote Nextcloud Notes storage
+
+This directory is intended to be copied to `QtNote/plugins/nextcloud`.
+
+## Integration
+
+1. Add `nextcloud` to `plugins_list` in `plugins/CMakeLists.txt`.
+2. Reconfigure CMake and build QtNote.
+3. Enable the plugin and enter:
+   - the base Nextcloud URL, including any installation subdirectory;
+   - the Nextcloud user name;
+   - an app password;
+   - a request timeout.
+
+Example server URL:
+
+```text
+https://cloud.example.com
+```
+
+For a subdirectory installation:
+
+```text
+https://example.com/nextcloud
+```
+
+The code appends `/index.php/apps/notes/api/v1`.
+
+## Behavior
+
+- `noteList()` downloads metadata only; note content is loaded lazily.
+- Network requests run in a dedicated worker thread.
+- The legacy `NoteStorage` API is synchronous, so its caller still waits for each network operation.
+- Updates send `If-Match` with the last known note ETag.
+- HTTP 412 is treated as a conflict. The local text is preserved and the server version is not overwritten.
+- Server-sanitized titles are adopted from the API response.
+- `category`, `favorite`, `readonly`, and `etag` are preserved in `NextcloudData`.
+- The current QtNote `Note` API does not expose category/favorite/read-only metadata to the editor UI.
+- There is no persistent offline cache and no three-way merge in this first version.
+
+## Credential storage
+
+This minimal integration stores the app password in `QSettings`, matching the plugin's other settings.
+For a distributable production build, replace that field with a platform keychain integration such as QtKeychain.
+
+## Validation performed
+
+The source layout and overrides were checked against the current public QtNote
+`master` interfaces. This archive was not fully compiled in the generation
+environment because Qt development packages and the complete QtNote build tree
+were not available there.

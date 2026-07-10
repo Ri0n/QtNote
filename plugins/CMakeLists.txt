@@ -9,6 +9,7 @@ set(plugins_list
     gnome
     gemini
     openaiwhisper
+    nextcloud
 )
 
 foreach(plugin ${plugins_list})
