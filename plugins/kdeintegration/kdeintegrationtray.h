@@ -24,7 +24,7 @@ public:
 private:
     void ensurePlasmoidInSystemTray();
     void addPlasmoidToPanel();
-    void addPlasmoidToSystemTray();
+    void announcePlasmoidPackageInstalled() const;
     bool isPlasmoidRegisteredInSystemTray() const;
     bool isPlasmoidInstalled() const;
 #ifdef QTNOTE_DEVEL

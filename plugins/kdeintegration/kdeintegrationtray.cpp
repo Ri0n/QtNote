@@ -4,7 +4,7 @@
 #include <QDBusConnection>
 #include <QDBusError>
 #include <QDBusInterface>
-#include <QDBusReply>
+#include <QDBusMessage>
 #include <QDBusServiceWatcher>
 #include <QDir>
 #include <QFile>
@@ -58,6 +58,10 @@ KDEIntegrationTray::KDEIntegrationTray(Main *qtnote, QObject *parent) : TrayImpl
     });
 #endif
 
+#ifndef QTNOTE_DEVEL
+    if (isPlasmoidInstalled() && !isPlasmoidRegisteredInSystemTray())
+        announcePlasmoidPackageInstalled();
+#endif
     QTimer::singleShot(0, this, &KDEIntegrationTray::ensurePlasmoidInSystemTray);
 }
 
@@ -81,7 +85,8 @@ void KDEIntegrationTray::ensurePlasmoidInSystemTray()
     if (!isPlasmoidInstalled())
         return;
 
-    addPlasmoidToSystemTray();
+    if (!isPlasmoidRegisteredInSystemTray())
+        announcePlasmoidPackageInstalled();
 #endif
 }
 
@@ -134,115 +139,15 @@ if (!found) {
     plasmaShell.asyncCall(QLatin1String("evaluateScript"), script.arg(QLatin1String(PlasmoidId)));
 }
 
-void KDEIntegrationTray::addPlasmoidToSystemTray()
+void KDEIntegrationTray::announcePlasmoidPackageInstalled() const
 {
-    const bool plasmoidAlreadyRegistered = isPlasmoidRegisteredInSystemTray();
+    auto message
+        = QDBusMessage::createSignal(QLatin1String("/KPackage/Plasma/Applet"), QLatin1String("org.kde.plasma.kpackage"),
+                                     QLatin1String("packageInstalled"));
+    message << QLatin1String(PlasmoidId);
 
-    static const auto script = QStringLiteral(R"(
-var pluginId = "%1";
-var changed = false;
-var configured = false;
-
-function isSystemTray(widget) {
-    return widget.type === "org.kde.plasma.systemtray" || widget.pluginName === "org.kde.plasma.systemtray";
-}
-
-function normalizedList(value) {
-    if (!value) {
-        return [];
-    }
-
-    var raw = value.split(",");
-    var result = [];
-    for (var i = 0; i < raw.length; ++i) {
-        var item = raw[i].trim();
-        if (item.length > 0 && result.indexOf(item) < 0) {
-            result.push(item);
-        }
-    }
-    return result;
-}
-
-function writeListWithout(widget, key, item) {
-    widget.currentConfigGroup = ["General"];
-    var items = normalizedList(widget.readConfig(key, ""));
-    var listChanged = false;
-    for (var i = items.length - 1; i >= 0; --i) {
-        if (items[i] === item) {
-            items.splice(i, 1);
-            listChanged = true;
-        }
-    }
-    if (listChanged) {
-        widget.writeConfig(key, items.join(","));
-        changed = true;
-    }
-}
-
-function appendListItem(widget, key, item) {
-    widget.currentConfigGroup = ["General"];
-    var items = normalizedList(widget.readConfig(key, ""));
-    if (items.indexOf(item) < 0) {
-        items.push(item);
-        widget.writeConfig(key, items.join(","));
-        changed = true;
-    }
-}
-
-var panelList = panels();
-for (var i = 0; i < panelList.length && !configured; ++i) {
-    var widgets = panelList[i].widgets();
-    for (var j = 0; j < widgets.length; ++j) {
-        var widget = widgets[j];
-        if (isSystemTray(widget)) {
-            writeListWithout(widget, "hiddenItems", pluginId);
-            writeListWithout(widget, "disabledItems", pluginId);
-            appendListItem(widget, "knownItems", pluginId);
-            appendListItem(widget, "extraItems", pluginId);
-            appendListItem(widget, "shownItems", pluginId);
-            widget.reloadConfig();
-            configured = true;
-            break;
-        }
-    }
-}
-
-if (!configured && panelList.length > 0) {
-    var systemTray = panelList[0].addWidget("org.kde.plasma.systemtray");
-    appendListItem(systemTray, "knownItems", pluginId);
-    appendListItem(systemTray, "extraItems", pluginId);
-    appendListItem(systemTray, "shownItems", pluginId);
-    systemTray.reloadConfig();
-}
-
-print(configured ? (changed ? "changed" : "unchanged") : "no-systemtray");
-)");
-
-    QDBusInterface plasmaShell(QLatin1String("org.kde.plasmashell"), QLatin1String("/PlasmaShell"),
-                               QLatin1String("org.kde.PlasmaShell"), QDBusConnection::sessionBus());
-
-    if (!plasmaShell.isValid()) {
-        qWarning("Failed to access plasmashell D-Bus scripting interface");
-        return;
-    }
-
-    const QDBusReply<QString> reply
-        = plasmaShell.call(QLatin1String("evaluateScript"), script.arg(QLatin1String(PlasmoidId)));
-    if (!reply.isValid()) {
-        qWarning("Failed to configure QtNote Plasma system tray item: %s", qPrintable(reply.error().message()));
-        return;
-    }
-
-    const QString result = reply.value().trimmed();
-    if (result == QLatin1String("changed") || !plasmoidAlreadyRegistered) {
-        const QDBusReply<void> refreshReply = plasmaShell.call(QLatin1String("refreshCurrentShell"));
-        if (!refreshReply.isValid()) {
-            qWarning("Failed to refresh Plasma shell after QtNote system tray registration: %s",
-                     qPrintable(refreshReply.error().message()));
-        }
-    } else if (result != QLatin1String("unchanged")) {
-        qWarning("QtNote Plasma system tray configuration script output: %s", qPrintable(result));
-    }
+    if (!QDBusConnection::sessionBus().send(message))
+        qWarning("Failed to announce QtNote Plasma applet package installation");
 }
 
 bool KDEIntegrationTray::isPlasmoidRegisteredInSystemTray() const
