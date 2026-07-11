@@ -1,9 +1,18 @@
 #include <QAction>
 #include <QApplication>
+#include <QCursor>
+#include <QFrame>
+#include <QLineEdit>
+#include <QListWidget>
 #include <QMenu>
+#include <QPushButton>
 #include <QScreen>
 #include <QSettings>
 #include <QStyle>
+#include <QTimer>
+#include <QVBoxLayout>
+
+#include <memory>
 
 #include "baseintegrationtray.h"
 #include "pluginhostinterface.h"
@@ -12,6 +21,33 @@
 #include "utils.h"
 
 namespace QtNote {
+
+namespace {
+    constexpr int NoteTitleLimit = 48;
+
+    void fillNotesList(QListWidget *list, const QList<Note> &notes, PluginHostInterface *host, const QString &emptyText)
+    {
+        list->clear();
+        if (notes.isEmpty()) {
+            auto *item = new QListWidgetItem(emptyText, list);
+            item->setFlags(Qt::NoItemFlags);
+            return;
+        }
+
+        for (int i = 0; i < notes.count(); ++i) {
+            const auto &note  = notes.at(i);
+            auto        title = note.title().trimmed();
+            if (title.isEmpty()) {
+                title = QObject::tr("Untitled Note");
+            }
+
+            auto *item
+                = new QListWidgetItem(note.storage()->noteIcon(), host->utilsCuttedDots(title, NoteTitleLimit), list);
+            item->setData(Qt::UserRole, i);
+        }
+        list->setCurrentRow(0);
+    }
+}
 
 BaseIntegrationTray::BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent) :
     TrayImpl(parent), qtnote(qtnote), host(host)
@@ -62,28 +98,86 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     if (reason != QSystemTrayIcon::Trigger) {
         return;
     }
-    if (currentMenu) {
-        currentMenu->close();
+    if (currentPopup) {
+        currentPopup->close();
         return;
     }
-    QMenu menu;
-    menu.addAction(actNew);
-    menu.addSeparator();
-    QSettings   s;
-    QList<Note> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
-    for (int i = 0; i < notes.count(); i++) {
-        menu.addAction(notes[i].storage()->noteIcon(), host->utilsCuttedDots(notes[i].title(), 48).replace('&', "&&"))
-            ->setData(i);
-    }
-    menu.show();
-    qtnote->activateWidget(&menu);
+
+    QSettings s;
+    const int maxNotes = s.value("ui.menu-notes-amount", 15).toInt();
+
+    auto *popup = new QFrame(nullptr, Qt::Tool | Qt::FramelessWindowHint);
+    popup->setAttribute(Qt::WA_DeleteOnClose);
+    popup->setFrameShape(QFrame::StyledPanel);
+    popup->setWindowTitle(tr("Notes"));
+
+    auto *layout = new QVBoxLayout(popup);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(6);
+
+    auto *filter = new QLineEdit(popup);
+    filter->setPlaceholderText(tr("Search notes"));
+    filter->setClearButtonEnabled(true);
+    layout->addWidget(filter);
+
+    auto *list = new QListWidget(popup);
+    list->setFrameShape(QFrame::NoFrame);
+    list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+    list->setUniformItemSizes(true);
+    list->setMinimumWidth(280);
+    list->setMinimumHeight(160);
+    list->setMaximumHeight(360);
+    layout->addWidget(list);
+
+    auto *newButton = new QPushButton(QIcon(":/icons/new"), tr("&New"), popup);
+    layout->addWidget(newButton);
+
+    auto notes       = std::make_shared<QList<Note>>();
+    auto reloadNotes = [=, this]() {
+        *notes = host->noteManager()->noteList(0, maxNotes, filter->text());
+        fillNotesList(list, *notes, host,
+                      filter->text().trimmed().isEmpty() ? tr("No notes yet") : tr("No notes match the search"));
+    };
+    reloadNotes();
+
+    auto openItem = [=, this](QListWidgetItem *item) {
+        if (!item) {
+            return;
+        }
+        const int noteIndex = item->data(Qt::UserRole).toInt();
+        if (noteIndex < 0 || noteIndex >= notes->size()) {
+            return;
+        }
+        const auto note = notes->at(noteIndex);
+        popup->close();
+        emit showNoteTriggered(note.storageId(), note.id());
+    };
+
+    connect(filter, &QLineEdit::textChanged, popup, reloadNotes);
+    connect(filter, &QLineEdit::returnPressed, popup, [=]() { openItem(list->currentItem()); });
+    connect(list, &QListWidget::itemClicked, popup, openItem);
+    connect(list, &QListWidget::itemActivated, popup, openItem);
+    connect(newButton, &QPushButton::clicked, popup, [this, popup]() {
+        popup->close();
+        emit newNoteTriggered();
+    });
+    connect(qApp, &QApplication::focusChanged, popup, [popup](QWidget *, QWidget *now) {
+        if (now && (now == popup || popup->isAncestorOf(now))) {
+            return;
+        }
+        popup->close();
+    });
+
+    currentPopup = popup;
+    connect(popup, &QObject::destroyed, this, [this]() { currentPopup.clear(); });
     QRect dr = QGuiApplication::screenAt(QCursor::pos())->geometry();
     QRect ir = tray->geometry();
-    QRect mr = menu.geometry();
     if (ir.isEmpty()) { // O_O but with kde this happens...
         ir = QRect(QCursor::pos() - QPoint(8, 8), QSize(16, 16));
     }
-    mr.setSize(menu.sizeHint());
+    QRect mr;
+    mr.setSize(popup->sizeHint());
     if (ir.left() < dr.width() / 2) {
         if (ir.top() < dr.height() / 2) {
             mr.moveTopLeft(ir.bottomLeft());
@@ -110,14 +204,10 @@ void BaseIntegrationTray::showNoteList(QSystemTrayIcon::ActivationReason reason)
     if (mr.top() < dr.top()) {
         mr.moveTop(dr.top());
     }
-    currentMenu  = &menu;
-    QAction *act = menu.exec(mr.topLeft());
-    currentMenu  = nullptr;
-
-    if (act && act != actNew) {
-        Note &note = notes[act->data().toInt()];
-        emit  showNoteTriggered(note.storageId(), note.id());
-    }
+    popup->setGeometry(mr);
+    popup->show();
+    qtnote->activateWidget(popup);
+    QTimer::singleShot(0, filter, [filter]() { filter->setFocus(Qt::PopupFocusReason); });
 }
 
 } // namespace QtNote

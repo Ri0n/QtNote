@@ -405,10 +405,10 @@ bool NotesModel::startBackend()
         return true;
 
 #ifdef QTNOTE_DEVEL_EXECUTABLE
-    const QString executable = QStringLiteral(QTNOTE_DEVEL_EXECUTABLE);
+    qCInfo(logPlasmoid) << "QtNote backend autostart is disabled in development builds";
+    return false;
 #else
     const QString executable = QStandardPaths::findExecutable(QStringLiteral("qtnote"));
-#endif
     if (executable.isEmpty()) {
         qCWarning(logPlasmoid) << "Unable to find qtnote executable";
         return false;
@@ -430,6 +430,7 @@ bool NotesModel::startBackend()
         setLoading(false);
     });
     return true;
+#endif
 }
 
 void NotesModel::callOrStart(const QString &method)

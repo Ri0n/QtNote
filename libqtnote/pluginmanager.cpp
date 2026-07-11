@@ -67,6 +67,60 @@ static PluginManager::LoadPolicy defaultLoadPolicy(const PluginMetadata &metadat
     return PluginManager::LP_Auto;
 }
 
+static QString loadPolicyName(PluginManager::LoadPolicy policy)
+{
+    switch (policy) {
+    case PluginManager::LP_Auto:
+        return QStringLiteral("auto");
+    case PluginManager::LP_Enabled:
+        return QStringLiteral("enabled");
+    case PluginManager::LP_Disabled:
+        return QStringLiteral("disabled");
+    }
+    return QStringLiteral("unknown");
+}
+
+static QString loadStatusName(PluginManager::LoadStatus status)
+{
+    switch (status) {
+    case PluginManager::LS_Undefined:
+        return QStringLiteral("undefined");
+    case PluginManager::LS_Loaded:
+        return QStringLiteral("loaded");
+    case PluginManager::LS_Initialized:
+        return QStringLiteral("initialized");
+    case PluginManager::LS_ErrNotPlugin:
+        return QStringLiteral("not-plugin");
+    case PluginManager::LS_ErrVersion:
+        return QStringLiteral("version-error");
+    case PluginManager::LS_ErrAbi:
+        return QStringLiteral("abi-error");
+    case PluginManager::LS_ErrMetadata:
+        return QStringLiteral("metadata-error");
+    case PluginManager::LS_Unloaded:
+        return QStringLiteral("unloaded");
+    case PluginManager::LS_Errors:
+        return QStringLiteral("error");
+    }
+    return QStringLiteral("unknown");
+}
+
+static QString pluginFeaturesName(PluginManager::PluginFeatures features)
+{
+    QStringList ret;
+    if (features & PluginManager::RegularPlugin)
+        ret.append(QStringLiteral("regular"));
+    if (features & PluginManager::DEIntegration)
+        ret.append(QStringLiteral("de"));
+    if (features & PluginManager::TrayIcon)
+        ret.append(QStringLiteral("tray"));
+    if (features & PluginManager::GlobalShortcuts)
+        ret.append(QStringLiteral("shortcuts"));
+    if (features & PluginManager::Notifications)
+        ret.append(QStringLiteral("notifications"));
+    return ret.isEmpty() ? QStringLiteral("none") : ret.join(QLatin1Char(','));
+}
+
 class PluginsIterator {
     QDir                        currentDir;
     QStringList                 pluginsDirs;
@@ -230,7 +284,7 @@ void PluginManager::loadPlugins()
         sessionCandidates.append(xdgSessionDesktop.toLower());
     if (!desktopSession.isEmpty())
         sessionCandidates.append(desktopSession.toLower());
-    if (!gnomeSessionId.isEmpty())
+    if (!gnomeSessionId.isEmpty() && gnomeSessionId != QLatin1String("this-is-deprecated"))
         sessionCandidates.append(QStringLiteral("gnome"));
     sessionCandidates.removeDuplicates();
 
@@ -239,7 +293,12 @@ void PluginManager::loadPlugins()
                       << "DESKTOP_SESSION=" << desktopSession << "GNOME_DESKTOP_SESSION_ID=" << gnomeSessionId
                       << "XDG_SESSION_TYPE=" << xdgSessionType
                       << "candidates=" << sessionCandidates.join(QLatin1Char(','));
+    if (gnomeSessionId == QLatin1String("this-is-deprecated")) {
+        qInfo() << "Ignoring deprecated GNOME_DESKTOP_SESSION_ID marker for desktop detection";
+    }
 #endif
+    qInfo().noquote() << "Plugin priority order:" << prioritizedList.join(QLatin1Char(','));
+
     foreach (const QString &plugin, prioritizedList) {
         PluginData::Ptr pd     = plugins[plugin];
         QStringList     deList = pd->metadata.extra["de"].toStringList();
@@ -251,7 +310,20 @@ void PluginManager::loadPlugins()
             }
         }
 
-        if (pd->loadPolicy == LP_Disabled || (!native && !deList.isEmpty())) {
+        qInfo().noquote() << "Plugin candidate:" << plugin << "policy=" << loadPolicyName(pd->loadPolicy)
+                          << "explicit=" << pd->loadPolicyExplicit << "status=" << loadStatusName(pd->loadStatus)
+                          << "features=" << pluginFeaturesName(pd->features)
+                          << "de=" << (deList.isEmpty() ? QStringLiteral("-") : deList.join(QLatin1Char(',')))
+                          << "native=" << native;
+
+        if (pd->loadPolicy == LP_Disabled) {
+            qInfo() << "Plugin skipped by load policy:" << plugin;
+            continue;
+        }
+        if (!native && !deList.isEmpty()) {
+            qInfo().noquote() << "Plugin skipped by desktop mismatch:" << plugin
+                              << "required=" << deList.join(QLatin1Char(','))
+                              << "candidates=" << sessionCandidates.join(QLatin1Char(','));
             continue;
         }
 
@@ -283,9 +355,13 @@ void PluginManager::loadPlugins()
     QStringList trayPlugins = featurePriority[TrayIcon].native;
     if (!nativeExternalTrayAvailable || !trayPlugins.isEmpty())
         trayPlugins += featurePriority[TrayIcon].base;
+    qInfo().noquote() << "Tray plugin candidates:" << trayPlugins.join(QLatin1Char(','))
+                      << "nativeExternalTrayAvailable=" << nativeExternalTrayAvailable;
     foreach (const QString &plugin, trayPlugins) {
         auto pd = plugins[plugin];
+        qInfo() << "Trying tray plugin:" << plugin;
         if (!ensureLoaded(pd)) {
+            qInfo() << "Tray plugin failed to load:" << plugin << loadStatusName(pd->loadStatus);
             continue;
         }
         TrayInterface *tp   = qobject_cast<TrayInterface *>(pd->instance);
@@ -293,43 +369,57 @@ void PluginManager::loadPlugins()
         if (tray) {
             qtnote->setTrayImpl(tray);
             pd->loadStatus = LS_Initialized;
+            qInfo() << "Tray plugin selected:" << plugin;
             break;
         }
+        qInfo() << "Tray plugin returned no implementation:" << plugin;
     }
 
     /* set most desirable desktop environment plugin */
     QStringList dePlugins = featurePriority[DEIntegration].native + featurePriority[DEIntegration].base;
+    qInfo().noquote() << "Desktop integration plugin candidates:" << dePlugins.join(QLatin1Char(','));
     foreach (const QString &plugin, dePlugins) {
         auto pd = plugins[plugin];
+        qInfo() << "Trying desktop integration plugin:" << plugin;
         if (!ensureLoaded(pd)) {
+            qInfo() << "Desktop integration plugin failed to load:" << plugin << loadStatusName(pd->loadStatus);
             continue;
         }
         qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
+        qInfo() << "Desktop integration plugin selected:" << plugin;
         break;
     }
 
     /* set most desirable global shortcuts plugin */
     QStringList gsPlugins = featurePriority[GlobalShortcuts].native + featurePriority[GlobalShortcuts].base;
+    qInfo().noquote() << "Global shortcuts plugin candidates:" << gsPlugins.join(QLatin1Char(','));
     foreach (const QString &plugin, gsPlugins) {
         auto pd = plugins[plugin];
+        qInfo() << "Trying global shortcuts plugin:" << plugin;
         if (!ensureLoaded(pd)) {
+            qInfo() << "Global shortcuts plugin failed to load:" << plugin << loadStatusName(pd->loadStatus);
             continue;
         }
         qtnote->setGlobalShortcutsImpl(qobject_cast<GlobalShortcutsInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
+        qInfo() << "Global shortcuts plugin selected:" << plugin;
         break;
     }
 
     /* set most desirable notifications plugin */
     QStringList nPlugins = featurePriority[Notifications].native + featurePriority[Notifications].base;
+    qInfo().noquote() << "Notifications plugin candidates:" << nPlugins.join(QLatin1Char(','));
     foreach (const QString &plugin, nPlugins) {
         auto pd = plugins[plugin];
+        qInfo() << "Trying notifications plugin:" << plugin;
         if (!ensureLoaded(pd)) {
+            qInfo() << "Notifications plugin failed to load:" << plugin << loadStatusName(pd->loadStatus);
             continue;
         }
         qtnote->setNotificationImpl(qobject_cast<NotificationInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
+        qInfo() << "Notifications plugin selected:" << plugin;
         break;
     }
 

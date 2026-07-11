@@ -160,12 +160,14 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
 
     _shortcutsManager = new ShortcutsManager(d->globalShortcuts, this);
 
-    connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
-    connect(d->tray, SIGNAL(newNoteTriggered()), SLOT(createNewNote()));
-    connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
-    connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
-    connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
-    connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(openNoteDialog(QString, QString)));
+    if (d->tray) {
+        connect(d->tray, SIGNAL(exitTriggered()), SLOT(exitQtNote()));
+        connect(d->tray, SIGNAL(newNoteTriggered()), SLOT(createNewNote()));
+        connect(d->tray, SIGNAL(noteManagerTriggered()), SLOT(showNoteManager()));
+        connect(d->tray, SIGNAL(optionsTriggered()), SLOT(showOptions()));
+        connect(d->tray, SIGNAL(aboutTriggered()), SLOT(showAbout()));
+        connect(d->tray, SIGNAL(showNoteTriggered(QString, QString)), SLOT(openNoteDialog(QString, QString)));
+    }
 
 #ifdef QTNOTE_DBUS_AVAILABLE
     d->dbus = new QtNoteDBus(this, this);

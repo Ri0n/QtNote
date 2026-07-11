@@ -1,6 +1,7 @@
 #ifndef BASEINTEGRATIONTRAY_H
 #define BASEINTEGRATIONTRAY_H
 
+#include <QPointer>
 #include <QSystemTrayIcon>
 
 #include "qtnote.h"
@@ -8,6 +9,7 @@
 
 class QMenu;
 class QAction;
+class QWidget;
 
 namespace QtNote {
 
@@ -23,7 +25,7 @@ class BaseIntegrationTray : public TrayImpl {
     QSystemTrayIcon     *tray;
     QMenu               *contextMenu;
     QAction             *actQuit, *actNew, *actAbout, *actOptions, *actManager;
-    QMenu               *currentMenu = nullptr;
+    QPointer<QWidget>    currentPopup;
 
 public:
     explicit BaseIntegrationTray(Main *qtnote, PluginHostInterface *host, QObject *parent = 0);
