@@ -44,6 +44,7 @@ public:
 
     Note createNote() override;
     Note note(const QString &noteId) override;
+    bool loadNote(Note &note) override;
     bool saveNote(const Note &note) override;
 
     QList<Note::Format> availableFormats() const override;

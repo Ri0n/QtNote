@@ -30,11 +30,11 @@ The code appends `/index.php/apps/notes/api/v1`.
 
 - `noteList()` downloads metadata only; note content is loaded lazily.
 - Network requests run in a dedicated worker thread.
-- The legacy `NoteStorage` API is synchronous, so its caller still waits for each network operation.
+- The asynchronous storage API executes network requests in the worker thread and reports completion through jobs.
 - Updates send `If-Match` with the last known note ETag.
 - HTTP 412 is treated as a conflict. The local text is preserved and the server version is not overwritten.
 - Server-sanitized titles are adopted from the API response.
-- `category`, `favorite`, `readonly`, and `etag` are preserved in `NextcloudData`.
+- `category`, `favorite`, `readonly`, and `etag` are preserved as opaque backend attributes of the generic note data.
 - The current QtNote `Note` API does not expose category/favorite/read-only metadata to the editor UI.
 - There is no persistent offline cache and no three-way merge in this first version.
 

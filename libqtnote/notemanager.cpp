@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QApplication>
 #include <QSettings>
+#include <QSharedPointer>
 #include <QStringList>
 
 #include <list>
@@ -61,7 +62,13 @@ class NoteFinder : public QObject {
     Q_OBJECT
 
 protected:
-    NoteStorage &_storage;
+    NoteStorage         &_storage;
+    QList<Note>          pending_;
+    QString              text_;
+    QPointer<StorageJob> activeJob_;
+    bool                 aborted_ { false };
+
+    void loadNext();
 
 public:
     NoteFinder(NoteStorage &storage) : QObject(&storage), _storage(storage) { }
@@ -79,26 +86,51 @@ public slots:
 
 void NoteFinder::start(const QString &text)
 {
-    auto nl = _storage.noteList();
-    for (auto &n : std::as_const(nl)) {
-        auto note = _storage.note(n.id());
-        if (note.isNull()) {
-            continue;
-        }
-        if (!note.isLoaded() && !note.load()) {
-            continue;
-        }
-        // text always returns plain text
-        if (note.text().contains(text, Qt::CaseInsensitive)) {
-            emit found(n.id());
-        }
-    }
-
-    emit completed();
-    deleteLater();
+    aborted_   = false;
+    text_      = text;
+    auto *job  = _storage.refreshNotesAsync(0, this);
+    activeJob_ = job;
+    connect(job, &StorageJob::finished, this, [this, job]() {
+        activeJob_.clear();
+        if (aborted_)
+            return;
+        if (job->state() == StorageJob::Succeeded)
+            pending_ = job->result();
+        loadNext();
+    });
 }
 
-void NoteFinder::abort() { }
+void NoteFinder::loadNext()
+{
+    if (aborted_)
+        return;
+    if (pending_.isEmpty()) {
+        emit completed();
+        deleteLater();
+        return;
+    }
+
+    const auto summary = pending_.takeFirst();
+    auto      *job     = _storage.loadNoteAsync(summary.id(), this);
+    activeJob_         = job;
+    connect(job, &StorageJob::finished, this, [this, job, id = summary.id()]() {
+        activeJob_.clear();
+        if (!aborted_ && job->state() == StorageJob::Succeeded
+            && job->result().text().contains(text_, Qt::CaseInsensitive)) {
+            emit found(id);
+        }
+        loadNext();
+    });
+}
+
+void NoteFinder::abort()
+{
+    aborted_ = true;
+    pending_.clear();
+    if (activeJob_)
+        activeJob_->cancel();
+    deleteLater();
+}
 
 GlobalNoteFinder::GlobalNoteFinder(QObject *parent) : QObject(parent) { }
 
@@ -166,8 +198,14 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
     connect(storage.data(), SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
 
-    storage->init();
-    emit storageAdded(storage);
+    emit  storageAdded(storage);
+    auto *job = storage->initAsync(this);
+    connect(job, &StorageJob::finished, this, [this, storage, job]() {
+        if (job->state() == StorageJob::Succeeded)
+            emit storageReady(storage);
+        emit storageChanged(storage);
+        job->deleteLater();
+    });
 }
 
 void NoteManager::unregisterStorage(NoteStorage::Ptr storage)
@@ -233,6 +271,59 @@ Note NoteManager::note(const QString &storageId, const QString &noteId)
         }
     }
     return Note();
+}
+
+NoteListJob *NoteManager::refreshNotesAsync(int count, QObject *owner)
+{
+    auto *aggregate = new NoteListJob(owner ? owner : this);
+    aggregate->start();
+    const auto storageList = prioritizedStorages(true);
+    if (storageList.empty()) {
+        aggregate->complete({});
+        return aggregate;
+    }
+
+    struct State {
+        int          pending { 0 };
+        QList<Note>  notes;
+        StorageError firstError;
+    };
+    auto state     = QSharedPointer<State>::create();
+    state->pending = int(storageList.size());
+    for (const auto &storage : storageList) {
+        auto *job = storage->refreshNotesAsync(count, aggregate);
+        connect(job, &StorageJob::finished, aggregate, [aggregate, job, state, count]() {
+            if (job->state() == StorageJob::Succeeded)
+                state->notes += job->result();
+            else if (!state->firstError)
+                state->firstError = job->error();
+            if (--state->pending != 0 || aggregate->isFinished())
+                return;
+            std::sort(state->notes.begin(), state->notes.end(), noteListItemModifyComparer);
+            if (count >= 0)
+                state->notes = state->notes.mid(0, count);
+            if (!state->notes.isEmpty() || !state->firstError)
+                aggregate->complete(state->notes);
+            else
+                aggregate->fail(state->firstError);
+        });
+    }
+    return aggregate;
+}
+
+NoteLoadJob *NoteManager::loadNoteAsync(const QString &storageId, const QString &noteId, QObject *owner)
+{
+    const auto targetStorage = storage(storageId);
+    if (targetStorage)
+        return targetStorage->loadNoteAsync(noteId, owner ? owner : this);
+
+    auto *job = new NoteLoadJob(owner ? owner : this);
+    job->start();
+    StorageError error;
+    error.code    = StorageError::NotFound;
+    error.message = tr("Storage was not found");
+    job->fail(error);
+    return job;
 }
 
 const QMap<QString, NoteStorage::Ptr> NoteManager::storages(bool withInvalid) const

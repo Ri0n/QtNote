@@ -60,13 +60,34 @@ bool Note::save()
     return false;
 }
 
-bool Note::load() { return d->load(); }
+bool Note::load()
+{
+    auto storage = this->storage();
+    return storage && storage->loadNote(*this);
+}
 
-void Note::remove() { d->remove(); }
+void Note::remove()
+{
+    auto storage = this->storage();
+    if (storage)
+        storage->removeNote(id());
+}
 
 void Note::setTitle(const QString &title) { d->title_ = title; }
 
 void Note::setText(const QString &text, Format format) { d->setText(text, format); }
+
+void Note::setId(const QString &id) { d->setId(id); }
+
+void Note::setFormat(Format format) { d->format_ = format; }
+
+void Note::setTags(const QStringList &tags) { d->setTags(tags); }
+
+void Note::unload() { d->unload(); }
+
+void Note::setLastChangeUTC(const QDateTime &lastChange) { d->lastChange_ = lastChange; }
+
+void Note::setBackendValue(const QString &key, const QVariant &value) { d->setBackendValue(key, value); }
 
 NoteStorage *Note::storage() const { return d->storage_; }
 
@@ -85,6 +106,8 @@ NoteData *Note::data() const { return d.data(); }
 Note::Format Note::format() const { return d->format_; }
 
 QDateTime Note::lastChangeUTC() const { return d->lastChange_; }
+
+QVariant Note::backendValue(const QString &key) const { return d->backendValue(key); }
 
 bool Note::isUpdated() const
 {

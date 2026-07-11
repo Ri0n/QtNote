@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QSharedData>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 
 #include "note.h"
 
@@ -37,16 +38,14 @@ public:
     static constexpr int TitleLength = 256;
 
     NoteData(NoteStorage *storage) : storage_(storage) { }
-    virtual ~NoteData() = default;
+    ~NoteData() = default;
 
-    virtual QString storageId() const = 0;
-    virtual bool    load()            = 0; // load `text_` field.
-    virtual void    remove()          = 0;
+    QString storageId() const;
 
     void setId(const QString &newId) { id_ = newId; }
     void unload()
     {
-        text_   = {}; // should reset capacity
+        text_   = QString(); // should reset capacity
         loaded_ = false;
     }
     void setText(const QString &text, Note::Format format)
@@ -58,6 +57,9 @@ public:
     }
 
     QStringList tags() const;
+    QVariant    backendValue(const QString &key) const { return backendData_.value(key); }
+    void        setBackendValue(const QString &key, const QVariant &value) { backendData_.insert(key, value); }
+    void        removeBackendValue(const QString &key) { backendData_.remove(key); }
 
     static QStringList tagsFromLine(const QString &line);
     static QStringList tagsFromText(const QString &text);
@@ -75,6 +77,7 @@ protected:
     QString      text_;
     QStringList  tags_;
     QDateTime    lastChange_;
+    QVariantMap  backendData_;
 };
 
 } // namespace QtNote

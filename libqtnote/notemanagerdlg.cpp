@@ -166,28 +166,33 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
         return;
     }
 
-    auto storageId = srcCurrent.data(NotesModel::StorageIdRole).toString();
-    auto noteId    = srcCurrent.data(NotesModel::NoteIdRole).toString();
-    auto note      = NoteManager::instance()->note(storageId, noteId);
-    if (note.isNull()) {
-        qWarning("failed to load note: %s", qPrintable(noteId));
-        return;
-    }
-
-    NoteWidget *nw         = qtnote->noteWidget(note);
-    const auto  searchText = ui->leFilter->text().trimmed();
-    if (searchModel->searchInBody() && !searchText.isEmpty() && searchModel->hasBodyMatch(storageId, noteId)) {
-        nw->findText(searchText, false);
-    }
-
-    if (ui->splitter->count() > 1) {
-        delete ui->splitter->widget(ui->splitter->count() - 1);
-    } else {
-        resize(700, 400);
-    }
-    ui->splitter->addWidget(nw);
-    ui->splitter->setStretchFactor(0, 0);
-    ui->splitter->setStretchFactor(1, 1);
+    auto       storageId  = srcCurrent.data(NotesModel::StorageIdRole).toString();
+    auto       noteId     = srcCurrent.data(NotesModel::NoteIdRole).toString();
+    const auto searchText = ui->leFilter->text().trimmed();
+    const bool highlightMatch
+        = searchModel->searchInBody() && !searchText.isEmpty() && searchModel->hasBodyMatch(storageId, noteId);
+    if (previewJob)
+        previewJob->cancel();
+    previewJob = NoteManager::instance()->loadNoteAsync(storageId, noteId, this);
+    connect(previewJob, &StorageJob::finished, this,
+            [this, job = previewJob, storageId, noteId, searchText, highlightMatch]() {
+                if (!job || job->state() != StorageJob::Succeeded)
+                    return;
+                const auto current = searchModel->mapToSource(ui->notesTree->currentIndex());
+                if (current.data(NotesModel::StorageIdRole).toString() != storageId
+                    || current.data(NotesModel::NoteIdRole).toString() != noteId)
+                    return;
+                auto *nw = qtnote->noteWidget(job->result());
+                if (highlightMatch)
+                    nw->findText(searchText, false);
+                if (ui->splitter->count() > 1)
+                    delete ui->splitter->widget(ui->splitter->count() - 1);
+                else
+                    resize(700, 400);
+                ui->splitter->addWidget(nw);
+                ui->splitter->setStretchFactor(0, 0);
+                ui->splitter->setStretchFactor(1, 1);
+            });
 }
 
 } // namespace QtNote

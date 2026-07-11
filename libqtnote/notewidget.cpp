@@ -318,7 +318,7 @@ void NoteWidget::onReplaceTriggered()
 
 void NoteWidget::save()
 {
-    if (!_changed) {
+    if (!_changed || saveJob) {
         return;
     }
     _changed = false;
@@ -332,15 +332,33 @@ void NoteWidget::save()
     auto changed = (title != _note.title()) || (body != _note.text());
     _note.setTitle(title);
     _note.setText(body, format);
-    if (oldId.isEmpty() || changed) {
-        if (_note.save()) {
-            if (oldId != _note.id()) {
-                emit noteIdChanged(oldId, _note.id());
-            }
-        }
+    if (!oldId.isEmpty() && !changed) {
+        _lastChangeElapsed.restart();
+        return;
     }
 
-    _lastChangeElapsed.restart();
+    auto *storage = _note.storage();
+    if (!storage) {
+        _changed = true;
+        return;
+    }
+    saveJob = storage->saveNoteAsync(_note, this);
+    connect(saveJob, &StorageJob::finished, this, [this, job = saveJob, oldId]() {
+        if (!job)
+            return;
+        if (job->state() == StorageJob::Succeeded) {
+            _note = job->result();
+            if (oldId != _note.id())
+                emit noteIdChanged(oldId, _note.id());
+        } else if (job->state() != StorageJob::Cancelled) {
+            _changed = true;
+            qWarning() << "Failed to save note:" << job->error().message;
+        }
+        saveJob.clear();
+        _lastChangeElapsed.restart();
+        if (_changed && !text().isEmpty())
+            save();
+    });
 }
 
 void NoteWidget::autosave()

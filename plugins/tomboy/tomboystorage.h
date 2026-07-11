@@ -43,6 +43,7 @@ public:
 
     Note createNote() override;
     Note note(const QString &id) override;
+    bool loadNote(Note &note) override;
     bool saveNote(const Note &note) override;
 
     QString             findStorageDir() const override;

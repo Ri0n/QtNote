@@ -22,14 +22,125 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDir>
+#include <QDomDocument>
+#include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUuid>
 
-#include "tomboydata.h"
+#include "notedata.h"
 #include "tomboystorage.h"
 
 namespace QtNote {
+
+namespace {
+
+    QString nodeText(const QDomNode &node)
+    {
+        QString text;
+        for (auto child = node.firstChild(); !child.isNull(); child = child.nextSibling()) {
+            if (child.isText())
+                text += child.nodeValue();
+            else if (child.isElement())
+                text += nodeText(child);
+        }
+        return text;
+    }
+
+    QStringList xmlTags(const QDomNode &node)
+    {
+        QStringList tags;
+        for (auto child = node.firstChild(); !child.isNull(); child = child.nextSibling()) {
+            if (child.isElement() && child.nodeName() == QLatin1String("tag")) {
+                const auto tag = nodeText(child).trimmed();
+                if (!tag.isEmpty() && !tags.contains(tag))
+                    tags.append(tag);
+            }
+        }
+        return tags;
+    }
+
+    QStringList searchableTags(const QStringList &tags)
+    {
+        QStringList result;
+        for (const auto &tag : tags) {
+            if (!tag.startsWith(QLatin1String("system:")) && !result.contains(tag))
+                result.append(tag);
+        }
+        return result;
+    }
+
+    bool readNoteFile(const QString &fileName, Note &note)
+    {
+        QFile file(fileName);
+        if (!file.open(QIODevice::ReadOnly))
+            return false;
+
+        QDomDocument dom(QStringLiteral("TomboyData"));
+        if (!dom.setContent(&file))
+            return false;
+
+        const auto root = dom.documentElement();
+        const auto tags = xmlTags(root.namedItem(QStringLiteral("tags")));
+        note.setId(QFileInfo(fileName).completeBaseName());
+        note.setTitle(nodeText(root.namedItem(QStringLiteral("title"))));
+        note.setText(nodeText(root.namedItem(QStringLiteral("text"))), Note::Markdown);
+        note.setTags(searchableTags(tags));
+        note.setLastChangeUTC(
+            QDateTime::fromString(nodeText(root.namedItem(QStringLiteral("last-change-date"))), Qt::ISODate));
+        note.setBackendValue(QStringLiteral("fileName"), fileName);
+        note.setBackendValue(QStringLiteral("xmlTags"), tags);
+        note.setBackendValue(QStringLiteral("createDate"), nodeText(root.namedItem(QStringLiteral("create-date"))));
+        note.setBackendValue(QStringLiteral("cursorPosition"),
+                             nodeText(root.namedItem(QStringLiteral("cursor-position"))).toInt());
+        note.setBackendValue(QStringLiteral("width"), nodeText(root.namedItem(QStringLiteral("width"))).toInt());
+        note.setBackendValue(QStringLiteral("height"), nodeText(root.namedItem(QStringLiteral("height"))).toInt());
+        return true;
+    }
+
+    bool writeNoteFile(const QString &fileName, const Note &note)
+    {
+        QDomDocument dom;
+        auto         root = dom.createElement(QStringLiteral("note"));
+        dom.appendChild(root);
+        root.setAttribute(QStringLiteral("version"), QStringLiteral("0.3"));
+        root.setAttribute(QStringLiteral("xmlns:link"), QStringLiteral("http://beatniksoftware.com/tomboy/link"));
+        root.setAttribute(QStringLiteral("xmlns:size"), QStringLiteral("http://beatniksoftware.com/tomboy/size"));
+        root.setAttribute(QStringLiteral("xmlns"), QStringLiteral("http://beatniksoftware.com/tomboy"));
+
+        auto title = dom.createElement(QStringLiteral("title"));
+        title.appendChild(dom.createTextNode(note.title()));
+        root.appendChild(title);
+
+        auto text = dom.createElement(QStringLiteral("text"));
+        text.setAttribute(QStringLiteral("xml:space"), QStringLiteral("preserve"));
+        auto content = dom.createElement(QStringLiteral("note-content"));
+        content.setAttribute(QStringLiteral("version"), QStringLiteral("0.1"));
+        content.appendChild(dom.createTextNode(note.text()));
+        text.appendChild(content);
+        root.appendChild(text);
+
+        auto tags = note.backendValue(QStringLiteral("xmlTags")).toStringList();
+        for (const auto &tag : note.tags()) {
+            if (!tags.contains(tag))
+                tags.append(tag);
+        }
+        if (!tags.isEmpty()) {
+            auto tagsNode = dom.createElement(QStringLiteral("tags"));
+            for (const auto &tag : tags) {
+                auto tagNode = dom.createElement(QStringLiteral("tag"));
+                tagNode.appendChild(dom.createTextNode(tag));
+                tagsNode.appendChild(tagNode);
+            }
+            root.appendChild(tagsNode);
+        }
+
+        QFile file(fileName);
+        return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(dom.toString(-1).toUtf8()) >= 0;
+    }
+
+} // namespace
 
 static QString newId()
 {
@@ -66,46 +177,65 @@ QList<Note> TomboyStorage::noteListFromInfoList(const QFileInfoList &files)
 {
     QList<Note> ret;
     foreach (const QFileInfo &fi, files) {
-        auto noteData = new TomboyData(this);
-        auto note     = Note(noteData);
-        if (noteData->fromFile(fi.canonicalFilePath())) {
+        Note note(new NoteData(this));
+        if (readNoteFile(fi.canonicalFilePath(), note)) {
             ret.append(note);
         }
     }
     return ret;
 }
 
-Note TomboyStorage::createNote() { return Note(new TomboyData(this)); }
+Note TomboyStorage::createNote()
+{
+    Note note(new NoteData(this));
+    note.setText(QString(), Note::Markdown);
+    return note;
+}
 
 Note TomboyStorage::note(const QString &id)
 {
     if (!id.isEmpty()) {
         QString   fileName = notesDir.absoluteFilePath(QString("%1.note").arg(id));
         QFileInfo fi(fileName);
-        if (fi.isWritable()) {
-            TomboyData *noteData = new TomboyData(this);
-            noteData->fromFile(fileName);
-            return Note(noteData);
+        if (fi.isReadable()) {
+            Note result(new NoteData(this));
+            result.setId(id);
+            result.setBackendValue(QStringLiteral("fileName"), fileName);
+            if (loadNote(result))
+                return result;
         }
         handleFSError();
     }
     return Note();
 }
 
+bool TomboyStorage::loadNote(Note &note)
+{
+    auto fileName = note.backendValue(QStringLiteral("fileName")).toString();
+    if (fileName.isEmpty() && !note.id().isEmpty())
+        fileName = notesDir.absoluteFilePath(note.id() + QStringLiteral(".note"));
+    if (readNoteFile(fileName, note))
+        return true;
+    handleFSError();
+    return false;
+}
+
 bool TomboyStorage::saveNote(const Note &note)
 {
     // availableFormats returns just markdown, so format is markdown
-    QString     oldNoteId = note.id();
-    TomboyData *noteData  = static_cast<TomboyData *>(note.data());
-    QString     newNoteId = oldNoteId.isEmpty() ? newId() : oldNoteId;
+    QString oldNoteId = note.id();
+    QString newNoteId = oldNoteId.isEmpty() ? newId() : oldNoteId;
 
-    auto baseName = QString(QLatin1String("%1.note")).arg(newNoteId);
-    if (!noteData->saveToFile(notesDir.absoluteFilePath(baseName))) {
+    auto       baseName = QString(QLatin1String("%1.note")).arg(newNoteId);
+    const auto fileName = notesDir.absoluteFilePath(baseName);
+    if (!writeNoteFile(fileName, note)) {
         handleFSError();
         return false;
     }
-    noteData->setId(newNoteId);
-    putToCache(note, oldNoteId);
+    Note saved = note;
+    saved.setId(newNoteId);
+    saved.setBackendValue(QStringLiteral("fileName"), fileName);
+    putToCache(saved, oldNoteId);
     return true;
 }
 

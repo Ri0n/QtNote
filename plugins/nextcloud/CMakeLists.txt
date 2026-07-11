@@ -9,8 +9,6 @@ add_qtnote_plugin(
         nextclouddto.h
         nextcloudworker.cpp
         nextcloudworker.h
-        nextclouddata.cpp
-        nextclouddata.h
         nextcloudsettingswidget.cpp
         nextcloudsettingswidget.h
         nextcloudstorage.cpp

@@ -1,10 +1,11 @@
 #include "xmppstorage.h"
 
-#include "xmppdata.h"
+#include "notedata.h"
 #include "xmppsettingswidget.h"
 #include "xmppworker.h"
 
 #include <QMetaObject>
+#include <QPointer>
 #include <QSettings>
 #include <QUuid>
 
@@ -157,6 +158,47 @@ bool XmppStorage::init()
     return result.ok;
 }
 
+StorageInitJob *XmppStorage::initAsync(QObject *owner)
+{
+    auto *job = new StorageInitJob(owner ? owner : this);
+    job->start();
+    if (errorState_) {
+        job->fail({ StorageError::Unavailable, errorStateMessage_, false });
+        return job;
+    }
+    config_ = readConfig();
+    QString validationError;
+    if (!configIsValid(config_, &validationError)) {
+        job->fail({ StorageError::NotConfigured, validationError, false });
+        return job;
+    }
+    const auto               config = config_;
+    QPointer<StorageInitJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config]() {
+            worker_->setConfig(config);
+            const auto result = worker_->probe();
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    accessible_ = result.ok;
+                    cacheValid_ = false;
+                    if (result.ok)
+                        guard->complete();
+                    else {
+                        enterErrorState(result.error, true);
+                        guard->fail({ StorageError::Network, result.error, false });
+                    }
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
+}
+
 const QString XmppStorage::systemName() const { return storageId; }
 
 const QString XmppStorage::name() const { return tr("XMPP Private Notes"); }
@@ -177,9 +219,39 @@ QList<Note::Format> XmppStorage::availableFormats() const { return { Note::Markd
 
 Note XmppStorage::fromRemote(const XmppRemoteNote &remote)
 {
-    auto *data = new XmppData(this);
-    data->applyRemoteNote(remote);
-    return Note(data);
+    Note note(new NoteData(this));
+    applyRemote(note, remote);
+    return note;
+}
+
+void XmppStorage::applyRemote(Note &note, const XmppRemoteNote &remote)
+{
+    note.setId(remote.id);
+    note.setTitle(remote.title);
+    note.setFormat(Note::Markdown);
+    note.setLastChangeUTC(remote.modified);
+    note.setBackendValue(QStringLiteral("revision"), remote.revision);
+    note.setBackendValue(QStringLiteral("parentRevision"), remote.parentRevision);
+    note.setBackendValue(QStringLiteral("originId"), remote.originId);
+    if (remote.contentPresent)
+        note.setText(remote.content, Note::Markdown);
+    else
+        note.unload();
+}
+
+XmppRemoteNote XmppStorage::toRemote(const Note &note) const
+{
+    XmppRemoteNote remote;
+    remote.id             = note.id();
+    remote.revision       = note.backendValue(QStringLiteral("revision")).toString();
+    remote.parentRevision = note.backendValue(QStringLiteral("parentRevision")).toString();
+    remote.originId       = note.backendValue(QStringLiteral("originId")).toString();
+    remote.title          = note.title();
+    remote.content        = note.text();
+    remote.modified       = note.lastChangeUTC();
+    remote.format         = QStringLiteral("markdown");
+    remote.contentPresent = note.isLoaded();
+    return remote;
 }
 
 QList<Note> XmppStorage::noteList(int limit)
@@ -207,8 +279,7 @@ QList<Note> XmppStorage::noteList(int limit)
     for (const auto &remote : result.notes) {
         const auto old = cache_.constFind(remote.id);
         if (old != cache_.cend()) {
-            auto *data = dynamic_cast<XmppData *>(old.value().data());
-            if (data && data->revision() == remote.revision) {
+            if (old.value().backendValue(QStringLiteral("revision")).toString() == remote.revision) {
                 refreshed.insert(remote.id, old.value());
                 continue;
             }
@@ -228,6 +299,59 @@ QList<Note> XmppStorage::noteList(int limit)
     auto notes = cache_.values();
     std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
     return limit > 0 ? notes.mid(0, limit) : notes;
+}
+
+NoteListJob *XmppStorage::refreshNotesAsync(int limit, QObject *owner)
+{
+    auto *job = new NoteListJob(owner ? owner : this);
+    job->start();
+    if (errorState_) {
+        job->fail({ StorageError::Unavailable, errorStateMessage_, false });
+        return job;
+    }
+    const auto            config = readConfig();
+    QPointer<NoteListJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, limit]() {
+            worker_->setConfig(config);
+            auto           status = worker_->probe();
+            XmppListResult result;
+            if (status.ok)
+                result = worker_->listNotes();
+            else {
+                result.ok    = false;
+                result.error = status.error;
+            }
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, limit]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        enterErrorState(result.error, true);
+                        guard->fail({ StorageError::Network, result.error, false });
+                        return;
+                    }
+                    QHash<QString, Note> refreshed;
+                    for (const auto &remote : result.notes) {
+                        const auto old = cache_.constFind(remote.id);
+                        if (old != cache_.cend()
+                            && old.value().backendValue(QStringLiteral("revision")).toString() == remote.revision)
+                            refreshed.insert(remote.id, old.value());
+                        else
+                            refreshed.insert(remote.id, fromRemote(remote));
+                    }
+                    cache_      = std::move(refreshed);
+                    cacheValid_ = accessible_ = true;
+                    auto notes                = cache_.values();
+                    std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
+                    guard->complete(limit > 0 ? notes.mid(0, limit) : notes);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
 Note XmppStorage::note(const QString &id)
@@ -258,16 +382,56 @@ Note XmppStorage::note(const QString &id)
     return remote;
 }
 
-Note XmppStorage::createNote()
+NoteLoadJob *XmppStorage::loadNoteAsync(const QString &id, QObject *owner)
 {
-    auto *data = new XmppData(this);
-    data->initializeNew();
-    return Note(data);
+    auto *job = new NoteLoadJob(owner ? owner : this);
+    job->start();
+    if (id.isEmpty() || errorState_) {
+        job->fail({ id.isEmpty() ? StorageError::NotFound : StorageError::Unavailable,
+                    id.isEmpty() ? tr("Note was not found") : errorStateMessage_, false });
+        return job;
+    }
+    const auto            config = readConfig();
+    QPointer<NoteLoadJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, id]() {
+            worker_->setConfig(config);
+            const auto result = worker_->getNote(id);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, id]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        if (result.notFound)
+                            cache_.remove(id);
+                        guard->fail(
+                            { result.notFound ? StorageError::NotFound : StorageError::Network, result.error, false });
+                        return;
+                    }
+                    auto loaded = fromRemote(result.note);
+                    cache_.insert(id, loaded);
+                    accessible_ = true;
+                    guard->complete(loaded);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
-bool XmppStorage::loadData(XmppData &data)
+Note XmppStorage::createNote()
 {
-    const QString id = data.toRemoteNote().id;
+    Note note(new NoteData(this));
+    note.setText(QString(), Note::Markdown);
+    note.setLastChangeUTC(QDateTime::currentDateTimeUtc());
+    return note;
+}
+
+bool XmppStorage::loadNote(Note &note)
+{
+    const QString id = note.id();
     if (id.isEmpty()) {
         return true;
     }
@@ -284,7 +448,7 @@ bool XmppStorage::loadData(XmppData &data)
         return false;
     }
 
-    data.applyRemoteNote(result.note);
+    applyRemote(note, result.note);
     accessible_ = true;
     return true;
 }
@@ -295,13 +459,13 @@ bool XmppStorage::saveNote(const Note &note)
         return false;
     }
 
-    auto *data = dynamic_cast<XmppData *>(note.data());
-    if (!data) {
+    if (note.storage() != this) {
         reportError(tr("Attempted to save a note owned by another storage."));
         return false;
     }
 
-    if (!note.id().isEmpty() && !note.isLoaded() && !data->load()) {
+    Note saved = note;
+    if (!saved.id().isEmpty() && !saved.isLoaded() && !loadNote(saved)) {
         return false;
     }
     if (errorState_) {
@@ -312,7 +476,7 @@ bool XmppStorage::saveNote(const Note &note)
     }
 
     const QString oldId  = note.id();
-    const auto    local  = data->toRemoteNote();
+    const auto    local  = toRemote(saved);
     const auto    result = invokeWorker<XmppNoteResult>(worker_, [&]() { return worker_->saveNote(local); });
 
     if (!result.ok) {
@@ -329,26 +493,76 @@ bool XmppStorage::saveNote(const Note &note)
         return false;
     }
 
-    data->applyRemoteNote(result.note);
-    const QString newId   = note.id();
+    applyRemote(saved, result.note);
+    const QString newId   = saved.id();
     const bool    existed = !oldId.isEmpty() && cache_.contains(oldId);
 
     if (!oldId.isEmpty() && oldId != newId) {
         cache_.remove(oldId);
     }
-    cache_.insert(newId, note);
+    cache_.insert(newId, saved);
     cacheValid_ = true;
     accessible_ = true;
 
     if (!oldId.isEmpty() && oldId != newId) {
-        emit noteIdChanged(note, oldId);
+        emit noteIdChanged(saved, oldId);
     }
     if (existed || !oldId.isEmpty()) {
-        emit noteModified(note);
+        emit noteModified(saved);
     } else {
-        emit noteAdded(note);
+        emit noteAdded(saved);
     }
     return true;
+}
+
+NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
+{
+    auto *job = new NoteSaveJob(owner ? owner : this);
+    job->start();
+    if (note.isNull() || note.storage() != this || !note.isLoaded() || errorState_) {
+        job->fail({ StorageError::Other,
+                    errorState_ ? errorStateMessage_ : tr("The note cannot be saved in its current state."), false });
+        return job;
+    }
+    const auto            config = readConfig();
+    const auto            local  = toRemote(note);
+    const auto            oldId  = note.id();
+    QPointer<NoteSaveJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, local, oldId]() {
+            worker_->setConfig(config);
+            const auto result = worker_->saveNote(local);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, oldId]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        if (result.remoteOnConflict)
+                            cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
+                        guard->fail(
+                            { result.conflict ? StorageError::Conflict : StorageError::Network, result.error, false });
+                        return;
+                    }
+                    auto       saved   = fromRemote(result.note);
+                    const bool existed = !oldId.isEmpty() && cache_.contains(oldId);
+                    if (!oldId.isEmpty() && oldId != saved.id())
+                        cache_.remove(oldId);
+                    cache_.insert(saved.id(), saved);
+                    cacheValid_ = accessible_ = true;
+                    if (!oldId.isEmpty() && oldId != saved.id())
+                        emit noteIdChanged(saved, oldId);
+                    if (existed || !oldId.isEmpty())
+                        emit noteModified(saved);
+                    else
+                        emit noteAdded(saved);
+                    guard->complete(saved);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
 void XmppStorage::removeNote(const QString &noteId)
@@ -380,6 +594,43 @@ void XmppStorage::removeNote(const QString &noteId)
     }
 }
 
+NoteRemoveJob *XmppStorage::removeNoteAsync(const QString &noteId, QObject *owner)
+{
+    auto *job = new NoteRemoveJob(owner ? owner : this);
+    job->start();
+    if (noteId.isEmpty() || errorState_) {
+        job->fail({ noteId.isEmpty() ? StorageError::NotFound : StorageError::Unavailable,
+                    noteId.isEmpty() ? tr("Note was not found") : errorStateMessage_, false });
+        return job;
+    }
+    const auto              config  = readConfig();
+    const auto              removed = cache_.value(noteId);
+    QPointer<NoteRemoveJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, noteId, removed]() {
+            worker_->setConfig(config);
+            const auto result = worker_->deleteNote(noteId);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, noteId, removed]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok && !result.notFound) {
+                        guard->fail({ StorageError::Network, result.error, false });
+                        return;
+                    }
+                    cache_.remove(noteId);
+                    if (!removed.isNull())
+                        emit noteRemoved(removed);
+                    guard->complete();
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
+}
+
 void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
 {
     if (errorState_) {
@@ -389,15 +640,16 @@ void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
         return;
     }
 
-    const auto previous     = cache_.value(remote.id);
-    auto      *previousData = previous.isNull() ? nullptr : dynamic_cast<XmppData *>(previous.data());
+    const auto previous               = cache_.value(remote.id);
+    const auto previousRevision       = previous.backendValue(QStringLiteral("revision")).toString();
+    const auto previousParentRevision = previous.backendValue(QStringLiteral("parentRevision")).toString();
 
-    if (previousData && previousData->revision() == remote.revision) {
+    if (!previous.isNull() && previousRevision == remote.revision) {
         return;
     }
 
-    const bool siblingConflict = previousData && !previousData->parentRevision().isEmpty()
-        && previousData->parentRevision() == remote.parentRevision && previousData->revision() != remote.revision;
+    const bool siblingConflict = !previous.isNull() && !previousParentRevision.isEmpty()
+        && previousParentRevision == remote.parentRevision && previousRevision != remote.revision;
 
     auto incoming = fromRemote(remote);
     cache_.insert(remote.id, incoming);

@@ -35,7 +35,6 @@ public:
     NMMItem(const NoteStorage::Ptr &storage) :
         parent(0), type(NotesModel::ItemStorage), title(storage->name()), id(storage->systemName())
     {
-        populateChildren();
     }
 
     NMMItem(const Note &note, NMMItem *parent) :
@@ -45,17 +44,6 @@ public:
     }
 
     ~NMMItem() { qDeleteAll(children); }
-
-    void populateChildren()
-    {
-        if (type == NotesModel::ItemStorage) {
-            auto storage = NoteManager::instance()->storage(id);
-            foreach (const Note &note, storage->noteList()) {
-                children.append(new NMMItem(note, this));
-            }
-            sortChildren();
-        }
-    }
 
     void sortChildren()
     {
@@ -99,9 +87,10 @@ void debug(const QString &prefix, NMMItem *item)
 
 NotesModel::NotesModel(QObject *parent) : QAbstractItemModel(parent)
 {
-    foreach (const NoteStorage::Ptr &s, NoteManager::instance()->storages()) {
+    foreach (const NoteStorage::Ptr &s, NoteManager::instance()->storages(true)) {
         storages.append(new NMMItem(s));
         setStorageSignalHandlers(s);
+        refreshStorage(s);
     }
     connect(NoteManager::instance(), SIGNAL(storageAdded(NoteStorage::Ptr)), SLOT(storageAdded(NoteStorage::Ptr)));
     connect(NoteManager::instance(), SIGNAL(storageRemoved(NoteStorage::Ptr)), SLOT(storageRemoved(NoteStorage::Ptr)));
@@ -153,9 +142,13 @@ QModelIndex NotesModel::noteIndex(const QString &storageId, const QString &noteI
     return QModelIndex();
 }
 
-void NotesModel::storageAdded(const NoteStorage::Ptr &)
+void NotesModel::storageAdded(const NoteStorage::Ptr &storage)
 {
-    // TODO implement
+    beginInsertRows({}, storages.size(), storages.size());
+    storages.append(new NMMItem(storage));
+    endInsertRows();
+    setStorageSignalHandlers(storage);
+    refreshStorage(storage);
     emit statsChanged();
 }
 
@@ -167,16 +160,30 @@ void NotesModel::storageRemoved(const NoteStorage::Ptr &)
 
 void NotesModel::storageInvalidated()
 {
-    beginResetModel();
-    auto storage = static_cast<NoteStorage *>(sender());
-    for (auto item : storages) {
-        if (item->id == storage->systemName()) {
-            item->children.clear();
-            item->populateChildren();
-            break;
-        }
-    }
-    endResetModel();
+    auto storage = NoteManager::instance()->storage(static_cast<NoteStorage *>(sender())->systemName());
+    if (storage)
+        refreshStorage(storage);
+}
+
+void NotesModel::refreshStorage(const NoteStorage::Ptr &storage)
+{
+    auto *job = storage->refreshNotesAsync(0, this);
+    connect(job, &StorageJob::finished, this, [this, storage, job]() {
+        if (job->state() != StorageJob::Succeeded)
+            return;
+        const auto parentIndex = storageIndex(storage->systemName());
+        if (!parentIndex.isValid())
+            return;
+        auto *item = static_cast<NMMItem *>(parentIndex.internalPointer());
+        beginResetModel();
+        qDeleteAll(item->children);
+        item->children.clear();
+        for (const auto &note : job->result())
+            item->children.append(new NMMItem(note, item));
+        item->sortChildren();
+        endResetModel();
+        emit statsChanged();
+    });
 }
 
 void NotesModel::noteAdded(const Note &item)

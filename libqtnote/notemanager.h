@@ -66,6 +66,8 @@ public:
 
     virtual QList<Note> noteList(int count = -1) const; // virtual for plugins
     QList<Note>         noteList(int offset, int limit, const QString &titleFilter) const;
+    NoteListJob        *refreshNotesAsync(int count = -1, QObject *owner = nullptr);
+    NoteLoadJob        *loadNoteAsync(const QString &storageId, const QString &noteId, QObject *owner = nullptr);
 
     Note note(const QString &storageId, const QString &noteId);
 
@@ -89,6 +91,7 @@ signals:
     void storageAboutToBeRemoved(NoteStorage::Ptr);
     void storageRemoved(NoteStorage::Ptr);
     void storageChanged(NoteStorage::Ptr);
+    void storageReady(NoteStorage::Ptr);
 
 private slots:
     void storageChanged();

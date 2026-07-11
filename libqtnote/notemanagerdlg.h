@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QDialog>
 #include <QModelIndex>
+#include <QPointer>
 
 namespace Ui {
 class NoteManagerDlg;
@@ -36,6 +37,7 @@ namespace QtNote {
 class NotesModel;
 class NotesSearchModel;
 class Main;
+class NoteLoadJob;
 
 class NoteManagerDlg : public QDialog {
     Q_OBJECT
@@ -56,10 +58,11 @@ private slots:
     void updateStats();
 
 private:
-    Ui::NoteManagerDlg *ui;
-    NotesModel         *model;
-    NotesSearchModel   *searchModel;
-    Main               *qtnote;
+    Ui::NoteManagerDlg   *ui;
+    NotesModel           *model;
+    NotesSearchModel     *searchModel;
+    Main                 *qtnote;
+    QPointer<NoteLoadJob> previewJob;
 };
 
 }

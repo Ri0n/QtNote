@@ -269,13 +269,38 @@ NoteWidget *Main::noteWidget(const Note &note)
 
 void Main::openNoteDialog(const QString &storageId, const QString &noteId)
 {
-
-    NoteDialog *dlg = NoteDialog::findDialog(storageId, noteId);
-    if (!dlg) {
-        dlg = makeNoteDialog(storageId, noteId);
+    if (auto *dlg = NoteDialog::findDialog(storageId, noteId)) {
+        dlg->show();
+        activateWidget(dlg);
+        return;
     }
-    dlg->show();
-    activateWidget(dlg);
+    if (noteId.isEmpty()) {
+        if (auto *dlg = makeNoteDialog(storageId)) {
+            dlg->show();
+            activateWidget(dlg);
+        }
+        return;
+    }
+
+    auto *job = NoteManager::instance()->loadNoteAsync(storageId, noteId, this);
+    connect(job, &StorageJob::finished, this, [this, job, storageId, noteId]() {
+        if (job->state() != StorageJob::Succeeded) {
+            notifyError(job->error().message.isEmpty() ? tr("Failed to load note") : job->error().message);
+            job->deleteLater();
+            return;
+        }
+        auto *dlg = NoteDialog::findDialog(storageId, noteId);
+        if (!dlg) {
+            auto  storage = NoteManager::instance()->storage(storageId);
+            auto *nw      = noteWidget(job->result());
+            dlg           = new NoteDialog(nw);
+            dlg->setWindowIcon(storage->noteIcon());
+            dlg->setWindowState(Qt::WindowNoState);
+        }
+        dlg->show();
+        activateWidget(dlg);
+        job->deleteLater();
+    });
 }
 
 NoteDialog *Main::makeNoteDialog(const QString &storageId, const QString &noteId)

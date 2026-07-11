@@ -13,8 +13,6 @@ add_qtnote_plugin(
         xmpppepextension.h
         xmppworker.cpp
         xmppworker.h
-        xmppdata.cpp
-        xmppdata.h
         xmppsettingswidget.cpp
         xmppsettingswidget.h
         xmppstorage.cpp

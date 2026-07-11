@@ -30,7 +30,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <shlobj.h>
 #endif // Q_OS_WIN
 
-#include "ptfdata.h"
+#include "notedata.h"
 #include "ptfstorage.h"
 #include "utils.h"
 
@@ -71,16 +71,32 @@ QList<Note> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 {
     QList<Note> ret;
     foreach (const QFileInfo &fi, files) {
-        auto noteData = new PTFData(this);
-        auto note     = Note(noteData);
-        if (noteData->fromFile(fi.canonicalFilePath())) {
-            ret.append(note);
-        }
+        QFile file(fi.canonicalFilePath());
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            continue;
+
+        Note note(new NoteData(this));
+        note.setId(fi.completeBaseName());
+        note.setFormat(fi.suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0 ? Note::Markdown
+                                                                                          : Note::PlainText);
+        note.setTitle(QString::fromUtf8(file.readLine()).trimmed());
+        note.setTags(NoteData::tagsFromLine(QString::fromUtf8(file.readLine())));
+        note.setLastChangeUTC(fi.lastModified());
+        note.setBackendValue(QStringLiteral("fileName"), fi.canonicalFilePath());
+        note.unload();
+        ret.append(note);
     }
     return ret;
 }
 
-Note PTFStorage::createNote() { return Note(new PTFData(this)); }
+Note PTFStorage::createNote()
+{
+    Note note(new NoteData(this));
+    note.setFormat(Note::PlainText);
+    note.setText(QString(), Note::PlainText);
+    note.setLastChangeUTC(QDateTime::currentDateTimeUtc());
+    return note;
+}
 
 Note PTFStorage::note(const QString &noteId)
 {
@@ -89,14 +105,47 @@ Note PTFStorage::note(const QString &noteId)
         for (auto const &ext : std::as_const(fileExt)) {
             fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId, ext)));
             if (fi.exists() || fi.isWritable()) {
-                PTFData *noteData = new PTFData(this);
-                noteData->fromFile(fi.filePath());
-                return Note(noteData);
+                Note loaded(new NoteData(this));
+                loaded.setId(fi.completeBaseName());
+                loaded.setFormat(fi.suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0 ? Note::Markdown
+                                                                                                    : Note::PlainText);
+                loaded.setLastChangeUTC(fi.lastModified());
+                loaded.setBackendValue(QStringLiteral("fileName"), fi.filePath());
+                if (loadNote(loaded))
+                    return loaded;
+                return {};
             }
         }
         handleFSError();
     }
     return Note();
+}
+
+bool PTFStorage::loadNote(Note &note)
+{
+    QString fileName = note.backendValue(QStringLiteral("fileName")).toString();
+    if (fileName.isEmpty()) {
+        for (const auto &ext : std::as_const(fileExt)) {
+            const auto candidate = notesDir.absoluteFilePath(QStringLiteral("%1.%2").arg(note.id(), ext));
+            if (QFileInfo::exists(candidate)) {
+                fileName = candidate;
+                break;
+            }
+        }
+    }
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+
+    const auto [title, body] = Utils::splitTitle(QString::fromUtf8(file.readAll()));
+    note.setTitle(title);
+    note.setText(body,
+                 QFileInfo(fileName).suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0 ? Note::Markdown
+                                                                                                     : Note::PlainText);
+    note.setLastChangeUTC(QFileInfo(file).lastModified());
+    note.setBackendValue(QStringLiteral("fileName"), fileName);
+    return true;
 }
 
 bool PTFStorage::saveNote(const Note &note)
@@ -108,15 +157,21 @@ bool PTFStorage::saveNote(const Note &note)
         return true;
     }
 
-    QString  oldNoteId = note.id();
-    PTFData *noteData  = static_cast<PTFData *>(note.data());
-    QString  newNoteId = oldNoteId;
-    auto     ext       = QString(QLatin1String(note.format() == Note::Markdown ? "md" : "txt"));
-    if (!noteData->saveToFile(Utils::fileNameForText(notesDir, note.title(), ext, newNoteId))) {
+    QString oldNoteId = note.id();
+    QString newNoteId = oldNoteId;
+    auto    ext       = QString(QLatin1String(note.format() == Note::Markdown ? "md" : "txt"));
+    auto    fileName  = Utils::fileNameForText(notesDir, note.title(), ext, newNoteId);
+    QFile   file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)
+        || file.write((note.title() + QLatin1Char('\n') + note.text()).trimmed().toUtf8()) < 0) {
         handleFSError();
         return false;
     }
-    noteData->setId(newNoteId);
+    file.close();
+    Note saved = note;
+    saved.setId(newNoteId);
+    saved.setLastChangeUTC(QFileInfo(fileName).lastModified());
+    saved.setBackendValue(QStringLiteral("fileName"), fileName);
     if (!oldNoteId.isEmpty()) {
         if (oldNoteId != newNoteId) {
             for (auto const &ext : std::as_const(fileExt)) {
@@ -130,7 +185,7 @@ bool PTFStorage::saveNote(const Note &note)
             }
         }
     }
-    putToCache(note, oldNoteId); // noteId is old one. new one is in item.id
+    putToCache(saved, oldNoteId);
     return true;
 }
 

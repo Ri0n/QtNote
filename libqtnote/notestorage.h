@@ -28,6 +28,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "note.h"
 #include "qtnote_export.h"
+#include "storagejob.h"
 
 namespace QtNote {
 
@@ -55,12 +56,21 @@ public:
     /* should return null note (d=0) if not is not found */
     virtual Note note(const QString &id) = 0;
 
-    virtual Note createNote()                      = 0;
+    virtual Note createNote() = 0;
+    virtual bool loadNote(Note &note);
     virtual bool saveNote(const Note &note)        = 0;
     virtual void removeNote(const QString &noteId) = 0;
 
     virtual QWidget *settingsWidget() { return 0; }
     virtual QString  tooltip() { return QString(); }
+
+    // All consumers should use these methods. The synchronous API above is
+    // retained temporarily while storage implementations are being migrated.
+    virtual StorageInitJob *initAsync(QObject *owner = nullptr);
+    virtual NoteListJob    *refreshNotesAsync(int limit = 0, QObject *owner = nullptr);
+    virtual NoteLoadJob    *loadNoteAsync(const QString &id, QObject *owner = nullptr);
+    virtual NoteSaveJob    *saveNoteAsync(const Note &note, QObject *owner = nullptr);
+    virtual NoteRemoveJob  *removeNoteAsync(const QString &id, QObject *owner = nullptr);
 
 signals:
     void noteAdded(const Note &);

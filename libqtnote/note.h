@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QExplicitlySharedDataPointer>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 #include <qdatetime.h>
 
 #include "qtnote_export.h"
@@ -55,6 +56,12 @@ public:
 
     void setTitle(const QString &title);
     void setText(const QString &text, Format format);
+    void setId(const QString &id);
+    void setFormat(Format format);
+    void setTags(const QStringList &tags);
+    void unload();
+    void setLastChangeUTC(const QDateTime &lastChange);
+    void setBackendValue(const QString &key, const QVariant &value);
 
     NoteStorage *storage() const;
     QString      storageId() const;
@@ -65,6 +72,7 @@ public:
     NoteData    *data() const;
     Format       format() const;
     QDateTime    lastChangeUTC() const;
+    QVariant     backendValue(const QString &key) const;
     bool         isUpdated() const;
 
 private:

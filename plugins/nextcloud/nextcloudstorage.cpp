@@ -1,13 +1,17 @@
 #include "nextcloudstorage.h"
 
-#include "nextclouddata.h"
 #include "nextcloudsettingswidget.h"
 #include "nextcloudworker.h"
+#include "notedata.h"
 
 #include <QMetaObject>
+#include <QPointer>
 #include <QSet>
 #include <QSettings>
 #include <QUrl>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QTimeZone>
+#endif
 
 #include <algorithm>
 #include <utility>
@@ -130,6 +134,45 @@ bool NextcloudStorage::init()
     return result.ok;
 }
 
+StorageInitJob *NextcloudStorage::initAsync(QObject *owner)
+{
+    auto *job = new StorageInitJob(owner ? owner : this);
+    job->start();
+    config_ = readConfig();
+    QString validationError;
+    if (!configIsValid(config_, &validationError)) {
+        accessible_ = false;
+        StorageError error { StorageError::NotConfigured, validationError, false };
+        job->fail(error);
+        return job;
+    }
+    QPointer<StorageInitJob> guard(job);
+    const auto               config = config_;
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config]() {
+            worker_->setConfig(config);
+            const auto result = worker_->probe();
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    accessible_ = result.ok;
+                    cacheValid_ = false;
+                    if (result.ok)
+                        guard->complete();
+                    else {
+                        reportError(result.error);
+                        guard->fail({ StorageError::Network, result.error, true });
+                    }
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
+}
+
 const QString NextcloudStorage::systemName() const { return storageId; }
 
 const QString NextcloudStorage::name() const { return tr("Nextcloud Notes"); }
@@ -150,9 +193,48 @@ QList<Note::Format> NextcloudStorage::availableFormats() const { return { Note::
 
 Note NextcloudStorage::fromRemote(const NextcloudRemoteNote &remote)
 {
-    auto *data = new NextcloudData(this);
-    data->applyServerNote(remote);
-    return Note(data);
+    Note note(new NoteData(this));
+    applyRemote(note, remote);
+    return note;
+}
+
+void NextcloudStorage::applyRemote(Note &note, const NextcloudRemoteNote &remote)
+{
+    note.setId(remote.id);
+    note.setTitle(remote.title);
+    note.setFormat(Note::Markdown);
+    note.setBackendValue(QStringLiteral("etag"), remote.etag);
+    note.setBackendValue(QStringLiteral("category"), remote.category);
+    note.setBackendValue(QStringLiteral("favorite"), remote.favorite);
+    note.setBackendValue(QStringLiteral("readOnly"), remote.readOnly);
+    if (remote.modified > 0) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        note.setLastChangeUTC(QDateTime::fromSecsSinceEpoch(remote.modified, Qt::UTC));
+#else
+        note.setLastChangeUTC(QDateTime::fromSecsSinceEpoch(remote.modified, QTimeZone(QTimeZone::UTC)));
+#endif
+    } else {
+        note.setLastChangeUTC({});
+    }
+    if (remote.contentPresent)
+        note.setText(remote.content, Note::Markdown);
+    else
+        note.unload();
+}
+
+NextcloudRemoteNote NextcloudStorage::toRemote(const Note &note) const
+{
+    NextcloudRemoteNote remote;
+    remote.id             = note.id();
+    remote.etag           = note.backendValue(QStringLiteral("etag")).toString();
+    remote.readOnly       = note.backendValue(QStringLiteral("readOnly")).toBool();
+    remote.content        = note.text();
+    remote.contentPresent = note.isLoaded();
+    remote.title          = note.title();
+    remote.category       = note.backendValue(QStringLiteral("category")).toString();
+    remote.favorite       = note.backendValue(QStringLiteral("favorite")).toBool();
+    remote.modified       = QDateTime::currentDateTimeUtc().toSecsSinceEpoch();
+    return remote;
 }
 
 QList<Note> NextcloudStorage::noteList(int limit)
@@ -177,8 +259,7 @@ QList<Note> NextcloudStorage::noteList(int limit)
     for (const auto &remote : result.notes) {
         const auto old = cache_.constFind(remote.id);
         if (old != cache_.cend()) {
-            auto *oldData = dynamic_cast<NextcloudData *>(old.value().data());
-            if (oldData && oldData->etag() == remote.etag) {
+            if (old.value().backendValue(QStringLiteral("etag")).toString() == remote.etag) {
                 refreshed.insert(remote.id, old.value());
                 continue;
             }
@@ -192,6 +273,62 @@ QList<Note> NextcloudStorage::noteList(int limit)
     auto notes = cache_.values();
     std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
     return limit > 0 ? notes.mid(0, limit) : notes;
+}
+
+NoteListJob *NextcloudStorage::refreshNotesAsync(int limit, QObject *owner)
+{
+    auto *job = new NoteListJob(owner ? owner : this);
+    job->start();
+    config_ = readConfig();
+    QString validationError;
+    if (!configIsValid(config_, &validationError)) {
+        job->fail({ StorageError::NotConfigured, validationError, false });
+        return job;
+    }
+    QPointer<NoteListJob> guard(job);
+    const auto            config = config_;
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, limit]() {
+            worker_->setConfig(config);
+            auto                status = worker_->probe();
+            NextcloudListResult result;
+            if (status.ok)
+                result = worker_->listNotes();
+            else {
+                result.ok    = false;
+                result.error = status.error;
+            }
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, limit]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        accessible_ = false;
+                        reportError(result.error);
+                        guard->fail({ StorageError::Network, result.error, true });
+                        return;
+                    }
+                    QHash<QString, Note> refreshed;
+                    for (const auto &remote : result.notes) {
+                        const auto old = cache_.constFind(remote.id);
+                        if (old != cache_.cend()
+                            && old.value().backendValue(QStringLiteral("etag")).toString() == remote.etag)
+                            refreshed.insert(remote.id, old.value());
+                        else
+                            refreshed.insert(remote.id, fromRemote(remote));
+                    }
+                    cache_      = std::move(refreshed);
+                    cacheValid_ = accessible_ = true;
+                    auto notes                = cache_.values();
+                    std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
+                    guard->complete(limit > 0 ? notes.mid(0, limit) : notes);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
 Note NextcloudStorage::note(const QString &id)
@@ -220,23 +357,62 @@ Note NextcloudStorage::note(const QString &id)
     return remoteNote;
 }
 
-Note NextcloudStorage::createNote()
+NoteLoadJob *NextcloudStorage::loadNoteAsync(const QString &id, QObject *owner)
 {
-    auto *data = new NextcloudData(this);
-    data->initializeNew();
-    return Note(data);
+    auto *job = new NoteLoadJob(owner ? owner : this);
+    job->start();
+    if (id.isEmpty()) {
+        job->fail({ StorageError::NotFound, tr("Note was not found"), false });
+        return job;
+    }
+    const auto            config = readConfig();
+    QPointer<NoteLoadJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, id]() {
+            worker_->setConfig(config);
+            const auto result = worker_->getNote(id);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, id]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        if (result.httpStatus == 404)
+                            cache_.remove(id);
+                        guard->fail({ result.httpStatus == 404 ? StorageError::NotFound : StorageError::Network,
+                                      result.error, result.httpStatus != 404 });
+                        return;
+                    }
+                    auto loaded = fromRemote(result.note);
+                    cache_.insert(result.note.id, loaded);
+                    accessible_ = true;
+                    guard->complete(loaded);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
-bool NextcloudStorage::loadData(NextcloudData &data)
+Note NextcloudStorage::createNote()
 {
-    if (data.toRemoteNote().id.isEmpty()) {
+    Note note(new NoteData(this));
+    note.setText(QString(), Note::Markdown);
+    note.setLastChangeUTC(QDateTime::currentDateTimeUtc());
+    return note;
+}
+
+bool NextcloudStorage::loadNote(Note &note)
+{
+    if (note.id().isEmpty()) {
         return true;
     }
     if (!accessible_ && !init()) {
         return false;
     }
 
-    const QString id     = data.toRemoteNote().id;
+    const QString id     = note.id();
     const auto    result = invokeWorker<NextcloudNoteResult>(worker_, [&]() { return worker_->getNote(id); });
 
     if (!result.ok) {
@@ -244,7 +420,7 @@ bool NextcloudStorage::loadData(NextcloudData &data)
         return false;
     }
 
-    data.applyServerNote(result.note);
+    applyRemote(note, result.note);
     accessible_ = true;
     return true;
 }
@@ -255,17 +431,17 @@ bool NextcloudStorage::saveNote(const Note &note)
         return false;
     }
 
-    auto *data = dynamic_cast<NextcloudData *>(note.data());
-    if (!data) {
+    if (note.storage() != this) {
         reportError(tr("Attempted to save a note owned by another storage."));
         return false;
     }
 
-    if (!note.id().isEmpty() && !note.isLoaded() && !data->load()) {
+    Note saved = note;
+    if (!saved.id().isEmpty() && !saved.isLoaded() && !loadNote(saved)) {
         return false;
     }
 
-    if (data->readOnly()) {
+    if (saved.backendValue(QStringLiteral("readOnly")).toBool()) {
         reportError(tr("The note is read-only and cannot be saved."));
         return false;
     }
@@ -275,7 +451,7 @@ bool NextcloudStorage::saveNote(const Note &note)
     }
 
     const QString oldId = note.id();
-    const auto    local = data->toRemoteNote();
+    const auto    local = toRemote(saved);
 
     const auto result = invokeWorker<NextcloudNoteResult>(
         worker_, [&]() { return oldId.isEmpty() ? worker_->createNote(local) : worker_->updateNote(local); });
@@ -295,28 +471,85 @@ bool NextcloudStorage::saveNote(const Note &note)
         return false;
     }
 
-    data->applyServerNote(result.note);
+    applyRemote(saved, result.note);
     accessible_ = true;
 
-    const QString newId   = note.id();
+    const QString newId   = saved.id();
     const bool    existed = !oldId.isEmpty() && cache_.contains(oldId);
 
     if (!oldId.isEmpty() && oldId != newId) {
         cache_.remove(oldId);
     }
-    cache_.insert(newId, note);
+    cache_.insert(newId, saved);
     cacheValid_ = true;
 
     if (!oldId.isEmpty() && oldId != newId) {
-        emit noteIdChanged(note, oldId);
+        emit noteIdChanged(saved, oldId);
     }
 
     if (existed || !oldId.isEmpty()) {
-        emit noteModified(note);
+        emit noteModified(saved);
     } else {
-        emit noteAdded(note);
+        emit noteAdded(saved);
     }
     return true;
+}
+
+NoteSaveJob *NextcloudStorage::saveNoteAsync(const Note &note, QObject *owner)
+{
+    auto *job = new NoteSaveJob(owner ? owner : this);
+    job->start();
+    if (note.isNull() || note.storage() != this) {
+        job->fail({ StorageError::Other, tr("Attempted to save a note owned by another storage."), false });
+        return job;
+    }
+    if (!note.isLoaded() || note.backendValue(QStringLiteral("readOnly")).toBool()) {
+        job->fail({ StorageError::Other,
+                    note.isLoaded() ? tr("The note is read-only and cannot be saved.")
+                                    : tr("Load the note before saving it."),
+                    false });
+        return job;
+    }
+
+    const auto            config = readConfig();
+    const auto            local  = toRemote(note);
+    const auto            oldId  = note.id();
+    QPointer<NoteSaveJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, local, oldId]() {
+            worker_->setConfig(config);
+            const auto result = oldId.isEmpty() ? worker_->createNote(local) : worker_->updateNote(local);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, oldId]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok) {
+                        if (result.remoteOnConflict)
+                            cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
+                        guard->fail({ result.conflict ? StorageError::Conflict : StorageError::Network, result.error,
+                                      !result.conflict });
+                        return;
+                    }
+                    auto       saved   = fromRemote(result.note);
+                    const bool existed = !oldId.isEmpty() && cache_.contains(oldId);
+                    if (!oldId.isEmpty() && oldId != saved.id())
+                        cache_.remove(oldId);
+                    cache_.insert(saved.id(), saved);
+                    cacheValid_ = accessible_ = true;
+                    if (!oldId.isEmpty() && oldId != saved.id())
+                        emit noteIdChanged(saved, oldId);
+                    if (existed || !oldId.isEmpty())
+                        emit noteModified(saved);
+                    else
+                        emit noteAdded(saved);
+                    guard->complete(saved);
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
 void NextcloudStorage::removeNote(const QString &noteId)
@@ -344,6 +577,42 @@ void NextcloudStorage::removeNote(const QString &noteId)
     if (!removed.isNull()) {
         emit noteRemoved(removed);
     }
+}
+
+NoteRemoveJob *NextcloudStorage::removeNoteAsync(const QString &noteId, QObject *owner)
+{
+    auto *job = new NoteRemoveJob(owner ? owner : this);
+    job->start();
+    if (noteId.isEmpty()) {
+        job->fail({ StorageError::NotFound, tr("Note was not found"), false });
+        return job;
+    }
+    const auto              removed = cache_.value(noteId);
+    const auto              config  = readConfig();
+    QPointer<NoteRemoveJob> guard(job);
+    QMetaObject::invokeMethod(
+        worker_,
+        [this, guard, config, noteId, removed]() {
+            worker_->setConfig(config);
+            const auto result = worker_->deleteNote(noteId);
+            QMetaObject::invokeMethod(
+                this,
+                [this, guard, result, noteId, removed]() {
+                    if (!guard || guard->isFinished())
+                        return;
+                    if (!result.ok && result.httpStatus != 404) {
+                        guard->fail({ StorageError::Network, result.error, true });
+                        return;
+                    }
+                    cache_.remove(noteId);
+                    if (!removed.isNull())
+                        emit noteRemoved(removed);
+                    guard->complete();
+                },
+                Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
+    return job;
 }
 
 void NextcloudStorage::reportError(const QString &error, bool invalidate)

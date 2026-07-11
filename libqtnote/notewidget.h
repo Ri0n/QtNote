@@ -24,6 +24,7 @@ class NoteEdit;
 class NoteHighlighter;
 class SpeechAudioRecorder;
 class SpeechRecognitionJob;
+class NoteSaveJob;
 class SpeechRecognitionProviderInterface;
 
 class QTNOTE_EXPORT NoteWidget : public QWidget {
@@ -114,6 +115,7 @@ private:
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;
     SpeechAudioRecorder                  *speechRecorder = nullptr;
     QPointer<SpeechRecognitionJob>        speechJob;
+    QPointer<NoteSaveJob>                 saveJob;
     QString                               localSpeechContextId;
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
