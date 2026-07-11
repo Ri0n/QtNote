@@ -16,13 +16,7 @@ namespace {
 
 NextcloudPlugin::NextcloudPlugin(QObject *parent) : QObject(parent) { }
 
-NextcloudPlugin::~NextcloudPlugin()
-{
-    if (qtnote_) {
-        qtnote_->unregisterStorage(storage);
-        storage.clear();
-    }
-}
+NextcloudPlugin::~NextcloudPlugin() { deinit(); }
 
 int NextcloudPlugin::metadataVersion() const { return MetadataVersion; }
 
@@ -45,6 +39,7 @@ PluginMetadata NextcloudPlugin::metadata()
 
 bool NextcloudPlugin::init(Main *qtnote)
 {
+    deinit();
     qtnote_ = qtnote;
     storage = NoteStorage::Ptr(new NextcloudStorage(this));
     qtnote_->registerStorage(storage);
@@ -52,6 +47,15 @@ bool NextcloudPlugin::init(Main *qtnote)
     // A remote storage must remain enabled while it is not configured,
     // otherwise the user cannot reach its settings widget.
     return true;
+}
+
+void NextcloudPlugin::deinit()
+{
+    if (qtnote_) {
+        qtnote_->unregisterStorage(storage);
+        storage.clear();
+        qtnote_ = nullptr;
+    }
 }
 
 } // namespace QtNote

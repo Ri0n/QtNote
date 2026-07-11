@@ -55,7 +55,11 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
     connect(worker_, &XmppWorker::remoteNoteRetracted, this, &XmppStorage::onRemoteNoteRetracted);
     connect(worker_, &XmppWorker::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
     connect(worker_, &XmppWorker::connectionChanged, this, &XmppStorage::onConnectionChanged);
-    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) { reportError(error); });
+    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) {
+        if (!errorState_) {
+            enterErrorState(error, true);
+        }
+    });
 
     workerThread_.start();
 }
@@ -127,6 +131,10 @@ bool XmppStorage::configIsValid(const XmppConfig &config, QString *error) const
 
 bool XmppStorage::init()
 {
+    if (errorState_) {
+        return false;
+    }
+
     config_ = readConfig();
 
     QString validationError;
@@ -144,7 +152,7 @@ bool XmppStorage::init()
     accessible_ = result.ok;
     cacheValid_ = false;
     if (!result.ok) {
-        reportError(result.error);
+        enterErrorState(result.error, true);
     }
     return result.ok;
 }
@@ -176,6 +184,11 @@ Note XmppStorage::fromRemote(const XmppRemoteNote &remote)
 
 QList<Note> XmppStorage::noteList(int limit)
 {
+    if (errorState_) {
+        auto cached = cache_.values();
+        std::sort(cached.begin(), cached.end(), noteListItemModifyComparer);
+        return limit > 0 ? cached.mid(0, limit) : cached;
+    }
     if (!accessible_ && !init()) {
         return {};
     }
@@ -222,6 +235,9 @@ Note XmppStorage::note(const QString &id)
     if (id.isEmpty()) {
         return {};
     }
+    if (errorState_) {
+        return cache_.value(id);
+    }
     if (!accessible_ && !init()) {
         return {};
     }
@@ -255,6 +271,9 @@ bool XmppStorage::loadData(XmppData &data)
     if (id.isEmpty()) {
         return true;
     }
+    if (errorState_) {
+        return false;
+    }
     if (!accessible_ && !init()) {
         return false;
     }
@@ -283,6 +302,9 @@ bool XmppStorage::saveNote(const Note &note)
     }
 
     if (!note.id().isEmpty() && !note.isLoaded() && !data->load()) {
+        return false;
+    }
+    if (errorState_) {
         return false;
     }
     if (!accessible_ && !init()) {
@@ -334,6 +356,9 @@ void XmppStorage::removeNote(const QString &noteId)
     if (noteId.isEmpty()) {
         return;
     }
+    if (errorState_) {
+        return;
+    }
     if (!accessible_ && !init()) {
         return;
     }
@@ -357,6 +382,9 @@ void XmppStorage::removeNote(const QString &noteId)
 
 void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
 {
+    if (errorState_) {
+        return;
+    }
     if (remote.id.isEmpty()) {
         return;
     }
@@ -390,6 +418,9 @@ void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
 
 void XmppStorage::onRemoteNoteRetracted(const QString &id)
 {
+    if (errorState_) {
+        return;
+    }
     const auto removed = cache_.take(id);
     if (!removed.isNull()) {
         emit noteRemoved(removed);
@@ -400,6 +431,9 @@ void XmppStorage::onRemoteNoteRetracted(const QString &id)
 
 void XmppStorage::onRemoteNodeInvalidated()
 {
+    if (errorState_) {
+        return;
+    }
     cache_.clear();
     cacheValid_ = false;
     emit invalidated();
@@ -407,6 +441,9 @@ void XmppStorage::onRemoteNodeInvalidated()
 
 void XmppStorage::onConnectionChanged(bool connected)
 {
+    if (errorState_) {
+        return;
+    }
     accessible_ = connected;
     cacheValid_ = false;
     emit invalidated();
@@ -423,6 +460,30 @@ void XmppStorage::reportError(const QString &error, bool invalidate)
     }
 }
 
+void XmppStorage::enterErrorState(const QString &error, bool invalidate)
+{
+    if (errorState_ && error == errorStateMessage_) {
+        return;
+    }
+
+    errorState_        = true;
+    errorStateMessage_ = error;
+    accessible_        = false;
+    cacheValid_        = false;
+
+    if (workerThread_.isRunning()) {
+        QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);
+    }
+
+    reportError(error, invalidate);
+}
+
+void XmppStorage::clearErrorState()
+{
+    errorState_ = false;
+    errorStateMessage_.clear();
+}
+
 void XmppStorage::applyConfig(const XmppConfig &config)
 {
     QSettings settings;
@@ -435,6 +496,7 @@ void XmppStorage::applyConfig(const XmppConfig &config)
     settings.setValue(QStringLiteral("storage.xmpppubsub.timeoutMs"), config.timeoutMs);
     settings.setValue(QStringLiteral("storage.xmpppubsub.originId"), config.originId);
 
+    clearErrorState();
     cache_.clear();
     cacheValid_ = false;
     accessible_ = false;
@@ -452,6 +514,11 @@ QWidget *XmppStorage::settingsWidget()
 
 QString XmppStorage::tooltip()
 {
+    if (errorState_) {
+        return tr("XMPP private notes is stopped after an error:\n%1\n\nOpen storage settings and apply the "
+                  "configuration to retry.")
+            .arg(errorStateMessage_);
+    }
     if (config_.jid.isEmpty()) {
         config_ = readConfig();
     }

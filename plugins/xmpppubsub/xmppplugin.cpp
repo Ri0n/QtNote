@@ -16,13 +16,7 @@ namespace {
 
 XmppPlugin::XmppPlugin(QObject *parent) : QObject(parent) { }
 
-XmppPlugin::~XmppPlugin()
-{
-    if (qtnote_) {
-        qtnote_->unregisterStorage(storage);
-        storage.clear();
-    }
-}
+XmppPlugin::~XmppPlugin() { deinit(); }
 
 int XmppPlugin::metadataVersion() const { return MetadataVersion; }
 
@@ -45,12 +39,22 @@ PluginMetadata XmppPlugin::metadata()
 
 bool XmppPlugin::init(Main *qtnote)
 {
+    deinit();
     qtnote_ = qtnote;
     storage = NoteStorage::Ptr(new XmppStorage(this));
     qtnote_->registerStorage(storage);
 
     // Keep an unconfigured remote storage enabled so its settings remain reachable.
     return true;
+}
+
+void XmppPlugin::deinit()
+{
+    if (qtnote_) {
+        qtnote_->unregisterStorage(storage);
+        storage.clear();
+        qtnote_ = nullptr;
+    }
 }
 
 } // namespace QtNote

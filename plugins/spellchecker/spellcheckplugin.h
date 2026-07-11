@@ -73,6 +73,7 @@ public:
 
     // RegularPluginInterface
     bool init(Main *qtnote);
+    void deinit();
 
     // PluginOptionsTooltipInterface
     QString tooltip() const;
@@ -99,6 +100,7 @@ private slots:
     void settingsAccepted();
 
 private:
+    Main                 *qtnote_;
     PluginHostInterface  *host;
     SpellEngineInterface *sei;
 };

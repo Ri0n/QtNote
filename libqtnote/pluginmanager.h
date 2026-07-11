@@ -63,7 +63,7 @@ public:
 
     template <class T> T *castInterface(const PluginData::Ptr &pd) const
     {
-        if (pd->loadStatus && pd->loadStatus < LS_Errors) {
+        if (pd->loadPolicy != LP_Disabled && pd->loadStatus && pd->loadStatus < LS_Errors) {
             return qobject_cast<T *>(pd->instance);
         }
         return 0;
@@ -75,7 +75,7 @@ public:
     bool       isLoaded(const QString &pluginId) const
     {
         auto ls = plugins[pluginId]->loadStatus;
-        return ls && ls < LS_Errors;
+        return plugins[pluginId]->loadPolicy != LP_Disabled && ls && ls < LS_Errors;
     }
     void                  setLoadPolicy(const QString &pluginId, LoadPolicy lp);
     int                   pluginsCount() const { return plugins.size(); }
@@ -111,6 +111,8 @@ private:
                           QLibrary::LoadHints loadHints = QLibrary::LoadHints());
     void       updateMetadata();
     bool       ensureLoaded(PluginData::Ptr pd);
+    bool       initRegularPlugin(const PluginData::Ptr &pd);
+    void       deinitRegularPlugin(const PluginData::Ptr &pd);
     QString    iconsCacheDir() const;
 };
 

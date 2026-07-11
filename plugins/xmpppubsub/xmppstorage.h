@@ -52,6 +52,8 @@ private:
     bool       configIsValid(const XmppConfig &config, QString *error) const;
     Note       fromRemote(const XmppRemoteNote &remote);
     void       reportError(const QString &error, bool invalidate = false);
+    void       enterErrorState(const QString &error, bool invalidate = false);
+    void       clearErrorState();
     void       applyConfig(const XmppConfig &config);
 
     XmppConfig           config_;
@@ -60,6 +62,8 @@ private:
     QHash<QString, Note> cache_;
     bool                 cacheValid_ { false };
     bool                 accessible_ { false };
+    bool                 errorState_ { false };
+    QString              errorStateMessage_;
 };
 
 } // namespace QtNote

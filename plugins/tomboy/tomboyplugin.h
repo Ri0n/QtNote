@@ -46,6 +46,7 @@ public:
     void                   setHost(PluginHostInterface *host);
     virtual PluginMetadata metadata();
     bool                   init(Main *qtnote);
+    void                   deinit();
 };
 
 } // namespace QtNote

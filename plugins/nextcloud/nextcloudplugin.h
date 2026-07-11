@@ -23,6 +23,7 @@ public:
     void           setHost(PluginHostInterface *host) override;
     PluginMetadata metadata() override;
     bool           init(Main *qtnote) override;
+    void           deinit() override;
 
 private:
     Main                *qtnote_ { nullptr };

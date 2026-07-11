@@ -37,13 +37,7 @@ static NoteStorage::Ptr    storage;
 //------------------------------------------------------------
 TomboyPlugin::TomboyPlugin(QObject *parent) : QObject(parent), qtnote(0) { }
 
-TomboyPlugin::~TomboyPlugin()
-{
-    if (qtnote) {
-        qtnote->unregisterStorage(storage);
-        storage.clear();
-    }
-}
+TomboyPlugin::~TomboyPlugin() { deinit(); }
 
 int TomboyPlugin::metadataVersion() const { return MetadataVersion; }
 
@@ -66,10 +60,20 @@ PluginMetadata TomboyPlugin::metadata()
 
 bool TomboyPlugin::init(Main *qtnote)
 {
+    deinit();
     this->qtnote = qtnote;
     storage      = NoteStorage::Ptr(new TomboyStorage(this));
     qtnote->registerStorage(storage);
     return storage->isAccessible();
+}
+
+void TomboyPlugin::deinit()
+{
+    if (qtnote) {
+        qtnote->unregisterStorage(storage);
+        storage.clear();
+        qtnote = nullptr;
+    }
 }
 
 } // namespace QtNote

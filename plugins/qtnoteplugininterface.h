@@ -35,6 +35,7 @@ public:
 class RegularPluginInterface {
 public:
     virtual bool init(Main *qtnote) = 0;
+    virtual void deinit() { }
 };
 
 class PluginOptionsTooltipInterface {

@@ -140,9 +140,9 @@ private slots:
 //------------------------------------------------------------
 // SpellCheckPlugin
 //------------------------------------------------------------
-SpellCheckPlugin::SpellCheckPlugin(QObject *parent) : QObject(parent), sei(0) { }
+SpellCheckPlugin::SpellCheckPlugin(QObject *parent) : QObject(parent), qtnote_(0), host(0), sei(0) { }
 
-SpellCheckPlugin::~SpellCheckPlugin() { delete sei; }
+SpellCheckPlugin::~SpellCheckPlugin() { deinit(); }
 
 int SpellCheckPlugin::metadataVersion() const { return MetadataVersion; }
 
@@ -165,6 +165,8 @@ void SpellCheckPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 
 bool SpellCheckPlugin::init(Main *qtnote)
 {
+    deinit();
+    qtnote_    = qtnote;
     sei        = new HunspellEngine(host);
     auto langs = userLanguagePreferences();
     if (langs.empty()) {
@@ -192,8 +194,28 @@ bool SpellCheckPlugin::init(Main *qtnote)
     return true;
 }
 
+void SpellCheckPlugin::deinit()
+{
+    if (qtnote_) {
+        disconnect(qtnote_, &Main::noteWidgetCreated, this, &SpellCheckPlugin::noteWidgetCreated);
+        qtnote_ = nullptr;
+    }
+    if (sei) {
+        disconnect(sei, nullptr, this, nullptr);
+        delete sei;
+        sei = nullptr;
+    }
+    hlExt.reset();
+    if (host) {
+        host->rehighlight();
+    }
+}
+
 QString SpellCheckPlugin::tooltip() const
 {
+    if (!sei) {
+        return tr("Spell checker is disabled.");
+    }
     QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
     QStringList                           dictsHtml;
     foreach (auto &d, dicts) {
@@ -230,6 +252,9 @@ QDialog *SpellCheckPlugin::optionsDialog()
 
 void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu)
 {
+    if (!sei) {
+        return;
+    }
     auto last_click_ = event->pos();
     if (!te->textCursor().selection().isEmpty()) {
         return;
@@ -266,10 +291,18 @@ QList<QLocale> SpellCheckPlugin::systemLanguagePreferences() const
     return ret;
 }
 
-void SpellCheckPlugin::removeDictionary(const QLocale &locale) { sei->removeDictionary(locale); }
+void SpellCheckPlugin::removeDictionary(const QLocale &locale)
+{
+    if (sei) {
+        sei->removeDictionary(locale);
+    }
+}
 
 QList<SpellCheckPlugin::Dict> SpellCheckPlugin::dictionaries() const
 {
+    if (!sei) {
+        return {};
+    }
     auto systemPrefs = systemLanguagePreferences();
     auto userPrefs   = userLanguagePreferences();
     auto downloaded  = sei->supportedLanguages();
@@ -306,6 +339,9 @@ QList<SpellCheckPlugin::Dict> SpellCheckPlugin::dictionaries() const
 
 DictionaryDownloader *SpellCheckPlugin::download(const QLocale &locale)
 {
+    if (!sei) {
+        return nullptr;
+    }
     auto downloader = sei->download(locale);
     connect(downloader, &DictionaryDownloader::finished, this, [locale, downloader]() {
         QSettings s;
@@ -354,6 +390,9 @@ QList<QLocale> SpellCheckPlugin::userLanguagePreferences() const
 
 void SpellCheckPlugin::settingsAccepted()
 {
+    if (!sei) {
+        return;
+    }
     auto      dlg = (SettingsDlg *)sender();
     auto      ret = dlg->preferredList();
     QSettings s;
@@ -376,6 +415,9 @@ void SpellCheckPlugin::settingsAccepted()
 
 void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
 {
+    if (!sei || !hlExt) {
+        return;
+    }
     host->addHighlightExtension(w, hlExt, int(NoteHighlighter::SpellCheck));
     host->noteTextWidget(w)->addContextMenuHandler(this);
 }
