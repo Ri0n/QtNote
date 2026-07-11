@@ -640,9 +640,13 @@ void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
         return;
     }
 
-    const auto previous               = cache_.value(remote.id);
-    const auto previousRevision       = previous.backendValue(QStringLiteral("revision")).toString();
-    const auto previousParentRevision = previous.backendValue(QStringLiteral("parentRevision")).toString();
+    const auto previous = cache_.value(remote.id);
+    QString    previousRevision;
+    QString    previousParentRevision;
+    if (!previous.isNull()) {
+        previousRevision       = previous.backendValue(QStringLiteral("revision")).toString();
+        previousParentRevision = previous.backendValue(QStringLiteral("parentRevision")).toString();
+    }
 
     if (!previous.isNull() && previousRevision == remote.revision) {
         return;

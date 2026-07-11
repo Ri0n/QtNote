@@ -246,12 +246,12 @@ XmppStatusResult XmppWorker::verifyPrivateStorageSupport()
         return { false, false, false, QStringLiteral("QXmpp discovery manager is unavailable") };
     }
 
-    QString waitError;
+    QString    waitError;
+    const auto pepService = QXmppUtils::jidToBareJid(config_.jid);
 #if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
-    auto result = awaitTask(discovery_->info(QXmppUtils::jidToDomain(config_.jid)), config_.timeoutMs, &waitError);
+    auto result = awaitTask(discovery_->info(pepService), config_.timeoutMs, &waitError);
 #else
-    auto result
-        = awaitTask(discovery_->requestDiscoInfo(QXmppUtils::jidToDomain(config_.jid)), config_.timeoutMs, &waitError);
+    auto result = awaitTask(discovery_->requestDiscoInfo(pepService), config_.timeoutMs, &waitError);
 #endif
     if (!result) {
         return { false, false, false, waitError };
@@ -259,7 +259,7 @@ XmppStatusResult XmppWorker::verifyPrivateStorageSupport()
 
     if (const auto *error = std::get_if<QXmppError>(&*result)) {
         return { false, false, false,
-                 QStringLiteral("Could not discover the account PEP service: %1").arg(errorText(*error)) };
+                 QStringLiteral("Could not discover the PEP service at %1: %2").arg(pepService, errorText(*error)) };
     }
 
     const auto &info           = std::get<0>(*result);

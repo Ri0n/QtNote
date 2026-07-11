@@ -89,25 +89,25 @@ void Note::setLastChangeUTC(const QDateTime &lastChange) { d->lastChange_ = last
 
 void Note::setBackendValue(const QString &key, const QVariant &value) { d->setBackendValue(key, value); }
 
-NoteStorage *Note::storage() const { return d->storage_; }
+NoteStorage *Note::storage() const { return d ? d->storage_ : nullptr; }
 
-QString Note::storageId() const { return d->storageId(); }
+QString Note::storageId() const { return d ? d->storageId() : QString(); }
 
-QString Note::id() const { return d->id_; }
+QString Note::id() const { return d ? d->id_ : QString(); }
 
-QString Note::text() const { return d->text_; }
+QString Note::text() const { return d ? d->text_ : QString(); }
 
-QString Note::title() const { return d->title_; }
+QString Note::title() const { return d ? d->title_ : QString(); }
 
-QStringList Note::tags() const { return d->tags(); }
+QStringList Note::tags() const { return d ? d->tags() : QStringList(); }
 
 NoteData *Note::data() const { return d.data(); }
 
-Note::Format Note::format() const { return d->format_; }
+Note::Format Note::format() const { return d ? d->format_ : PlainText; }
 
-QDateTime Note::lastChangeUTC() const { return d->lastChange_; }
+QDateTime Note::lastChangeUTC() const { return d ? d->lastChange_ : QDateTime(); }
 
-QVariant Note::backendValue(const QString &key) const { return d->backendValue(key); }
+QVariant Note::backendValue(const QString &key) const { return d ? d->backendValue(key) : QVariant(); }
 
 bool Note::isUpdated() const
 {
