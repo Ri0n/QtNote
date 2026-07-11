@@ -7,6 +7,7 @@ set(plugins_list
     spellchecker
     tomboy
     gnome
+    cinnamon
     gemini
     openaiwhisper
     nextcloud
