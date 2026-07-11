@@ -41,7 +41,7 @@ bool NextcloudPlugin::init(Main *qtnote)
 {
     deinit();
     qtnote_ = qtnote;
-    storage = NoteStorage::Ptr(new NextcloudStorage(this));
+    storage = NoteStorage::Ptr(new NextcloudStorage(nullptr));
     qtnote_->registerStorage(storage);
 
     // A remote storage must remain enabled while it is not configured,

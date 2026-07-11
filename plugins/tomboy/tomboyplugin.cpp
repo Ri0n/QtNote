@@ -62,7 +62,7 @@ bool TomboyPlugin::init(Main *qtnote)
 {
     deinit();
     this->qtnote = qtnote;
-    storage      = NoteStorage::Ptr(new TomboyStorage(this));
+    storage      = NoteStorage::Ptr(new TomboyStorage(nullptr));
     qtnote->registerStorage(storage);
     return storage->isAccessible();
 }

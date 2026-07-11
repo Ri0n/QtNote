@@ -41,7 +41,7 @@ bool XmppPlugin::init(Main *qtnote)
 {
     deinit();
     qtnote_ = qtnote;
-    storage = NoteStorage::Ptr(new XmppStorage(this));
+    storage = NoteStorage::Ptr(new XmppStorage(nullptr));
     qtnote_->registerStorage(storage);
 
     // Keep an unconfigured remote storage enabled so its settings remain reachable.
