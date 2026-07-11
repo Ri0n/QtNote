@@ -444,6 +444,12 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
     ui->noteEdit->blockSignals(false);
+
+    const QString firstLine = ui->noteEdit->document()->begin().text();
+    if (firstLine != _firstLine || firstLine.isEmpty()) {
+        _firstLine = firstLine;
+        emit firstLineChanged();
+    }
 }
 
 QString NoteWidget::text()

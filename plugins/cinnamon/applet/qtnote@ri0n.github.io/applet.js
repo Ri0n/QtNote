@@ -71,6 +71,7 @@ class QtNoteApplet extends Applet.IconApplet {
         this.menuManager.addMenu(this.menu);
 
         this._buildMenu();
+        this._buildContextMenu();
         this.menu.connect('open-state-changed', Lang.bind(this, function(menu, open) {
             if (!open)
                 return;
@@ -166,6 +167,7 @@ class QtNoteApplet extends Applet.IconApplet {
             overlay_scrollbars: true,
             style_class: 'qtnote-scroll-view',
         });
+        this._scrollView.set_clip_to_allocation(true);
         this._list = new St.BoxLayout({
             vertical: true,
             style_class: 'qtnote-notes-list',
@@ -192,6 +194,23 @@ class QtNoteApplet extends Applet.IconApplet {
             this.menu.close();
         }));
         this._actions.add_actor(button);
+    }
+
+    _buildContextMenu() {
+        this._addContextAction(_('New Note'), 'list-add-symbolic', 'createNote');
+        this._addContextAction(_('Note Manager'), 'view-list-symbolic', 'showNoteManager');
+        this._addContextAction(_('Configure QtNote...'), 'preferences-system-symbolic', 'showOptions');
+        this._addContextAction(_('About QtNote'), 'help-about-symbolic', 'showAbout');
+        this._applet_context_menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._addContextAction(_('Close QtNote'), 'application-exit-symbolic', 'quit');
+    }
+
+    _addContextAction(label, iconName, method) {
+        let item = new PopupMenu.PopupIconMenuItem(label, iconName, St.IconType.SYMBOLIC);
+        item.connect('activate', Lang.bind(this, function() {
+            this._call(method);
+        }));
+        this._applet_context_menu.addMenuItem(item);
     }
 
     _scheduleSearchFocus() {
@@ -353,12 +372,12 @@ class QtNoteApplet extends Applet.IconApplet {
         let symbol = event.get_key_symbol();
         if (symbol === Clutter.KEY_Down || symbol === Clutter.KEY_KP_Down) {
             if (this._noteRows.length > 0)
-                this._noteRows[0].grab_key_focus();
+                this._focusNote(this._visibleNoteIndex(false));
             return true;
         }
         if (symbol === Clutter.KEY_Up || symbol === Clutter.KEY_KP_Up) {
             if (this._noteRows.length > 0)
-                this._noteRows[this._noteRows.length - 1].grab_key_focus();
+                this._focusNote(this._visibleNoteIndex(true));
             return true;
         }
         if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
@@ -373,12 +392,12 @@ class QtNoteApplet extends Applet.IconApplet {
         let symbol = event.get_key_symbol();
         if (symbol === Clutter.KEY_Down || symbol === Clutter.KEY_KP_Down) {
             if (index + 1 < this._noteRows.length)
-                this._noteRows[index + 1].grab_key_focus();
+                this._focusNote(index + 1);
             return true;
         }
         if (symbol === Clutter.KEY_Up || symbol === Clutter.KEY_KP_Up) {
             if (index > 0) {
-                this._noteRows[index - 1].grab_key_focus();
+                this._focusNote(index - 1);
             } else {
                 this._searchEntry.clutter_text.grab_key_focus();
             }
@@ -389,6 +408,49 @@ class QtNoteApplet extends Applet.IconApplet {
             return true;
         }
         return false;
+    }
+
+    _visibleNoteIndex(fromEnd) {
+        let adjustment = this._scrollView.get_vscroll_bar().get_adjustment();
+        let top = adjustment.get_value();
+        let viewportBox = this._scrollView.get_allocation_box();
+        let bottom = top + viewportBox.y2 - viewportBox.y1;
+
+        if (fromEnd) {
+            for (let i = this._noteRows.length - 1; i >= 0; --i) {
+                if (this._noteRows[i].get_allocation_box().y1 < bottom)
+                    return i;
+            }
+            return this._noteRows.length - 1;
+        }
+
+        for (let i = 0; i < this._noteRows.length; ++i) {
+            if (this._noteRows[i].get_allocation_box().y2 > top)
+                return i;
+        }
+        return 0;
+    }
+
+    _focusNote(index) {
+        let row = this._noteRows[index];
+        if (!row)
+            return;
+
+        row.grab_key_focus();
+        let adjustment = this._scrollView.get_vscroll_bar().get_adjustment();
+        let viewportBox = this._scrollView.get_allocation_box();
+        let viewportHeight = viewportBox.y2 - viewportBox.y1;
+        let rowBox = row.get_allocation_box();
+        let currentValue = adjustment.get_value();
+        let newValue = currentValue;
+
+        if (rowBox.y1 < currentValue)
+            newValue = rowBox.y1;
+        else if (rowBox.y2 > currentValue + viewportHeight)
+            newValue = rowBox.y2 - viewportHeight;
+
+        if (newValue !== currentValue)
+            adjustment.set_value(newValue);
     }
 
     _activateNote(index) {
