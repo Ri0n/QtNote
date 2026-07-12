@@ -51,6 +51,10 @@ namespace {
 
     QString sanitizedXmppLog(QString xml)
     {
+        if (xml.contains(QStringLiteral("<bundle")) || xml.contains(QStringLiteral("<prekeys"))
+            || xml.contains(QRegularExpression(QStringLiteral("<pk\\s")))) {
+            return QStringLiteral("[OMEMO bundle redacted]");
+        }
         static const QRegularExpression sensitiveElement(
             QStringLiteral("(<(?:auth|response|encrypted)\\b[^>]*>).*?(</(?:auth|response|encrypted)>)"),
             QRegularExpression::DotMatchesEverythingOption | QRegularExpression::CaseInsensitiveOption);
@@ -541,18 +545,27 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             return {};
         }
     }
-    if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
-                       config_.timeoutMs, &waitError)) {
-        if (error)
-            *error = waitError;
-        return {};
-    }
     auto devices
         = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs, &waitError);
     if (!devices) {
         if (error)
             *error = waitError;
         return {};
+    }
+    if (devices->isEmpty()) {
+        if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
+                           config_.timeoutMs, &waitError)) {
+            if (error)
+                *error = waitError;
+            return {};
+        }
+        devices = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs,
+                            &waitError);
+        if (!devices) {
+            if (error)
+                *error = waitError;
+            return {};
+        }
     }
     QList<XmppDeviceInfo> result;
     for (const auto &device : *devices)
@@ -605,7 +618,7 @@ void XmppWorker::sendKeySyncMessage(const QString &to, const QJsonObject &payloa
 {
     QXmppMessage message;
     message.setTo(to);
-    message.setType(QXmppMessage::Headline);
+    message.setType(QXmppMessage::Chat);
     message.setBody(QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Compact)));
     client_->sendSensitive(std::move(message)).then(client_, [this](QXmpp::SendResult result) {
         if (const auto *error = std::get_if<QXmppError>(&result))
