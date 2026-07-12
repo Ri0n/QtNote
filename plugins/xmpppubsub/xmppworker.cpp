@@ -531,8 +531,10 @@ QStringList XmppWorker::onlineQtNoteResources(QString *error)
             failures.append(QStringLiteral("%1: %2").arg(fullJid, errorText(*requestError)));
             continue;
         }
-        if (std::get<0>(*info).features().contains(XmppKeySyncExtension::feature))
-            result.append(resource);
+        const auto &disco = std::get<0>(*info);
+        if (!disco.features().contains(XmppKeySyncExtension::feature))
+            continue;
+        result.append(resource);
     }
     if (error && !failures.isEmpty())
         *error = failures.join(QLatin1Char('\n'));
@@ -685,19 +687,9 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
         }
     }
     const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
-    QString    discoveryError;
-    const auto onlineResources = onlineQtNoteResources(&discoveryError);
-    if (onlineResources.isEmpty()) {
-        if (error) {
-            *error = discoveryError.isEmpty()
-                ? QStringLiteral("No other online QtNote device was found for this XMPP account")
-                : discoveryError;
-        }
-        return {};
-    }
-    auto list = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
+    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
                               bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
-                          config_.timeoutMs, &waitError);
+                                   config_.timeoutMs, &waitError);
     if (!list || std::holds_alternative<QXmppError>(*list)) {
         if (error)
             *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
@@ -707,8 +699,6 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
     QList<XmppDeviceInfo> result;
     int                   missingFingerprints = 0;
     for (const auto &listed : std::get<XmppOmemoDeviceListItem>(*list).devices()) {
-        if (!onlineResources.contains(listed.label))
-            continue;
         auto bundle = awaitTask(
             pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
             config_.timeoutMs, &waitError);
@@ -717,13 +707,15 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             keyId = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
         if (!keyId.isEmpty() && keyId == ownKey)
             continue;
+        const auto deviceName = listed.label.isEmpty() ? QStringLiteral("OMEMO device %1").arg(listed.id)
+                                                       : QStringLiteral("%1 (OMEMO %2)").arg(listed.label, listed.id);
         if (keyId.isEmpty()) {
             ++missingFingerprints;
-            result.append({ listed.label, {}, int(QXmpp::TrustLevel::Undecided) });
+            result.append({ deviceName, {}, int(QXmpp::TrustLevel::Undecided) });
             continue;
         }
         auto trust = awaitTask(omemoManager_->trustLevel(bareJid, keyId), config_.timeoutMs, &waitError);
-        result.append({ listed.label, keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
+        result.append({ deviceName, keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
     }
     if (error && missingFingerprints > 0) {
         *error = QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints);

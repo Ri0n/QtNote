@@ -50,9 +50,8 @@ signals:
     void keySyncTrustRequested(const QString &requestId, const QByteArray &keyId);
 
 private:
-    void resetClient();
-    void createClient();
-
+    void             resetClient();
+    void             createClient();
     XmppStatusResult ensureReady();
     XmppStatusResult ensureOmemo();
     QStringList      onlineQtNoteResources(QString *error = nullptr);
