@@ -28,8 +28,8 @@ private:
     QString                      pathFor(const QUuid &id, DraftRecord::State state) const;
     QString                      findPath(const QUuid &id, DraftRecord::State *state = nullptr) const;
     DraftStoreError              ensureDirectories() const;
-    DraftStoreResult<QByteArray> encrypt(const QByteArray &plainText) const;
-    DraftStoreResult<QByteArray> decrypt(const QByteArray &envelope) const;
+    DraftStoreResult<QByteArray> encrypt(const QUuid &id, const QByteArray &plainText) const;
+    DraftStoreResult<QByteArray> decrypt(const QUuid &id, const QByteArray &envelope) const;
 };
 
 } // namespace QtNote

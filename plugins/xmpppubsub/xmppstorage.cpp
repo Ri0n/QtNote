@@ -1,9 +1,12 @@
 #include "xmppstorage.h"
 
 #include "notedata.h"
+#include "securekeystore.h"
+#include "utils.h"
 #include "xmppsettingswidget.h"
 #include "xmppworker.h"
 
+#include <QCryptographicHash>
 #include <QMetaObject>
 #include <QPointer>
 #include <QSettings>
@@ -16,6 +19,10 @@
 namespace QtNote {
 
 namespace {
+    QString storageKeyName(const QString &jid)
+    {
+        return QStringLiteral("xmpp-storage-master-key-v1:%1").arg(jid.trimmed().section(QLatin1Char('/'), 0, 0));
+    }
 
     template <typename Result, typename Function> Result invokeWorker(XmppWorker *worker, Function &&function)
     {
@@ -62,6 +69,35 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
             enterErrorState(error, true);
         }
     });
+    connect(worker_, &XmppWorker::storageKeyReceived, this, [this](const QByteArray &key) {
+        const auto jid = readConfig().jid;
+        if (jid.isEmpty())
+            return;
+        auto existing = SecureKeyStore::read(storageKeyName(jid));
+        if (existing && existing.value != key) {
+            const auto message = tr("A trusted device sent a different storage key; the existing key was not replaced");
+            emit       encryptionKeyChanged(SecureEnvelope::keyId(existing.value), message);
+            reportError(message);
+            return;
+        }
+        if (auto error = SecureKeyStore::write(storageKeyName(jid), key)) {
+            emit encryptionKeyChanged({}, error.message);
+            reportError(error.message);
+            return;
+        }
+        config_ = readConfig();
+        clearErrorState();
+        emit       encryptionKeyChanged(SecureEnvelope::keyId(key), tr("Storage key received from a trusted device"));
+        auto      *job                  = initAsync(this);
+        const auto finishInitialization = [this, job]() {
+            if (job->state() == StorageJob::Succeeded)
+                emit invalidated();
+            job->deleteLater();
+        };
+        connect(job, &StorageJob::finished, this, finishInitialization);
+        if (job->isFinished())
+            finishInitialization();
+    });
 
     workerThread_.start();
 }
@@ -96,9 +132,20 @@ XmppConfig XmppStorage::readConfig() const
     const QString defaultResource = QStringLiteral("QtNote-") + config.originId.left(8);
     config.resource = settings.value(QStringLiteral("storage.xmpppubsub.resource"), defaultResource).toString();
     config.nodeName
-        = settings.value(QStringLiteral("storage.xmpppubsub.node"), QStringLiteral("urn:xmpp:qtnote:notes:0"))
-              .toString();
+        = settings.value(QStringLiteral("storage.xmpppubsub.node"), QStringLiteral("urn:xmpp:qtnote:notes")).toString();
     config.timeoutMs = settings.value(QStringLiteral("storage.xmpppubsub.timeoutMs"), 15000).toInt();
+    if (!config.jid.isEmpty()) {
+        const auto key = SecureKeyStore::read(storageKeyName(config.jid));
+        if (key)
+            config.masterKey = key.value;
+        const auto omemoKey
+            = SecureKeyStore::loadOrCreate(QStringLiteral("xmpp-omemo-state-key-v1:%1").arg(config.jid));
+        if (omemoKey)
+            config.omemoStateKey = omemoKey.value;
+        const auto accountHash = QCryptographicHash::hash(config.jid.toUtf8(), QCryptographicHash::Sha256).toHex();
+        config.omemoStatePath  = Utils::qtnoteDataDir() + QStringLiteral("/xmpp-omemo-")
+            + QString::fromLatin1(accountHash.left(16)) + QStringLiteral(".state");
+    }
     return config;
 }
 
@@ -128,6 +175,16 @@ bool XmppStorage::configIsValid(const XmppConfig &config, QString *error) const
         if (error) {
             *error = tr("Enter a PubSub node name.");
         }
+        return false;
+    }
+    if (config.masterKey.size() != SecureEnvelope::MasterKeySize) {
+        if (error)
+            *error = tr("Create or import the XMPP storage encryption key.");
+        return false;
+    }
+    if (config.omemoStateKey.size() != SecureEnvelope::MasterKeySize || config.omemoStatePath.isEmpty()) {
+        if (error)
+            *error = tr("The local OMEMO state cannot be protected by the system keychain.");
         return false;
     }
     return true;
@@ -233,6 +290,7 @@ void XmppStorage::applyRemote(Note &note, const XmppRemoteNote &remote)
     note.setTitle(remote.title);
     note.setFormat(Note::Markdown);
     note.setLastChangeUTC(remote.modified);
+    note.setTags(remote.tags);
     note.setBackendValue(QStringLiteral("revision"), remote.revision);
     note.setBackendValue(QStringLiteral("parentRevision"), remote.parentRevision);
     note.setBackendValue(QStringLiteral("originId"), remote.originId);
@@ -253,6 +311,7 @@ XmppRemoteNote XmppStorage::toRemote(const Note &note) const
     remote.content        = note.text();
     remote.modified       = note.lastChangeUTC();
     remote.format         = QStringLiteral("markdown");
+    remote.tags           = note.tags();
     remote.contentPresent = note.isLoaded();
     return remote;
 }
@@ -774,15 +833,115 @@ void XmppStorage::applyConfig(const XmppConfig &config)
     cache_.clear();
     cacheValid_ = false;
     accessible_ = false;
-    config_     = config;
+    config_     = readConfig();
     init();
     emit invalidated();
 }
 
 QWidget *XmppStorage::settingsWidget()
 {
-    auto *widget = new XmppSettingsWidget(readConfig());
+    const auto current = readConfig();
+    auto      *widget  = new XmppSettingsWidget(current);
+    widget->setKeyState(SecureEnvelope::keyId(current.masterKey));
+    connect(this, &XmppStorage::encryptionKeyChanged, widget, &XmppSettingsWidget::setKeyState);
     connect(widget, &XmppSettingsWidget::apply, this, [this, widget]() { applyConfig(widget->config()); });
+    connect(widget, &XmppSettingsWidget::createKeyRequested, this, [this, widget](const QString &jid) {
+        if (jid.isEmpty()) {
+            widget->setKeyState({}, tr("Enter the XMPP JID first"));
+            return;
+        }
+        auto existing = SecureKeyStore::read(storageKeyName(jid));
+        if (existing) {
+            widget->setKeyState(SecureEnvelope::keyId(existing.value), tr("A key already exists"));
+            return;
+        }
+        const auto key   = SecureEnvelope::generateMasterKey();
+        const auto error = SecureKeyStore::write(storageKeyName(jid), key);
+        if (error) {
+            widget->setKeyState({}, error.message);
+            return;
+        }
+        widget->setKeyState(SecureEnvelope::keyId(key));
+        clearErrorState();
+    });
+    connect(widget, &XmppSettingsWidget::importKeyRequested, this,
+            [this, widget](const QString &jid, const QString &encoded) {
+                if (jid.isEmpty()) {
+                    widget->setKeyState({}, tr("Enter the XMPP JID first"));
+                    return;
+                }
+                auto imported = SecureEnvelope::decodeRecoveryKey(encoded);
+                if (!imported) {
+                    widget->setKeyState({}, imported.error.message);
+                    return;
+                }
+                auto existing = SecureKeyStore::read(storageKeyName(jid));
+                if (existing && existing.value != imported.value) {
+                    widget->setKeyState(SecureEnvelope::keyId(existing.value),
+                                        tr("A different key already exists; it was not replaced"));
+                    return;
+                }
+                const auto error = SecureKeyStore::write(storageKeyName(jid), imported.value);
+                if (error) {
+                    widget->setKeyState({}, error.message);
+                    return;
+                }
+                widget->setKeyState(SecureEnvelope::keyId(imported.value));
+                clearErrorState();
+            });
+    connect(widget, &XmppSettingsWidget::exportKeyRequested, this, [widget](const QString &jid) {
+        auto key = SecureKeyStore::read(storageKeyName(jid));
+        if (!key) {
+            widget->setKeyState({}, key.error.message);
+            return;
+        }
+        widget->setRecoveryKey(SecureEnvelope::encodeRecoveryKey(key.value));
+        widget->setKeyState(SecureEnvelope::keyId(key.value));
+    });
+    connect(widget, &XmppSettingsWidget::omemoSyncRequested, this, [this, widget](const QString &jid) {
+        auto config = readConfig();
+        config.jid  = jid;
+        QPointer<XmppSettingsWidget> guard(widget);
+        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
+            worker_->setConfig(config);
+            const auto result = worker_->requestStorageKey();
+            QMetaObject::invokeMethod(this, [guard, result]() {
+                if (!guard)
+                    return;
+                guard->setKeyState(
+                    {}, result.ok ? XmppSettingsWidget::tr("Storage-key request sent via OMEMO") : result.error);
+            });
+        });
+    });
+    connect(widget, &XmppSettingsWidget::omemoDevicesRequested, this, [this, widget](const QString &jid) {
+        auto config = readConfig();
+        config.jid  = jid;
+        QPointer<XmppSettingsWidget> guard(widget);
+        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
+            worker_->setConfig(config);
+            QString    error;
+            const auto devices = worker_->ownOmemoDevices(&error);
+            QMetaObject::invokeMethod(this, [guard, devices, error]() {
+                if (guard)
+                    guard->setOmemoDevices(devices, error);
+            });
+        });
+    });
+    connect(widget, &XmppSettingsWidget::trustOmemoDeviceRequested, this,
+            [this, widget](const QString &jid, const QByteArray &keyId) {
+                auto config = readConfig();
+                config.jid  = jid;
+                QPointer<XmppSettingsWidget> guard(widget);
+                QMetaObject::invokeMethod(worker_, [this, guard, config, keyId]() {
+                    worker_->setConfig(config);
+                    const auto result = worker_->trustOwnOmemoDevice(keyId);
+                    QMetaObject::invokeMethod(this, [guard, result]() {
+                        if (guard)
+                            guard->setKeyState(
+                                {}, result.ok ? XmppSettingsWidget::tr("OMEMO device trusted") : result.error);
+                    });
+                });
+            });
     return widget;
 }
 
@@ -799,7 +958,9 @@ QString XmppStorage::tooltip()
     if (config_.jid.isEmpty()) {
         return tr("XMPP private notes is not configured.");
     }
-    return tr("Account: %1\nPEP node: %2\nEncryption: server-private, not E2E").arg(config_.jid, config_.nodeName);
+    return tr("Account: %1\nPEP nodes: %2\nEncryption: end-to-end, key %3")
+        .arg(config_.jid, config_.nodeName,
+             QString::fromLatin1(SecureEnvelope::keyId(config_.masterKey).left(8).toHex()));
 }
 
 QString XmppStorage::storageId = QStringLiteral("xmpp-pubsub");

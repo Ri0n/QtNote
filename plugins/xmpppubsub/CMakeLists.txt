@@ -11,6 +11,10 @@ add_qtnote_plugin(
         qtnotepubsubitem.h
         xmpppepextension.cpp
         xmpppepextension.h
+        xmppnotecodec.cpp
+        xmppnotecodec.h
+        xmppomemostorage.cpp
+        xmppomemostorage.h
         xmppworker.cpp
         xmppworker.h
         xmppsettingswidget.cpp
@@ -23,6 +27,7 @@ add_qtnote_plugin(
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network Xml REQUIRED)
 find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
+find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
 
 target_link_libraries(
     xmpppubsub
@@ -33,6 +38,7 @@ target_link_libraries(
     Qt${QT_VERSION_MAJOR}::Network
     Qt${QT_VERSION_MAJOR}::Xml
     QXmpp::QXmpp
+    QXmpp::Omemo
 )
 
 install_qtnote_plugin(xmpppubsub)

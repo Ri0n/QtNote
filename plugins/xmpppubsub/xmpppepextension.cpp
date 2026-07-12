@@ -47,7 +47,7 @@ bool XmppPepExtension::handlePubSubEvent(const QDomElement &element, const QStri
     case QXmppPubSubEventBase::Items:
         for (const auto &item : event.items()) {
             if (item.isValid()) {
-                emit notePublished(item.note());
+                emit payloadPublished(item.payload());
             } else {
                 emit malformedItem(item.parseError());
             }

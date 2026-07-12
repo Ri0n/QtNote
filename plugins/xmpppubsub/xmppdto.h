@@ -5,32 +5,56 @@
 #include <QList>
 #include <QMetaType>
 #include <QString>
+#include <QStringList>
 
 #include <optional>
 
 namespace QtNote {
 
 struct XmppConfig {
-    QString jid;
-    QString password;
-    QString host;
-    int     port { 0 };
-    QString resource { QStringLiteral("QtNote") };
-    QString nodeName { QStringLiteral("urn:xmpp:qtnote:notes:0") };
-    QString originId;
-    int     timeoutMs { 15000 };
+    QString    jid;
+    QString    password;
+    QString    host;
+    int        port { 0 };
+    QString    resource { QStringLiteral("QtNote") };
+    QString    nodeName { QStringLiteral("urn:xmpp:qtnote:notes:0") };
+    QString    originId;
+    int        timeoutMs { 15000 };
+    QByteArray masterKey;
+    QByteArray omemoStateKey;
+    QString    omemoStatePath;
+
+    QString indexNodeName() const { return nodeName + QStringLiteral(":index:1"); }
+    QString contentNodeName() const { return nodeName + QStringLiteral(":content:1"); }
 };
 
 struct XmppRemoteNote {
-    QString   id;
-    QString   revision;
-    QString   parentRevision;
-    QString   originId;
-    QString   title;
-    QString   content;
-    QDateTime modified;
-    QString   format { QStringLiteral("markdown") };
-    bool      contentPresent { true };
+    QString     id;
+    QString     revision;
+    QString     parentRevision;
+    QString     originId;
+    QString     title;
+    QString     content;
+    QDateTime   modified;
+    QString     format { QStringLiteral("markdown") };
+    QStringList tags;
+    bool        contentPresent { true };
+};
+
+struct XmppEncryptedPayload {
+    enum Kind { Index, Content };
+
+    QString    id;
+    Kind       kind { Index };
+    quint32    schema { 1 };
+    QByteArray keyId;
+    QByteArray envelope;
+};
+
+struct XmppDeviceInfo {
+    QString    label;
+    QByteArray keyId;
+    int        trustLevel { 0 };
 };
 
 struct XmppStatusResult {
@@ -53,5 +77,6 @@ struct XmppNoteResult : XmppStatusResult {
 } // namespace QtNote
 
 Q_DECLARE_METATYPE(QtNote::XmppRemoteNote)
+Q_DECLARE_METATYPE(QtNote::XmppEncryptedPayload)
 
 #endif // XMPPPUBSUBDTO_H

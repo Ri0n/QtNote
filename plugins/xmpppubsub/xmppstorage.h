@@ -45,6 +45,9 @@ public:
 
     static QString storageId;
 
+signals:
+    void encryptionKeyChanged(const QByteArray &keyId, const QString &message);
+
 private slots:
     void onRemoteNotePublished(const QtNote::XmppRemoteNote &remote);
     void onRemoteNoteRetracted(const QString &id);

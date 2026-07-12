@@ -12,22 +12,22 @@ public:
     static const QString payloadNamespace;
 
     QtNotePubSubItem() = default;
-    explicit QtNotePubSubItem(const XmppRemoteNote &note);
+    explicit QtNotePubSubItem(const XmppEncryptedPayload &payload);
 
     static bool isItem(const QDomElement &element);
 
-    const XmppRemoteNote &note() const { return note_; }
-    bool                  isValid() const { return valid_; }
-    const QString        &parseError() const { return parseError_; }
+    const XmppEncryptedPayload &payload() const { return payload_; }
+    bool                        isValid() const { return valid_; }
+    const QString              &parseError() const { return parseError_; }
 
 protected:
     void parsePayload(const QDomElement &payloadElement) override;
     void serializePayload(QXmlStreamWriter *writer) const override;
 
 private:
-    XmppRemoteNote note_;
-    bool           valid_ { false };
-    QString        parseError_;
+    XmppEncryptedPayload payload_;
+    bool                 valid_ { false };
+    QString              parseError_;
 };
 
 } // namespace QtNote

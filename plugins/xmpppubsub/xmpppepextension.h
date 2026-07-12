@@ -21,7 +21,7 @@ public:
     bool handlePubSubEvent(const QDomElement &element, const QString &pubSubService, const QString &nodeName) override;
 
 signals:
-    void notePublished(const QtNote::XmppRemoteNote &note);
+    void payloadPublished(const QtNote::XmppEncryptedPayload &payload);
     void noteRetracted(const QString &id);
     void nodeInvalidated();
     void malformedItem(const QString &error);

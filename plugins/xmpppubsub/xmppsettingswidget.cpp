@@ -1,8 +1,11 @@
 #include "xmppsettingswidget.h"
 
+#include <QComboBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -11,7 +14,8 @@ namespace QtNote {
 XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent) :
     QWidget(parent), originId_(config.originId), jid_(new QLineEdit(this)), password_(new QLineEdit(this)),
     host_(new QLineEdit(this)), port_(new QSpinBox(this)), resource_(new QLineEdit(this)),
-    nodeName_(new QLineEdit(this)), timeoutSeconds_(new QSpinBox(this))
+    nodeName_(new QLineEdit(this)), timeoutSeconds_(new QSpinBox(this)), keyState_(new QLabel(this)),
+    recoveryKey_(new QLineEdit(this)), omemoDevices_(new QComboBox(this))
 {
     jid_->setText(config.jid);
     jid_->setPlaceholderText(QStringLiteral("user@example.org"));
@@ -30,7 +34,7 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
     resource_->setPlaceholderText(QStringLiteral("QtNote-device"));
 
     nodeName_->setText(config.nodeName);
-    nodeName_->setPlaceholderText(QStringLiteral("urn:xmpp:qtnote:notes:0"));
+    nodeName_->setPlaceholderText(QStringLiteral("urn:xmpp:qtnote:notes"));
 
     timeoutSeconds_->setRange(2, 120);
     timeoutSeconds_->setSuffix(tr(" s"));
@@ -45,9 +49,46 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
     form->addRow(tr("PEP node:"), nodeName_);
     form->addRow(tr("Operation timeout:"), timeoutSeconds_);
 
-    auto *privacy = new QLabel(tr("The node is configured as persistent and allowlist-only. "
-                                  "This first version is private from other XMPP users, but the note payload is not "
-                                  "end-to-end encrypted and can be read by the XMPP server."),
+    recoveryKey_->setEchoMode(QLineEdit::Password);
+    recoveryKey_->setPlaceholderText(QStringLiteral("qtnote-key-v1:…"));
+    auto *createKey      = new QPushButton(tr("Create key"), this);
+    auto *importKey      = new QPushButton(tr("Import"), this);
+    auto *exportKey      = new QPushButton(tr("Export"), this);
+    auto *omemoSync      = new QPushButton(tr("Sync via OMEMO"), this);
+    auto *refreshDevices = new QPushButton(tr("Refresh devices"), this);
+    auto *trustDevice    = new QPushButton(tr("Trust selected device"), this);
+    auto *keyButtons     = new QHBoxLayout;
+    keyButtons->addWidget(createKey);
+    keyButtons->addWidget(importKey);
+    keyButtons->addWidget(exportKey);
+    keyButtons->addWidget(omemoSync);
+    form->addRow(tr("Storage key:"), keyState_);
+    form->addRow(tr("Recovery key:"), recoveryKey_);
+    form->addRow(QString(), keyButtons);
+    auto *deviceButtons = new QHBoxLayout;
+    deviceButtons->addWidget(refreshDevices);
+    deviceButtons->addWidget(trustDevice);
+    form->addRow(tr("OMEMO devices:"), omemoDevices_);
+    form->addRow(QString(), deviceButtons);
+
+    connect(createKey, &QPushButton::clicked, this,
+            [this]() { emit createKeyRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
+    connect(importKey, &QPushButton::clicked, this, [this]() {
+        emit importKeyRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0), recoveryKey_->text());
+    });
+    connect(exportKey, &QPushButton::clicked, this,
+            [this]() { emit exportKeyRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
+    connect(omemoSync, &QPushButton::clicked, this,
+            [this]() { emit omemoSyncRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
+    connect(refreshDevices, &QPushButton::clicked, this,
+            [this]() { emit omemoDevicesRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
+    connect(trustDevice, &QPushButton::clicked, this, [this]() {
+        emit trustOmemoDeviceRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0),
+                                       omemoDevices_->currentData().toByteArray());
+    });
+
+    auto *privacy = new QLabel(tr("Index metadata and note contents are end-to-end encrypted with independent "
+                                  "derived keys. The recovery key grants access to the complete XMPP storage."),
                                this);
     privacy->setWordWrap(true);
 
@@ -59,6 +100,34 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
     layout->addWidget(privacy);
     layout->addWidget(tls);
     layout->addStretch();
+}
+
+void XmppSettingsWidget::setKeyState(const QByteArray &keyId, const QString &message)
+{
+    keyState_->setText(!message.isEmpty()    ? message
+                           : keyId.isEmpty() ? tr("Not configured")
+                                             : QString::fromLatin1(keyId.left(8).toHex()));
+}
+
+void XmppSettingsWidget::setRecoveryKey(const QString &key)
+{
+    recoveryKey_->setText(key);
+    recoveryKey_->setEchoMode(QLineEdit::Normal);
+    recoveryKey_->selectAll();
+}
+
+void XmppSettingsWidget::setOmemoDevices(const QList<XmppDeviceInfo> &devices, const QString &message)
+{
+    omemoDevices_->clear();
+    for (const auto &device : devices) {
+        const auto label = device.label.isEmpty() ? tr("Unnamed device") : device.label;
+        omemoDevices_->addItem(QStringLiteral("%1 — %2 — trust %3")
+                                   .arg(label, QString::fromLatin1(device.keyId.left(8).toHex()))
+                                   .arg(device.trustLevel),
+                               device.keyId);
+    }
+    if (!message.isEmpty())
+        keyState_->setText(message);
 }
 
 XmppConfig XmppSettingsWidget::config() const

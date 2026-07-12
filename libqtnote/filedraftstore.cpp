@@ -1,8 +1,6 @@
 #include "filedraftstore.h"
+#include "secureenvelope.h"
 
-#include <QtCrypto>
-
-#include <QBuffer>
 #include <QDataStream>
 #include <QDir>
 #include <QFile>
@@ -11,18 +9,8 @@
 
 namespace QtNote {
 namespace {
-    constexpr quint32 EnvelopeMagic   = 0x514e4445; // QNDE
-    constexpr quint32 PayloadMagic    = 0x514e4450; // QNDP
-    constexpr quint16 EnvelopeVersion = 1;
-    constexpr quint16 PayloadVersion  = 1;
-    constexpr int     NonceSize       = 12;
-    constexpr int     TagSize         = 16;
-
-    QCA::Initializer &qcaInitializer()
-    {
-        static QCA::Initializer initializer;
-        return initializer;
-    }
+    constexpr quint32 PayloadMagic   = 0x514e4450; // QNDP
+    constexpr quint16 PayloadVersion = 1;
 
     DraftStoreError error(DraftStoreError::Code code, const QString &message) { return { code, message }; }
 
@@ -64,22 +52,11 @@ namespace {
 FileDraftStore::FileDraftStore(QString rootPath, QByteArray masterKey) :
     rootPath_(std::move(rootPath)), masterKey_(std::move(masterKey))
 {
-    qcaInitializer();
 }
 
-QByteArray FileDraftStore::generateMasterKey()
-{
-    qcaInitializer();
-    if (!QCA::haveSecureRandom())
-        return {};
-    return QCA::Random::randomArray(MasterKeySize).toByteArray();
-}
+QByteArray FileDraftStore::generateMasterKey() { return SecureEnvelope::generateMasterKey(); }
 
-bool FileDraftStore::cryptoAvailable()
-{
-    qcaInitializer();
-    return QCA::haveSecureRandom() && QCA::isSupported("aes256-gcm");
-}
+bool FileDraftStore::cryptoAvailable() { return SecureEnvelope::isAvailable(); }
 
 QString FileDraftStore::pathFor(const QUuid &id, DraftRecord::State) const
 {
@@ -107,46 +84,28 @@ DraftStoreError FileDraftStore::ensureDirectories() const
     return {};
 }
 
-DraftStoreResult<QByteArray> FileDraftStore::encrypt(const QByteArray &plainText) const
+DraftStoreResult<QByteArray> FileDraftStore::encrypt(const QUuid &id, const QByteArray &plainText) const
 {
     if (auto e = ensureDirectories())
         return { {}, e };
-    const auto  nonce = QCA::Random::randomArray(NonceSize).toByteArray();
-    QCA::Cipher cipher(QStringLiteral("aes256"), QCA::Cipher::GCM, QCA::Cipher::NoPadding, QCA::Encode,
-                       QCA::SymmetricKey(masterKey_), QCA::InitializationVector(nonce), QCA::AuthTag(TagSize));
-    const auto  cipherText = cipher.process(QCA::SecureArray(plainText)).toByteArray();
-    if (!cipher.ok() || cipher.tag().size() != TagSize)
-        return { {}, error(DraftStoreError::CryptoUnavailable, QStringLiteral("Draft encryption failed")) };
-
-    QByteArray  envelope;
-    QDataStream out(&envelope, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_5_10);
-    out << EnvelopeMagic << EnvelopeVersion << nonce << cipher.tag().toByteArray() << cipherText;
-    return { envelope, {} };
+    const AeadContext context { KeyDomain::LocalDraft, QStringLiteral("qtnote-local-drafts"),
+                                id.toString(QUuid::WithoutBraces), 1, QStringLiteral("draft") };
+    auto              result = SecureEnvelope::seal(plainText, masterKey_, context);
+    if (!result)
+        return { {}, error(DraftStoreError::CryptoUnavailable, result.error.message) };
+    return { result.value, {} };
 }
 
-DraftStoreResult<QByteArray> FileDraftStore::decrypt(const QByteArray &envelope) const
+DraftStoreResult<QByteArray> FileDraftStore::decrypt(const QUuid &id, const QByteArray &envelope) const
 {
     if (masterKey_.size() != MasterKeySize)
         return { {}, error(DraftStoreError::Locked, QStringLiteral("Draft store master key is unavailable")) };
-    quint32     magic;
-    quint16     version;
-    QByteArray  nonce;
-    QByteArray  tag;
-    QByteArray  cipherText;
-    QDataStream in(envelope);
-    in.setVersion(QDataStream::Qt_5_10);
-    in >> magic >> version >> nonce >> tag >> cipherText;
-    if (in.status() != QDataStream::Ok || magic != EnvelopeMagic || version != EnvelopeVersion
-        || nonce.size() != NonceSize || tag.size() != TagSize) {
-        return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft envelope")) };
-    }
-    QCA::Cipher cipher(QStringLiteral("aes256"), QCA::Cipher::GCM, QCA::Cipher::NoPadding, QCA::Decode,
-                       QCA::SymmetricKey(masterKey_), QCA::InitializationVector(nonce), QCA::AuthTag(tag));
-    const auto  plainText = cipher.process(QCA::SecureArray(cipherText)).toByteArray();
-    if (!cipher.ok())
-        return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Draft authentication failed")) };
-    return { plainText, {} };
+    const AeadContext context { KeyDomain::LocalDraft, QStringLiteral("qtnote-local-drafts"),
+                                id.toString(QUuid::WithoutBraces), 1, QStringLiteral("draft") };
+    auto              result = SecureEnvelope::open(envelope, masterKey_, context);
+    if (!result)
+        return { {}, error(DraftStoreError::Corrupt, result.error.message) };
+    return { result.value, {} };
 }
 
 DraftStoreError FileDraftStore::write(const DraftRecord &source)
@@ -156,7 +115,7 @@ DraftStoreError FileDraftStore::write(const DraftRecord &source)
     auto record = source;
     if (!record.updatedAt.isValid())
         record.updatedAt = QDateTime::currentDateTimeUtc();
-    auto encrypted = encrypt(serialize(record));
+    auto encrypted = encrypt(record.id, serialize(record));
     if (!encrypted)
         return encrypted.error;
     QSaveFile file(pathFor(record.id, record.state));
@@ -177,7 +136,7 @@ DraftStoreResult<DraftRecord> FileDraftStore::load(const QUuid &id) const
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly))
         return { {}, error(DraftStoreError::Io, file.errorString()) };
-    auto plainText = decrypt(file.readAll());
+    auto plainText = decrypt(id, file.readAll());
     if (!plainText)
         return { {}, plainText.error };
     auto record = deserialize(plainText.value);
