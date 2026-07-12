@@ -23,6 +23,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define QTNOTE_H
 
 #include <QObject>
+#include <QUuid>
+#include <memory>
 
 #include "notestorage.h"
 #include "qtnote_export.h"
@@ -51,7 +53,7 @@ public:
     bool isOperable() const { return _inited; }
     void parseAppArguments(const QStringList &args);
 
-    NoteWidget       *noteWidget(const Note &note);
+    NoteWidget       *noteWidget(const Note &note, const QUuid &draftId = {});
     virtual void      activateWidget(QWidget *w) const; // virtual for plugins
     ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
     PluginManager    *pluginManager() const { return _pluginManager; }
@@ -62,8 +64,8 @@ public:
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
     void setNotificationImpl(NotificationInterface *notifier);
 
-    void registerStorage(NoteStorage::Ptr &storage);
-    void unregisterStorage(NoteStorage::Ptr &storage);
+    void registerStorage(std::unique_ptr<NoteStorage> storage);
+    void unregisterStorage(NoteStorage *storage);
 
 private:
     NoteDialog *makeNoteDialog(const QString &storageId, const QString &noteId = {});

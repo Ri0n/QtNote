@@ -25,6 +25,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDateTime>
 #include <QIcon>
 #include <QObject> // just for compatibility with qt<4.6
+#include <QPointer>
 
 #include "note.h"
 #include "qtnote_export.h"
@@ -38,7 +39,7 @@ class NoteFinder;
 class QTNOTE_EXPORT NoteStorage : public QObject {
     Q_OBJECT
 public:
-    typedef QSharedPointer<NoteStorage> Ptr;
+    using Ptr = QPointer<NoteStorage>;
 
     using QObject::QObject;
     virtual bool          init()               = 0;
@@ -71,6 +72,10 @@ public:
     virtual NoteLoadJob    *loadNoteAsync(const QString &id, QObject *owner = nullptr);
     virtual NoteSaveJob    *saveNoteAsync(const Note &note, QObject *owner = nullptr);
     virtual NoteRemoveJob  *removeNoteAsync(const QString &id, QObject *owner = nullptr);
+
+    // Stops accepting work and synchronously drains implementation-owned workers.
+    // Called before the storage object or its plugin code can be unloaded.
+    virtual void shutdown() { }
 
 signals:
     void noteAdded(const Note &);

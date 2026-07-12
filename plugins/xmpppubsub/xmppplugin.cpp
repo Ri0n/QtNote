@@ -40,9 +40,10 @@ PluginMetadata XmppPlugin::metadata()
 bool XmppPlugin::init(Main *qtnote)
 {
     deinit();
-    qtnote_ = qtnote;
-    storage = NoteStorage::Ptr(new XmppStorage(nullptr));
-    qtnote_->registerStorage(storage);
+    qtnote_           = qtnote;
+    auto ownedStorage = std::make_unique<XmppStorage>(nullptr);
+    storage           = ownedStorage.get();
+    qtnote_->registerStorage(std::move(ownedStorage));
 
     // Keep an unconfigured remote storage enabled so its settings remain reachable.
     return true;
@@ -51,7 +52,7 @@ bool XmppPlugin::init(Main *qtnote)
 void XmppPlugin::deinit()
 {
     if (qtnote_) {
-        qtnote_->unregisterStorage(storage);
+        qtnote_->unregisterStorage(storage.data());
         storage.clear();
         qtnote_ = nullptr;
     }

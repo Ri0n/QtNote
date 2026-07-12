@@ -24,6 +24,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+NoteData::NoteData(NoteStorage *storage) : storage_(storage) { }
+
 QString NoteData::storageId() const { return storage_ ? storage_->systemName() : QString(); }
 
 QStringList NoteData::tags() const

@@ -1,0 +1,67 @@
+#ifndef DRAFTSTORE_H
+#define DRAFTSTORE_H
+
+#include "note.h"
+#include "qtnote_export.h"
+
+#include <QDateTime>
+#include <QString>
+#include <QStringList>
+#include <QUuid>
+
+namespace QtNote {
+
+struct QTNOTE_EXPORT DraftRecord {
+    // Persistent publication state. A draft remains Editing while its note is
+    // open; only an explicit close may make it eligible for publication.
+    enum State {
+        Editing,     // Locally autosaved, still being edited; never publish.
+        Ready,       // Finished by the user and assigned to a storage.
+        Publishing,  // A save operation is currently in progress.
+        Retry,       // Publication failed temporarily and will be retried.
+        NeedsRouting // Finished, but no longer assigned to a storage; publish as a new note after routing.
+    };
+
+    QUuid        id;
+    State        state { Editing };
+    QString      storageId;
+    QString      remoteNoteId;
+    QString      title;
+    QString      body;
+    Note::Format format { Note::PlainText };
+    QStringList  tags;
+    QDateTime    updatedAt;
+    QString      lastError;
+    QDateTime    retryAt;
+};
+
+struct QTNOTE_EXPORT DraftStoreError {
+    enum Code { None, InvalidArgument, NotFound, Locked, CryptoUnavailable, Corrupt, Io };
+
+    Code    code { None };
+    QString message;
+
+    explicit operator bool() const { return code != None; }
+};
+
+template <typename T> struct DraftStoreResult {
+    T               value;
+    DraftStoreError error;
+
+    explicit operator bool() const { return !error; }
+};
+
+class QTNOTE_EXPORT DraftStore {
+public:
+    virtual ~DraftStore() = default;
+
+    virtual DraftStoreError                      write(const DraftRecord &record)                      = 0;
+    virtual DraftStoreResult<DraftRecord>        load(const QUuid &id) const                           = 0;
+    virtual DraftStoreResult<QList<DraftRecord>> records() const                                       = 0;
+    virtual DraftStoreError                      transition(const QUuid &id, DraftRecord::State state) = 0;
+    virtual DraftStoreError                      remove(const QUuid &id)                               = 0;
+};
+
+} // namespace QtNote
+
+#endif // DRAFTSTORE_H

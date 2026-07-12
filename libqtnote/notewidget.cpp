@@ -20,6 +20,7 @@
 #include <QUuid>
 
 #include "defaults.h"
+#include "draftmanager.h"
 #include "iconutils.h"
 #include "note.h"
 #include "notehighlighter.h"
@@ -139,7 +140,9 @@ public:
     }
 };
 
-NoteWidget::NoteWidget(const Note &note) : ui(new Ui::NoteWidget), _note(note)
+NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
+    ui(new Ui::NoteWidget), _note(note), _draftId(draftId.isNull() ? QUuid::createUuid() : draftId),
+    _draftPersisted(!draftId.isNull())
 {
     ui->setupUi(this);
 
@@ -318,47 +321,47 @@ void NoteWidget::onReplaceTriggered()
 
 void NoteWidget::save()
 {
-    if (!_changed || saveJob) {
+    if (!_changed) {
         return;
     }
-    _changed = false;
 
     auto txt    = text();
     auto format = isMarkdown() ? Note::Markdown : Note::PlainText;
-    auto oldId  = _note.id();
 
     auto const &[title, body] = Utils::splitTitle(txt);
-
-    auto changed = (title != _note.title()) || (body != _note.text());
     _note.setTitle(title);
     _note.setText(body, format);
-    if (!oldId.isEmpty() && !changed) {
-        _lastChangeElapsed.restart();
+    const auto result = DraftManager::instance()->saveEditing(_draftId, _note, title, body, format);
+    if (result) {
+        qWarning() << "Failed to checkpoint draft:" << result.message;
         return;
     }
+    _changed        = false;
+    _draftPersisted = true;
+    _lastChangeElapsed.restart();
+}
 
-    auto *storage = _note.storage();
-    if (!storage) {
-        _changed = true;
-        return;
+bool NoteWidget::prepareToClose()
+{
+    if (_changed)
+        save();
+    if (_changed)
+        return false;
+    if (!_draftPersisted)
+        return true;
+    const auto result = DraftManager::instance()->markReady(_draftId);
+    if (result) {
+        qWarning() << "Failed to queue draft for publishing:" << result.message;
+        return false;
     }
-    saveJob = storage->saveNoteAsync(_note, this);
-    connect(saveJob, &StorageJob::finished, this, [this, job = saveJob, oldId]() {
-        if (!job)
-            return;
-        if (job->state() == StorageJob::Succeeded) {
-            _note = job->result();
-            if (oldId != _note.id())
-                emit noteIdChanged(oldId, _note.id());
-        } else if (job->state() != StorageJob::Cancelled) {
-            _changed = true;
-            qWarning() << "Failed to save note:" << job->error().message;
-        }
-        saveJob.clear();
-        _lastChangeElapsed.restart();
-        if (_changed && !text().isEmpty())
-            save();
-    });
+    return true;
+}
+
+void NoteWidget::discardDraft()
+{
+    if (_draftPersisted)
+        DraftManager::instance()->discard(_draftId);
+    _draftPersisted = false;
 }
 
 void NoteWidget::autosave()

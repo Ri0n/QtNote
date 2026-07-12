@@ -17,6 +17,7 @@
 #include <QStandardPaths>
 #include <QStyle>
 #include <QSystemTrayIcon>
+#include <QTimer>
 #include <QTranslator>
 #ifdef Q_OS_MAC
 #include <ApplicationServices/ApplicationServices.h>
@@ -24,6 +25,7 @@
 
 #include "aboutdlg.h"
 #include "deintegrationinterface.h"
+#include "draftmanager.h"
 #include "globalshortcutsinterface.h"
 #include "notedialog.h"
 #include "notemanager.h"
@@ -123,6 +125,16 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
 
     initResources();
 
+    QString draftStoreError;
+    if (!DraftManager::instance()->initialize(&draftStoreError)) {
+        QMessageBox::critical(nullptr, tr("Initialization Error"),
+                              tr("The encrypted draft store could not be opened. QtNote will not start because "
+                                 "editing without crash-safe storage could lose sensitive data.\n\n%1")
+                                  .arg(draftStoreError));
+        return;
+    }
+    connect(DraftManager::instance(), &DraftManager::publicationAbandoned, this, &Main::notifyError);
+
     _pluginManager = new PluginManager(this);
     _pluginManager->loadPlugins();
     QString pluginError;
@@ -146,8 +158,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         return;
     }
 
-    auto ptfStorage = NoteStorage::Ptr(new PTFStorage());
-    registerStorage(ptfStorage);
+    registerStorage(std::make_unique<PTFStorage>());
 
     _inited = NoteManager::instance()->loadAll();
     if (!NoteManager::instance()->loadAll()) {
@@ -184,6 +195,30 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     QAction *actNoteFromSel = new QAction(_shortcutsManager->friendlyName(ShortcutsManager::SKNoteFromSelection), this);
     connect(actNoteFromSel, SIGNAL(triggered(bool)), SLOT(createNewNoteFromSelection()));
     _shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, actNoteFromSel);
+
+    connect(qApp, &QCoreApplication::aboutToQuit, this, []() {
+        // Covers SIGTERM/session shutdown paths which bypass Main::exitQtNote().
+        // NoteDialog::done() performs the final synchronous checkpoint and marks it Ready.
+        for (auto *widget : QApplication::topLevelWidgets()) {
+            if (widget->objectName() == QLatin1String("noteDlg"))
+                widget->close();
+        }
+    });
+
+    for (const auto &draft : DraftManager::instance()->recoverableDrafts()) {
+        auto storage = NoteManager::instance()->storage(draft.storageId);
+        if (!storage)
+            continue;
+        auto note = draft.remoteNoteId.isEmpty() ? storage->createNote() : storage->note(draft.remoteNoteId);
+        if (note.isNull())
+            continue;
+        note.setTitle(draft.title);
+        note.setText(draft.body, draft.format);
+        auto *widget = noteWidget(note, draft.id);
+        auto *dialog = new NoteDialog(widget);
+        dialog->setWindowIcon(storage->noteIcon());
+        dialog->show();
+    }
 }
 
 Main::~Main() { }
@@ -221,7 +256,22 @@ void Main::parseAppArguments(const QStringList &args)
     }
 }
 
-void Main::exitQtNote() { QApplication::quit(); }
+void Main::exitQtNote()
+{
+    for (auto *widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == QLatin1String("noteDlg"))
+            widget->close();
+    }
+    for (auto *widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == QLatin1String("noteDlg") && widget->isVisible())
+            return; // A draft checkpoint failed; keep the application alive.
+    }
+
+    auto *drafts = DraftManager::instance();
+    connect(drafts, &DraftManager::publishingIdle, qApp, &QApplication::quit);
+    QTimer::singleShot(5000, qApp, &QApplication::quit);
+    drafts->publishPending();
+}
 
 void Main::appMessageReceived(const QString &message)
 {
@@ -253,9 +303,9 @@ void Main::showOptions()
     activateWidget(d);
 }
 
-NoteWidget *Main::noteWidget(const Note &note)
+NoteWidget *Main::noteWidget(const Note &note, const QUuid &draftId)
 {
-    NoteWidget *w = new NoteWidget(note);
+    NoteWidget *w = new NoteWidget(note, draftId);
     w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider());
 
     emit noteWidgetCreated(w);
@@ -341,18 +391,18 @@ void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs) { d->globalShort
 
 void Main::setNotificationImpl(NotificationInterface *notifier) { d->notifier = notifier; }
 
-void Main::registerStorage(NoteStorage::Ptr &storage)
+void Main::registerStorage(std::unique_ptr<NoteStorage> storage)
 {
-    NoteManager::instance()->registerStorage(storage);
-    connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(note_removed(Note)));
-    connect(storage.data(), SIGNAL(storageErorr(QString)), SLOT(notifyError(QString)));
+    auto *storagePtr = storage.get();
+    connect(storagePtr, SIGNAL(noteRemoved(Note)), SLOT(note_removed(Note)));
+    connect(storagePtr, SIGNAL(storageErorr(QString)), SLOT(notifyError(QString)));
+    NoteManager::instance()->registerStorage(std::move(storage));
 }
 
-void Main::unregisterStorage(NoteStorage::Ptr &storage)
+void Main::unregisterStorage(NoteStorage *storage)
 {
-    if (storage) {
+    if (storage)
         NoteManager::instance()->unregisterStorage(storage);
-    }
 }
 
 void Main::createNewNote()

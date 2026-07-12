@@ -18,6 +18,7 @@ class NextcloudStorage final : public NoteStorage {
 public:
     explicit NextcloudStorage(QObject *parent = nullptr);
     ~NextcloudStorage() override;
+    void shutdown() override;
 
     bool            init() override;
     StorageInitJob *initAsync(QObject *owner = nullptr) override;

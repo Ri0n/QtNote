@@ -18,6 +18,7 @@ class XmppStorage final : public NoteStorage {
 public:
     explicit XmppStorage(QObject *parent = nullptr);
     ~XmppStorage() override;
+    void shutdown() override;
 
     bool            init() override;
     StorageInitJob *initAsync(QObject *owner = nullptr) override;

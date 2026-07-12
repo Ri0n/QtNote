@@ -65,7 +65,9 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
     workerThread_.start();
 }
 
-XmppStorage::~XmppStorage()
+XmppStorage::~XmppStorage() { shutdown(); }
+
+void XmppStorage::shutdown()
 {
     if (workerThread_.isRunning()) {
         QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);

@@ -58,8 +58,12 @@ NextcloudStorage::NextcloudStorage(QObject *parent) : NoteStorage(parent)
     workerThread_.start();
 }
 
-NextcloudStorage::~NextcloudStorage()
+NextcloudStorage::~NextcloudStorage() { shutdown(); }
+
+void NextcloudStorage::shutdown()
 {
+    if (!workerThread_.isRunning())
+        return;
     workerThread_.quit();
     workerThread_.wait();
 }

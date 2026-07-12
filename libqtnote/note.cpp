@@ -89,7 +89,7 @@ void Note::setLastChangeUTC(const QDateTime &lastChange) { d->lastChange_ = last
 
 void Note::setBackendValue(const QString &key, const QVariant &value) { d->setBackendValue(key, value); }
 
-NoteStorage *Note::storage() const { return d ? d->storage_ : nullptr; }
+NoteStorage *Note::storage() const { return d ? d->storage_.data() : nullptr; }
 
 QString Note::storageId() const { return d ? d->storageId() : QString(); }
 

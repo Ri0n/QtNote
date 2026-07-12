@@ -24,6 +24,8 @@ set(APP_NAME qtnote)
 message(STATUS "Version: ${APP_NAME}-${QTNOTE_VERSION}")
 project(${APP_NAME} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
+include(CTest)
+
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
 
 if("${QT_VERSION_MAJOR}" STREQUAL "")
@@ -91,6 +93,10 @@ add_subdirectory(libqtnote)
 add_subdirectory(src)
 add_subdirectory(plugins)
 add_subdirectory(translations)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 if(WIN32)
     add_subdirectory(wix)

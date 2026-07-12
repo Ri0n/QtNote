@@ -40,9 +40,10 @@ PluginMetadata NextcloudPlugin::metadata()
 bool NextcloudPlugin::init(Main *qtnote)
 {
     deinit();
-    qtnote_ = qtnote;
-    storage = NoteStorage::Ptr(new NextcloudStorage(nullptr));
-    qtnote_->registerStorage(storage);
+    qtnote_           = qtnote;
+    auto ownedStorage = std::make_unique<NextcloudStorage>(nullptr);
+    storage           = ownedStorage.get();
+    qtnote_->registerStorage(std::move(ownedStorage));
 
     // A remote storage must remain enabled while it is not configured,
     // otherwise the user cannot reach its settings widget.
@@ -52,7 +53,7 @@ bool NextcloudPlugin::init(Main *qtnote)
 void NextcloudPlugin::deinit()
 {
     if (qtnote_) {
-        qtnote_->unregisterStorage(storage);
+        qtnote_->unregisterStorage(storage.data());
         storage.clear();
         qtnote_ = nullptr;
     }

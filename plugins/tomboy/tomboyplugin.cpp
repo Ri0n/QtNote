@@ -61,16 +61,17 @@ PluginMetadata TomboyPlugin::metadata()
 bool TomboyPlugin::init(Main *qtnote)
 {
     deinit();
-    this->qtnote = qtnote;
-    storage      = NoteStorage::Ptr(new TomboyStorage(nullptr));
-    qtnote->registerStorage(storage);
-    return storage->isAccessible();
+    this->qtnote      = qtnote;
+    auto ownedStorage = std::make_unique<TomboyStorage>(nullptr);
+    storage           = ownedStorage.get();
+    qtnote->registerStorage(std::move(ownedStorage));
+    return storage && storage->isAccessible();
 }
 
 void TomboyPlugin::deinit()
 {
     if (qtnote) {
-        qtnote->unregisterStorage(storage);
+        qtnote->unregisterStorage(storage.data());
         storage.clear();
         qtnote = nullptr;
     }

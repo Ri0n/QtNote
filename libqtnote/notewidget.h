@@ -5,6 +5,7 @@
 #include <QIcon>
 #include <QPointer>
 #include <QTimer>
+#include <QUuid>
 #include <QWidget>
 
 #include "highlighterext.h"
@@ -34,7 +35,7 @@ public:
     enum Feature { RichText = 1 };
     Q_DECLARE_FLAGS(Features, Feature)
 
-    explicit NoteWidget(const Note &note = {});
+    explicit NoteWidget(const Note &note = {}, const QUuid &draftId = {});
     ~NoteWidget();
 
     void              setText(QString text);
@@ -56,6 +57,8 @@ public:
     void              setTrashRequested(bool state) { _trashRequested = state; }
     void              rehighlight();
     void              findText(const QString &text, bool focusFindBar = true);
+    bool              prepareToClose();
+    void              discardDraft();
 
 signals:
     void firstLineChanged();
@@ -115,12 +118,12 @@ private:
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;
     SpeechAudioRecorder                  *speechRecorder = nullptr;
     QPointer<SpeechRecognitionJob>        speechJob;
-    QPointer<NoteSaveJob>                 saveJob;
     QString                               localSpeechContextId;
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
     Note                                  _note;
+    QUuid                                 _draftId;
     QString                               _firstLine;
     QString                               _extFileName;
     QString                               _extSelecteFilter;
@@ -129,6 +132,7 @@ private:
     Features                              _features;
     bool                                  _trashRequested       = false;
     bool                                  _changed              = false;
+    bool                                  _draftPersisted       = false;
     bool                                  speechRecognitionBusy = false;
 };
 

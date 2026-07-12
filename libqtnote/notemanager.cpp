@@ -23,7 +23,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QApplication>
 #include <QSettings>
-#include <QSharedPointer>
 #include <QStringList>
 
 #include <list>
@@ -180,10 +179,14 @@ NoteManager::NoteManager(QObject *parent) : QObject(parent)
     _priorities = QSettings().value("storage.priority").toStringList();
 }
 
-void NoteManager::registerStorage(NoteStorage::Ptr storage)
+void NoteManager::registerStorage(std::unique_ptr<NoteStorage> ownedStorage)
 {
+    auto *storage = ownedStorage.get();
+    if (!storage)
+        return;
     _prioCache.clear();
     _storages.insert(storage->systemName(), storage);
+    _ownedStorages.insert_or_assign(storage->systemName(), std::move(ownedStorage));
     if (!_priorities.contains(storage->systemName())) {
         if (storage->systemName() == QLatin1String("ptf")) {
             _priorities.prepend(storage->systemName()); // highest priority for ptf if not set
@@ -192,15 +195,19 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
         }
     }
 
-    connect(storage.data(), SIGNAL(invalidated()), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteAdded(Note)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteModified(Note)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
-    connect(storage.data(), SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
+    connect(storage, SIGNAL(invalidated()), SLOT(storageChanged()));
+    connect(storage, SIGNAL(noteAdded(Note)), SLOT(storageChanged()));
+    connect(storage, SIGNAL(noteModified(Note)), SLOT(storageChanged()));
+    connect(storage, SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
+    connect(storage, SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
 
     emit  storageAdded(storage);
     auto *job = storage->initAsync(this);
     connect(job, &StorageJob::finished, this, [this, storage, job]() {
+        if (!storage) {
+            job->deleteLater();
+            return;
+        }
         if (job->state() == StorageJob::Succeeded)
             emit storageReady(storage);
         emit storageChanged(storage);
@@ -208,13 +215,18 @@ void NoteManager::registerStorage(NoteStorage::Ptr storage)
     });
 }
 
-void NoteManager::unregisterStorage(NoteStorage::Ptr storage)
+void NoteManager::unregisterStorage(NoteStorage *storage)
 {
-    emit storageAboutToBeRemoved(storage);
+    if (!storage)
+        return;
+    const auto storageId = storage->systemName();
+    emit       storageAboutToBeRemoved(storage);
     _prioCache.clear();
-    disconnect(storage.data());
-    _storages.remove(storage->systemName());
+    disconnect(storage);
+    _storages.remove(storageId);
     emit storageRemoved(storage);
+    storage->shutdown();
+    _ownedStorages.erase(storageId);
 }
 
 bool NoteManager::loadAll()

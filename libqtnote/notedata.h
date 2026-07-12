@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEDATA_H
 #define NOTEDATA_H
 
+#include <QPointer>
 #include <QSharedData>
 #include <QString>
 #include <QStringList>
@@ -37,7 +38,7 @@ class QTNOTE_EXPORT NoteData : public QSharedData {
 public:
     static constexpr int TitleLength = 256;
 
-    NoteData(NoteStorage *storage) : storage_(storage) { }
+    explicit NoteData(NoteStorage *storage);
     ~NoteData() = default;
 
     QString storageId() const;
@@ -69,15 +70,15 @@ protected:
 
     friend class Note;
     friend class NoteStorage;
-    NoteStorage *storage_ = nullptr;
-    bool         loaded_ { false };
-    Note::Format format_; // format of the text_ field
-    QString      id_;     // this can match with title sometimes
-    QString      title_;
-    QString      text_;
-    QStringList  tags_;
-    QDateTime    lastChange_;
-    QVariantMap  backendData_;
+    QPointer<NoteStorage> storage_;
+    bool                  loaded_ { false };
+    Note::Format          format_; // format of the text_ field
+    QString               id_;     // this can match with title sometimes
+    QString               title_;
+    QString               text_;
+    QStringList           tags_;
+    QDateTime             lastChange_;
+    QVariantMap           backendData_;
 };
 
 } // namespace QtNote

@@ -29,6 +29,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QObject>
 #include <QPointer>
 #include <QSet>
+#include <map>
+#include <memory>
 
 #include <list>
 
@@ -60,8 +62,8 @@ public:
     static NoteManager      *instance();
     static GlobalNoteFinder *search() { return new GlobalNoteFinder(instance()); }
 
-    void registerStorage(NoteStorage::Ptr storage);
-    void unregisterStorage(NoteStorage::Ptr storage);
+    void registerStorage(std::unique_ptr<NoteStorage> storage);
+    void unregisterStorage(NoteStorage *storage);
     bool loadAll();
 
     virtual QList<Note> noteList(int count = -1) const; // virtual for plugins
@@ -99,10 +101,11 @@ private slots:
 private:
     NoteManager(QObject *parent);
 
-    static NoteManager                 *_instance;
-    QStringList                         _priorities;
-    QMap<QString, NoteStorage::Ptr>     _storages;
-    mutable std::list<NoteStorage::Ptr> _prioCache;
+    static NoteManager                             *_instance;
+    QStringList                                     _priorities;
+    QMap<QString, NoteStorage::Ptr>                 _storages;
+    mutable std::list<NoteStorage::Ptr>             _prioCache;
+    std::map<QString, std::unique_ptr<NoteStorage>> _ownedStorages;
 };
 
 }

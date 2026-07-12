@@ -169,7 +169,7 @@ void NotesModel::refreshStorage(const NoteStorage::Ptr &storage)
 {
     auto *job = storage->refreshNotesAsync(0, this);
     connect(job, &StorageJob::finished, this, [this, storage, job]() {
-        if (job->state() != StorageJob::Succeeded)
+        if (!storage || job->state() != StorageJob::Succeeded)
             return;
         const auto parentIndex = storageIndex(storage->systemName());
         if (!parentIndex.isValid())

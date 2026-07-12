@@ -110,14 +110,15 @@ void NoteDialog::changeEvent(QEvent *e)
 void NoteDialog::trashRequested()
 {
     noteWidget->setTrashRequested(true); // in case when called outside
+    noteWidget->discardDraft();
     close();
 }
 
 void NoteDialog::done(int r)
 {
     noteWidget->disconnect(this);
-    if (!noteWidget->isTrashRequested()) { // do it first to update noteWidget::noteId
-        noteWidget->save();
+    if (!noteWidget->isTrashRequested() && !noteWidget->prepareToClose()) {
+        return;
     }
     if (!noteWidget->note().id().isEmpty()) {
         QSettings s;
