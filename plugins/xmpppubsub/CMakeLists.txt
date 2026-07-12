@@ -11,6 +11,10 @@ add_qtnote_plugin(
         qtnotepubsubitem.h
         xmpppepextension.cpp
         xmpppepextension.h
+        xmppkeysyncextension.cpp
+        xmppkeysyncextension.h
+        xmppkeyresolutiondialog.cpp
+        xmppkeyresolutiondialog.h
         xmppnotecodec.cpp
         xmppnotecodec.h
         xmppomemostorage.cpp

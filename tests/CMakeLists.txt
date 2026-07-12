@@ -16,6 +16,15 @@ target_include_directories(xmppnotecodec_test PRIVATE ../plugins/xmpppubsub)
 target_link_libraries(xmppnotecodec_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME xmppnotecodec_test COMMAND xmppnotecodec_test)
 
+find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
+add_executable(xmppkeysyncextension_test
+    xmppkeysyncextension_test.cpp
+    ../plugins/xmpppubsub/xmppkeysyncextension.cpp
+)
+target_include_directories(xmppkeysyncextension_test PRIVATE ../plugins/xmpppubsub)
+target_link_libraries(xmppkeysyncextension_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+add_test(NAME xmppkeysyncextension_test COMMAND xmppkeysyncextension_test)
+
 find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
 add_executable(xmppomemostorage_test
     xmppomemostorage_test.cpp

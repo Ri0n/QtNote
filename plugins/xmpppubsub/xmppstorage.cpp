@@ -3,6 +3,7 @@
 #include "notedata.h"
 #include "securekeystore.h"
 #include "utils.h"
+#include "xmppkeyresolutiondialog.h"
 #include "xmppsettingswidget.h"
 #include "xmppworker.h"
 
@@ -68,37 +69,6 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
     connect(worker_, &XmppWorker::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
     connect(worker_, &XmppWorker::connectionChanged, this, &XmppStorage::onConnectionChanged);
     connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) { reportError(error); });
-    connect(worker_, &XmppWorker::storageKeyReceived, this, [this](const QByteArray &key) {
-        const auto jid = readConfig().jid;
-        if (jid.isEmpty())
-            return;
-        auto existing = SecureKeyStore::read(storageKeyName(jid));
-        if (existing && existing.value != key) {
-            const auto  existingId = SecureEnvelope::keyId(existing.value);
-            const auto  receivedId = SecureEnvelope::keyId(key);
-            QMessageBox dialog(QMessageBox::Warning, tr("Different XMPP storage key received"),
-                               tr("A trusted own device sent a storage key that differs from the key configured on "
-                                  "this device."),
-                               QMessageBox::NoButton, QApplication::activeWindow());
-            dialog.setInformativeText(
-                tr("Current key: %1\nReceived key: %2\n\nReplacing the key makes notes encrypted with the "
-                   "current key unavailable unless it is restored later.")
-                    .arg(QString::fromLatin1(existingId.left(8).toHex()),
-                         QString::fromLatin1(receivedId.left(8).toHex())));
-            dialog.setDetailedText(
-                tr("Recovery key for the current key:\n%1").arg(SecureEnvelope::encodeRecoveryKey(existing.value)));
-            auto *keep    = dialog.addButton(tr("Keep current key"), QMessageBox::RejectRole);
-            auto *replace = dialog.addButton(tr("Replace with received key"), QMessageBox::DestructiveRole);
-            dialog.setDefaultButton(keep);
-            dialog.exec();
-            if (dialog.clickedButton() != replace) {
-                const auto message = tr("The current XMPP storage key was kept");
-                emit       encryptionKeyChanged(existingId, message);
-                return;
-            }
-        }
-        installReceivedStorageKey(jid, key);
-    });
     connect(
         worker_, &XmppWorker::keySyncTrustRequested, this, [this](const QString &requestId, const QByteArray &keyId) {
             QMessageBox dialog(QMessageBox::Question, tr("Trust an own QtNote device?"),
@@ -140,6 +110,64 @@ void XmppStorage::installReceivedStorageKey(const QString &jid, const QByteArray
     connect(job, &StorageJob::finished, this, finishInitialization);
     if (job->isFinished())
         finishInitialization();
+}
+
+void XmppStorage::resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings)
+{
+    if (jid.isEmpty() || keyResolutionInProgress_)
+        return;
+    keyResolutionInProgress_ = true;
+    auto config              = readConfig();
+    config.jid               = jid;
+    QPointer<XmppSettingsWidget> settingsGuard(settings);
+    QMetaObject::invokeMethod(worker_, [this, config, jid, settingsGuard]() {
+        worker_->setConfig(config);
+        const auto audit = worker_->auditStorageKeys();
+        QMetaObject::invokeMethod(this, [this, audit, jid, settingsGuard]() {
+            if (!audit.ok) {
+                keyResolutionInProgress_ = false;
+                if (settingsGuard)
+                    settingsGuard->setKeyState({}, audit.error);
+                reportError(audit.error);
+                return;
+            }
+            QWidget *parent
+                = settingsGuard ? static_cast<QWidget *>(settingsGuard.data()) : QApplication::activeWindow();
+            XmppKeyResolutionDialog dialog(audit, parent);
+            if (dialog.exec() != QDialog::Accepted) {
+                keyResolutionInProgress_ = false;
+                return;
+            }
+            const auto canonical = dialog.canonicalKey();
+            const auto keys      = dialog.availableKeys();
+            if (settingsGuard)
+                settingsGuard->setKeyState(SecureEnvelope::keyId(canonical),
+                                           tr("Republishing notes with the canonical key…"));
+            QMetaObject::invokeMethod(worker_, [this, jid, canonical, keys, settingsGuard]() {
+                const auto rekeyed = worker_->rekeyStorage(keys, canonical);
+                QMetaObject::invokeMethod(this, [this, jid, canonical, rekeyed, settingsGuard]() {
+                    keyResolutionInProgress_ = false;
+                    if (!rekeyed.ok) {
+                        if (settingsGuard)
+                            settingsGuard->setKeyState(SecureEnvelope::keyId(canonical), rekeyed.error);
+                        QMessageBox::warning(settingsGuard ? static_cast<QWidget *>(settingsGuard.data())
+                                                           : QApplication::activeWindow(),
+                                             tr("XMPP key recovery incomplete"),
+                                             tr("%1\n\nMigrated %2 of %3 notes. No local key was changed.")
+                                                 .arg(rekeyed.error)
+                                                 .arg(rekeyed.migrated)
+                                                 .arg(rekeyed.total));
+                        return;
+                    }
+                    installReceivedStorageKey(jid, canonical);
+                    if (settingsGuard)
+                        settingsGuard->setKeyState(
+                            SecureEnvelope::keyId(canonical),
+                            tr("Recovery complete: %1 notes use the canonical key").arg(rekeyed.migrated));
+                });
+            });
+        });
+    });
 }
 
 XmppStorage::~XmppStorage() { shutdown(); }
@@ -845,11 +873,14 @@ void XmppStorage::enterErrorState(const QString &error, bool invalidate)
     accessible_        = false;
     cacheValid_        = false;
 
-    if (workerThread_.isRunning()) {
+    const bool keyMismatch = error.contains(QStringLiteral("storage key mismatch"), Qt::CaseInsensitive);
+    if (workerThread_.isRunning() && !keyMismatch) {
         QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);
     }
 
     reportError(error, invalidate);
+    if (keyMismatch)
+        QTimer::singleShot(0, this, [this]() { resolveStorageKeys(readConfig().jid); });
 }
 
 void XmppStorage::clearErrorState()
@@ -940,21 +971,8 @@ QWidget *XmppStorage::settingsWidget()
         widget->setRecoveryKey(SecureEnvelope::encodeRecoveryKey(key.value));
         widget->setKeyState(SecureEnvelope::keyId(key.value));
     });
-    connect(widget, &XmppSettingsWidget::omemoSyncRequested, this, [this, widget](const QString &jid) {
-        auto config = readConfig();
-        config.jid  = jid;
-        QPointer<XmppSettingsWidget> guard(widget);
-        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
-            worker_->setConfig(config);
-            const auto result = worker_->requestStorageKey();
-            QMetaObject::invokeMethod(this, [guard, result]() {
-                if (!guard)
-                    return;
-                guard->setKeyState(
-                    {}, result.ok ? XmppSettingsWidget::tr("Storage-key request sent via OMEMO") : result.error);
-            });
-        });
-    });
+    connect(widget, &XmppSettingsWidget::omemoSyncRequested, this,
+            [this, widget](const QString &jid) { resolveStorageKeys(jid, widget); });
     connect(widget, &XmppSettingsWidget::omemoDevicesRequested, this, [this, widget](const QString &jid) {
         auto config = readConfig();
         config.jid  = jid;

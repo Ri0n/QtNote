@@ -12,6 +12,7 @@ private slots:
     void rejectsWrongNode();
     void reportsWrongStorageKey();
     void rejectsMismatchedRevision();
+    void rekeysMixedIndexAndContentKeys();
 };
 
 static XmppRemoteNote note()
@@ -77,6 +78,41 @@ void XmppNoteCodecTest::rejectsMismatchedRevision()
     QVERIFY(payload);
     source.revision = QStringLiteral("revision-2");
     QVERIFY(!XmppNoteCodec::decodeContent(payload.value, key, QStringLiteral("content"), source));
+}
+
+void XmppNoteCodecTest::rekeysMixedIndexAndContentKeys()
+{
+    const auto indexKey     = SecureEnvelope::generateMasterKey();
+    const auto contentKey   = SecureEnvelope::generateMasterKey();
+    const auto canonicalKey = SecureEnvelope::generateMasterKey();
+    const auto source       = note();
+    const auto indexNode    = QStringLiteral("index");
+    const auto contentNode  = QStringLiteral("content");
+    auto       oldIndex     = XmppNoteCodec::encodeIndex(source, indexKey, indexNode);
+    auto       oldContent   = XmppNoteCodec::encodeContent(source, contentKey, contentNode);
+    QVERIFY(oldIndex);
+    QVERIFY(oldContent);
+    QVERIFY(oldIndex.value.keyId != oldContent.value.keyId);
+
+    auto decodedIndex = XmppNoteCodec::decodeIndex(oldIndex.value, indexKey, indexNode);
+    QVERIFY(decodedIndex);
+    auto decodedContent = XmppNoteCodec::decodeContent(oldContent.value, contentKey, contentNode, decodedIndex.value);
+    QVERIFY(decodedContent);
+    decodedIndex.value.content        = decodedContent.value;
+    decodedIndex.value.contentPresent = true;
+
+    auto newContent = XmppNoteCodec::encodeContent(decodedIndex.value, canonicalKey, contentNode);
+    auto newIndex   = XmppNoteCodec::encodeIndex(decodedIndex.value, canonicalKey, indexNode);
+    QVERIFY(newContent);
+    QVERIFY(newIndex);
+    QCOMPARE(newContent.value.keyId, newIndex.value.keyId);
+    QCOMPARE(newIndex.value.keyId, SecureEnvelope::keyId(canonicalKey));
+    auto canonicalIndex = XmppNoteCodec::decodeIndex(newIndex.value, canonicalKey, indexNode);
+    QVERIFY(canonicalIndex);
+    auto canonicalContent
+        = XmppNoteCodec::decodeContent(newContent.value, canonicalKey, contentNode, canonicalIndex.value);
+    QVERIFY(canonicalContent);
+    QCOMPARE(canonicalContent.value, source.content);
 }
 
 QTEST_GUILESS_MAIN(XmppNoteCodecTest)

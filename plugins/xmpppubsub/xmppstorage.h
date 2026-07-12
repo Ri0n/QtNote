@@ -10,6 +10,7 @@
 namespace QtNote {
 
 class XmppWorker;
+class XmppSettingsWidget;
 
 class XmppStorage final : public NoteStorage {
     Q_OBJECT
@@ -65,6 +66,7 @@ private:
     void           clearErrorState();
     void           applyConfig(const XmppConfig &config);
     void           installReceivedStorageKey(const QString &jid, const QByteArray &key);
+    void           resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings = nullptr);
 
     XmppConfig           config_;
     QThread              workerThread_;
@@ -75,6 +77,7 @@ private:
     bool                 errorState_ { false };
     QString              errorStateMessage_;
     QString              lastReportedError_;
+    bool                 keyResolutionInProgress_ { false };
 };
 
 } // namespace QtNote

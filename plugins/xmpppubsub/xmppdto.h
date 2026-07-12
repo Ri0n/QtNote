@@ -2,6 +2,7 @@
 #define XMPPPUBSUBDTO_H
 
 #include <QDateTime>
+#include <QHash>
 #include <QList>
 #include <QMetaType>
 #include <QString>
@@ -57,6 +58,14 @@ struct XmppDeviceInfo {
     int        trustLevel { 0 };
 };
 
+struct XmppStorageKeyCandidate {
+    QString    resource;
+    QByteArray key;
+    QByteArray keyId;
+    int        indexItemCount { 0 };
+    bool       local { false };
+};
+
 struct XmppStatusResult {
     bool                          ok { false };
     bool                          conflict { false };
@@ -74,9 +83,21 @@ struct XmppNoteResult : XmppStatusResult {
     XmppRemoteNote note;
 };
 
+struct XmppKeyAuditResult : XmppStatusResult {
+    QList<XmppStorageKeyCandidate> candidates;
+    int                            totalIndexItems { 0 };
+};
+
+struct XmppRekeyResult : XmppStatusResult {
+    int         migrated { 0 };
+    int         total { 0 };
+    QStringList inaccessibleNoteIds;
+};
+
 } // namespace QtNote
 
 Q_DECLARE_METATYPE(QtNote::XmppRemoteNote)
 Q_DECLARE_METATYPE(QtNote::XmppEncryptedPayload)
+Q_DECLARE_METATYPE(QtNote::XmppStorageKeyCandidate)
 
 #endif // XMPPPUBSUBDTO_H

@@ -2,15 +2,15 @@ project(plugins)
 
 set(plugins_list
     baseintegration
-    kdeintegration
-    macosx
-    spellchecker
-    tomboy
-    gnome
     cinnamon
     gemini
-    openaiwhisper
+    gnome
+    kdeintegration
+    macosx
     nextcloud
+    openaiwhisper
+    spellchecker
+    tomboy
     xmpppubsub
 )
 

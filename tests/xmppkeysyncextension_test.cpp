@@ -1,0 +1,50 @@
+#include "xmppkeysyncextension.h"
+
+#include <QDomDocument>
+#include <QXmlStreamWriter>
+#include <QtTest>
+
+using namespace QtNote;
+
+class XmppKeySyncExtensionTest : public QObject {
+    Q_OBJECT
+
+private slots:
+    void advertisesProtocol();
+    void serializesResourceAddressedRequest();
+    void parsesMatchingResponseOnly();
+};
+
+void XmppKeySyncExtensionTest::advertisesProtocol()
+{
+    XmppKeySyncExtension extension;
+    QCOMPARE(extension.discoveryFeatures(), QStringList { XmppKeySyncExtension::feature });
+}
+
+void XmppKeySyncExtensionTest::serializesResourceAddressedRequest()
+{
+    XmppKeySyncExtension extension;
+    const auto iq = extension.makeRequest(QStringLiteral("me@example.org/QtNote-laptop"), QStringLiteral("request-1"));
+    QString    xml;
+    QXmlStreamWriter writer(&xml);
+    iq.toXml(&writer);
+    QVERIFY(xml.contains(QStringLiteral("to=\"me@example.org/QtNote-laptop\"")));
+    QVERIFY(xml.contains(QStringLiteral("type=\"set\"")));
+    QVERIFY(xml.contains(QStringLiteral("urn:xmpp:qtnote:key-sync:1")));
+    QVERIFY(xml.contains(QStringLiteral("request-1")));
+}
+
+void XmppKeySyncExtensionTest::parsesMatchingResponseOnly()
+{
+    QDomDocument document;
+    QVERIFY(document.setContent(
+        QStringLiteral("<iq type='result' id='request-1'><key-sync xmlns='urn:xmpp:qtnote:key-sync:1'>"
+                       "{&quot;type&quot;:&quot;response&quot;,&quot;requestId&quot;:&quot;request-1&quot;,"
+                       "&quot;recoveryKey&quot;:&quot;qtnote-key-v1:test&quot;}</key-sync></iq>")));
+    QCOMPARE(XmppKeySyncExtension::responseRecoveryKey(document.documentElement(), QStringLiteral("request-1")),
+             QStringLiteral("qtnote-key-v1:test"));
+    QVERIFY(XmppKeySyncExtension::responseRecoveryKey(document.documentElement(), QStringLiteral("other")).isEmpty());
+}
+
+QTEST_GUILESS_MAIN(XmppKeySyncExtensionTest)
+#include "xmppkeysyncextension_test.moc"
