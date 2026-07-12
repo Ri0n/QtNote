@@ -6,9 +6,12 @@
 #include "xmppsettingswidget.h"
 #include "xmppworker.h"
 
+#include <QApplication>
 #include <QCryptographicHash>
+#include <QMessageBox>
 #include <QMetaObject>
 #include <QPointer>
+#include <QPushButton>
 #include <QSettings>
 #include <QTimer>
 #include <QUuid>
@@ -75,31 +78,54 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
             return;
         auto existing = SecureKeyStore::read(storageKeyName(jid));
         if (existing && existing.value != key) {
-            const auto message = tr("A trusted device sent a different storage key; the existing key was not replaced");
-            emit       encryptionKeyChanged(SecureEnvelope::keyId(existing.value), message);
-            reportError(message);
-            return;
+            const auto  existingId = SecureEnvelope::keyId(existing.value);
+            const auto  receivedId = SecureEnvelope::keyId(key);
+            QMessageBox dialog(QMessageBox::Warning, tr("Different XMPP storage key received"),
+                               tr("A trusted own device sent a storage key that differs from the key configured on "
+                                  "this device."),
+                               QMessageBox::NoButton, QApplication::activeWindow());
+            dialog.setInformativeText(
+                tr("Current key: %1\nReceived key: %2\n\nReplacing the key makes notes encrypted with the "
+                   "current key unavailable unless it is restored later.")
+                    .arg(QString::fromLatin1(existingId.left(8).toHex()),
+                         QString::fromLatin1(receivedId.left(8).toHex())));
+            dialog.setDetailedText(
+                tr("Recovery key for the current key:\n%1").arg(SecureEnvelope::encodeRecoveryKey(existing.value)));
+            auto *keep    = dialog.addButton(tr("Keep current key"), QMessageBox::RejectRole);
+            auto *replace = dialog.addButton(tr("Replace with received key"), QMessageBox::DestructiveRole);
+            dialog.setDefaultButton(keep);
+            dialog.exec();
+            if (dialog.clickedButton() != replace) {
+                const auto message = tr("The current XMPP storage key was kept");
+                emit       encryptionKeyChanged(existingId, message);
+                return;
+            }
         }
-        if (auto error = SecureKeyStore::write(storageKeyName(jid), key)) {
-            emit encryptionKeyChanged({}, error.message);
-            reportError(error.message);
-            return;
-        }
-        config_ = readConfig();
-        clearErrorState();
-        emit       encryptionKeyChanged(SecureEnvelope::keyId(key), tr("Storage key received from a trusted device"));
-        auto      *job                  = initAsync(this);
-        const auto finishInitialization = [this, job]() {
-            if (job->state() == StorageJob::Succeeded)
-                emit invalidated();
-            job->deleteLater();
-        };
-        connect(job, &StorageJob::finished, this, finishInitialization);
-        if (job->isFinished())
-            finishInitialization();
+        installReceivedStorageKey(jid, key);
     });
 
     workerThread_.start();
+}
+
+void XmppStorage::installReceivedStorageKey(const QString &jid, const QByteArray &key)
+{
+    if (auto error = SecureKeyStore::write(storageKeyName(jid), key)) {
+        emit encryptionKeyChanged({}, error.message);
+        reportError(error.message);
+        return;
+    }
+    config_ = readConfig();
+    clearErrorState();
+    emit       encryptionKeyChanged(SecureEnvelope::keyId(key), tr("Storage key received from a trusted device"));
+    auto      *job                  = initAsync(this);
+    const auto finishInitialization = [this, job]() {
+        if (job->state() == StorageJob::Succeeded)
+            emit invalidated();
+        job->deleteLater();
+    };
+    connect(job, &StorageJob::finished, this, finishInitialization);
+    if (job->isFinished())
+        finishInitialization();
 }
 
 XmppStorage::~XmppStorage() { shutdown(); }

@@ -64,6 +64,7 @@ private:
     void           enterErrorState(const QString &error, bool invalidate = false);
     void           clearErrorState();
     void           applyConfig(const XmppConfig &config);
+    void           installReceivedStorageKey(const QString &jid, const QByteArray &key);
 
     XmppConfig           config_;
     QThread              workerThread_;
