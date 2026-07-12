@@ -67,11 +67,7 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
     connect(worker_, &XmppWorker::remoteNoteRetracted, this, &XmppStorage::onRemoteNoteRetracted);
     connect(worker_, &XmppWorker::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
     connect(worker_, &XmppWorker::connectionChanged, this, &XmppStorage::onConnectionChanged);
-    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) {
-        if (!errorState_) {
-            enterErrorState(error, true);
-        }
-    });
+    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) { reportError(error); });
     connect(worker_, &XmppWorker::storageKeyReceived, this, [this](const QByteArray &key) {
         const auto jid = readConfig().jid;
         if (jid.isEmpty())
@@ -970,6 +966,9 @@ QWidget *XmppStorage::settingsWidget()
                     });
                 });
             });
+    if (!current.jid.isEmpty()) {
+        QTimer::singleShot(0, widget, [widget, jid = current.jid]() { emit widget->omemoDevicesRequested(jid); });
+    }
     return widget;
 }
 

@@ -8,6 +8,7 @@
 class QLineEdit;
 class QLabel;
 class QComboBox;
+class QPushButton;
 class QSpinBox;
 
 namespace QtNote {
@@ -33,17 +34,19 @@ signals:
     void trustOmemoDeviceRequested(const QString &jid, const QByteArray &keyId);
 
 private:
-    QString    originId_;
-    QLineEdit *jid_;
-    QLineEdit *password_;
-    QLineEdit *host_;
-    QSpinBox  *port_;
-    QLineEdit *resource_;
-    QLineEdit *nodeName_;
-    QSpinBox  *timeoutSeconds_;
-    QLabel    *keyState_;
-    QLineEdit *recoveryKey_;
-    QComboBox *omemoDevices_;
+    QString           originId_;
+    QLineEdit        *jid_;
+    QLineEdit        *password_;
+    QLineEdit        *host_;
+    QSpinBox         *port_;
+    QLineEdit        *resource_;
+    QLineEdit        *nodeName_;
+    QSpinBox         *timeoutSeconds_;
+    QLabel           *keyState_;
+    QLineEdit        *recoveryKey_;
+    QComboBox        *omemoDevices_;
+    QPushButton      *trustDevice_;
+    QList<QByteArray> omemoDeviceKeys_;
 };
 
 } // namespace QtNote
