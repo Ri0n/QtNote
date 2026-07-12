@@ -54,6 +54,7 @@ namespace {
         }
         return {};
     }
+
 } // namespace
 
 bool SecureEnvelope::isAvailable()
@@ -149,6 +150,8 @@ CryptoResult<QByteArray> SecureEnvelope::open(const QByteArray &envelope, const 
 {
     if (masterKey.size() != MasterKeySize)
         return { {}, error(CryptoError::InvalidArgument, QStringLiteral("Invalid encryption key")) };
+    if (!isAvailable())
+        return { {}, error(CryptoError::Unavailable, QStringLiteral("AES-256-GCM is unavailable")) };
     quint32     magic;
     quint16     version;
     QByteArray  nonce;

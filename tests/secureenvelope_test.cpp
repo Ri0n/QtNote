@@ -15,6 +15,7 @@ private slots:
     void contextIsAuthenticated();
     void recoveryKeyRoundTrip();
     void rejectsRecoveryKeyTypo();
+    void opensLargeEnvelope();
 };
 
 void SecureEnvelopeTest::domainsProduceDifferentKeys()
@@ -81,6 +82,22 @@ void SecureEnvelopeTest::rejectsRecoveryKeyTypo()
     QVERIFY(!encoded.isEmpty());
     encoded[encoded.size() - 1] = encoded.back() == QLatin1Char('0') ? QLatin1Char('1') : QLatin1Char('0');
     QVERIFY(!SecureEnvelope::decodeRecoveryKey(encoded));
+}
+
+void SecureEnvelopeTest::opensLargeEnvelope()
+{
+    const auto        key = SecureEnvelope::generateMasterKey();
+    const AeadContext context { KeyDomain::OmemoState, QStringLiteral("xmpp-omemo"),
+                                QStringLiteral("account@example.org"), 1, QStringLiteral("state") };
+    QByteArray        plainText(16467, '\0');
+    for (qsizetype i = 0; i < plainText.size(); ++i)
+        plainText[i] = char(i % 251);
+
+    const auto sealed = SecureEnvelope::seal(plainText, key, context);
+    QVERIFY2(sealed, qPrintable(sealed.error.message));
+    const auto opened = SecureEnvelope::open(sealed.value, key, context);
+    QVERIFY2(opened, qPrintable(opened.error.message));
+    QCOMPARE(opened.value, plainText);
 }
 
 QTEST_GUILESS_MAIN(SecureEnvelopeTest)

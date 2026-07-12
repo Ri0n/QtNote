@@ -1,4 +1,4 @@
-qtnote (3.2.130) UNRELEASED; urgency=medium
+qtnote (3.2.137) UNRELEASED; urgency=medium
 
   * KDE plasmamoid
   * Gnome shell-extension
@@ -6,8 +6,9 @@ qtnote (3.2.130) UNRELEASED; urgency=medium
   * New release
   * New release
   * New release
+  * New release
 
- -- Sergei Ilinykh <rion4ik@gmail.com>  Sun, 12 Jul 2026 00:15:39 +0300
+ -- Sergei Ilinykh <rion4ik@gmail.com>  Sun, 12 Jul 2026 17:38:53 +0300
 
 qtnote (3.2.99) UNRELEASED; urgency=medium
 
