@@ -116,15 +116,25 @@ void XmppKeyResolutionDialog::populateDevices(const QList<XmppDeviceInfo> &devic
         const auto  level   = QXmpp::TrustLevel(device.trustLevel);
         const bool  trusted = level == QXmpp::TrustLevel::ManuallyTrusted || level == QXmpp::TrustLevel::Authenticated;
         auto       *use     = new QTableWidgetItem;
-        use->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-        use->setCheckState(trusted ? Qt::Checked : Qt::Unchecked);
-        if (trusted)
+        if (device.keyId.isEmpty()) {
             use->setFlags(Qt::ItemIsEnabled);
+        } else {
+            use->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+            use->setCheckState(trusted ? Qt::Checked : Qt::Unchecked);
+            if (trusted)
+                use->setFlags(Qt::ItemIsEnabled);
+        }
         devicesTable_->setItem(row, 0, use);
         devicesTable_->setItem(row, 1,
                                new QTableWidgetItem(device.label.isEmpty() ? tr("Unnamed device") : device.label));
-        devicesTable_->setItem(row, 2, new QTableWidgetItem(QString::fromLatin1(device.keyId.toHex())));
-        devicesTable_->setItem(row, 3, new QTableWidgetItem(trusted ? tr("Trusted") : tr("Needs confirmation")));
+        devicesTable_->setItem(row, 2,
+                               new QTableWidgetItem(device.keyId.isEmpty()
+                                                        ? tr("Fingerprint unavailable")
+                                                        : QString::fromLatin1(device.keyId.toHex())));
+        devicesTable_->setItem(row, 3,
+                               new QTableWidgetItem(device.keyId.isEmpty() ? tr("Cannot be trusted yet")
+                                                        : trusted          ? tr("Trusted")
+                                                                           : tr("Needs confirmation")));
     }
     deviceStatus_->setText(error.isEmpty() ? tr("Found %1 OMEMO device(s) for this account.").arg(devices.size())
                                            : tr("Could not refresh OMEMO devices: %1").arg(error));
@@ -136,7 +146,7 @@ QList<QByteArray> XmppKeyResolutionDialog::selectedDeviceKeys() const
     for (int row = 0; row < devices_.size(); ++row) {
         const auto level   = QXmpp::TrustLevel(devices_.at(row).trustLevel);
         const bool trusted = level == QXmpp::TrustLevel::ManuallyTrusted || level == QXmpp::TrustLevel::Authenticated;
-        if (!trusted && devicesTable_->item(row, 0)->checkState() == Qt::Checked)
+        if (!trusted && !devices_.at(row).keyId.isEmpty() && devicesTable_->item(row, 0)->checkState() == Qt::Checked)
             result.append(devices_.at(row).keyId);
     }
     return result;

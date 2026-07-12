@@ -666,7 +666,9 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             *error = waitError;
         return {};
     }
-    if (devices->isEmpty()) {
+    const bool needsBundles = devices->isEmpty()
+        || std::any_of(devices->cbegin(), devices->cend(), [](const auto &device) { return device.keyId().isEmpty(); });
+    if (needsBundles) {
         if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
                            config_.timeoutMs, &waitError)) {
             if (error)
@@ -682,8 +684,15 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
         }
     }
     QList<XmppDeviceInfo> result;
-    for (const auto &device : *devices)
+    int                   missingFingerprints = 0;
+    for (const auto &device : *devices) {
+        if (device.keyId().isEmpty())
+            ++missingFingerprints;
         result.append({ device.label(), device.keyId(), int(device.trustLevel()) });
+    }
+    if (error && missingFingerprints > 0) {
+        *error = QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints);
+    }
     return result;
 }
 
