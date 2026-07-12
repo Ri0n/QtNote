@@ -502,6 +502,43 @@ XmppStatusResult XmppWorker::ensureOmemo()
     return { true };
 }
 
+QStringList XmppWorker::onlineQtNoteResources(QString *error)
+{
+    if (!roster_ || !discovery_) {
+        if (error)
+            *error = QStringLiteral("XMPP resource discovery is unavailable");
+        return {};
+    }
+    const auto  bareJid     = QXmppUtils::jidToBareJid(config_.jid);
+    const auto  ownResource = client_->configuration().resource();
+    QStringList result;
+    QStringList failures;
+    QString     waitError;
+    for (const auto &resource : roster_->getResources(bareJid)) {
+        if (resource.isEmpty() || resource == ownResource)
+            continue;
+        const auto fullJid = bareJid + QLatin1Char('/') + resource;
+#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
+        auto info = awaitTask(discovery_->info(fullJid), config_.timeoutMs, &waitError);
+#else
+        auto info = awaitTask(discovery_->requestDiscoInfo(fullJid), config_.timeoutMs, &waitError);
+#endif
+        if (!info) {
+            failures.append(QStringLiteral("%1: %2").arg(fullJid, waitError));
+            continue;
+        }
+        if (const auto *requestError = std::get_if<QXmppError>(&*info)) {
+            failures.append(QStringLiteral("%1: %2").arg(fullJid, errorText(*requestError)));
+            continue;
+        }
+        if (std::get<0>(*info).features().contains(XmppKeySyncExtension::feature))
+            result.append(resource);
+    }
+    if (error && !failures.isEmpty())
+        *error = failures.join(QLatin1Char('\n'));
+    return result;
+}
+
 XmppStatusResult XmppWorker::probe() { return ensureReady(); }
 
 XmppKeyAuditResult XmppWorker::auditStorageKeys()
@@ -517,7 +554,7 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
         output.error = omemo.error;
         return output;
     }
-    if (!roster_ || !discovery_ || !keySyncExtension_) {
+    if (!keySyncExtension_) {
         output.error = QStringLiteral("XMPP resource discovery is unavailable");
         return output;
     }
@@ -527,29 +564,16 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
                                    SecureEnvelope::keyId(config_.masterKey), 0, true });
     }
 
-    const auto  bareJid     = QXmppUtils::jidToBareJid(config_.jid);
-    const auto  ownResource = client_->configuration().resource();
+    const auto  bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    QString     discoveryError;
+    const auto  resources = onlineQtNoteResources(&discoveryError);
     QStringList qtNoteResources;
+    for (const auto &resource : resources)
+        qtNoteResources.append(bareJid + QLatin1Char('/') + resource);
     QString     waitError;
-    for (const auto &resource : roster_->getResources(bareJid)) {
-        if (resource.isEmpty() || resource == ownResource)
-            continue;
-        const auto fullJid = bareJid + QLatin1Char('/') + resource;
-#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
-        auto info = awaitTask(discovery_->info(fullJid), config_.timeoutMs, &waitError);
-#else
-        auto info = awaitTask(discovery_->requestDiscoInfo(fullJid), config_.timeoutMs, &waitError);
-#endif
-        if (!info)
-            continue;
-        if (const auto *error = std::get_if<QXmppError>(&*info)) {
-            qWarning().noquote() << "Could not inspect XMPP resource" << fullJid << errorText(*error);
-            continue;
-        }
-        if (std::get<0>(*info).features().contains(XmppKeySyncExtension::feature))
-            qtNoteResources.append(fullJid);
-    }
     QStringList errors;
+    if (!discoveryError.isEmpty())
+        errors.append(discoveryError);
     for (const auto &resource : qtNoteResources) {
         const auto requestId = newUuid();
         auto encrypted = awaitTask(omemoManager_->encryptIq(keySyncExtension_->makeRequest(resource, requestId), {}),
@@ -661,30 +685,37 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
         }
     }
     const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
-    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
+    QString    discoveryError;
+    const auto onlineResources = onlineQtNoteResources(&discoveryError);
+    if (onlineResources.isEmpty()) {
+        if (error) {
+            *error = discoveryError.isEmpty()
+                ? QStringLiteral("No other online QtNote device was found for this XMPP account")
+                : discoveryError;
+        }
+        return {};
+    }
+    auto list = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
                               bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
-                                   config_.timeoutMs, &waitError);
+                          config_.timeoutMs, &waitError);
     if (!list || std::holds_alternative<QXmppError>(*list)) {
         if (error)
             *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
         return {};
     }
-    auto ownKey = awaitTask(omemoManager_->ownKey(), config_.timeoutMs, &waitError);
-    if (!ownKey) {
-        if (error)
-            *error = waitError;
-        return {};
-    }
+    const auto            ownKey = omemoStorage_->ownIdentityKey();
     QList<XmppDeviceInfo> result;
     int                   missingFingerprints = 0;
     for (const auto &listed : std::get<XmppOmemoDeviceListItem>(*list).devices()) {
+        if (!onlineResources.contains(listed.label))
+            continue;
         auto bundle = awaitTask(
             pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
             config_.timeoutMs, &waitError);
         QByteArray keyId;
         if (bundle && std::holds_alternative<XmppOmemoBundleItem>(*bundle))
             keyId = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
-        if (!keyId.isEmpty() && keyId == *ownKey)
+        if (!keyId.isEmpty() && keyId == ownKey)
             continue;
         if (keyId.isEmpty()) {
             ++missingFingerprints;

@@ -55,6 +55,7 @@ private:
 
     XmppStatusResult ensureReady();
     XmppStatusResult ensureOmemo();
+    QStringList      onlineQtNoteResources(QString *error = nullptr);
     void             handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
     XmppStatusResult connectToServer();
     XmppStatusResult verifyPrivateStorageSupport();

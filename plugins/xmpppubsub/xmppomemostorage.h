@@ -9,8 +9,9 @@ class XmppOmemoStorage final : public QXmppOmemoStorage {
 public:
     XmppOmemoStorage(QString path, QByteArray encryptionKey, QString accountId);
 
-    bool    isValid() const { return error_.isEmpty(); }
-    QString errorString() const { return error_; }
+    bool       isValid() const { return error_.isEmpty(); }
+    QString    errorString() const { return error_; }
+    QByteArray ownIdentityKey() const { return data_.ownDevice ? data_.ownDevice->publicIdentityKey : QByteArray {}; }
 
     QXmppTask<OmemoData> allData() override;
     QXmppTask<void>      setOwnDevice(const std::optional<OwnDevice> &device) override;
