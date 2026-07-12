@@ -11,6 +11,8 @@ public:
 
     bool       isValid() const { return error_.isEmpty(); }
     QString    errorString() const { return error_; }
+    uint32_t   ownDeviceId() const { return data_.ownDevice ? data_.ownDevice->id : 0; }
+    QString    ownDeviceLabel() const { return data_.ownDevice ? data_.ownDevice->label : QString {}; }
     QByteArray ownIdentityKey() const { return data_.ownDevice ? data_.ownDevice->publicIdentityKey : QByteArray {}; }
 
     QXmppTask<OmemoData> allData() override;

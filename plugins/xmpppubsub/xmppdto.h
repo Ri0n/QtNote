@@ -54,6 +54,7 @@ struct XmppEncryptedPayload {
 
 struct XmppDeviceInfo {
     QString    label;
+    quint32    deviceId { 0 };
     QByteArray keyId;
     int        trustLevel { 0 };
 };

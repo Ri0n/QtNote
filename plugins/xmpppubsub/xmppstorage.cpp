@@ -1004,10 +1004,11 @@ QWidget *XmppStorage::settingsWidget()
         QMetaObject::invokeMethod(worker_, [this, guard, config]() {
             worker_->setConfig(config);
             QString    error;
-            const auto devices = worker_->ownOmemoDevices(&error);
-            QMetaObject::invokeMethod(this, [guard, devices, error]() {
+            const auto devices   = worker_->ownOmemoDevices(&error);
+            const auto ownDevice = worker_->ownOmemoDevice();
+            QMetaObject::invokeMethod(this, [guard, ownDevice, devices, error]() {
                 if (guard)
-                    guard->setOmemoDevices(devices, error);
+                    guard->setOmemoDevices(ownDevice, devices, error);
             });
         });
     });

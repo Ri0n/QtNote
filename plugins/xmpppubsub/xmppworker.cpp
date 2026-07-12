@@ -711,16 +711,24 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
                                                        : QStringLiteral("%1 (OMEMO %2)").arg(listed.label, listed.id);
         if (keyId.isEmpty()) {
             ++missingFingerprints;
-            result.append({ deviceName, {}, int(QXmpp::TrustLevel::Undecided) });
+            result.append({ deviceName, listed.id.toUInt(), {}, int(QXmpp::TrustLevel::Undecided) });
             continue;
         }
         auto trust = awaitTask(omemoManager_->trustLevel(bareJid, keyId), config_.timeoutMs, &waitError);
-        result.append({ deviceName, keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
+        result.append({ deviceName, listed.id.toUInt(), keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
     }
     if (error && missingFingerprints > 0) {
         *error = QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints);
     }
     return result;
+}
+
+XmppDeviceInfo XmppWorker::ownOmemoDevice() const
+{
+    if (!omemoStorage_)
+        return {};
+    return { omemoStorage_->ownDeviceLabel(), omemoStorage_->ownDeviceId(), omemoStorage_->ownIdentityKey(),
+             int(QXmpp::TrustLevel::Authenticated) };
 }
 
 XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)
