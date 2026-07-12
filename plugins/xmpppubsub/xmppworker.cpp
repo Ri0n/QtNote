@@ -17,7 +17,6 @@
 #include <QXmppDiscoveryIq.h>
 #include <QXmppDiscoveryManager.h>
 #include <QXmppE2eeMetadata.h>
-#include <QXmppElement.h>
 #include <QXmppError.h>
 #include <QXmppGlobal.h>
 #include <QXmppLogger.h>
@@ -418,6 +417,8 @@ XmppStatusResult XmppWorker::ensureNode(const QString &nodeName)
     }
 
     auto config = std::get<QXmppPubSubNodeConfig>(*request);
+    if (nodeConfigIsPrivate(config))
+        return { true };
     config.setAccessModel(QXmppPubSubNodeConfig::Allowlist);
     config.setPersistItems(true);
     config.setMaxItems(QXmppPubSubNodeConfig::Max {});
@@ -540,6 +541,12 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             return {};
         }
     }
+    if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
+                       config_.timeoutMs, &waitError)) {
+        if (error)
+            *error = waitError;
+        return {};
+    }
     auto devices
         = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs, &waitError);
     if (!devices) {
@@ -598,12 +605,8 @@ void XmppWorker::sendKeySyncMessage(const QString &to, const QJsonObject &payloa
 {
     QXmppMessage message;
     message.setTo(to);
-    message.setType(QXmppMessage::Chat);
-    QXmppElement element;
-    element.setTagName(QStringLiteral("key-sync"));
-    element.setAttribute(QStringLiteral("xmlns"), QStringLiteral("urn:xmpp:qtnote:key-sync:1"));
-    element.setValue(QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Compact)));
-    message.setExtensions({ element });
+    message.setType(QXmppMessage::Headline);
+    message.setBody(QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Compact)));
     client_->sendSensitive(std::move(message)).then(client_, [this](QXmpp::SendResult result) {
         if (const auto *error = std::get_if<QXmppError>(&result))
             emit workerError(QStringLiteral("Could not send the OMEMO key-sync message: %1").arg(errorText(*error)));
@@ -619,18 +622,8 @@ void XmppWorker::handleKeySyncMessage(const QXmppMessage &message)
         || (metadata->encryption() != QXmpp::Omemo0 && metadata->encryption() != QXmpp::Omemo1
             && metadata->encryption() != QXmpp::Omemo2))
         return;
-    QString encodedPayload;
-    for (const auto &extension : message.extensions()) {
-        if (extension.tagName() == QStringLiteral("key-sync")
-            && extension.attribute(QStringLiteral("xmlns")) == QStringLiteral("urn:xmpp:qtnote:key-sync:1")) {
-            encodedPayload = extension.value();
-            break;
-        }
-    }
-    if (encodedPayload.isEmpty())
-        return;
     QJsonParseError parseError;
-    const auto      document = QJsonDocument::fromJson(encodedPayload.toUtf8(), &parseError);
+    const auto      document = QJsonDocument::fromJson(message.body().toUtf8(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject())
         return;
     const auto payload = document.object();
