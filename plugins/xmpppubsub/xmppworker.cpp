@@ -24,6 +24,8 @@
 #include <QXmppPubSubPublishOptions.h>
 #include <QXmppStanza.h>
 #include <QXmppTask.h>
+#include <QXmppTrustManager.h>
+#include <QXmppTrustMemoryStorage.h>
 #include <QXmppUtils.h>
 
 #include <optional>
@@ -165,6 +167,7 @@ void XmppWorker::resetClient()
     discovery_    = nullptr;
     pubSub_       = nullptr;
     pepExtension_ = nullptr;
+    trustManager_ = nullptr;
     omemoManager_ = nullptr;
     pendingKeyRequests_.clear();
 
@@ -175,6 +178,8 @@ void XmppWorker::resetClient()
     }
     delete omemoStorage_;
     omemoStorage_ = nullptr;
+    delete trustStorage_;
+    trustStorage_ = nullptr;
 }
 
 void XmppWorker::createClient()
@@ -188,6 +193,8 @@ void XmppWorker::createClient()
     pubSub_       = client_->addNewExtension<QXmppPubSubManager>();
     pepExtension_ = client_->addNewExtension<XmppPepExtension>();
     omemoStorage_ = new XmppOmemoStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
+    trustStorage_ = new QXmppTrustMemoryStorage;
+    trustManager_ = client_->addNewExtension<QXmppTrustManager>(trustStorage_);
     omemoManager_ = client_->addNewExtension<QXmppOmemoManager>(omemoStorage_);
     pepExtension_->setOwnBareJid(config_.jid);
     pepExtension_->setNodeName(config_.indexNodeName());

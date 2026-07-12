@@ -11,6 +11,8 @@ class QXmppClient;
 class QXmppDiscoveryManager;
 class QXmppPubSubManager;
 class QXmppOmemoManager;
+class QXmppTrustManager;
+class QXmppTrustMemoryStorage;
 class QXmppMessage;
 class QJsonObject;
 
@@ -62,16 +64,18 @@ private:
     static QString newUuid();
     static QString errorText(const QXmppError &error);
 
-    XmppConfig             config_;
-    QXmppClient           *client_ { nullptr };
-    QXmppDiscoveryManager *discovery_ { nullptr };
-    QXmppPubSubManager    *pubSub_ { nullptr };
-    XmppPepExtension      *pepExtension_ { nullptr };
-    XmppOmemoStorage      *omemoStorage_ { nullptr };
-    QXmppOmemoManager     *omemoManager_ { nullptr };
-    bool                   prepared_ { false };
-    bool                   omemoReady_ { false };
-    QSet<QString>          pendingKeyRequests_;
+    XmppConfig               config_;
+    QXmppClient             *client_ { nullptr };
+    QXmppDiscoveryManager   *discovery_ { nullptr };
+    QXmppPubSubManager      *pubSub_ { nullptr };
+    XmppPepExtension        *pepExtension_ { nullptr };
+    XmppOmemoStorage        *omemoStorage_ { nullptr };
+    QXmppTrustMemoryStorage *trustStorage_ { nullptr };
+    QXmppTrustManager       *trustManager_ { nullptr };
+    QXmppOmemoManager       *omemoManager_ { nullptr };
+    bool                     prepared_ { false };
+    bool                     omemoReady_ { false };
+    QSet<QString>            pendingKeyRequests_;
 };
 
 } // namespace QtNote
