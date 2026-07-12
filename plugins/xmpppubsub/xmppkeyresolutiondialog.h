@@ -20,9 +20,9 @@ public:
     using AuditKeys    = std::function<XmppKeyAuditResult()>;
     using RekeyStorage = std::function<XmppRekeyResult(const QList<QByteArray> &, const QByteArray &)>;
 
-    explicit XmppKeyResolutionDialog(const QList<XmppDeviceInfo> &devices, const QString &deviceError,
-                                     TrustDevices trustDevices, AuditKeys auditKeys, RekeyStorage rekeyStorage,
-                                     QWidget *parent = nullptr);
+    explicit XmppKeyResolutionDialog(bool localKeyMissing, const QList<XmppDeviceInfo> &devices,
+                                     const QString &deviceError, TrustDevices trustDevices, AuditKeys auditKeys,
+                                     RekeyStorage rekeyStorage, QWidget *parent = nullptr);
 
     QByteArray      canonicalKey() const;
     XmppRekeyResult rekeyResult() const { return rekeyResult_; }

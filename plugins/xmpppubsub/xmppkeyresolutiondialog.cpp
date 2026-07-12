@@ -22,9 +22,9 @@ namespace {
     }
 }
 
-XmppKeyResolutionDialog::XmppKeyResolutionDialog(const QList<XmppDeviceInfo> &devices, const QString &deviceError,
-                                                 TrustDevices trustDevices, AuditKeys auditKeys,
-                                                 RekeyStorage rekeyStorage, QWidget *parent) :
+XmppKeyResolutionDialog::XmppKeyResolutionDialog(bool localKeyMissing, const QList<XmppDeviceInfo> &devices,
+                                                 const QString &deviceError, TrustDevices trustDevices,
+                                                 AuditKeys auditKeys, RekeyStorage rekeyStorage, QWidget *parent) :
     QWizard(parent), trustDevices_(std::move(trustDevices)), auditKeys_(std::move(auditKeys)),
     rekeyStorage_(std::move(rekeyStorage)), devicesTable_(new QTableWidget), keysTable_(new QTableWidget),
     deviceStatus_(wrappedLabel()), keyStatus_(wrappedLabel()), summary_(wrappedLabel()), result_(wrappedLabel())
@@ -35,8 +35,11 @@ XmppKeyResolutionDialog::XmppKeyResolutionDialog(const QList<XmppDeviceInfo> &de
     resize(760, 480);
 
     auto *problem = new QWizardPage;
-    problem->setTitle(tr("QtNote found incompatible storage keys"));
-    problem->setSubTitle(tr("Notes or another QtNote device use a different encryption key."));
+    problem->setTitle(localKeyMissing ? tr("The local XMPP storage key is missing")
+                                      : tr("QtNote found incompatible storage keys"));
+    problem->setSubTitle(localKeyMissing
+                             ? tr("QtNote can securely obtain the key from another online device on this account.")
+                             : tr("Notes or another QtNote device use a different encryption key."));
     auto *problemLayout = new QVBoxLayout(problem);
     problemLayout->addWidget(wrappedLabel(
         tr("This wizard will locate your other online QtNote devices, establish trusted OMEMO sessions, collect "

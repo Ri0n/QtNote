@@ -68,7 +68,12 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
     connect(worker_, &XmppWorker::remoteNoteRetracted, this, &XmppStorage::onRemoteNoteRetracted);
     connect(worker_, &XmppWorker::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
     connect(worker_, &XmppWorker::connectionChanged, this, &XmppStorage::onConnectionChanged);
-    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) { reportError(error); });
+    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) {
+        if (error.contains(QStringLiteral("storage key mismatch"), Qt::CaseInsensitive))
+            enterErrorState(error, true);
+        else
+            reportError(error);
+    });
     connect(
         worker_, &XmppWorker::keySyncTrustRequested, this, [this](const QString &requestId, const QByteArray &keyId) {
             QMessageBox dialog(QMessageBox::Question, tr("Trust an own QtNote device?"),
@@ -127,8 +132,9 @@ void XmppStorage::resolveStorageKeys(const QString &jid, XmppSettingsWidget *set
         QMetaObject::invokeMethod(this, [this, devices, deviceError, jid, settingsGuard]() {
             QWidget *parent
                 = settingsGuard ? static_cast<QWidget *>(settingsGuard.data()) : QApplication::activeWindow();
+            const bool              localKeyMissing = readConfig().masterKey.size() != SecureEnvelope::MasterKeySize;
             XmppKeyResolutionDialog dialog(
-                devices, deviceError,
+                localKeyMissing, devices, deviceError,
                 [this](const QList<QByteArray> &keyIds) {
                     return invokeWorker<XmppStatusResult>(worker_, [this, keyIds]() {
                         for (const auto &keyId : keyIds) {
@@ -266,8 +272,14 @@ bool XmppStorage::init()
 
     QString validationError;
     if (!configIsValid(config_, &validationError)) {
-        accessible_ = false;
-        cacheValid_ = false;
+        accessible_           = false;
+        cacheValid_           = false;
+        auto recoverable      = config_;
+        recoverable.masterKey = QByteArray(SecureEnvelope::MasterKeySize, '\0');
+        QString otherError;
+        if (config_.masterKey.size() != SecureEnvelope::MasterKeySize && configIsValid(recoverable, &otherError)) {
+            QTimer::singleShot(0, this, [this, jid = config_.jid]() { resolveStorageKeys(jid); });
+        }
         return false;
     }
 
@@ -295,6 +307,12 @@ StorageInitJob *XmppStorage::initAsync(QObject *owner)
     config_ = readConfig();
     QString validationError;
     if (!configIsValid(config_, &validationError)) {
+        auto recoverable      = config_;
+        recoverable.masterKey = QByteArray(SecureEnvelope::MasterKeySize, '\0');
+        QString otherError;
+        if (config_.masterKey.size() != SecureEnvelope::MasterKeySize && configIsValid(recoverable, &otherError)) {
+            QTimer::singleShot(0, this, [this, jid = config_.jid]() { resolveStorageKeys(jid); });
+        }
         job->fail({ StorageError::NotConfigured, validationError, false });
         return job;
     }
@@ -862,7 +880,10 @@ void XmppStorage::reportError(const QString &error, bool invalidate)
 
 void XmppStorage::enterErrorState(const QString &error, bool invalidate)
 {
+    const bool keyMismatch = error.contains(QStringLiteral("storage key mismatch"), Qt::CaseInsensitive);
     if (errorState_ && error == errorStateMessage_) {
+        if (keyMismatch)
+            QTimer::singleShot(0, this, [this]() { resolveStorageKeys(readConfig().jid); });
         return;
     }
 
@@ -871,14 +892,19 @@ void XmppStorage::enterErrorState(const QString &error, bool invalidate)
     accessible_        = false;
     cacheValid_        = false;
 
-    const bool keyMismatch = error.contains(QStringLiteral("storage key mismatch"), Qt::CaseInsensitive);
     if (workerThread_.isRunning() && !keyMismatch) {
         QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);
     }
 
-    reportError(error, invalidate);
-    if (keyMismatch)
+    if (keyMismatch) {
+        if (invalidate) {
+            cacheValid_ = false;
+            emit invalidated();
+        }
         QTimer::singleShot(0, this, [this]() { resolveStorageKeys(readConfig().jid); });
+    } else {
+        reportError(error, invalidate);
+    }
 }
 
 void XmppStorage::clearErrorState()
