@@ -810,7 +810,8 @@ void XmppStorage::onConnectionChanged(bool connected)
 
 void XmppStorage::reportError(const QString &error, bool invalidate)
 {
-    if (!error.isEmpty()) {
+    if (!error.isEmpty() && error != lastReportedError_) {
+        lastReportedError_ = error;
         emit storageErorr(tr("XMPP private notes error: %1").arg(error));
     }
     if (invalidate) {
@@ -841,6 +842,7 @@ void XmppStorage::clearErrorState()
 {
     errorState_ = false;
     errorStateMessage_.clear();
+    lastReportedError_.clear();
 }
 
 void XmppStorage::applyConfig(const XmppConfig &config)

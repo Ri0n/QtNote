@@ -74,6 +74,7 @@ private:
     bool                 accessible_ { false };
     bool                 errorState_ { false };
     QString              errorStateMessage_;
+    QString              lastReportedError_;
 };
 
 } // namespace QtNote

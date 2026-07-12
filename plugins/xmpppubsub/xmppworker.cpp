@@ -147,7 +147,12 @@ namespace {
 
 XmppWorker::XmppWorker(QObject *parent) : QObject(parent) { qRegisterMetaType<XmppRemoteNote>(); }
 
-XmppWorker::~XmppWorker() { resetClient(); }
+XmppWorker::~XmppWorker()
+{
+    resetClient();
+    delete trustStorage_;
+    trustStorage_ = nullptr;
+}
 
 void XmppWorker::setConfig(const XmppConfig &config)
 {
@@ -178,8 +183,6 @@ void XmppWorker::resetClient()
     }
     delete omemoStorage_;
     omemoStorage_ = nullptr;
-    delete trustStorage_;
-    trustStorage_ = nullptr;
 }
 
 void XmppWorker::createClient()
@@ -193,7 +196,8 @@ void XmppWorker::createClient()
     pubSub_       = client_->addNewExtension<QXmppPubSubManager>();
     pepExtension_ = client_->addNewExtension<XmppPepExtension>();
     omemoStorage_ = new XmppOmemoStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
-    trustStorage_ = new QXmppTrustMemoryStorage;
+    if (!trustStorage_)
+        trustStorage_ = new QXmppTrustMemoryStorage;
     trustManager_ = client_->addNewExtension<QXmppTrustManager>(trustStorage_);
     omemoManager_ = client_->addNewExtension<QXmppOmemoManager>(omemoStorage_);
     pepExtension_->setOwnBareJid(config_.jid);
