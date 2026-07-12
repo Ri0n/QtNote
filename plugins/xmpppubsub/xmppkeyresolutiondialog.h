@@ -5,6 +5,8 @@
 
 #include <QWizard>
 
+#include <functional>
+
 class QLabel;
 class QTableWidget;
 
@@ -14,17 +16,42 @@ class XmppKeyResolutionDialog final : public QWizard {
     Q_OBJECT
 
 public:
-    explicit XmppKeyResolutionDialog(const XmppKeyAuditResult &audit, QWidget *parent = nullptr);
+    using TrustDevices = std::function<XmppStatusResult(const QList<QByteArray> &)>;
+    using AuditKeys    = std::function<XmppKeyAuditResult()>;
+    using RekeyStorage = std::function<XmppRekeyResult(const QList<QByteArray> &, const QByteArray &)>;
 
-    QByteArray        canonicalKey() const;
-    QList<QByteArray> availableKeys() const;
+    explicit XmppKeyResolutionDialog(const QList<XmppDeviceInfo> &devices, const QString &deviceError,
+                                     TrustDevices trustDevices, AuditKeys auditKeys, RekeyStorage rekeyStorage,
+                                     QWidget *parent = nullptr);
+
+    QByteArray      canonicalKey() const;
+    XmppRekeyResult rekeyResult() const { return rekeyResult_; }
+
+protected:
+    bool validateCurrentPage() override;
 
 private:
-    void updateSummary();
+    enum Page { ProblemPage, DevicesPage, KeysPage, ReviewPage, ResultPage };
 
-    XmppKeyAuditResult audit_;
-    QTableWidget      *keys_;
-    QLabel            *summary_;
+    void              populateDevices(const QList<XmppDeviceInfo> &devices, const QString &error);
+    void              populateKeys(const XmppKeyAuditResult &audit);
+    void              updateSummary();
+    QList<QByteArray> selectedDeviceKeys() const;
+    QList<QByteArray> availableKeys() const;
+    void              setWorking(const QString &message);
+
+    QList<XmppDeviceInfo> devices_;
+    XmppKeyAuditResult    audit_;
+    XmppRekeyResult       rekeyResult_;
+    TrustDevices          trustDevices_;
+    AuditKeys             auditKeys_;
+    RekeyStorage          rekeyStorage_;
+    QTableWidget         *devicesTable_;
+    QTableWidget         *keysTable_;
+    QLabel               *deviceStatus_;
+    QLabel               *keyStatus_;
+    QLabel               *summary_;
+    QLabel               *result_;
 };
 
 } // namespace QtNote

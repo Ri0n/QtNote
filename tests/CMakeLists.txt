@@ -25,6 +25,14 @@ target_include_directories(xmppkeysyncextension_test PRIVATE ../plugins/xmpppubs
 target_link_libraries(xmppkeysyncextension_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
 add_test(NAME xmppkeysyncextension_test COMMAND xmppkeysyncextension_test)
 
+add_executable(xmpppersistenttruststorage_test
+    xmpppersistenttruststorage_test.cpp
+    ../plugins/xmpppubsub/xmpppersistenttruststorage.cpp
+)
+target_include_directories(xmpppersistenttruststorage_test PRIVATE ../plugins/xmpppubsub)
+target_link_libraries(xmpppersistenttruststorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+add_test(NAME xmpppersistenttruststorage_test COMMAND xmpppersistenttruststorage_test)
+
 find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
 add_executable(xmppomemostorage_test
     xmppomemostorage_test.cpp
