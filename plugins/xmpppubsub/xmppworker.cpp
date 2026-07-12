@@ -669,12 +669,20 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
     const bool needsBundles = devices->isEmpty()
         || std::any_of(devices->cbegin(), devices->cend(), [](const auto &device) { return device.keyId().isEmpty(); });
     if (needsBundles) {
+        // QXmpp only persists an identity key fetched from a bundle if its session-building
+        // policy accepts the key. Allow an automatically distrusted key for this discovery
+        // pass so the wizard can display its fingerprint. Key-sync encryption still requires
+        // explicit manual trust and uses the strict policy restored below.
+        const auto strictLevels = omemoManager_->acceptedSessionBuildingTrustLevels();
+        omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels | QXmpp::TrustLevel::AutomaticallyDistrusted);
         if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
                            config_.timeoutMs, &waitError)) {
+            omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels);
             if (error)
                 *error = waitError;
             return {};
         }
+        omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels);
         devices = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs,
                             &waitError);
         if (!devices) {
