@@ -5,6 +5,7 @@
 #include "xmppnotecodec.h"
 #include "xmppomemostorage.h"
 #include "xmpppepextension.h"
+#include "xmpppersistenttruststorage.h"
 
 #include <QEventLoop>
 #include <QJsonDocument>
@@ -28,7 +29,6 @@
 #include <QXmppStanza.h>
 #include <QXmppTask.h>
 #include <QXmppTrustManager.h>
-#include <QXmppTrustMemoryStorage.h>
 #include <QXmppUtils.h>
 
 #include <optional>
@@ -163,12 +163,7 @@ namespace {
 
 XmppWorker::XmppWorker(QObject *parent) : QObject(parent) { qRegisterMetaType<XmppRemoteNote>(); }
 
-XmppWorker::~XmppWorker()
-{
-    resetClient();
-    delete trustStorage_;
-    trustStorage_ = nullptr;
-}
+XmppWorker::~XmppWorker() { resetClient(); }
 
 void XmppWorker::setConfig(const XmppConfig &config)
 {
@@ -199,6 +194,8 @@ void XmppWorker::resetClient()
         delete client_;
         client_ = nullptr;
     }
+    delete trustStorage_;
+    trustStorage_ = nullptr;
     delete omemoStorage_;
     omemoStorage_ = nullptr;
 }
@@ -228,8 +225,13 @@ void XmppWorker::createClient()
     pepExtension_     = client_->addNewExtension<XmppPepExtension>();
     keySyncExtension_ = client_->addNewExtension<XmppKeySyncExtension>();
     omemoStorage_     = new XmppOmemoStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
-    if (!trustStorage_)
-        trustStorage_ = new QXmppTrustMemoryStorage;
+    if (!trustStorage_) {
+        auto *persistentTrust = new XmppPersistentTrustStorage(config_.omemoStatePath + QStringLiteral(".trust"),
+                                                               config_.omemoStateKey, config_.jid);
+        if (!persistentTrust->isValid())
+            qWarning().noquote() << "Could not load persistent OMEMO trust:" << persistentTrust->errorString();
+        trustStorage_ = persistentTrust;
+    }
     trustManager_ = client_->addNewExtension<QXmppTrustManager>(trustStorage_);
     omemoManager_ = client_->addNewExtension<QXmppOmemoManager>(omemoStorage_);
     pepExtension_->setOwnBareJid(config_.jid);

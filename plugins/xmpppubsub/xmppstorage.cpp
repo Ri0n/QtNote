@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QUuid>
+#include <QXmppTrustLevel.h>
 
 #include <algorithm>
 #include <utility>
@@ -122,6 +123,70 @@ void XmppStorage::resolveStorageKeys(const QString &jid, XmppSettingsWidget *set
     QPointer<XmppSettingsWidget> settingsGuard(settings);
     QMetaObject::invokeMethod(worker_, [this, config, jid, settingsGuard]() {
         worker_->setConfig(config);
+        QString               deviceError;
+        const auto            devices = worker_->ownOmemoDevices(&deviceError);
+        QList<XmppDeviceInfo> untrusted;
+        for (const auto &device : devices) {
+            const auto level = QXmpp::TrustLevel(device.trustLevel);
+            if (level != QXmpp::TrustLevel::ManuallyTrusted && level != QXmpp::TrustLevel::Authenticated
+                && device.label.startsWith(QStringLiteral("QtNote"), Qt::CaseInsensitive)) {
+                untrusted.append(device);
+            }
+        }
+        if (!untrusted.isEmpty()) {
+            bool approved = false;
+            QMetaObject::invokeMethod(
+                this,
+                [&]() {
+                    QStringList fingerprints;
+                    for (const auto &device : untrusted) {
+                        fingerprints.append(QStringLiteral("%1 — %2").arg(
+                            device.label.isEmpty() ? tr("Unnamed QtNote device") : device.label,
+                            QString::fromLatin1(device.keyId.toHex())));
+                    }
+                    QMessageBox dialog(QMessageBox::Question, tr("Trust your other QtNote devices?"),
+                                       tr("Storage-key synchronization needs an encrypted OMEMO session with the "
+                                          "following devices on your own XMPP account:"),
+                                       QMessageBox::NoButton,
+                                       settingsGuard ? static_cast<QWidget *>(settingsGuard.data())
+                                                     : QApplication::activeWindow());
+                    dialog.setInformativeText(fingerprints.join(QLatin1Char('\n')));
+                    dialog.setDetailedText(tr("Compare these fingerprints on the other devices if you did not just "
+                                              "set them up yourself. This decision will be stored encrypted."));
+                    auto *cancel = dialog.addButton(QMessageBox::Cancel);
+                    auto *trust  = dialog.addButton(tr("Trust and continue"), QMessageBox::AcceptRole);
+                    dialog.setDefaultButton(cancel);
+                    dialog.exec();
+                    approved = dialog.clickedButton() == trust;
+                },
+                Qt::BlockingQueuedConnection);
+            if (!approved) {
+                XmppKeyAuditResult cancelled;
+                cancelled.error = tr("OMEMO trust was not granted; no storage key was requested");
+                QMetaObject::invokeMethod(this, [this, cancelled, settingsGuard]() {
+                    keyResolutionInProgress_ = false;
+                    if (settingsGuard)
+                        settingsGuard->setKeyState({}, cancelled.error);
+                });
+                return;
+            }
+            for (const auto &device : untrusted) {
+                const auto trusted = worker_->trustOwnOmemoDevice(device.keyId);
+                if (!trusted.ok) {
+                    deviceError = trusted.error;
+                    break;
+                }
+            }
+        }
+        if (!deviceError.isEmpty()) {
+            QMetaObject::invokeMethod(this, [this, deviceError, settingsGuard]() {
+                keyResolutionInProgress_ = false;
+                if (settingsGuard)
+                    settingsGuard->setKeyState({}, deviceError);
+                reportError(deviceError);
+            });
+            return;
+        }
         const auto audit = worker_->auditStorageKeys();
         QMetaObject::invokeMethod(this, [this, audit, jid, settingsGuard]() {
             if (!audit.ok) {

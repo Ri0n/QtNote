@@ -12,7 +12,7 @@ class QXmppPubSubManager;
 class QXmppRosterManager;
 class QXmppOmemoManager;
 class QXmppTrustManager;
-class QXmppTrustMemoryStorage;
+class QXmppTrustStorage;
 
 namespace QtNote {
 
@@ -64,19 +64,19 @@ private:
     static QString newUuid();
     static QString errorText(const QXmppError &error);
 
-    XmppConfig               config_;
-    QXmppClient             *client_ { nullptr };
-    QXmppDiscoveryManager   *discovery_ { nullptr };
-    QXmppRosterManager      *roster_ { nullptr };
-    QXmppPubSubManager      *pubSub_ { nullptr };
-    XmppPepExtension        *pepExtension_ { nullptr };
-    XmppKeySyncExtension    *keySyncExtension_ { nullptr };
-    XmppOmemoStorage        *omemoStorage_ { nullptr };
-    QXmppTrustMemoryStorage *trustStorage_ { nullptr };
-    QXmppTrustManager       *trustManager_ { nullptr };
-    QXmppOmemoManager       *omemoManager_ { nullptr };
-    bool                     prepared_ { false };
-    bool                     omemoReady_ { false };
+    XmppConfig             config_;
+    QXmppClient           *client_ { nullptr };
+    QXmppDiscoveryManager *discovery_ { nullptr };
+    QXmppRosterManager    *roster_ { nullptr };
+    QXmppPubSubManager    *pubSub_ { nullptr };
+    XmppPepExtension      *pepExtension_ { nullptr };
+    XmppKeySyncExtension  *keySyncExtension_ { nullptr };
+    XmppOmemoStorage      *omemoStorage_ { nullptr };
+    QXmppTrustStorage     *trustStorage_ { nullptr };
+    QXmppTrustManager     *trustManager_ { nullptr };
+    QXmppOmemoManager     *omemoManager_ { nullptr };
+    bool                   prepared_ { false };
+    bool                   omemoReady_ { false };
     struct PendingInboundKeyRequest {
         QByteArray senderKey;
     };
