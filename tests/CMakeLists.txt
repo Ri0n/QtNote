@@ -25,6 +25,14 @@ target_include_directories(xmppkeysyncextension_test PRIVATE ../plugins/xmpppubs
 target_link_libraries(xmppkeysyncextension_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
 add_test(NAME xmppkeysyncextension_test COMMAND xmppkeysyncextension_test)
 
+add_executable(xmppomemopubsubitems_test
+    xmppomemopubsubitems_test.cpp
+    ../plugins/xmpppubsub/xmppomemopubsubitems.cpp
+)
+target_include_directories(xmppomemopubsubitems_test PRIVATE ../plugins/xmpppubsub)
+target_link_libraries(xmppomemopubsubitems_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+add_test(NAME xmppomemopubsubitems_test COMMAND xmppomemopubsubitems_test)
+
 add_executable(xmpppersistenttruststorage_test
     xmpppersistenttruststorage_test.cpp
     ../plugins/xmpppubsub/xmpppersistenttruststorage.cpp

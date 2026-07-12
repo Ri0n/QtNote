@@ -3,6 +3,7 @@
 #include "qtnotepubsubitem.h"
 #include "xmppkeysyncextension.h"
 #include "xmppnotecodec.h"
+#include "xmppomemopubsubitems.h"
 #include "xmppomemostorage.h"
 #include "xmpppepextension.h"
 #include "xmpppersistenttruststorage.h"
@@ -659,44 +660,39 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             return {};
         }
     }
-    auto devices
-        = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs, &waitError);
-    if (!devices) {
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
+                              bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
+                                   config_.timeoutMs, &waitError);
+    if (!list || std::holds_alternative<QXmppError>(*list)) {
+        if (error)
+            *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
+        return {};
+    }
+    auto ownKey = awaitTask(omemoManager_->ownKey(), config_.timeoutMs, &waitError);
+    if (!ownKey) {
         if (error)
             *error = waitError;
         return {};
     }
-    const bool needsBundles = devices->isEmpty()
-        || std::any_of(devices->cbegin(), devices->cend(), [](const auto &device) { return device.keyId().isEmpty(); });
-    if (needsBundles) {
-        // QXmpp only persists an identity key fetched from a bundle if its session-building
-        // policy accepts the key. Allow an automatically distrusted key for this discovery
-        // pass so the wizard can display its fingerprint. Key-sync encryption still requires
-        // explicit manual trust and uses the strict policy restored below.
-        const auto strictLevels = omemoManager_->acceptedSessionBuildingTrustLevels();
-        omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels | QXmpp::TrustLevel::AutomaticallyDistrusted);
-        if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
-                           config_.timeoutMs, &waitError)) {
-            omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels);
-            if (error)
-                *error = waitError;
-            return {};
-        }
-        omemoManager_->setAcceptedSessionBuildingTrustLevels(strictLevels);
-        devices = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs,
-                            &waitError);
-        if (!devices) {
-            if (error)
-                *error = waitError;
-            return {};
-        }
-    }
     QList<XmppDeviceInfo> result;
     int                   missingFingerprints = 0;
-    for (const auto &device : *devices) {
-        if (device.keyId().isEmpty())
+    for (const auto &listed : std::get<XmppOmemoDeviceListItem>(*list).devices()) {
+        auto bundle = awaitTask(
+            pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
+            config_.timeoutMs, &waitError);
+        QByteArray keyId;
+        if (bundle && std::holds_alternative<XmppOmemoBundleItem>(*bundle))
+            keyId = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
+        if (!keyId.isEmpty() && keyId == *ownKey)
+            continue;
+        if (keyId.isEmpty()) {
             ++missingFingerprints;
-        result.append({ device.label(), device.keyId(), int(device.trustLevel()) });
+            result.append({ listed.label, {}, int(QXmpp::TrustLevel::Undecided) });
+            continue;
+        }
+        auto trust = awaitTask(omemoManager_->trustLevel(bareJid, keyId), config_.timeoutMs, &waitError);
+        result.append({ listed.label, keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
     }
     if (error && missingFingerprints > 0) {
         *error = QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints);

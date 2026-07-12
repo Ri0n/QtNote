@@ -19,6 +19,8 @@ add_qtnote_plugin(
         xmppnotecodec.h
         xmppomemostorage.cpp
         xmppomemostorage.h
+        xmppomemopubsubitems.cpp
+        xmppomemopubsubitems.h
         xmpppersistenttruststorage.cpp
         xmpppersistenttruststorage.h
         xmppworker.cpp
