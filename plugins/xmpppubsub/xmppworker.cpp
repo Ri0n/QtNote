@@ -8,15 +8,19 @@
 #include <QEventLoop>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QTimer>
 #include <QUuid>
+#include <QXmppCarbonManagerV2.h>
 #include <QXmppClient.h>
 #include <QXmppConfiguration.h>
 #include <QXmppDiscoveryIq.h>
 #include <QXmppDiscoveryManager.h>
 #include <QXmppE2eeMetadata.h>
+#include <QXmppElement.h>
 #include <QXmppError.h>
 #include <QXmppGlobal.h>
+#include <QXmppLogger.h>
 #include <QXmppMessage.h>
 #include <QXmppOmemoManager.h>
 #include <QXmppPubSubManager.h>
@@ -44,6 +48,15 @@ namespace {
             && left.port == right.port && left.resource == right.resource && left.nodeName == right.nodeName
             && left.originId == right.originId && left.timeoutMs == right.timeoutMs && left.masterKey == right.masterKey
             && left.omemoStateKey == right.omemoStateKey && left.omemoStatePath == right.omemoStatePath;
+    }
+
+    QString sanitizedXmppLog(QString xml)
+    {
+        static const QRegularExpression sensitiveElement(
+            QStringLiteral("(<(?:auth|response|encrypted)\\b[^>]*>).*?(</(?:auth|response|encrypted)>)"),
+            QRegularExpression::DotMatchesEverythingOption | QRegularExpression::CaseInsensitiveOption);
+        xml.replace(sensitiveElement, QStringLiteral("\\1[redacted]\\2"));
+        return xml;
     }
 
     template <typename T> std::optional<T> awaitTask(QXmppTask<T> &&task, int timeoutMs, QString *error)
@@ -192,10 +205,23 @@ void XmppWorker::createClient()
         return;
     }
 
-    client_       = new QXmppClient(QXmppClient::BasicExtensions, this);
+    client_ = new QXmppClient(QXmppClient::BasicExtensions, this);
+    if (qEnvironmentVariableIntValue("QTNOTE_XMPP_XML_LOG") > 0) {
+        auto *logger = new QXmppLogger(client_);
+        logger->setMessageTypes(QXmppLogger::SentMessage | QXmppLogger::ReceivedMessage | QXmppLogger::WarningMessage);
+        logger->setLoggingType(QXmppLogger::SignalLogging);
+        connect(logger, &QXmppLogger::message, this, [](QXmppLogger::MessageType type, const QString &message) {
+            const auto direction = type == QXmppLogger::SentMessage ? QStringLiteral("XMPP >>")
+                : type == QXmppLogger::ReceivedMessage              ? QStringLiteral("XMPP <<")
+                                                                    : QStringLiteral("XMPP !!");
+            qInfo().noquote() << direction << sanitizedXmppLog(message);
+        });
+        client_->setLogger(logger);
+    }
     discovery_    = client_->findExtension<QXmppDiscoveryManager>();
     pubSub_       = client_->addNewExtension<QXmppPubSubManager>();
     pepExtension_ = client_->addNewExtension<XmppPepExtension>();
+    client_->addNewExtension<QXmppCarbonManagerV2>();
     omemoStorage_ = new XmppOmemoStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
     if (!trustStorage_)
         trustStorage_ = new QXmppTrustMemoryStorage;
@@ -500,7 +526,21 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
         return {};
     }
     QString waitError;
-    auto    devices
+    auto    deviceLists = awaitTask(omemoManager_->requestDeviceLists({ QXmppUtils::jidToBareJid(config_.jid) }),
+                                    config_.timeoutMs, &waitError);
+    if (!deviceLists) {
+        if (error)
+            *error = waitError;
+        return {};
+    }
+    for (const auto &deviceList : *deviceLists) {
+        if (const auto *requestError = std::get_if<QXmppError>(&deviceList.result)) {
+            if (error)
+                *error = errorText(*requestError);
+            return {};
+        }
+    }
+    auto devices
         = awaitTask(omemoManager_->devices({ QXmppUtils::jidToBareJid(config_.jid) }), config_.timeoutMs, &waitError);
     if (!devices) {
         if (error)
@@ -559,8 +599,11 @@ void XmppWorker::sendKeySyncMessage(const QString &to, const QJsonObject &payloa
     QXmppMessage message;
     message.setTo(to);
     message.setType(QXmppMessage::Chat);
-    message.setBody(QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Compact)));
-    message.setE2eeFallbackBody(QStringLiteral("QtNote encrypted storage-key synchronization message"));
+    QXmppElement element;
+    element.setTagName(QStringLiteral("key-sync"));
+    element.setAttribute(QStringLiteral("xmlns"), QStringLiteral("urn:xmpp:qtnote:key-sync:1"));
+    element.setValue(QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Compact)));
+    message.setExtensions({ element });
     client_->sendSensitive(std::move(message)).then(client_, [this](QXmpp::SendResult result) {
         if (const auto *error = std::get_if<QXmppError>(&result))
             emit workerError(QStringLiteral("Could not send the OMEMO key-sync message: %1").arg(errorText(*error)));
@@ -576,8 +619,18 @@ void XmppWorker::handleKeySyncMessage(const QXmppMessage &message)
         || (metadata->encryption() != QXmpp::Omemo0 && metadata->encryption() != QXmpp::Omemo1
             && metadata->encryption() != QXmpp::Omemo2))
         return;
+    QString encodedPayload;
+    for (const auto &extension : message.extensions()) {
+        if (extension.tagName() == QStringLiteral("key-sync")
+            && extension.attribute(QStringLiteral("xmlns")) == QStringLiteral("urn:xmpp:qtnote:key-sync:1")) {
+            encodedPayload = extension.value();
+            break;
+        }
+    }
+    if (encodedPayload.isEmpty())
+        return;
     QJsonParseError parseError;
-    const auto      document = QJsonDocument::fromJson(message.body().toUtf8(), &parseError);
+    const auto      document = QJsonDocument::fromJson(encodedPayload.toUtf8(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject())
         return;
     const auto payload = document.object();
