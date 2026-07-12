@@ -10,6 +10,7 @@ class XmppNoteCodecTest : public QObject {
 private slots:
     void splitRoundTrip();
     void rejectsWrongNode();
+    void reportsWrongStorageKey();
     void rejectsMismatchedRevision();
 };
 
@@ -55,6 +56,17 @@ void XmppNoteCodecTest::rejectsWrongNode()
     auto       payload = XmppNoteCodec::encodeIndex(note(), key, QStringLiteral("correct:index"));
     QVERIFY(payload);
     QVERIFY(!XmppNoteCodec::decodeIndex(payload.value, key, QStringLiteral("other:index")));
+}
+
+void XmppNoteCodecTest::reportsWrongStorageKey()
+{
+    const auto key     = SecureEnvelope::generateMasterKey();
+    auto       payload = XmppNoteCodec::encodeIndex(note(), key, QStringLiteral("index"));
+    QVERIFY(payload);
+    const auto decoded
+        = XmppNoteCodec::decodeIndex(payload.value, SecureEnvelope::generateMasterKey(), QStringLiteral("index"));
+    QVERIFY(!decoded);
+    QVERIFY(decoded.error.message.contains(QStringLiteral("storage key mismatch")));
 }
 
 void XmppNoteCodecTest::rejectsMismatchedRevision()

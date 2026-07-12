@@ -36,8 +36,21 @@ namespace {
     CryptoResult<QJsonObject> decode(const XmppEncryptedPayload &payload, XmppEncryptedPayload::Kind expected,
                                      const QByteArray &masterKey, const QString &nodeName)
     {
-        if (payload.kind != expected || payload.keyId != SecureEnvelope::keyId(masterKey))
-            return { {}, invalid(QStringLiteral("Encrypted QtNote key or payload kind mismatch")) };
+        if (payload.kind != expected) {
+            return { {},
+                     invalid(QStringLiteral("Encrypted QtNote payload kind mismatch: expected %1, got %2")
+                                 .arg(expected == XmppEncryptedPayload::Index ? QStringLiteral("index")
+                                                                              : QStringLiteral("content"),
+                                      payload.kind == XmppEncryptedPayload::Index ? QStringLiteral("index")
+                                                                                  : QStringLiteral("content"))) };
+        }
+        const auto expectedKeyId = SecureEnvelope::keyId(masterKey);
+        if (payload.keyId != expectedKeyId) {
+            return { {},
+                     invalid(QStringLiteral("Encrypted QtNote storage key mismatch (item %1, configured %2)")
+                                 .arg(QString::fromLatin1(payload.keyId.left(8).toHex()),
+                                      QString::fromLatin1(expectedKeyId.left(8).toHex()))) };
+        }
         auto opened = SecureEnvelope::open(payload.envelope, masterKey, context(payload, nodeName));
         if (!opened)
             return { {}, opened.error };
