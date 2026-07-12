@@ -175,6 +175,7 @@ void XmppWorker::resetClient()
     trustManager_ = nullptr;
     omemoManager_ = nullptr;
     pendingKeyRequests_.clear();
+    pendingInboundKeyRequests_.clear();
 
     if (client_) {
         client_->disconnectFromServer();
@@ -534,6 +535,25 @@ XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)
     return { true };
 }
 
+void XmppWorker::approveKeySyncRequest(const QString &requestId)
+{
+    const auto pending = pendingInboundKeyRequests_.take(requestId);
+    if (pending.senderKey.isEmpty())
+        return;
+    const auto trusted = trustOwnOmemoDevice(pending.senderKey);
+    if (!trusted.ok) {
+        emit workerError(trusted.error);
+        return;
+    }
+    if (config_.masterKey.size() != SecureEnvelope::MasterKeySize)
+        return;
+    QJsonObject response { { QStringLiteral("protocol"), QStringLiteral("urn:xmpp:qtnote:key-sync:1") },
+                           { QStringLiteral("type"), QStringLiteral("response") },
+                           { QStringLiteral("requestId"), requestId },
+                           { QStringLiteral("recoveryKey"), SecureEnvelope::encodeRecoveryKey(config_.masterKey) } };
+    sendKeySyncMessage(pending.from, response);
+}
+
 void XmppWorker::sendKeySyncMessage(const QString &to, const QJsonObject &payload)
 {
     QXmppMessage message;
@@ -571,13 +591,26 @@ void XmppWorker::handleKeySyncMessage(const QXmppMessage &message)
         emit workerError(waitError);
         return;
     }
-    if (*trust != QXmpp::TrustLevel::ManuallyTrusted && *trust != QXmpp::TrustLevel::Authenticated) {
-        emit workerError(QStringLiteral("Ignored an XMPP storage-key request from an untrusted own device"));
-        return;
-    }
-
     const auto type = payload.value(QStringLiteral("type")).toString();
     if (type == QStringLiteral("request")) {
+        const auto requestId = payload.value(QStringLiteral("requestId")).toString();
+        if (requestId.isEmpty())
+            return;
+        if (*trust != QXmpp::TrustLevel::ManuallyTrusted && *trust != QXmpp::TrustLevel::Authenticated) {
+            const auto devices   = ownOmemoDevices(&waitError);
+            const bool ownDevice = std::any_of(devices.cbegin(), devices.cend(), [&](const XmppDeviceInfo &device) {
+                return device.keyId == metadata->senderKey();
+            });
+            if (!ownDevice) {
+                emit workerError(waitError.isEmpty()
+                                     ? QStringLiteral("Ignored a storage-key request from an unknown OMEMO device")
+                                     : waitError);
+                return;
+            }
+            pendingInboundKeyRequests_.insert(requestId, { message.from(), metadata->senderKey() });
+            emit keySyncTrustRequested(requestId, metadata->senderKey());
+            return;
+        }
         if (config_.masterKey.size() != SecureEnvelope::MasterKeySize)
             return;
         QJsonObject response { { QStringLiteral("protocol"), QStringLiteral("urn:xmpp:qtnote:key-sync:1") },
@@ -587,6 +620,8 @@ void XmppWorker::handleKeySyncMessage(const QXmppMessage &message)
                                  SecureEnvelope::encodeRecoveryKey(config_.masterKey) } };
         sendKeySyncMessage(message.from(), response);
     } else if (type == QStringLiteral("response")) {
+        if (*trust != QXmpp::TrustLevel::ManuallyTrusted && *trust != QXmpp::TrustLevel::Authenticated)
+            return;
         const auto requestId = payload.value(QStringLiteral("requestId")).toString();
         if (!pendingKeyRequests_.remove(requestId))
             return;

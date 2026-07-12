@@ -39,6 +39,7 @@ public:
     XmppStatusResult      requestStorageKey();
     QList<XmppDeviceInfo> ownOmemoDevices(QString *error);
     XmppStatusResult      trustOwnOmemoDevice(const QByteArray &keyId);
+    void                  approveKeySyncRequest(const QString &requestId);
 
 signals:
     void remoteNotePublished(const QtNote::XmppRemoteNote &note);
@@ -47,6 +48,7 @@ signals:
     void connectionChanged(bool connected);
     void workerError(const QString &error);
     void storageKeyReceived(const QByteArray &key);
+    void keySyncTrustRequested(const QString &requestId, const QByteArray &keyId);
 
 private:
     void resetClient();
@@ -76,6 +78,11 @@ private:
     bool                     prepared_ { false };
     bool                     omemoReady_ { false };
     QSet<QString>            pendingKeyRequests_;
+    struct PendingInboundKeyRequest {
+        QString    from;
+        QByteArray senderKey;
+    };
+    QHash<QString, PendingInboundKeyRequest> pendingInboundKeyRequests_;
 };
 
 } // namespace QtNote

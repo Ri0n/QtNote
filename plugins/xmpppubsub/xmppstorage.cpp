@@ -99,6 +99,24 @@ XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
         }
         installReceivedStorageKey(jid, key);
     });
+    connect(
+        worker_, &XmppWorker::keySyncTrustRequested, this, [this](const QString &requestId, const QByteArray &keyId) {
+            QMessageBox dialog(QMessageBox::Question, tr("Trust an own QtNote device?"),
+                               tr("Another device on your XMPP account wants to synchronize the QtNote storage "
+                                  "key."),
+                               QMessageBox::NoButton, QApplication::activeWindow());
+            dialog.setInformativeText(
+                tr("OMEMO fingerprint: %1\n\nOnly approve this request if you recognize the device or can "
+                   "compare this fingerprint on both devices.")
+                    .arg(QString::fromLatin1(keyId.toHex())));
+            auto *reject  = dialog.addButton(tr("Reject"), QMessageBox::RejectRole);
+            auto *approve = dialog.addButton(tr("Trust and send key"), QMessageBox::AcceptRole);
+            dialog.setDefaultButton(reject);
+            dialog.exec();
+            if (dialog.clickedButton() == approve) {
+                QMetaObject::invokeMethod(worker_, [this, requestId]() { worker_->approveKeySyncRequest(requestId); });
+            }
+        });
 
     workerThread_.start();
 }
