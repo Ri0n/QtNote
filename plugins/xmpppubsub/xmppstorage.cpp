@@ -7,6 +7,7 @@
 #include <QMetaObject>
 #include <QPointer>
 #include <QSettings>
+#include <QTimer>
 #include <QUuid>
 
 #include <algorithm>
@@ -258,6 +259,11 @@ XmppRemoteNote XmppStorage::toRemote(const Note &note) const
 
 QList<Note> XmppStorage::noteList(int limit)
 {
+    if (cacheValid_) {
+        auto notes = cache_.values();
+        std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
+        return limit > 0 ? notes.mid(0, limit) : notes;
+    }
     if (errorState_) {
         auto cached = cache_.values();
         std::sort(cached.begin(), cached.end(), noteListItemModifyComparer);
@@ -307,6 +313,16 @@ NoteListJob *XmppStorage::refreshNotesAsync(int limit, QObject *owner)
 {
     auto *job = new NoteListJob(owner ? owner : this);
     job->start();
+    if (cacheValid_) {
+        auto notes = cache_.values();
+        std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
+        QPointer<NoteListJob> guard(job);
+        QTimer::singleShot(0, this, [guard, notes = limit > 0 ? notes.mid(0, limit) : notes]() {
+            if (guard && !guard->isFinished())
+                guard->complete(notes);
+        });
+        return job;
+    }
     if (errorState_) {
         job->fail({ StorageError::Unavailable, errorStateMessage_, false });
         return job;

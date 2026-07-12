@@ -271,6 +271,25 @@ QList<Note> NextcloudStorage::noteList(int limit)
         refreshed.insert(remote.id, fromRemote(remote));
     }
 
+    for (auto it = locallySaved_.begin(); it != locallySaved_.end();) {
+        const auto remote = refreshed.constFind(it.key());
+        if (remote != refreshed.cend()
+            && remote.value().backendValue(QStringLiteral("etag")) == it.value().backendValue(QStringLiteral("etag"))) {
+            it = locallySaved_.erase(it);
+        } else {
+            refreshed.insert(it.key(), it.value());
+            ++it;
+        }
+    }
+    for (auto it = locallyRemoved_.begin(); it != locallyRemoved_.end();) {
+        if (!refreshed.contains(*it))
+            it = locallyRemoved_.erase(it);
+        else {
+            refreshed.remove(*it);
+            ++it;
+        }
+    }
+
     cache_      = std::move(refreshed);
     cacheValid_ = true;
 
@@ -322,6 +341,25 @@ NoteListJob *NextcloudStorage::refreshNotesAsync(int limit, QObject *owner)
                             refreshed.insert(remote.id, old.value());
                         else
                             refreshed.insert(remote.id, fromRemote(remote));
+                    }
+                    for (auto it = locallySaved_.begin(); it != locallySaved_.end();) {
+                        const auto remote = refreshed.constFind(it.key());
+                        if (remote != refreshed.cend()
+                            && remote.value().backendValue(QStringLiteral("etag"))
+                                == it.value().backendValue(QStringLiteral("etag"))) {
+                            it = locallySaved_.erase(it);
+                        } else {
+                            refreshed.insert(it.key(), it.value());
+                            ++it;
+                        }
+                    }
+                    for (auto it = locallyRemoved_.begin(); it != locallyRemoved_.end();) {
+                        if (!refreshed.contains(*it))
+                            it = locallyRemoved_.erase(it);
+                        else {
+                            refreshed.remove(*it);
+                            ++it;
+                        }
                     }
                     cache_      = std::move(refreshed);
                     cacheValid_ = accessible_ = true;
@@ -485,6 +523,8 @@ bool NextcloudStorage::saveNote(const Note &note)
         cache_.remove(oldId);
     }
     cache_.insert(newId, saved);
+    locallySaved_.insert(newId, saved);
+    locallyRemoved_.remove(newId);
     cacheValid_ = true;
 
     if (!oldId.isEmpty() && oldId != newId) {
@@ -541,6 +581,8 @@ NoteSaveJob *NextcloudStorage::saveNoteAsync(const Note &note, QObject *owner)
                     if (!oldId.isEmpty() && oldId != saved.id())
                         cache_.remove(oldId);
                     cache_.insert(saved.id(), saved);
+                    locallySaved_.insert(saved.id(), saved);
+                    locallyRemoved_.remove(saved.id());
                     cacheValid_ = accessible_ = true;
                     if (!oldId.isEmpty() && oldId != saved.id())
                         emit noteIdChanged(saved, oldId);
@@ -578,6 +620,8 @@ void NextcloudStorage::removeNote(const QString &noteId)
     }
 
     cache_.remove(noteId);
+    locallySaved_.remove(noteId);
+    locallyRemoved_.insert(noteId);
     if (!removed.isNull()) {
         emit noteRemoved(removed);
     }
@@ -609,6 +653,8 @@ NoteRemoveJob *NextcloudStorage::removeNoteAsync(const QString &noteId, QObject 
                         return;
                     }
                     cache_.remove(noteId);
+                    locallySaved_.remove(noteId);
+                    locallyRemoved_.insert(noteId);
                     if (!removed.isNull())
                         emit noteRemoved(removed);
                     guard->complete();
@@ -640,6 +686,8 @@ void NextcloudStorage::applyConfig(const NextcloudConfig &config)
     settings.setValue(QStringLiteral("storage.nextcloud.timeoutMs"), config.timeoutMs);
 
     cache_.clear();
+    locallySaved_.clear();
+    locallyRemoved_.clear();
     cacheValid_ = false;
     accessible_ = false;
     config_     = config;

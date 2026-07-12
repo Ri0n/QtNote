@@ -5,6 +5,7 @@
 #include "notestorage.h"
 
 #include <QHash>
+#include <QSet>
 #include <QThread>
 
 namespace QtNote {
@@ -58,6 +59,10 @@ private:
     QThread              workerThread_;
     NextcloudWorker     *worker_ { nullptr };
     QHash<QString, Note> cache_;
+    // Successful writes may briefly be absent from an eventually consistent
+    // list response. Keep them until the server snapshot acknowledges them.
+    QHash<QString, Note> locallySaved_;
+    QSet<QString>        locallyRemoved_;
     bool                 cacheValid_ { false };
     bool                 accessible_ { false };
 };
