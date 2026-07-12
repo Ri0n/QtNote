@@ -549,8 +549,22 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
     QStringList errors;
     for (const auto &resource : qtNoteResources) {
         const auto requestId = newUuid();
-        auto       result    = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId)),
-                                         config_.timeoutMs, &waitError);
+        auto encrypted = awaitTask(omemoManager_->encryptIq(keySyncExtension_->makeRequest(resource, requestId), {}),
+                                   config_.timeoutMs, &waitError);
+        if (!encrypted) {
+            errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
+            continue;
+        }
+        if (const auto *error = std::get_if<QXmppError>(&*encrypted)) {
+            errors.append(QStringLiteral("%1: OMEMO encryption failed: %2").arg(resource, errorText(*error)));
+            continue;
+        }
+        auto encryptedIq = std::move(std::get<std::unique_ptr<QXmppIq>>(*encrypted));
+        if (!encryptedIq) {
+            errors.append(QStringLiteral("%1: OMEMO returned no encrypted IQ").arg(resource));
+            continue;
+        }
+        auto result = awaitTask(client_->sendIq(std::move(*encryptedIq)), config_.timeoutMs, &waitError);
         if (!result) {
             errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
             continue;

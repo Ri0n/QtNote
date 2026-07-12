@@ -34,7 +34,7 @@ XmppKeyResolutionDialog::XmppKeyResolutionDialog(const XmppKeyAuditResult &audit
         const auto &candidate = audit.candidates.at(row);
         keys_->setItem(row, 0, new QTableWidgetItem(QString::fromLatin1(candidate.keyId.left(8).toHex())));
         keys_->setItem(
-            row, 1, new QTableWidgetItem(candidate.resource.isEmpty() ? tr("No online device") : candidate.resource));
+            row, 1, new QTableWidgetItem(candidate.resource.isEmpty() ? tr("Key not received") : candidate.resource));
         keys_->setItem(row, 2, new QTableWidgetItem(QString::number(candidate.indexItemCount)));
         QString status;
         if (candidate.key.isEmpty())
@@ -50,6 +50,12 @@ XmppKeyResolutionDialog::XmppKeyResolutionDialog(const XmppKeyAuditResult &audit
     if (firstAvailable != audit.candidates.cend())
         keys_->selectRow(int(std::distance(audit.candidates.cbegin(), firstAvailable)));
     auto *chooseLayout = new QVBoxLayout(choose);
+    if (!audit.error.isEmpty()) {
+        auto *warning = new QLabel(tr("Some online devices did not return a key:\n%1").arg(audit.error));
+        warning->setWordWrap(true);
+        warning->setStyleSheet(QStringLiteral("color: palette(highlight);"));
+        chooseLayout->addWidget(warning);
+    }
     chooseLayout->addWidget(keys_);
     auto *note = new QLabel(
         tr("Recovery is non-destructive: QtNote decrypts each accessible note with its original key, publishes the "
