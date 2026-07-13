@@ -92,30 +92,30 @@ asynchronous boundary intended for both the current QXmpp implementation and a
 future Iris implementation.
 
 ```mermaid
-flowchart LR
-    UI["QtNote UI and NoteManager"]
-    OUTBOX["DraftManager<br/>encrypted persistent outbox"]
-    STORAGE["XmppStorage<br/>NoteStorage adapter and memory cache"]
-    API["XmppBackend<br/>asynchronous backend contract"]
-    QXMPP["XmppWorker<br/>QXmpp and QCoro implementation"]
-    IRIS["Iris backend<br/>planned"]
-    CODEC["XmppNoteCodec<br/>AES-256-GCM envelopes"]
-    OMEMO["OMEMO storage and trust storage"]
-    KEYCHAIN["OS keychain"]
-    SERVER["XMPP server<br/>PEP, PubSub, routing"]
+graph TD;
+    UI["QtNote UI and NoteManager"];
+    OUTBOX["DraftManager: encrypted persistent outbox"];
+    STORAGE["XmppStorage: adapter and memory cache"];
+    API["XmppBackend: asynchronous backend contract"];
+    QXMPP["XmppWorker: QXmpp and QCoro backend"];
+    IRIS["Planned Iris backend"];
+    CODEC["XmppNoteCodec: AES-256-GCM envelopes"];
+    OMEMO["OMEMO state and trust storage"];
+    KEYCHAIN["OS keychain"];
+    SERVER["XMPP server: PEP, PubSub and routing"];
 
-    UI -->|refresh and load jobs| STORAGE
-    UI -->|save and delete intent| OUTBOX
-    OUTBOX -->|async jobs| STORAGE
-    STORAGE --> API
-    API --> QXMPP
-    API -. alternative implementation .-> IRIS
-    QXMPP --> CODEC
-    QXMPP --> OMEMO
-    CODEC -->|encrypted index and content| SERVER
-    OMEMO -->|devices, bundles, encrypted IQ| SERVER
-    STORAGE -->|storage master key| KEYCHAIN
-    OMEMO -->|encrypted local OMEMO state| KEYCHAIN
+    UI --> STORAGE;
+    UI --> OUTBOX;
+    OUTBOX --> STORAGE;
+    STORAGE --> API;
+    API --> QXMPP;
+    API -.-> IRIS;
+    QXMPP --> CODEC;
+    QXMPP --> OMEMO;
+    CODEC --> SERVER;
+    OMEMO --> SERVER;
+    STORAGE --> KEYCHAIN;
+    OMEMO --> KEYCHAIN;
 ```
 
 ### Component responsibilities
@@ -141,24 +141,29 @@ can be isolated later without changing the backend contract.
 ## Connection and initial synchronization
 
 ```mermaid
-flowchart TD
-    START[Start or apply configuration] --> VALIDATE{Configuration and protected keys valid?}
-    VALIDATE -- No --> RECOVER{Only storage key is missing?}
-    RECOVER -- Yes --> WIZARD[Open key recovery wizard]
-    RECOVER -- No --> STOP[Stop backend and report configuration error]
-    VALIDATE -- Yes --> TLS[Connect with TLS and authenticate]
-    TLS -->|authentication or permanent error| STOP
-    TLS -->|temporary network error| BACKOFF[Keep outbox and wait for retry or network change]
-    TLS --> OMEMO[Load or create local OMEMO device]
-    OMEMO --> PEP[Discover PEP and publish-options]
-    PEP --> NODES[Create or verify private index and content nodes]
-    NODES --> IDS[Request index item IDs]
-    IDS -->|supported| BATCH[Fetch encrypted index items in batches]
-    IDS -->|unsupported| PAGE[Fetch one item page and mark a partial result if paginated]
-    BATCH --> DECRYPT[Decrypt and validate indexes]
-    PAGE --> DECRYPT
-    DECRYPT --> CACHE[Replace in-memory note index cache]
-    CACHE --> READY[Storage accessible]
+graph TD;
+    START["Start or apply configuration"] --> VALIDATE{"Configuration and protected keys valid?"};
+    VALIDATE --> VALID["Configuration is valid"];
+    VALIDATE --> MISSING["Only storage key is missing"];
+    VALIDATE --> INVALID["Other configuration error"];
+    MISSING --> WIZARD["Open key recovery wizard"];
+    INVALID --> STOP["Stop backend and report error"];
+    VALID --> TLS["Connect with TLS and authenticate"];
+    TLS --> PERMANENT["Authentication or permanent error"];
+    TLS --> TEMPORARY["Temporary network error"];
+    TLS --> CONNECTED["Authenticated connection"];
+    PERMANENT --> STOP;
+    TEMPORARY --> BACKOFF["Keep outbox and wait before retry"];
+    CONNECTED --> OMEMO["Load or create local OMEMO device"];
+    OMEMO --> PEP["Discover PEP and publish-options"];
+    PEP --> NODES["Create or verify private note nodes"];
+    NODES --> IDS["Request index item IDs"];
+    IDS --> BATCH["Fetch encrypted indexes in batches"];
+    IDS --> FALLBACK["Fallback to one possibly partial page"];
+    BATCH --> DECRYPT["Decrypt and validate indexes"];
+    FALLBACK --> DECRYPT;
+    DECRYPT --> CACHE["Replace in-memory index cache"];
+    CACHE --> READY["Storage accessible"];
 ```
 
 Incoming index publication events update or invalidate the cache. Reconnect,
@@ -194,13 +199,13 @@ sequenceDiagram
     alt server revision differs
         P-->>B: newer revision
         B-->>S: conflict and remote note
-        S-->>O: permanent conflict; retain local draft
+        S-->>O: permanent conflict, retain local draft
     else revision matches
         B->>B: generate revision and encrypt content/index
         B->>P: publish content item
         B->>P: publish index item
         B-->>S: saved note
-        S-->>O: success; remove outbox record
+        S-->>O: success, remove outbox record
         S-->>UI: noteAdded or noteModified
     end
 ```
@@ -224,15 +229,20 @@ already-missing items complete the operation. A temporary error retains the
 record and retries with a delay capped at five minutes.
 
 ```mermaid
-flowchart LR
-    REQUEST[User deletes note] --> RECORD[Persist encrypted Delete operation]
-    RECORD --> INDEX[Retract index item]
-    INDEX --> CONTENT[Retract content item]
-    CONTENT -->|success or item-not-found| DONE[Remove outbox record]
-    INDEX -->|temporary error| RETRY[30, 60, 120, 240, 300 second backoff]
-    CONTENT -->|temporary error| RETRY
-    RETRY --> INDEX
-    INDEX -->|permanent error| HOLD[Keep operation for diagnosis; do not loop]
+graph TD;
+    REQUEST["User deletes note"] --> RECORD["Persist encrypted Delete operation"];
+    RECORD --> INDEX["Retract index item"];
+    INDEX --> CONTENT["Retract content item"];
+    CONTENT --> SUCCESS["Success or item-not-found"];
+    SUCCESS --> DONE["Remove outbox record"];
+    INDEX --> TEMP1["Temporary index error"];
+    CONTENT --> TEMP2["Temporary content error"];
+    TEMP1 --> RETRY["Keep operation and retry with bounded backoff"];
+    TEMP2 --> RETRY;
+    INDEX --> PERM1["Permanent index error"];
+    CONTENT --> PERM2["Permanent content error"];
+    PERM1 --> HOLD["Keep operation for diagnosis"];
+    PERM2 --> HOLD;
 ```
 
 ## Storage-key exchange between own devices
