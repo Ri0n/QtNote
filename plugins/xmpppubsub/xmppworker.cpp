@@ -65,7 +65,7 @@ namespace {
                 ? QStringLiteral("[OMEMO public prekeys omitted]")
                 : QStringLiteral("[OMEMO bundle %1; public prekeys omitted]").arg(details.join(QLatin1Char(' ')));
         }
-        if (xml.contains(QStringLiteral("<encrypted"))) {
+        if (xml.contains(QRegularExpression(QStringLiteral("<encrypted\\b[^>]*xmlns=['\"]urn:xmpp:omemo:2['\"]")))) {
             const auto sid
                 = QRegularExpression(QStringLiteral("<header\\s[^>]*sid=['\"]([^'\"]+)['\"]")).match(xml).captured(1);
             QStringList recipients;
@@ -583,31 +583,6 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
         output.error = omemo.error;
         return output;
     }
-    // Destroy QXmpp's in-memory session cache before editing persistent storage. Otherwise the
-    // old manager can write its stale sessions back while it is being destroyed.
-    resetClient();
-    QString sessionResetError;
-    {
-        XmppOmemoStorage cleanStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
-        if (!cleanStorage.isValid()) {
-            output.error = cleanStorage.errorString();
-            return output;
-        }
-        if (!awaitVoidTask(cleanStorage.removeAllDevices(), config_.timeoutMs, &sessionResetError)) {
-            output.error = QStringLiteral("Could not reset cached OMEMO sessions: %1").arg(sessionResetError);
-            return output;
-        }
-    }
-    auto reconnected = connectToServer();
-    if (!reconnected.ok) {
-        output.error = reconnected.error;
-        return output;
-    }
-    omemo = ensureOmemo();
-    if (!omemo.ok) {
-        output.error = omemo.error;
-        return output;
-    }
     if (client_->encryptionExtension() != omemoManager_) {
         output.error = QStringLiteral("OMEMO is not installed as the XMPP encryption extension; refusing to send "
                                       "the key-sync request without encryption");
@@ -634,8 +609,8 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
     if (!discoveryError.isEmpty())
         errors.append(discoveryError);
 
-    // setUp() and device discovery may populate peer state again. Drop it at the last possible
-    // moment so encryptIq() must establish a fresh session from the published bundle.
+    // Drop peer sessions at the last possible moment, without reconnecting: reconnecting loses the
+    // current presence snapshot and makes online resource discovery race with incoming presences.
     if (!awaitVoidTask(omemoStorage_->removeAllDevices(), config_.timeoutMs, &waitError)) {
         output.error = QStringLiteral("Could not reset OMEMO sessions before key sync: %1").arg(waitError);
         return output;
