@@ -790,6 +790,22 @@ bool XmppWorker::ownOmemoBundleValid(QString *error)
                                             : QStringLiteral("The published OMEMO identity key does not match");
         return false;
     }
+    auto list = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                                        QStringLiteral("urn:xmpp:omemo:2:devices"),
+                                                                        QStringLiteral("current")),
+                          config_.timeoutMs, &waitError);
+    if (!list || std::holds_alternative<QXmppError>(*list)) {
+        if (error)
+            *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
+        return false;
+    }
+    const auto &devices = std::get<XmppOmemoDeviceListItem>(*list).devices();
+    if (std::none_of(devices.cbegin(), devices.cend(),
+                     [&own](const auto &device) { return device.id.toUInt() == own.deviceId; })) {
+        if (error)
+            *error = QStringLiteral("The local OMEMO device is missing from the published device list");
+        return false;
+    }
     return true;
 }
 
@@ -801,8 +817,35 @@ XmppStatusResult XmppWorker::repairOwnOmemoDevice()
     const auto omemo = ensureOmemo();
     if (!omemo.ok)
         return omemo;
-    const auto oldDeviceId = omemoStorage_->ownDeviceId();
+    const auto oldDeviceId  = omemoStorage_->ownDeviceId();
+    const auto oldDeviceKey = omemoStorage_->ownIdentityKey();
     QString    error;
+    auto       oldBundle = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                                               QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                                               QString::number(oldDeviceId)),
+                                     config_.timeoutMs, &error);
+    const bool bundleIsValid = oldBundle && std::holds_alternative<XmppOmemoBundleItem>(*oldBundle)
+        && std::get<XmppOmemoBundleItem>(*oldBundle).identityKey() == oldDeviceKey;
+    if (bundleIsValid) {
+        const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+        auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
+                                  bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
+                                       config_.timeoutMs, &error);
+        if (!list || std::holds_alternative<QXmppError>(*list))
+            return { false, false, false, !list ? error : errorText(std::get<QXmppError>(*list)) };
+        auto item    = std::get<XmppOmemoDeviceListItem>(*list);
+        auto devices = item.devices();
+        if (std::none_of(devices.cbegin(), devices.cend(),
+                         [oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; })) {
+            devices.append({ config_.resource, QString::number(oldDeviceId), {} });
+            item.setDevices(std::move(devices));
+            auto published = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item),
+                                       config_.timeoutMs, &error);
+            if (!published || std::holds_alternative<QXmppError>(*published))
+                return { false, false, false, !published ? error : errorText(std::get<QXmppError>(*published)) };
+        }
+        return { true };
+    }
     if (!awaitVoidTask(omemoManager_->resetOwnDeviceLocally(), config_.timeoutMs, &error))
         return { false, false, false, error };
     omemoReady_ = false;
@@ -822,6 +865,10 @@ XmppStatusResult XmppWorker::repairOwnOmemoDevice()
     auto item    = std::get<XmppOmemoDeviceListItem>(*list);
     auto devices = item.devices();
     devices.removeIf([oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; });
+    const auto newDeviceId = omemoStorage_->ownDeviceId();
+    if (std::none_of(devices.cbegin(), devices.cend(),
+                     [newDeviceId](const auto &device) { return device.id.toUInt() == newDeviceId; }))
+        devices.append({ config_.resource, QString::number(newDeviceId), {} });
     item.setDevices(std::move(devices));
     auto published = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item),
                                config_.timeoutMs, &error);
