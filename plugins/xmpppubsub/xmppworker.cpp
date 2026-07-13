@@ -853,9 +853,6 @@ XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)
     if (!awaitVoidTask(omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted), config_.timeoutMs,
                        &error))
         return { false, false, false, error };
-    if (!awaitVoidTask(omemoManager_->buildMissingSessions({ QXmppUtils::jidToBareJid(config_.jid) }),
-                       config_.timeoutMs, &error))
-        return { false, false, false, error };
     return { true };
 }
 
