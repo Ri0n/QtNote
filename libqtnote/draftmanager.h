@@ -14,6 +14,7 @@ namespace QtNote {
 class FileDraftStore;
 class NoteSaveJob;
 class NoteStorage;
+class StorageJob;
 
 class QTNOTE_EXPORT DraftManager final : public QObject {
     Q_OBJECT
@@ -29,6 +30,7 @@ public:
                                    Note::Format format);
     DraftStoreError    markReady(const QUuid &draftId);
     DraftStoreError    discard(const QUuid &draftId);
+    DraftStoreError    queueRemoval(const QString &storageId, const QString &noteId);
     void               publishPending();
     QList<DraftRecord> recoverableDrafts() const;
 
@@ -41,13 +43,16 @@ signals:
 private:
     explicit DraftManager(QObject *parent = nullptr);
     QByteArray loadOrCreateMasterKey(QString *error);
+    void       process(const DraftRecord &record);
     void       publish(const DraftRecord &record);
+    void       remove(const DraftRecord &record);
+    void       retry(const DraftRecord &record, const QString &message, bool retryable = true);
     void       storageAboutToBeRemoved(NoteStorage *storage);
 
-    std::unique_ptr<FileDraftStore>     store_;
-    QSet<QUuid>                         publishing_;
-    QHash<QUuid, QPointer<NoteSaveJob>> publishJobs_;
-    QString                             lastError_;
+    std::unique_ptr<FileDraftStore>    store_;
+    QSet<QUuid>                        publishing_;
+    QHash<QUuid, QPointer<StorageJob>> publishJobs_;
+    QString                            lastError_;
 };
 
 } // namespace QtNote

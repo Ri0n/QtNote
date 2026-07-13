@@ -12,6 +12,8 @@
 namespace QtNote {
 
 struct QTNOTE_EXPORT DraftRecord {
+    enum Operation { Publish, Delete };
+
     // Persistent publication state. A draft remains Editing while its note is
     // open; only an explicit close may make it eligible for publication.
     enum State {
@@ -23,6 +25,7 @@ struct QTNOTE_EXPORT DraftRecord {
     };
 
     QUuid        id;
+    Operation    operation { Publish };
     State        state { Editing };
     QString      storageId;
     QString      remoteNoteId;

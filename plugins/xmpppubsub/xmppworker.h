@@ -1,9 +1,10 @@
 #ifndef XMPPWORKER_H
 #define XMPPWORKER_H
 
-#include "xmppdto.h"
+#include "xmppbackend.h"
 #include "xmppomemopubsubitems.h"
 
+#include <QCoroTask>
 #include <QObject>
 #include <QSet>
 #include <QXmppError.h>
@@ -22,57 +23,69 @@ class XmppPepExtension;
 class XmppOmemoStorage;
 class XmppKeySyncExtension;
 
-class XmppWorker final : public QObject {
+class XmppWorker final : public XmppBackend {
     Q_OBJECT
 
 public:
     explicit XmppWorker(QObject *parent = nullptr);
     ~XmppWorker() override;
 
-    void setConfig(const XmppConfig &config);
-    void shutdown();
+    void setConfig(const XmppConfig &config) override;
+    void shutdown() override;
 
-    XmppStatusResult      probe();
-    XmppListResult        listNotes();
-    XmppNoteResult        getNote(const QString &id);
-    XmppNoteResult        saveNote(const XmppRemoteNote &localNote);
-    XmppStatusResult      deleteNote(const QString &id);
-    XmppKeyAuditResult    auditStorageKeys();
-    XmppRekeyResult       rekeyStorage(const QList<QByteArray> &keys, const QByteArray &canonicalKey);
-    XmppDeviceInfo        ownOmemoDevice() const;
-    bool                  ownOmemoBundleValid(QString *error);
-    XmppStatusResult      repairOwnOmemoDevice();
-    QList<XmppDeviceInfo> ownOmemoDevices(QString *error);
-    XmppStatusResult      trustOwnOmemoDevice(const QByteArray &keyId);
-    void                  approveKeySyncRequest(const QString &requestId);
-
-signals:
-    void remoteNotePublished(const QtNote::XmppRemoteNote &note);
-    void remoteNoteRetracted(const QString &id);
-    void remoteNodeInvalidated();
-    void connectionChanged(bool connected);
-    void workerError(const QString &error);
-    void keySyncTrustRequested(const QString &requestId, const QByteArray &keyId);
+    void           probeAsync(StatusCallback callback) override;
+    void           listNotesAsync(ListCallback callback) override;
+    void           getNoteAsync(const QString &id, NoteCallback callback) override;
+    void           saveNoteAsync(const XmppRemoteNote &localNote, NoteCallback callback) override;
+    void           deleteNoteAsync(const QString &id, StatusCallback callback) override;
+    XmppDeviceInfo ownOmemoDevice() const override;
+    void           ownOmemoDevicesAsync(DevicesCallback callback) override;
+    void           ownOmemoBundleValidAsync(StatusCallback callback) override;
+    void           repairOwnOmemoDeviceAsync(StatusCallback callback) override;
+    void           trustOwnOmemoDeviceAsync(const QByteArray &keyId, StatusCallback callback) override;
+    void           trustOwnOmemoDevicesAsync(const QList<QByteArray> &keyIds, StatusCallback callback) override;
+    void           auditStorageKeysAsync(AuditCallback callback) override;
+    void           rekeyStorageAsync(const QList<QByteArray> &keys, const QByteArray &canonicalKey,
+                                     RekeyCallback callback) override;
+    void           approveKeySyncRequest(const QString &requestId) override;
 
 private:
-    void             resetClient();
-    void             createClient();
-    XmppStatusResult ensureReady();
-    XmppStatusResult ensureOmemo();
-    QStringList      onlineQtNoteResources(QString *error = nullptr);
-    void             handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
+    void resetClient();
+    void createClient();
+    void handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
     void handleKeySyncTrustRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
     void finishKeySyncTrustRequest(const QString &requestId, const QByteArray &senderKey);
     void cacheOwnOmemoBundle();
     void scheduleOwnOmemoBundleRepair(uint32_t consumedPreKeyId);
     void repairOwnOmemoBundleAfterPreKeyUse(int attemptsRemaining = 8);
-    XmppStatusResult connectToServer();
-    XmppStatusResult verifyPrivateStorageSupport();
-    XmppStatusResult ensureNode(const QString &nodeName);
+    void connectToServerAsync(StatusCallback callback);
+    QCoro::Task<XmppStatusResult> connectToServerTask();
+    QCoro::Task<XmppStatusResult> verifyPrivateStorageSupportTask();
+    QCoro::Task<XmppStatusResult> verifyNodeTask(const QString &nodeName);
+    QCoro::Task<XmppStatusResult> ensureNodeTask(const QString &nodeName);
+    QCoro::Task<XmppStatusResult> ensureOmemoTask();
+    QCoro::Task<XmppStatusResult> ensureReadyTask();
 
-    XmppNoteResult requestNote(const QString &id);
-    static QString newUuid();
-    static QString errorText(const QXmppError &error);
+    QCoro::Task<XmppListResult>                            listNotesTask();
+    QCoro::Task<XmppNoteResult>                            requestNoteTask(const QString &id);
+    QCoro::Task<XmppNoteResult>                            getNoteTask(const QString &id);
+    QCoro::Task<XmppNoteResult>                            publishNoteTask(XmppRemoteNote note);
+    QCoro::Task<XmppNoteResult>                            saveNoteTask(XmppRemoteNote localNote);
+    QCoro::Task<XmppStatusResult>                          deleteNoteTask(const QString &id);
+    QCoro::Task<std::pair<QList<XmppDeviceInfo>, QString>> ownOmemoDevicesTask();
+    QCoro::Task<XmppStatusResult>                          ownOmemoBundleValidTask();
+    QCoro::Task<XmppStatusResult>                          repairOwnOmemoDeviceTask();
+    QCoro::Task<XmppStatusResult>                          trustOwnOmemoDeviceTask(const QByteArray &keyId);
+    QCoro::Task<XmppStatusResult>                          trustOwnOmemoDevicesTask(QList<QByteArray> keyIds);
+    QCoro::Task<std::pair<QStringList, QString>>           onlineQtNoteResourcesTask();
+    QCoro::Task<XmppKeyAuditResult>                        auditStorageKeysTask();
+    QCoro::Task<XmppRekeyResult> rekeyStorageTask(QList<QByteArray> keys, QByteArray canonicalKey);
+    QCoro::Task<>                approveKeySyncRequestTask(const QString &requestId);
+    QCoro::Task<>                handleKeySyncRequestTask(QString requestId, QString from, QByteArray senderKey);
+    QCoro::Task<>                cacheOwnOmemoBundleTask();
+    QCoro::Task<>                repairOwnOmemoBundleAfterPreKeyUseTask(int attemptsRemaining);
+    static QString               newUuid();
+    static QString               errorText(const QXmppError &error);
 
     XmppConfig                         config_;
     QXmppClient                       *client_ { nullptr };

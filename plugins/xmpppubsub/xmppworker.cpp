@@ -8,7 +8,9 @@
 #include "xmpppepextension.h"
 #include "xmpppersistenttruststorage.h"
 
-#include <QEventLoop>
+#include <QCoroFuture>
+#include <QCoroSignal>
+#include <QFutureInterface>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
@@ -90,59 +92,6 @@ namespace {
         return xml;
     }
 
-    template <typename T> std::optional<T> awaitTask(QXmppTask<T> &&task, int timeoutMs, QString *error)
-    {
-        QObject    guard;
-        QEventLoop loop;
-        QTimer     timer;
-        timer.setSingleShot(true);
-
-        std::optional<T> result;
-        bool             timedOut = false;
-
-        QObject::connect(&timer, &QTimer::timeout, &guard, [&]() {
-            timedOut = true;
-            loop.quit();
-        });
-
-        task.then(&guard, [&](T &&value) {
-            result.emplace(std::move(value));
-            loop.quit();
-        });
-
-        if (!result) {
-            timer.start(qMax(1000, timeoutMs));
-            loop.exec();
-            timer.stop();
-        }
-
-        if (timedOut && error) {
-            *error = QStringLiteral("XMPP operation timed out after %1 ms").arg(timeoutMs);
-        }
-        return result;
-    }
-
-    bool awaitVoidTask(QXmppTask<void> &&task, int timeoutMs, QString *error)
-    {
-        QObject    guard;
-        QEventLoop loop;
-        QTimer     timer;
-        timer.setSingleShot(true);
-        bool finished = false;
-        QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-        task.then(&guard, [&]() {
-            finished = true;
-            loop.quit();
-        });
-        if (!finished) {
-            timer.start(qMax(1000, timeoutMs));
-            loop.exec();
-        }
-        if (!finished && error)
-            *error = QStringLiteral("XMPP operation timed out after %1 ms").arg(timeoutMs);
-        return finished;
-    }
-
     QXmppPubSubNodeConfig privateNodeConfig()
     {
         QXmppPubSubNodeConfig config;
@@ -189,7 +138,7 @@ namespace {
 
 } // namespace
 
-XmppWorker::XmppWorker(QObject *parent) : QObject(parent) { qRegisterMetaType<XmppRemoteNote>(); }
+XmppWorker::XmppWorker(QObject *parent) : XmppBackend(parent) { qRegisterMetaType<XmppRemoteNote>(); }
 
 XmppWorker::~XmppWorker() { resetClient(); }
 
@@ -275,11 +224,11 @@ void XmppWorker::createClient()
         if (note)
             emit remoteNotePublished(note.value);
         else
-            emit workerError(note.error.message);
+            emit backendError(note.error.message);
     });
     connect(pepExtension_, &XmppPepExtension::noteRetracted, this, &XmppWorker::remoteNoteRetracted);
     connect(pepExtension_, &XmppPepExtension::nodeInvalidated, this, &XmppWorker::remoteNodeInvalidated);
-    connect(pepExtension_, &XmppPepExtension::malformedItem, this, &XmppWorker::workerError);
+    connect(pepExtension_, &XmppPepExtension::malformedItem, this, &XmppBackend::backendError);
     // The handlers perform synchronous-looking waits for additional PubSub IQs.
     // Do not run them from inside QXmppClient's stanza dispatch: an IQ response
     // may need to reach an extension that is later in the dispatch chain.
@@ -297,15 +246,16 @@ void XmppWorker::createClient()
         emit connectionChanged(false);
     });
     connect(client_, &QXmppClient::errorOccurred, this,
-            [this](const QXmppError &error) { emit workerError(errorText(error)); });
+            [this](const QXmppError &error) { emit backendError(errorText(error)); });
 }
 
-XmppStatusResult XmppWorker::connectToServer()
+void XmppWorker::connectToServerAsync(StatusCallback callback)
 {
     createClient();
 
     if (client_->isConnected()) {
-        return { true };
+        callback({ true });
+        return;
     }
 
     QXmppConfiguration configuration;
@@ -315,254 +265,212 @@ XmppStatusResult XmppWorker::connectToServer()
     configuration.setAutoReconnectionEnabled(true);
     configuration.setStreamSecurityMode(QXmppConfiguration::TLSRequired);
     configuration.setIgnoreSslErrors(false);
-    if (!config_.host.isEmpty()) {
+    if (!config_.host.isEmpty())
         configuration.setHost(config_.host);
-    }
-    if (config_.port > 0) {
+    if (config_.port > 0)
         configuration.setPort(config_.port);
-    }
 
-    QObject    guard;
-    QEventLoop loop;
-    QTimer     timer;
-    timer.setSingleShot(true);
+    struct ConnectionAttempt {
+        bool                       finished { false };
+        QPointer<QObject>          guard;
+        QPointer<QTimer>           timer;
+        XmppWorker::StatusCallback callback;
+    };
+    const auto attempt = std::make_shared<ConnectionAttempt>();
+    auto      *guard   = new QObject(this);
+    auto      *timer   = new QTimer(guard);
+    timer->setSingleShot(true);
+    attempt->guard    = guard;
+    attempt->timer    = timer;
+    attempt->callback = std::move(callback);
 
-    bool    connected = false;
-    QString connectionError;
-
-    QObject::connect(client_, &QXmppClient::connected, &guard, [&]() {
-        connected = true;
-        loop.quit();
-    });
-    QObject::connect(client_, &QXmppClient::errorOccurred, &guard, [&](const QXmppError &error) {
-        connectionError = errorText(error);
-        loop.quit();
-    });
-    QObject::connect(client_, &QXmppClient::disconnected, &guard, [&]() {
-        if (!connected && connectionError.isEmpty()) {
-            connectionError = QStringLiteral("XMPP connection closed before authentication");
-        }
-        loop.quit();
-    });
-    QObject::connect(&timer, &QTimer::timeout, &guard, [&]() {
-        connectionError = QStringLiteral("XMPP connection timed out after %1 ms").arg(config_.timeoutMs);
-        loop.quit();
-    });
-
-    timer.start(qMax(1000, config_.timeoutMs));
-    client_->connectToServer(configuration);
-    if (!client_->isConnected()) {
-        loop.exec();
-    } else {
-        connected = true;
-    }
-    timer.stop();
-
-    if (!connected && !client_->isConnected()) {
-        client_->disconnectFromServer();
-        return { false, false, false,
-                 connectionError.isEmpty() ? QStringLiteral("Failed to connect to the XMPP server") : connectionError };
-    }
-
-    return { true };
-}
-
-XmppStatusResult XmppWorker::verifyPrivateStorageSupport()
-{
-    if (!discovery_) {
-        return { false, false, false, QStringLiteral("QXmpp discovery manager is unavailable") };
-    }
-
-    QString    waitError;
-    const auto pepService = QXmppUtils::jidToBareJid(config_.jid);
-#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
-    auto result = awaitTask(discovery_->info(pepService), config_.timeoutMs, &waitError);
-#else
-    auto result = awaitTask(discovery_->requestDiscoInfo(pepService), config_.timeoutMs, &waitError);
-#endif
-    if (!result) {
-        return { false, false, false, waitError };
-    }
-
-    if (const auto *error = std::get_if<QXmppError>(&*result)) {
-        return { false, false, false,
-                 QStringLiteral("Could not discover the PEP service at %1: %2").arg(pepService, errorText(*error)) };
-    }
-
-    const auto &info           = std::get<0>(*result);
-    bool        hasPepIdentity = false;
-    for (const auto &identity : info.identities()) {
-        if (identity.category() == QStringLiteral("pubsub") && identity.type() == QStringLiteral("pep")) {
-            hasPepIdentity = true;
-            break;
-        }
-    }
-
-    if (!hasPepIdentity) {
-        return { false, false, false, QStringLiteral("The XMPP server does not advertise a pubsub/pep identity") };
-    }
-    if (!info.features().contains(QString::fromLatin1(PublishOptionsFeature))) {
-        return { false, false, false,
-                 QStringLiteral("The server does not advertise PubSub publish-options; "
-                                "QtNote will not store private notes there") };
-    }
-
-    return { true };
-}
-
-XmppStatusResult XmppWorker::ensureNode(const QString &nodeName)
-{
-    const auto verifyNode = [this, nodeName]() -> XmppStatusResult {
-        QString waitError;
-        auto    verify = awaitTask(pubSub_->requestOwnPepNodeConfiguration(nodeName), config_.timeoutMs, &waitError);
-        if (!verify) {
-            return { false, false, false, waitError };
-        }
-        if (const auto *error = std::get_if<QXmppError>(&*verify)) {
-            return { false, false, false,
-                     QStringLiteral("Could not verify the QtNote PEP node: %1").arg(errorText(*error)) };
-        }
-
-        const bool isPrivate = nodeConfigIsPrivate(std::get<QXmppPubSubNodeConfig>(*verify));
-
-        if (!isPrivate) {
-            return { false, false, false,
-                     QStringLiteral("The QtNote PEP node is not persistent and private after configuration") };
-        }
-        return { true };
+    const auto finish = [this, attempt](XmppStatusResult result) {
+        if (attempt->finished)
+            return;
+        attempt->finished = true;
+        if (attempt->timer)
+            attempt->timer->stop();
+        auto callback = std::move(attempt->callback);
+        if (attempt->guard)
+            attempt->guard->deleteLater();
+        if (!result.ok && client_)
+            client_->disconnectFromServer();
+        callback(std::move(result));
     };
 
-    QString waitError;
-    auto    request = awaitTask(pubSub_->requestOwnPepNodeConfiguration(nodeName), config_.timeoutMs, &waitError);
-    if (!request) {
-        return { false, false, false, waitError };
+    connect(client_, &QXmppClient::connected, guard, [finish]() mutable { finish({ true }); });
+    connect(client_, &QXmppClient::errorOccurred, guard, [finish](const QXmppError &error) mutable {
+        finish({ false, false, false, XmppWorker::errorText(error) });
+    });
+    connect(client_, &QXmppClient::disconnected, guard, [finish]() mutable {
+        finish({ false, false, false, QStringLiteral("XMPP connection closed before authentication") });
+    });
+    connect(timer, &QTimer::timeout, guard, [finish, timeoutMs = config_.timeoutMs]() mutable {
+        finish({ false, false, false, QStringLiteral("XMPP connection timed out after %1 ms").arg(timeoutMs) });
+    });
+
+    timer->start(qMax(1000, config_.timeoutMs));
+    client_->connectToServer(configuration);
+    if (client_->isConnected())
+        finish({ true });
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::connectToServerTask()
+{
+    // Connection establishment has three competing completion signals. Keep that
+    // fan-in in the existing Qt callback helper; all sequential protocol work is
+    // expressed as coroutines below.
+    QFutureInterface<XmppStatusResult> promise;
+    auto                               future = promise.future();
+    connectToServerAsync([promise](XmppStatusResult result) mutable {
+        promise.reportResult(std::move(result));
+        promise.reportFinished();
+    });
+    co_return co_await future;
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::verifyPrivateStorageSupportTask()
+{
+    if (!discovery_)
+        co_return XmppStatusResult { false, false, false, QStringLiteral("QXmpp discovery manager is unavailable") };
+
+    const auto pepService = QXmppUtils::jidToBareJid(config_.jid);
+#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
+    auto result = co_await discovery_->info(pepService).toFuture(this);
+#else
+    auto result = co_await discovery_->requestDiscoInfo(pepService).toFuture(this);
+#endif
+    if (const auto *error = std::get_if<QXmppError>(&result)) {
+        co_return XmppStatusResult {
+            false, false, false,
+            QStringLiteral("Could not discover the PEP service at %1: %2").arg(pepService, errorText(*error))
+        };
     }
 
-    if (const auto *requestError = std::get_if<QXmppError>(&*request)) {
+    const auto &info = std::get<0>(result);
+    const bool  hasPepIdentity
+        = std::any_of(info.identities().cbegin(), info.identities().cend(), [](const auto &identity) {
+              return identity.category() == QStringLiteral("pubsub") && identity.type() == QStringLiteral("pep");
+          });
+    if (!hasPepIdentity) {
+        co_return XmppStatusResult { false, false, false,
+                                     QStringLiteral("The XMPP server does not advertise a pubsub/pep identity") };
+    }
+    if (!info.features().contains(QString::fromLatin1(PublishOptionsFeature))) {
+        co_return XmppStatusResult { false, false, false,
+                                     QStringLiteral("The server does not advertise PubSub publish-options; "
+                                                    "QtNote will not store private notes there") };
+    }
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::verifyNodeTask(const QString &nodeName)
+{
+    auto result = co_await pubSub_->requestOwnPepNodeConfiguration(nodeName).toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&result)) {
+        co_return XmppStatusResult {
+            false, false, false, QStringLiteral("Could not verify the QtNote PEP node: %1").arg(errorText(*error))
+        };
+    }
+    if (!nodeConfigIsPrivate(std::get<QXmppPubSubNodeConfig>(result))) {
+        co_return XmppStatusResult {
+            false, false, false, QStringLiteral("The QtNote PEP node is not persistent and private after configuration")
+        };
+    }
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(const QString &nodeName)
+{
+    auto request = co_await pubSub_->requestOwnPepNodeConfiguration(nodeName).toFuture(this);
+    if (const auto *requestError = std::get_if<QXmppError>(&request)) {
         if (!isItemNotFound(*requestError)) {
-            return {
+            co_return XmppStatusResult {
                 false, false, false,
                 QStringLiteral("Could not read the QtNote PEP node configuration: %1").arg(errorText(*requestError))
             };
         }
 
-        auto create
-            = awaitTask(pubSub_->createOwnPepNode(nodeName, privateNodeConfig()), config_.timeoutMs, &waitError);
-        if (!create) {
-            return { false, false, false, waitError };
+        auto created = co_await pubSub_->createOwnPepNode(nodeName, privateNodeConfig()).toFuture(this);
+        if (const auto *error = resultError(created);
+            error && !hasStanzaCondition(*error, QXmppStanza::Error::Conflict)) {
+            co_return XmppStatusResult {
+                false, false, false,
+                QStringLiteral("Could not create the private QtNote PEP node: %1").arg(errorText(*error))
+            };
         }
-        if (const auto *error = resultError(*create)) {
-            // Another resource can create the node between our configuration request
-            // and this request. In that case verify the now-existing node.
-            if (hasStanzaCondition(*error, QXmppStanza::Error::Conflict)) {
-                return verifyNode();
-            }
-            return { false, false, false,
-                     QStringLiteral("Could not create the private QtNote PEP node: %1").arg(errorText(*error)) };
-        }
-        return verifyNode();
+        co_return co_await verifyNodeTask(nodeName);
     }
 
-    auto config = std::get<QXmppPubSubNodeConfig>(*request);
-    if (nodeConfigIsPrivate(config))
-        return { true };
-    config.setAccessModel(QXmppPubSubNodeConfig::Allowlist);
-    config.setPersistItems(true);
-    config.setMaxItems(QXmppPubSubNodeConfig::Max {});
-    config.setIncludePayloads(true);
-    config.setRetractNotificationsEnabled(true);
-    config.setNodeType(QXmppPubSubNodeConfig::Leaf);
-    config.setPayloadType(QtNotePubSubItem::payloadNamespace);
+    auto nodeConfig = std::get<QXmppPubSubNodeConfig>(request);
+    if (nodeConfigIsPrivate(nodeConfig))
+        co_return XmppStatusResult { true };
 
-    auto configured = awaitTask(pubSub_->configureOwnPepNode(nodeName, config), config_.timeoutMs, &waitError);
-    if (!configured) {
-        return { false, false, false, waitError };
-    }
-    if (const auto *error = resultError(*configured)) {
-        return { false, false, false,
-                 QStringLiteral("Could not configure the private QtNote PEP node: %1").arg(errorText(*error)) };
-    }
+    nodeConfig.setAccessModel(QXmppPubSubNodeConfig::Allowlist);
+    nodeConfig.setPersistItems(true);
+    nodeConfig.setMaxItems(QXmppPubSubNodeConfig::Max {});
+    nodeConfig.setIncludePayloads(true);
+    nodeConfig.setRetractNotificationsEnabled(true);
+    nodeConfig.setNodeType(QXmppPubSubNodeConfig::Leaf);
+    nodeConfig.setPayloadType(QtNotePubSubItem::payloadNamespace);
 
-    return verifyNode();
+    auto configured = co_await pubSub_->configureOwnPepNode(nodeName, nodeConfig).toFuture(this);
+    if (const auto *error = resultError(configured)) {
+        co_return XmppStatusResult {
+            false, false, false,
+            QStringLiteral("Could not configure the private QtNote PEP node: %1").arg(errorText(*error))
+        };
+    }
+    co_return co_await verifyNodeTask(nodeName);
 }
 
-XmppStatusResult XmppWorker::ensureReady()
-{
-    auto connected = connectToServer();
-    if (!connected.ok) {
-        return connected;
-    }
-    auto omemo = ensureOmemo();
-    if (!omemo.ok)
-        return omemo;
-    if (prepared_) {
-        return { true };
-    }
-
-    auto support = verifyPrivateStorageSupport();
-    if (!support.ok) {
-        return support;
-    }
-
-    auto node = ensureNode(config_.indexNodeName());
-    if (!node.ok)
-        return node;
-    node = ensureNode(config_.contentNodeName());
-    if (!node.ok)
-        return node;
-
-    prepared_ = true;
-    return { true };
-}
-
-XmppStatusResult XmppWorker::ensureOmemo()
+QCoro::Task<XmppStatusResult> XmppWorker::ensureOmemoTask()
 {
     if (omemoReady_)
-        return { true };
-    if (!omemoStorage_ || !omemoStorage_->isValid())
-        return { false, false, false,
-                 omemoStorage_ ? omemoStorage_->errorString() : QStringLiteral("OMEMO storage is unavailable") };
+        co_return XmppStatusResult { true };
+    if (!omemoStorage_ || !omemoStorage_->isValid()) {
+        co_return XmppStatusResult { false, false, false,
+                                     omemoStorage_ ? omemoStorage_->errorString()
+                                                   : QStringLiteral("OMEMO storage is unavailable") };
+    }
+
     omemoManager_->setAcceptedSessionBuildingTrustLevels(QXmpp::TrustLevel::ManuallyTrusted
                                                          | QXmpp::TrustLevel::Authenticated);
     omemoManager_->setNewDeviceAutoSessionBuildingEnabled(false);
-    QString waitError;
-    auto    loaded = awaitTask(omemoManager_->load(), config_.timeoutMs, &waitError);
-    if (!loaded)
-        return { false, false, false, waitError };
-    if (!*loaded) {
-        auto setup = awaitTask(omemoManager_->setUp(config_.resource), config_.timeoutMs, &waitError);
-        if (!setup)
-            return { false, false, false, waitError };
-        if (!*setup)
-            return { false, false, false, QStringLiteral("Could not initialize the OMEMO device") };
+    const bool loaded = co_await omemoManager_->load().toFuture(this);
+    if (!loaded) {
+        const bool setup = co_await omemoManager_->setUp(config_.resource).toFuture(this);
+        if (!setup) {
+            co_return XmppStatusResult { false, false, false, QStringLiteral("Could not initialize the OMEMO device") };
+        }
     }
     omemoReady_ = true;
     cacheOwnOmemoBundle();
-    return { true };
+    co_return XmppStatusResult { true };
 }
 
-void XmppWorker::cacheOwnOmemoBundle()
+QCoro::Task<XmppStatusResult> XmppWorker::ensureReadyTask()
 {
-    if (!pubSub_ || !omemoStorage_ || !omemoStorage_->ownDeviceId())
-        return;
-    QString error;
-    auto    result = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                         QStringLiteral("urn:xmpp:omemo:2:bundles"),
-                                                                         QString::number(omemoStorage_->ownDeviceId())),
-                               config_.timeoutMs, &error);
-    if (!result || !std::holds_alternative<XmppOmemoBundleItem>(*result)) {
-        qWarning().noquote() << "Could not cache own OMEMO bundle:" << error;
-        return;
-    }
-    auto bundle = std::get<XmppOmemoBundleItem>(std::move(*result));
-    if (bundle.identityKey() != omemoStorage_->ownIdentityKey()) {
-        qWarning() << "Own OMEMO bundle was not cached because its identity key is invalid";
-        return;
-    }
-    cachedOwnOmemoBundle_ = std::move(bundle);
-    qInfo() << "Cached valid own OMEMO bundle: device=" << omemoStorage_->ownDeviceId()
-            << "prekeys=" << cachedOwnOmemoBundle_->publicPreKeys().size();
+    auto status = co_await connectToServerTask();
+    if (!status.ok)
+        co_return status;
+    status = co_await ensureOmemoTask();
+    if (!status.ok || prepared_)
+        co_return status;
+    status = co_await verifyPrivateStorageSupportTask();
+    if (!status.ok)
+        co_return status;
+    status = co_await ensureNodeTask(config_.indexNodeName());
+    if (!status.ok)
+        co_return status;
+    status = co_await ensureNodeTask(config_.contentNodeName());
+    if (!status.ok)
+        co_return status;
+    prepared_ = true;
+    co_return XmppStatusResult { true };
 }
+
+void XmppWorker::cacheOwnOmemoBundle() { cacheOwnOmemoBundleTask(); }
 
 void XmppWorker::scheduleOwnOmemoBundleRepair(uint32_t consumedPreKeyId)
 {
@@ -576,300 +484,23 @@ void XmppWorker::scheduleOwnOmemoBundleRepair(uint32_t consumedPreKeyId)
 
 void XmppWorker::repairOwnOmemoBundleAfterPreKeyUse(int attemptsRemaining)
 {
-    ownBundleRepairScheduled_ = false;
-    if (!cachedOwnOmemoBundle_ || !pubSub_ || !client_ || !client_->isConnected())
-        return;
-
-    const auto bareJid  = QXmppUtils::jidToBareJid(config_.jid);
-    const auto deviceId = omemoStorage_->ownDeviceId();
-    QString    error;
-    auto       result = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(
-                                bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(deviceId)),
-                                  config_.timeoutMs, &error);
-    if (!result || !std::holds_alternative<XmppOmemoBundleItem>(*result)) {
-        qWarning().noquote() << "Could not inspect own OMEMO bundle after pre-key use:" << error;
-        return;
-    }
-
-    auto published = std::get<XmppOmemoBundleItem>(std::move(*result));
-    if (published.identityKey() == omemoStorage_->ownIdentityKey()) {
-        bool stillContainsConsumedKey = false;
-        for (const auto id : consumedOwnPreKeyIds_)
-            stillContainsConsumedKey |= published.publicPreKeys().contains(id);
-        if (stillContainsConsumedKey && attemptsRemaining > 0) {
-            ownBundleRepairScheduled_ = true;
-            QTimer::singleShot(
-                250, this, [this, attemptsRemaining]() { repairOwnOmemoBundleAfterPreKeyUse(attemptsRemaining - 1); });
-            return;
-        }
-        cachedOwnOmemoBundle_ = std::move(published);
-        consumedOwnPreKeyIds_.clear();
-        return;
-    }
-    if (!published.identityKey().isEmpty()) {
-        qWarning() << "Refusing to repair own OMEMO bundle with a mismatching identity key";
-        return;
-    }
-
-    auto repaired = published.repairedFrom(*cachedOwnOmemoBundle_, consumedOwnPreKeyIds_);
-    auto outcome  = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), repaired),
-                              config_.timeoutMs, &error);
-    if (!outcome || std::holds_alternative<QXmppError>(*outcome)) {
-        qWarning().noquote() << "Could not repair QXmpp's incomplete own OMEMO bundle:"
-                             << (!outcome ? error : errorText(std::get<QXmppError>(*outcome)));
-        return;
-    }
-    qInfo() << "Repaired incomplete own OMEMO bundle after pre-key use: device=" << deviceId
-            << "prekeys=" << repaired.publicPreKeys().size();
-    cachedOwnOmemoBundle_ = std::move(repaired);
-    consumedOwnPreKeyIds_.clear();
+    repairOwnOmemoBundleAfterPreKeyUseTask(attemptsRemaining);
 }
 
-QStringList XmppWorker::onlineQtNoteResources(QString *error)
+void XmppWorker::probeAsync(StatusCallback callback) { ensureReadyTask().then(std::move(callback)); }
+
+void XmppWorker::listNotesAsync(ListCallback callback) { listNotesTask().then(std::move(callback)); }
+
+void XmppWorker::getNoteAsync(const QString &id, NoteCallback callback) { getNoteTask(id).then(std::move(callback)); }
+
+void XmppWorker::saveNoteAsync(const XmppRemoteNote &note, NoteCallback callback)
 {
-    if (!roster_ || !discovery_) {
-        if (error)
-            *error = QStringLiteral("XMPP resource discovery is unavailable");
-        return {};
-    }
-    const auto  bareJid     = QXmppUtils::jidToBareJid(config_.jid);
-    const auto  ownResource = client_->configuration().resource();
-    QStringList result;
-    QStringList failures;
-    QString     waitError;
-    for (const auto &resource : roster_->getResources(bareJid)) {
-        if (resource.isEmpty() || resource == ownResource)
-            continue;
-        const auto fullJid = bareJid + QLatin1Char('/') + resource;
-#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
-        auto info = awaitTask(discovery_->info(fullJid), config_.timeoutMs, &waitError);
-#else
-        auto info = awaitTask(discovery_->requestDiscoInfo(fullJid), config_.timeoutMs, &waitError);
-#endif
-        if (!info) {
-            failures.append(QStringLiteral("%1: %2").arg(fullJid, waitError));
-            continue;
-        }
-        if (const auto *requestError = std::get_if<QXmppError>(&*info)) {
-            failures.append(QStringLiteral("%1: %2").arg(fullJid, errorText(*requestError)));
-            continue;
-        }
-        const auto &disco = std::get<0>(*info);
-        if (!disco.features().contains(XmppKeySyncExtension::feature))
-            continue;
-        result.append(resource);
-    }
-    if (error && !failures.isEmpty())
-        *error = failures.join(QLatin1Char('\n'));
-    return result;
+    saveNoteTask(note).then(std::move(callback));
 }
 
-XmppStatusResult XmppWorker::probe() { return ensureReady(); }
-
-XmppKeyAuditResult XmppWorker::auditStorageKeys()
+void XmppWorker::deleteNoteAsync(const QString &id, StatusCallback callback)
 {
-    XmppKeyAuditResult output;
-    auto               connected = connectToServer();
-    if (!connected.ok) {
-        output.error = connected.error;
-        return output;
-    }
-    auto omemo = ensureOmemo();
-    if (!omemo.ok) {
-        output.error = omemo.error;
-        return output;
-    }
-    if (client_->encryptionExtension() != omemoManager_) {
-        output.error = QStringLiteral("OMEMO is not installed as the XMPP encryption extension; refusing to send "
-                                      "the key-sync request without encryption");
-        return output;
-    }
-    if (!keySyncExtension_) {
-        output.error = QStringLiteral("XMPP resource discovery is unavailable");
-        return output;
-    }
-
-    if (config_.masterKey.size() == SecureEnvelope::MasterKeySize) {
-        output.candidates.append({ client_->configuration().resource(), config_.masterKey,
-                                   SecureEnvelope::keyId(config_.masterKey), 0, true });
-    }
-
-    const auto  bareJid = QXmppUtils::jidToBareJid(config_.jid);
-    QString     discoveryError;
-    const auto  resources = onlineQtNoteResources(&discoveryError);
-    QStringList qtNoteResources;
-    for (const auto &resource : resources)
-        qtNoteResources.append(bareJid + QLatin1Char('/') + resource);
-    QString     waitError;
-    QStringList errors;
-    if (!discoveryError.isEmpty())
-        errors.append(discoveryError);
-
-    // Drop peer sessions at the last possible moment, without reconnecting: reconnecting loses the
-    // current presence snapshot and makes online resource discovery race with incoming presences.
-    if (!awaitVoidTask(omemoStorage_->resetAllSessions(), config_.timeoutMs, &waitError)) {
-        output.error = QStringLiteral("Could not reset OMEMO sessions before key sync: %1").arg(waitError);
-        return output;
-    }
-    for (const auto &resource : qtNoteResources) {
-        const auto trustRequestId = newUuid();
-        auto       trustResult    = awaitTask(
-            client_->sendIq(
-                keySyncExtension_->makeTrustRequest(resource, trustRequestId, omemoStorage_->ownIdentityKey()), {}),
-            config_.timeoutMs, &waitError);
-        if (!trustResult) {
-            errors.append(QStringLiteral("%1: OMEMO trust bootstrap failed: %2").arg(resource, waitError));
-            continue;
-        }
-        if (const auto *error = std::get_if<QXmppError>(&*trustResult)) {
-            errors.append(QStringLiteral("%1: OMEMO trust bootstrap failed: %2").arg(resource, errorText(*error)));
-            continue;
-        }
-        if (!XmppKeySyncExtension::isTrustApproved(std::get<QDomElement>(*trustResult), trustRequestId)) {
-            errors.append(QStringLiteral("%1: invalid OMEMO trust bootstrap response").arg(resource));
-            continue;
-        }
-
-        auto requestId = newUuid();
-        auto result    = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
-                                   config_.timeoutMs, &waitError);
-        if (!result) {
-            // Some QXmpp versions consume the first pre-key (KEX) stanza to establish the Signal
-            // session without forwarding its decrypted IQ payload to client extensions. Retry once
-            // using the session that the first stanza has just established.
-            qWarning().noquote() << "Key-sync KEX request timed out; retrying with the established OMEMO session:"
-                                 << resource;
-            requestId = newUuid();
-            waitError.clear();
-            result = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
-                               config_.timeoutMs, &waitError);
-        }
-        if (!result) {
-            errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
-            continue;
-        }
-        if (const auto *error = std::get_if<QXmppError>(&*result)) {
-            errors.append(QStringLiteral("%1: %2").arg(resource, errorText(*error)));
-            continue;
-        }
-        const auto encoded = XmppKeySyncExtension::responseRecoveryKey(std::get<QDomElement>(*result), requestId);
-        auto       key     = SecureEnvelope::decodeRecoveryKey(encoded);
-        if (!key) {
-            errors.append(QStringLiteral("%1: invalid storage key response").arg(resource));
-            continue;
-        }
-        const auto keyId    = SecureEnvelope::keyId(key.value);
-        auto       existing = std::find_if(output.candidates.begin(), output.candidates.end(),
-                                           [&](const auto &candidate) { return candidate.keyId == keyId; });
-        if (existing == output.candidates.end())
-            output.candidates.append({ resource, key.value, keyId, 0, false });
-        else if (!existing->resource.split(QStringLiteral(", ")).contains(resource))
-            existing->resource += QStringLiteral(", ") + resource;
-    }
-
-    QString waitError2;
-    auto idsResult = awaitTask(pubSub_->requestOwnPepItemIds(config_.indexNodeName()), config_.timeoutMs, &waitError2);
-    if (!idsResult || std::holds_alternative<QXmppError>(*idsResult)) {
-        output.error = !idsResult ? waitError2 : errorText(std::get<QXmppError>(*idsResult));
-        return output;
-    }
-    const auto ids          = std::get<QVector<QString>>(*idsResult);
-    output.totalIndexItems  = ids.size();
-    constexpr int BatchSize = 50;
-    for (int offset = 0; offset < ids.size(); offset += BatchSize) {
-        QStringList batch;
-        for (int i = offset; i < qMin(offset + BatchSize, ids.size()); ++i)
-            batch.append(ids.at(i));
-        auto items = awaitTask(pubSub_->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                       config_.indexNodeName(), batch),
-                               config_.timeoutMs, &waitError2);
-        if (!items || std::holds_alternative<QXmppError>(*items)) {
-            output.error = !items ? waitError2 : errorText(std::get<QXmppError>(*items));
-            return output;
-        }
-        for (const auto &item : std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(*items).items) {
-            if (!item.isValid()) {
-                output.error = item.parseError();
-                return output;
-            }
-            const auto keyId     = item.payload().keyId;
-            auto       candidate = std::find_if(output.candidates.begin(), output.candidates.end(),
-                                                [&](const auto &entry) { return entry.keyId == keyId; });
-            if (candidate == output.candidates.end())
-                output.candidates.append({ {}, {}, keyId, 1, false });
-            else
-                ++candidate->indexItemCount;
-        }
-    }
-    output.ok = true;
-    if (!errors.isEmpty())
-        output.error = QStringLiteral("Some QtNote resources failed:\n%1").arg(errors.join('\n'));
-    return output;
-}
-
-QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
-{
-    auto connected = connectToServer();
-    if (!connected.ok) {
-        if (error)
-            *error = connected.error;
-        return {};
-    }
-    auto omemo = ensureOmemo();
-    if (!omemo.ok) {
-        if (error)
-            *error = omemo.error;
-        return {};
-    }
-    QString    waitError;
-    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
-    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
-                              bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
-                                   config_.timeoutMs, &waitError);
-    if (!list || std::holds_alternative<QXmppError>(*list)) {
-        if (error)
-            *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
-        return {};
-    }
-    const auto            ownDeviceId = omemoStorage_->ownDeviceId();
-    const auto            ownKey      = omemoStorage_->ownIdentityKey();
-    QList<XmppDeviceInfo> result;
-    int                   missingFingerprints = 0;
-    for (const auto &listed : std::get<XmppOmemoDeviceListItem>(*list).devices()) {
-        if (listed.id.toUInt() == ownDeviceId)
-            continue;
-        auto bundle = awaitTask(
-            pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
-            config_.timeoutMs, &waitError);
-        QByteArray keyId;
-        if (!bundle) {
-            qWarning().noquote() << "Could not fetch OMEMO bundle: id=" << listed.id << "label=" << listed.label
-                                 << "error=" << waitError;
-        } else if (const auto *requestError = std::get_if<QXmppError>(&*bundle)) {
-            qWarning().noquote() << "Could not fetch OMEMO bundle: id=" << listed.id << "label=" << listed.label
-                                 << "error=" << errorText(*requestError);
-        } else {
-            keyId = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
-            qInfo().noquote() << "Parsed OMEMO bundle: id=" << listed.id << "label=" << listed.label
-                              << "identity-key-size=" << keyId.size() << "identity-key="
-                              << (keyId.isEmpty() ? QStringLiteral("<missing>") : QString::fromLatin1(keyId.toHex()));
-        }
-        if (!keyId.isEmpty() && keyId == ownKey)
-            continue;
-        const auto deviceName = listed.label.isEmpty() ? QStringLiteral("OMEMO device %1").arg(listed.id)
-                                                       : QStringLiteral("%1 (OMEMO %2)").arg(listed.label, listed.id);
-        if (keyId.isEmpty()) {
-            ++missingFingerprints;
-            result.append({ deviceName, listed.id.toUInt(), {}, int(QXmpp::TrustLevel::Undecided) });
-            continue;
-        }
-        auto trust = awaitTask(omemoManager_->trustLevel(bareJid, keyId), config_.timeoutMs, &waitError);
-        result.append({ deviceName, listed.id.toUInt(), keyId, int(trust ? *trust : QXmpp::TrustLevel::Undecided) });
-    }
-    if (error && missingFingerprints > 0) {
-        *error = QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints);
-    }
-    return result;
+    deleteNoteTask(id).then(std::move(callback));
 }
 
 XmppDeviceInfo XmppWorker::ownOmemoDevice() const
@@ -880,194 +511,46 @@ XmppDeviceInfo XmppWorker::ownOmemoDevice() const
              int(QXmpp::TrustLevel::Authenticated) };
 }
 
-bool XmppWorker::ownOmemoBundleValid(QString *error)
+void XmppWorker::ownOmemoDevicesAsync(DevicesCallback callback)
 {
-    const auto connected = connectToServer();
-    if (!connected.ok) {
-        if (error)
-            *error = connected.error;
-        return false;
-    }
-    const auto omemo = ensureOmemo();
-    if (!omemo.ok) {
-        if (error)
-            *error = omemo.error;
-        return false;
-    }
-    const auto own = ownOmemoDevice();
-    if (!own.deviceId || own.keyId.isEmpty()) {
-        if (error)
-            *error = QStringLiteral("The local OMEMO device is not initialized");
-        return false;
-    }
-    QString waitError;
-    auto    bundle = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                         QStringLiteral("urn:xmpp:omemo:2:bundles"),
-                                                                         QString::number(own.deviceId)),
-                               config_.timeoutMs, &waitError);
-    if (!bundle || std::holds_alternative<QXmppError>(*bundle)) {
-        if (error)
-            *error = !bundle ? waitError : errorText(std::get<QXmppError>(*bundle));
-        return false;
-    }
-    const auto publishedKey = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
-    if (publishedKey != own.keyId) {
-        qWarning().noquote() << "Own OMEMO publication invalid: local-id=" << own.deviceId << "bundle-identity-key="
-                             << (publishedKey.isEmpty() ? QStringLiteral("<missing>")
-                                                        : QString::fromLatin1(publishedKey.toHex()));
-        if (error)
-            *error = publishedKey.isEmpty() ? QStringLiteral("The published OMEMO bundle has no identity key")
-                                            : QStringLiteral("The published OMEMO identity key does not match");
-        return false;
-    }
-    auto list = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                        QStringLiteral("urn:xmpp:omemo:2:devices"),
-                                                                        QStringLiteral("current")),
-                          config_.timeoutMs, &waitError);
-    if (!list || std::holds_alternative<QXmppError>(*list)) {
-        if (error)
-            *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
-        return false;
-    }
-    const auto &devices = std::get<XmppOmemoDeviceListItem>(*list).devices();
-    QStringList publishedIds;
-    for (const auto &device : devices)
-        publishedIds.append(device.id);
-    const bool announced = std::any_of(devices.cbegin(), devices.cend(),
-                                       [&own](const auto &device) { return device.id.toUInt() == own.deviceId; });
-    qInfo().noquote() << "Own OMEMO publication check: local-id=" << own.deviceId
-                      << "bundle-key-match=true published-device-ids=" << publishedIds.join(QLatin1Char(','))
-                      << "announced=" << announced;
-    if (!announced) {
-        if (error)
-            *error = QStringLiteral("The local OMEMO device is missing from the published device list");
-        return false;
-    }
-    return true;
+    ownOmemoDevicesTask().then([callback = std::move(callback)](auto result) mutable {
+        callback(std::move(result.first), std::move(result.second));
+    });
 }
 
-XmppStatusResult XmppWorker::repairOwnOmemoDevice()
+void XmppWorker::ownOmemoBundleValidAsync(StatusCallback callback)
 {
-    const auto connected = connectToServer();
-    if (!connected.ok)
-        return connected;
-    const auto omemo = ensureOmemo();
-    if (!omemo.ok)
-        return omemo;
-    const auto oldDeviceId  = omemoStorage_->ownDeviceId();
-    const auto oldDeviceKey = omemoStorage_->ownIdentityKey();
-    QString    error;
-    auto       oldBundle = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                               QStringLiteral("urn:xmpp:omemo:2:bundles"),
-                                                                               QString::number(oldDeviceId)),
-                                     config_.timeoutMs, &error);
-    const bool bundleIsValid = oldBundle && std::holds_alternative<XmppOmemoBundleItem>(*oldBundle)
-        && std::get<XmppOmemoBundleItem>(*oldBundle).identityKey() == oldDeviceKey;
-    if (bundleIsValid) {
-        const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
-        auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
-                                  bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
-                                       config_.timeoutMs, &error);
-        if (!list || std::holds_alternative<QXmppError>(*list))
-            return { false, false, false, !list ? error : errorText(std::get<QXmppError>(*list)) };
-        auto item    = std::get<XmppOmemoDeviceListItem>(*list);
-        auto devices = item.devices();
-        if (std::none_of(devices.cbegin(), devices.cend(),
-                         [oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; })) {
-            devices.append({ config_.resource, QString::number(oldDeviceId), {} });
-            item.setDevices(std::move(devices));
-            auto published = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item),
-                                       config_.timeoutMs, &error);
-            if (!published || std::holds_alternative<QXmppError>(*published))
-                return { false, false, false, !published ? error : errorText(std::get<QXmppError>(*published)) };
-        }
-        return { true };
-    }
-    if (!awaitVoidTask(omemoManager_->resetOwnDeviceLocally(), config_.timeoutMs, &error))
-        return { false, false, false, error };
-    omemoReady_ = false;
-    auto setup  = awaitTask(omemoManager_->setUp(config_.resource), config_.timeoutMs, &error);
-    if (!setup)
-        return { false, false, false, error };
-    if (!*setup)
-        return { false, false, false, QStringLiteral("QXmpp could not create a replacement OMEMO device") };
-    omemoReady_ = true;
-
-    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
-    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
-                              bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
-                                   config_.timeoutMs, &error);
-    if (!list || std::holds_alternative<QXmppError>(*list))
-        return { false, false, false, !list ? error : errorText(std::get<QXmppError>(*list)) };
-    auto item    = std::get<XmppOmemoDeviceListItem>(*list);
-    auto devices = item.devices();
-    devices.removeIf([oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; });
-    const auto newDeviceId = omemoStorage_->ownDeviceId();
-    if (std::none_of(devices.cbegin(), devices.cend(),
-                     [newDeviceId](const auto &device) { return device.id.toUInt() == newDeviceId; }))
-        devices.append({ config_.resource, QString::number(newDeviceId), {} });
-    item.setDevices(std::move(devices));
-    auto published = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item),
-                               config_.timeoutMs, &error);
-    if (!published || std::holds_alternative<QXmppError>(*published))
-        return { false, false, false, !published ? error : errorText(std::get<QXmppError>(*published)) };
-    if (oldDeviceId) {
-        auto retracted = awaitTask(
-            pubSub_->retractItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(oldDeviceId)),
-            config_.timeoutMs, &error);
-        if (!retracted)
-            qWarning().noquote() << "Could not retract the old OMEMO bundle" << oldDeviceId << error;
-    }
-    return { true };
+    ownOmemoBundleValidTask().then(std::move(callback));
 }
 
-XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)
+void XmppWorker::repairOwnOmemoDeviceAsync(StatusCallback callback)
 {
-    if (keyId.isEmpty())
-        return { false, false, false, QStringLiteral("No OMEMO device was selected") };
-    QString    error;
-    const auto devices       = ownOmemoDevices(&error);
-    const bool belongsToSelf = std::any_of(devices.cbegin(), devices.cend(),
-                                           [&keyId](const XmppDeviceInfo &device) { return device.keyId == keyId; });
-    if (!belongsToSelf)
-        return { false, false, false,
-                 error.isEmpty() ? QStringLiteral("The OMEMO key does not belong to an own device") : error };
-    QMultiHash<QString, QByteArray> keys;
-    keys.insert(QXmppUtils::jidToBareJid(config_.jid), keyId);
-    if (!awaitVoidTask(omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted), config_.timeoutMs,
-                       &error))
-        return { false, false, false, error };
-    return { true };
+    repairOwnOmemoDeviceTask().then(std::move(callback));
 }
 
-void XmppWorker::approveKeySyncRequest(const QString &requestId)
+void XmppWorker::trustOwnOmemoDeviceAsync(const QByteArray &keyId, StatusCallback callback)
 {
-    const auto pending = pendingInboundKeyRequests_.take(requestId);
-    if (pending.senderKey.isEmpty()) {
-        qWarning() << "Key-sync approval has no pending request: id=" << requestId;
-        return;
-    }
-    qInfo() << "Key-sync request approved: id=" << requestId;
-    if (pending.trustBootstrap) {
-        QMultiHash<QString, QByteArray> keys;
-        keys.insert(QXmppUtils::jidToBareJid(config_.jid), pending.senderKey);
-        QString error;
-        if (!awaitVoidTask(omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted), config_.timeoutMs,
-                           &error)) {
-            emit workerError(error);
-            return;
-        }
-        keySyncExtension_->replyTrustApproved(requestId);
-        return;
-    }
-    const auto trusted = trustOwnOmemoDevice(pending.senderKey);
-    if (!trusted.ok) {
-        emit workerError(trusted.error);
-        return;
-    }
-    if (config_.masterKey.size() != SecureEnvelope::MasterKeySize)
-        return;
-    keySyncExtension_->replyWithKey(requestId, SecureEnvelope::encodeRecoveryKey(config_.masterKey));
+    trustOwnOmemoDeviceTask(keyId).then(std::move(callback));
+}
+
+void XmppWorker::trustOwnOmemoDevicesAsync(const QList<QByteArray> &keyIds, StatusCallback callback)
+{
+    trustOwnOmemoDevicesTask(keyIds).then(std::move(callback));
+}
+
+void XmppWorker::auditStorageKeysAsync(AuditCallback callback) { auditStorageKeysTask().then(std::move(callback)); }
+
+void XmppWorker::rekeyStorageAsync(const QList<QByteArray> &keys, const QByteArray &canonicalKey,
+                                   RekeyCallback callback)
+{
+    rekeyStorageTask(keys, canonicalKey).then(std::move(callback));
+}
+
+void XmppWorker::approveKeySyncRequest(const QString &requestId) { approveKeySyncRequestTask(requestId); }
+
+void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
+{
+    handleKeySyncRequestTask(requestId, from, senderKey);
 }
 
 void XmppWorker::handleKeySyncTrustRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
@@ -1086,7 +569,7 @@ void XmppWorker::handleKeySyncTrustRequest(const QString &requestId, const QStri
     listTask.then(this, [this, bareJid, requestId, senderKey](auto &&listResult) {
         if (const auto *requestError = std::get_if<QXmppError>(&listResult)) {
             keySyncExtension_->reject(requestId);
-            emit workerError(errorText(*requestError));
+            emit backendError(errorText(*requestError));
             return;
         }
 
@@ -1121,15 +604,15 @@ void XmppWorker::handleKeySyncTrustRequest(const QString &requestId, const QStri
                 }
                 if (--state->remaining == 0) {
                     keySyncExtension_->reject(requestId);
-                    emit workerError(state->lastError.isEmpty()
-                                         ? QStringLiteral("Ignored a trust request from an unknown OMEMO device")
-                                         : state->lastError);
+                    emit backendError(state->lastError.isEmpty()
+                                          ? QStringLiteral("Ignored a trust request from an unknown OMEMO device")
+                                          : state->lastError);
                 }
             });
         }
         if (state->remaining == 0) {
             keySyncExtension_->reject(requestId);
-            emit workerError(QStringLiteral("Ignored a trust request because no other OMEMO device is published"));
+            emit backendError(QStringLiteral("Ignored a trust request because no other OMEMO device is published"));
         }
     });
 }
@@ -1148,284 +631,542 @@ void XmppWorker::finishKeySyncTrustRequest(const QString &requestId, const QByte
     });
 }
 
-void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
-{
-    qInfo().noquote() << "Handling key-sync request: id=" << requestId << "from=" << from
-                      << "sender-key-size=" << senderKey.size();
-    if (QXmppUtils::jidToBareJid(from) != QXmppUtils::jidToBareJid(config_.jid)) {
-        qWarning().noquote() << "Rejecting key-sync request from a different account:" << from;
-        keySyncExtension_->reject(requestId);
-        return;
-    }
-
-    QString waitError;
-    auto    trust = awaitTask(omemoManager_->trustLevel(QXmppUtils::jidToBareJid(config_.jid), senderKey),
-                              config_.timeoutMs, &waitError);
-    if (!trust) {
-        qWarning().noquote() << "Rejecting key-sync request: trust lookup failed:" << waitError;
-        keySyncExtension_->reject(requestId);
-        emit workerError(waitError);
-        return;
-    }
-    if (*trust != QXmpp::TrustLevel::ManuallyTrusted && *trust != QXmpp::TrustLevel::Authenticated) {
-        const auto devices   = ownOmemoDevices(&waitError);
-        const bool ownDevice = std::any_of(devices.cbegin(), devices.cend(),
-                                           [&](const XmppDeviceInfo &device) { return device.keyId == senderKey; });
-        if (!ownDevice) {
-            qWarning().noquote() << "Rejecting key-sync request from an unknown own device:" << from;
-            keySyncExtension_->reject(requestId);
-            emit workerError(waitError.isEmpty()
-                                 ? QStringLiteral("Ignored a storage-key request from an unknown OMEMO device")
-                                 : waitError);
-            return;
-        }
-        pendingInboundKeyRequests_.insert(requestId, { senderKey, false });
-        qInfo() << "Key-sync request needs user approval: id=" << requestId;
-        emit keySyncTrustRequested(requestId, senderKey);
-        return;
-    }
-    if (config_.masterKey.size() != SecureEnvelope::MasterKeySize) {
-        qWarning() << "Rejecting key-sync request because this client has no valid storage key: id=" << requestId;
-        keySyncExtension_->reject(requestId);
-        return;
-    }
-    keySyncExtension_->replyWithKey(requestId, SecureEnvelope::encodeRecoveryKey(config_.masterKey));
-}
-
-XmppListResult XmppWorker::listNotes()
+QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
 {
     XmppListResult output;
-    const auto     ready = ensureReady();
+    const auto     ready = co_await ensureReadyTask();
     if (!ready.ok) {
         output.error = ready.error;
-        return output;
+        co_return output;
     }
 
-    QString waitError;
-    auto idsResult = awaitTask(pubSub_->requestOwnPepItemIds(config_.indexNodeName()), config_.timeoutMs, &waitError);
+    const auto decodeItems = [this](const auto &items, XmppListResult &result) {
+        for (const auto &item : items) {
+            if (!item.isValid()) {
+                result.error = item.parseError();
+                return false;
+            }
+            auto note = XmppNoteCodec::decodeIndex(item.payload(), config_.masterKey, config_.indexNodeName());
+            if (!note) {
+                result.error = note.error.message;
+                return false;
+            }
+            result.notes.append(std::move(note.value));
+        }
+        return true;
+    };
 
-    if (idsResult && std::holds_alternative<QVector<QString>>(*idsResult)) {
-        const auto    ids       = std::get<QVector<QString>>(*idsResult);
+    auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
+    if (std::holds_alternative<QVector<QString>>(idsResult)) {
+        const auto   &ids       = std::get<QVector<QString>>(idsResult);
         constexpr int BatchSize = 50;
-
         for (int offset = 0; offset < ids.size(); offset += BatchSize) {
             QStringList batch;
             const int   end = qMin(offset + BatchSize, ids.size());
-            for (int i = offset; i < end; ++i) {
+            for (int i = offset; i < end; ++i)
                 batch.append(ids.at(i));
-            }
 
-            auto itemsResult = awaitTask(pubSub_->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                                 config_.indexNodeName(), batch),
-                                         config_.timeoutMs, &waitError);
-            if (!itemsResult) {
-                output.error = waitError;
-                return output;
-            }
-            if (const auto *error = std::get_if<QXmppError>(&*itemsResult)) {
+            auto result = co_await pubSub_
+                              ->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                               config_.indexNodeName(), batch)
+                              .toFuture(this);
+            if (const auto *error = std::get_if<QXmppError>(&result)) {
                 output.error = errorText(*error);
-                return output;
+                co_return output;
             }
-
-            const auto &items = std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(*itemsResult).items;
-            for (const auto &item : items) {
-                if (!item.isValid()) {
-                    output.error = item.parseError();
-                    return output;
-                }
-                auto note = XmppNoteCodec::decodeIndex(item.payload(), config_.masterKey, config_.indexNodeName());
-                if (!note) {
-                    output.error = note.error.message;
-                    return output;
-                }
-                output.notes.append(note.value);
-            }
+            if (!decodeItems(std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(result).items, output))
+                co_return output;
         }
-
         output.ok = true;
-        return output;
+        co_return output;
     }
 
-    // Compatibility fallback for servers that do not expose item IDs through disco#items.
-    auto itemsResult = awaitTask(
-        pubSub_->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName()),
-        config_.timeoutMs, &waitError);
-    if (!itemsResult) {
-        output.error = waitError;
-        return output;
-    }
-    if (const auto *error = std::get_if<QXmppError>(&*itemsResult)) {
+    // Compatibility fallback for servers without disco item IDs.
+    auto result = co_await pubSub_
+                      ->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName())
+                      .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&result)) {
         output.error = errorText(*error);
-        return output;
+        co_return output;
     }
-
-    const auto &items = std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(*itemsResult);
+    const auto &items = std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(result);
     output.partial    = items.continuation.has_value();
-    for (const auto &item : items.items) {
-        if (!item.isValid()) {
-            output.error = item.parseError();
-            return output;
-        }
-        auto note = XmppNoteCodec::decodeIndex(item.payload(), config_.masterKey, config_.indexNodeName());
-        if (!note) {
-            output.error = note.error.message;
-            return output;
-        }
-        output.notes.append(note.value);
-    }
-    output.ok = true;
-    return output;
+    if (decodeItems(items.items, output))
+        output.ok = true;
+    co_return output;
 }
 
-XmppNoteResult XmppWorker::requestNote(const QString &id)
+QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(const QString &id)
 {
     XmppNoteResult output;
-    QString        waitError;
-    auto           indexResult = awaitTask(
-        pubSub_->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id),
-        config_.timeoutMs, &waitError);
-    if (!indexResult) {
-        output.error = waitError;
-        return output;
-    }
-    if (const auto *error = std::get_if<QXmppError>(&*indexResult)) {
+    auto           indexResult
+        = co_await pubSub_
+              ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id)
+              .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&indexResult)) {
         output.error    = errorText(*error);
         output.notFound = isItemNotFound(*error);
-        return output;
+        co_return output;
     }
-    const auto &indexItem = std::get<QtNotePubSubItem>(*indexResult);
+    const auto &indexItem = std::get<QtNotePubSubItem>(indexResult);
     if (!indexItem.isValid()) {
         output.error = indexItem.parseError();
-        return output;
+        co_return output;
     }
     auto index = XmppNoteCodec::decodeIndex(indexItem.payload(), config_.masterKey, config_.indexNodeName());
     if (!index) {
         output.error = index.error.message;
-        return output;
+        co_return output;
     }
-    auto contentResult = awaitTask(
-        pubSub_->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id),
-        config_.timeoutMs, &waitError);
-    if (!contentResult) {
-        output.error = waitError;
-        return output;
-    }
-    if (const auto *error = std::get_if<QXmppError>(&*contentResult)) {
+
+    auto contentResult
+        = co_await pubSub_
+              ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id)
+              .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&contentResult)) {
         output.error = errorText(*error);
-        return output;
+        co_return output;
     }
-    const auto &contentItem = std::get<QtNotePubSubItem>(*contentResult);
+    const auto &contentItem = std::get<QtNotePubSubItem>(contentResult);
     if (!contentItem.isValid()) {
         output.error = contentItem.parseError();
-        return output;
+        co_return output;
     }
     auto content = XmppNoteCodec::decodeContent(contentItem.payload(), config_.masterKey, config_.contentNodeName(),
                                                 index.value);
     if (!content) {
         output.error = content.error.message;
-        return output;
+        co_return output;
     }
-    output.note                = index.value;
-    output.note.content        = content.value;
+    output.note                = std::move(index.value);
+    output.note.content        = std::move(content.value);
     output.note.contentPresent = true;
     output.ok                  = true;
-    return output;
+    co_return output;
 }
 
-XmppNoteResult XmppWorker::getNote(const QString &id)
+QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(const QString &id)
 {
-    XmppNoteResult output;
-    const auto     ready = ensureReady();
+    const auto ready = co_await ensureReadyTask();
     if (!ready.ok) {
+        XmppNoteResult output;
         output.error = ready.error;
-        return output;
+        co_return output;
     }
-    return requestNote(id);
+    co_return co_await requestNoteTask(id);
 }
 
-XmppNoteResult XmppWorker::saveNote(const XmppRemoteNote &localNote)
+QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
 {
     XmppNoteResult output;
-    const auto     ready = ensureReady();
-    if (!ready.ok) {
-        output.error = ready.error;
-        return output;
-    }
+    note.parentRevision = note.revision;
+    note.revision       = newUuid();
+    note.originId       = config_.originId;
+    note.modified       = QDateTime::currentDateTimeUtc();
+    note.format         = QStringLiteral("markdown");
+    note.contentPresent = true;
 
-    XmppRemoteNote updated = localNote;
-    if (updated.id.isEmpty()) {
-        updated.id = newUuid();
-    } else {
-        const auto server = requestNote(updated.id);
-        if (!server.ok) {
-            output.error    = server.error;
-            output.notFound = server.notFound;
-            return output;
-        }
-        if (server.note.revision != updated.revision) {
-            output.conflict         = true;
-            output.remoteOnConflict = server.note;
-            output.error
-                = QStringLiteral("The note was modified on another XMPP resource; the local version was not published");
-            return output;
-        }
-    }
-
-    updated.parentRevision = updated.revision;
-    updated.revision       = newUuid();
-    updated.originId       = config_.originId;
-    updated.modified       = QDateTime::currentDateTimeUtc();
-    updated.format         = QStringLiteral("markdown");
-    updated.contentPresent = true;
-
-    auto contentPayload = XmppNoteCodec::encodeContent(updated, config_.masterKey, config_.contentNodeName());
-    auto indexPayload   = XmppNoteCodec::encodeIndex(updated, config_.masterKey, config_.indexNodeName());
+    auto contentPayload = XmppNoteCodec::encodeContent(note, config_.masterKey, config_.contentNodeName());
+    auto indexPayload   = XmppNoteCodec::encodeIndex(note, config_.masterKey, config_.indexNodeName());
     if (!contentPayload || !indexPayload) {
         output.error = !contentPayload ? contentPayload.error.message : indexPayload.error.message;
-        return output;
-    }
-    QString waitError;
-    auto    contentPublish
-        = awaitTask(pubSub_->publishOwnPepItem(config_.contentNodeName(), QtNotePubSubItem(contentPayload.value),
-                                               privatePublishOptions()),
-                    config_.timeoutMs, &waitError);
-    if (!contentPublish) {
-        output.error = waitError;
-        return output;
-    }
-    if (const auto *error = std::get_if<QXmppError>(&*contentPublish)) {
-        output.error = errorText(*error);
-        return output;
-    }
-    auto indexPublish
-        = awaitTask(pubSub_->publishOwnPepItem(config_.indexNodeName(), QtNotePubSubItem(indexPayload.value),
-                                               privatePublishOptions()),
-                    config_.timeoutMs, &waitError);
-    if (!indexPublish) {
-        output.error = waitError;
-        return output;
-    }
-    if (const auto *error = std::get_if<QXmppError>(&*indexPublish)) {
-        output.error = errorText(*error);
-        return output;
+        co_return output;
     }
 
-    output.note = updated;
+    auto published = co_await pubSub_
+                         ->publishOwnPepItem(config_.contentNodeName(), QtNotePubSubItem(contentPayload.value),
+                                             privatePublishOptions())
+                         .toFuture(this);
+    if (const auto *error = resultError(published)) {
+        output.error = errorText(*error);
+        co_return output;
+    }
+    published = co_await pubSub_
+                    ->publishOwnPepItem(config_.indexNodeName(), QtNotePubSubItem(indexPayload.value),
+                                        privatePublishOptions())
+                    .toFuture(this);
+    if (const auto *error = resultError(published)) {
+        output.error = errorText(*error);
+        co_return output;
+    }
+    output.note = std::move(note);
     output.ok   = true;
-    return output;
+    co_return output;
 }
 
-XmppRekeyResult XmppWorker::rekeyStorage(const QList<QByteArray> &keys, const QByteArray &canonicalKey)
+QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
 {
-    XmppRekeyResult output;
-    const auto      ready = ensureReady();
+    const auto ready = co_await ensureReadyTask();
+    if (!ready.ok) {
+        XmppNoteResult output;
+        output.error = ready.error;
+        co_return output;
+    }
+    if (note.id.isEmpty()) {
+        note.id = newUuid();
+    } else {
+        auto server = co_await requestNoteTask(note.id);
+        if (!server.ok)
+            co_return server;
+        if (server.note.revision != note.revision) {
+            XmppNoteResult conflict;
+            conflict.conflict         = true;
+            conflict.remoteOnConflict = std::move(server.note);
+            conflict.error
+                = QStringLiteral("The note was modified on another XMPP resource; the local version was not published");
+            co_return conflict;
+        }
+    }
+    co_return co_await publishNoteTask(std::move(note));
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::deleteNoteTask(const QString &id)
+{
+    auto status = co_await ensureReadyTask();
+    if (!status.ok)
+        co_return status;
+
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto       result  = co_await pubSub_->retractItem(bareJid, config_.indexNodeName(), id, true).toFuture(this);
+    if (const auto *error = resultError(result); error && !isItemNotFound(*error))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    result = co_await pubSub_->retractItem(bareJid, config_.contentNodeName(), id, true).toFuture(this);
+    if (const auto *error = resultError(result); error && !isItemNotFound(*error))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<std::pair<QList<XmppDeviceInfo>, QString>> XmppWorker::ownOmemoDevicesTask()
+{
+    auto ready = co_await connectToServerTask();
+    if (ready.ok)
+        ready = co_await ensureOmemoTask();
+    if (!ready.ok)
+        co_return std::make_pair(QList<XmppDeviceInfo> {}, ready.error);
+
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto       list    = co_await pubSub_
+                    ->requestItem<XmppOmemoDeviceListItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"),
+                                                           QStringLiteral("current"))
+                    .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&list))
+        co_return std::make_pair(QList<XmppDeviceInfo> {}, errorText(*error));
+
+    const auto            ownDeviceId = omemoStorage_->ownDeviceId();
+    const auto            ownKey      = omemoStorage_->ownIdentityKey();
+    QList<XmppDeviceInfo> devices;
+    int                   missingFingerprints = 0;
+    for (const auto &listed : std::get<XmppOmemoDeviceListItem>(list).devices()) {
+        if (listed.id.toUInt() == ownDeviceId)
+            continue;
+        auto bundle
+            = co_await pubSub_
+                  ->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id)
+                  .toFuture(this);
+        QByteArray keyId;
+        if (const auto *error = std::get_if<QXmppError>(&bundle)) {
+            qWarning().noquote() << "Could not fetch OMEMO bundle: id=" << listed.id << "label=" << listed.label
+                                 << "error=" << errorText(*error);
+        } else {
+            keyId = std::get<XmppOmemoBundleItem>(bundle).identityKey();
+        }
+        if (!keyId.isEmpty() && keyId == ownKey)
+            continue;
+        const auto label = listed.label.isEmpty() ? QStringLiteral("OMEMO device %1").arg(listed.id)
+                                                  : QStringLiteral("%1 (OMEMO %2)").arg(listed.label, listed.id);
+        if (keyId.isEmpty()) {
+            ++missingFingerprints;
+            devices.append({ label, listed.id.toUInt(), {}, int(QXmpp::TrustLevel::Undecided) });
+            continue;
+        }
+        const auto trust = co_await omemoManager_->trustLevel(bareJid, keyId).toFuture(this);
+        devices.append({ label, listed.id.toUInt(), keyId, int(trust) });
+    }
+    const auto error = missingFingerprints
+        ? QStringLiteral("Could not obtain the OMEMO fingerprint for %1 device(s)").arg(missingFingerprints)
+        : QString {};
+    co_return std::make_pair(std::move(devices), error);
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::ownOmemoBundleValidTask()
+{
+    auto ready = co_await connectToServerTask();
+    if (ready.ok)
+        ready = co_await ensureOmemoTask();
+    if (!ready.ok)
+        co_return ready;
+    const auto own = ownOmemoDevice();
+    if (!own.deviceId || own.keyId.isEmpty())
+        co_return XmppStatusResult { false, false, false, QStringLiteral("The local OMEMO device is not initialized") };
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto       bundle  = co_await pubSub_
+                      ->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                         QString::number(own.deviceId))
+                      .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&bundle))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    const auto publishedKey = std::get<XmppOmemoBundleItem>(bundle).identityKey();
+    if (publishedKey != own.keyId) {
+        co_return XmppStatusResult { false, false, false,
+                                     publishedKey.isEmpty()
+                                         ? QStringLiteral("The published OMEMO bundle has no identity key")
+                                         : QStringLiteral("The published OMEMO identity key does not match") };
+    }
+    auto list = co_await pubSub_
+                    ->requestItem<XmppOmemoDeviceListItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"),
+                                                           QStringLiteral("current"))
+                    .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&list))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    const auto &devices   = std::get<XmppOmemoDeviceListItem>(list).devices();
+    const bool  announced = std::any_of(devices.cbegin(), devices.cend(),
+                                        [&own](const auto &device) { return device.id.toUInt() == own.deviceId; });
+    if (!announced)
+        co_return XmppStatusResult {
+            false, false, false, QStringLiteral("The local OMEMO device is missing from the published device list")
+        };
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::trustOwnOmemoDeviceTask(const QByteArray &keyId)
+{
+    if (keyId.isEmpty())
+        co_return XmppStatusResult { false, false, false, QStringLiteral("No OMEMO device was selected") };
+    auto [devices, error] = co_await ownOmemoDevicesTask();
+    const bool belongsToSelf
+        = std::any_of(devices.cbegin(), devices.cend(), [&keyId](const auto &device) { return device.keyId == keyId; });
+    if (!belongsToSelf)
+        co_return XmppStatusResult { false, false, false,
+                                     error.isEmpty() ? QStringLiteral("The OMEMO key does not belong to an own device")
+                                                     : error };
+    QMultiHash<QString, QByteArray> keys;
+    keys.insert(QXmppUtils::jidToBareJid(config_.jid), keyId);
+    co_await omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted).toFuture(this);
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::trustOwnOmemoDevicesTask(QList<QByteArray> keyIds)
+{
+    for (const auto &keyId : keyIds) {
+        const auto result = co_await trustOwnOmemoDeviceTask(keyId);
+        if (!result.ok)
+            co_return result;
+    }
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<XmppStatusResult> XmppWorker::repairOwnOmemoDeviceTask()
+{
+    auto ready = co_await connectToServerTask();
+    if (ready.ok)
+        ready = co_await ensureOmemoTask();
+    if (!ready.ok)
+        co_return ready;
+
+    const auto bareJid      = QXmppUtils::jidToBareJid(config_.jid);
+    const auto oldDeviceId  = omemoStorage_->ownDeviceId();
+    const auto oldDeviceKey = omemoStorage_->ownIdentityKey();
+    auto       oldBundle    = co_await pubSub_
+                         ->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                            QString::number(oldDeviceId))
+                         .toFuture(this);
+    const bool bundleValid = std::holds_alternative<XmppOmemoBundleItem>(oldBundle)
+        && std::get<XmppOmemoBundleItem>(oldBundle).identityKey() == oldDeviceKey;
+
+    auto list = co_await pubSub_
+                    ->requestItem<XmppOmemoDeviceListItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"),
+                                                           QStringLiteral("current"))
+                    .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&list))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    auto item    = std::get<XmppOmemoDeviceListItem>(list);
+    auto devices = item.devices();
+
+    if (bundleValid) {
+        if (std::none_of(devices.cbegin(), devices.cend(),
+                         [oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; })) {
+            devices.append({ config_.resource, QString::number(oldDeviceId), {} });
+            item.setDevices(std::move(devices));
+            auto published = co_await pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item)
+                                 .toFuture(this);
+            if (const auto *error = std::get_if<QXmppError>(&published))
+                co_return XmppStatusResult { false, false, false, errorText(*error) };
+        }
+        co_return XmppStatusResult { true };
+    }
+
+    co_await omemoManager_->resetOwnDeviceLocally().toFuture(this);
+    omemoReady_      = false;
+    const bool setup = co_await omemoManager_->setUp(config_.resource).toFuture(this);
+    if (!setup)
+        co_return XmppStatusResult { false, false, false,
+                                     QStringLiteral("QXmpp could not create a replacement OMEMO device") };
+    omemoReady_ = true;
+    devices.removeIf([oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; });
+    const auto newDeviceId = omemoStorage_->ownDeviceId();
+    if (std::none_of(devices.cbegin(), devices.cend(),
+                     [newDeviceId](const auto &device) { return device.id.toUInt() == newDeviceId; }))
+        devices.append({ config_.resource, QString::number(newDeviceId), {} });
+    item.setDevices(std::move(devices));
+    auto published
+        = co_await pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item).toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&published))
+        co_return XmppStatusResult { false, false, false, errorText(*error) };
+    if (oldDeviceId) {
+        auto retracted
+            = co_await pubSub_
+                  ->retractItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(oldDeviceId))
+                  .toFuture(this);
+        if (const auto *error = std::get_if<QXmppError>(&retracted))
+            qWarning().noquote() << "Could not retract old OMEMO bundle" << oldDeviceId << errorText(*error);
+    }
+    co_return XmppStatusResult { true };
+}
+
+QCoro::Task<std::pair<QStringList, QString>> XmppWorker::onlineQtNoteResourcesTask()
+{
+    if (!roster_ || !discovery_)
+        co_return std::make_pair(QStringList {}, QStringLiteral("XMPP resource discovery is unavailable"));
+    const auto  bareJid     = QXmppUtils::jidToBareJid(config_.jid);
+    const auto  ownResource = client_->configuration().resource();
+    QStringList resources;
+    QStringList failures;
+    for (const auto &resource : roster_->getResources(bareJid)) {
+        if (resource.isEmpty() || resource == ownResource)
+            continue;
+        const auto fullJid = bareJid + QLatin1Char('/') + resource;
+#if QXMPP_VERSION >= QT_VERSION_CHECK(1, 12, 0)
+        auto info = co_await discovery_->info(fullJid).toFuture(this);
+#else
+        auto info = co_await discovery_->requestDiscoInfo(fullJid).toFuture(this);
+#endif
+        if (const auto *error = std::get_if<QXmppError>(&info)) {
+            failures.append(QStringLiteral("%1: %2").arg(fullJid, errorText(*error)));
+            continue;
+        }
+        if (std::get<0>(info).features().contains(XmppKeySyncExtension::feature))
+            resources.append(resource);
+    }
+    co_return std::make_pair(std::move(resources), failures.join(QLatin1Char('\n')));
+}
+
+QCoro::Task<XmppKeyAuditResult> XmppWorker::auditStorageKeysTask()
+{
+    XmppKeyAuditResult output;
+    auto               ready = co_await connectToServerTask();
+    if (ready.ok)
+        ready = co_await ensureOmemoTask();
     if (!ready.ok) {
         output.error = ready.error;
-        return output;
+        co_return output;
+    }
+    if (client_->encryptionExtension() != omemoManager_ || !keySyncExtension_) {
+        output.error = QStringLiteral("OMEMO key synchronization is unavailable");
+        co_return output;
+    }
+    if (config_.masterKey.size() == SecureEnvelope::MasterKeySize)
+        output.candidates.append({ client_->configuration().resource(), config_.masterKey,
+                                   SecureEnvelope::keyId(config_.masterKey), 0, true });
+
+    const auto bareJid               = QXmppUtils::jidToBareJid(config_.jid);
+    auto [resources, discoveryError] = co_await onlineQtNoteResourcesTask();
+    QStringList errors;
+    if (!discoveryError.isEmpty())
+        errors.append(discoveryError);
+    co_await omemoStorage_->resetAllSessions().toFuture(this);
+
+    for (const auto &name : resources) {
+        const auto resource = bareJid + QLatin1Char('/') + name;
+        const auto trustId  = newUuid();
+        auto       trustResult
+            = co_await client_
+                  ->sendIq(keySyncExtension_->makeTrustRequest(resource, trustId, omemoStorage_->ownIdentityKey()), {})
+                  .toFuture(this);
+        if (const auto *error = std::get_if<QXmppError>(&trustResult)) {
+            errors.append(QStringLiteral("%1: OMEMO trust bootstrap failed: %2").arg(resource, errorText(*error)));
+            continue;
+        }
+        if (!XmppKeySyncExtension::isTrustApproved(std::get<QDomElement>(trustResult), trustId)) {
+            errors.append(QStringLiteral("%1: invalid OMEMO trust bootstrap response").arg(resource));
+            continue;
+        }
+
+        auto requestId = newUuid();
+        auto result
+            = co_await client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}).toFuture(this);
+        if (std::holds_alternative<QXmppError>(result)) {
+            requestId = newUuid();
+            result    = co_await client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {})
+                         .toFuture(this);
+        }
+        if (const auto *error = std::get_if<QXmppError>(&result)) {
+            errors.append(QStringLiteral("%1: %2").arg(resource, errorText(*error)));
+            continue;
+        }
+        const auto encoded = XmppKeySyncExtension::responseRecoveryKey(std::get<QDomElement>(result), requestId);
+        auto       key     = SecureEnvelope::decodeRecoveryKey(encoded);
+        if (!key) {
+            errors.append(QStringLiteral("%1: invalid storage key response").arg(resource));
+            continue;
+        }
+        const auto keyId    = SecureEnvelope::keyId(key.value);
+        auto       existing = std::find_if(output.candidates.begin(), output.candidates.end(),
+                                           [&keyId](const auto &candidate) { return candidate.keyId == keyId; });
+        if (existing == output.candidates.end())
+            output.candidates.append({ resource, key.value, keyId, 0, false });
+        else if (!existing->resource.split(QStringLiteral(", ")).contains(resource))
+            existing->resource += QStringLiteral(", ") + resource;
+    }
+
+    auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&idsResult)) {
+        output.error = errorText(*error);
+        co_return output;
+    }
+    const auto ids          = std::get<QVector<QString>>(idsResult);
+    output.totalIndexItems  = ids.size();
+    constexpr int BatchSize = 50;
+    for (int offset = 0; offset < ids.size(); offset += BatchSize) {
+        QStringList batch;
+        for (int i = offset; i < qMin(offset + BatchSize, ids.size()); ++i)
+            batch.append(ids.at(i));
+        auto items
+            = co_await pubSub_->requestItems<QtNotePubSubItem>(bareJid, config_.indexNodeName(), batch).toFuture(this);
+        if (const auto *error = std::get_if<QXmppError>(&items)) {
+            output.error = errorText(*error);
+            co_return output;
+        }
+        for (const auto &item : std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(items).items) {
+            if (!item.isValid()) {
+                output.error = item.parseError();
+                co_return output;
+            }
+            const auto keyId     = item.payload().keyId;
+            auto       candidate = std::find_if(output.candidates.begin(), output.candidates.end(),
+                                                [&keyId](const auto &entry) { return entry.keyId == keyId; });
+            if (candidate == output.candidates.end())
+                output.candidates.append({ {}, {}, keyId, 1, false });
+            else
+                ++candidate->indexItemCount;
+        }
+    }
+    output.ok = true;
+    if (!errors.isEmpty())
+        output.error = QStringLiteral("Some QtNote resources failed:\n%1").arg(errors.join('\n'));
+    co_return output;
+}
+
+QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys, QByteArray canonicalKey)
+{
+    XmppRekeyResult output;
+    const auto      ready = co_await ensureReadyTask();
+    if (!ready.ok) {
+        output.error = ready.error;
+        co_return output;
     }
     if (canonicalKey.size() != SecureEnvelope::MasterKeySize) {
         output.error = QStringLiteral("The selected canonical XMPP storage key is invalid");
-        return output;
+        co_return output;
     }
     QHash<QByteArray, QByteArray> keyring;
     for (const auto &key : keys) {
@@ -1434,34 +1175,30 @@ XmppRekeyResult XmppWorker::rekeyStorage(const QList<QByteArray> &keys, const QB
     }
     keyring.insert(SecureEnvelope::keyId(canonicalKey), canonicalKey);
 
-    QString waitError;
-    auto idsResult = awaitTask(pubSub_->requestOwnPepItemIds(config_.indexNodeName()), config_.timeoutMs, &waitError);
-    if (!idsResult || std::holds_alternative<QXmppError>(*idsResult)) {
-        output.error = !idsResult ? waitError : errorText(std::get<QXmppError>(*idsResult));
-        return output;
+    auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&idsResult)) {
+        output.error = errorText(*error);
+        co_return output;
     }
-    const auto ids = std::get<QVector<QString>>(*idsResult);
-    output.total   = ids.size();
+    const auto ids     = std::get<QVector<QString>>(idsResult);
+    output.total       = ids.size();
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
     for (const auto &id : ids) {
-        auto indexResult = awaitTask(
-            pubSub_->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id),
-            config_.timeoutMs, &waitError);
-        auto contentResult = awaitTask(pubSub_->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid),
-                                                                              config_.contentNodeName(), id),
-                                       config_.timeoutMs, &waitError);
-        if (!indexResult || !contentResult || std::holds_alternative<QXmppError>(*indexResult)
-            || std::holds_alternative<QXmppError>(*contentResult)) {
-            output.error = !indexResult || !contentResult
-                ? waitError
-                : errorText(std::holds_alternative<QXmppError>(*indexResult) ? std::get<QXmppError>(*indexResult)
-                                                                             : std::get<QXmppError>(*contentResult));
-            return output;
+        auto indexResult
+            = co_await pubSub_->requestItem<QtNotePubSubItem>(bareJid, config_.indexNodeName(), id).toFuture(this);
+        auto contentResult
+            = co_await pubSub_->requestItem<QtNotePubSubItem>(bareJid, config_.contentNodeName(), id).toFuture(this);
+        const auto *indexError   = std::get_if<QXmppError>(&indexResult);
+        const auto *contentError = std::get_if<QXmppError>(&contentResult);
+        if (indexError || contentError) {
+            output.error = errorText(indexError ? *indexError : *contentError);
+            co_return output;
         }
-        const auto &indexItem   = std::get<QtNotePubSubItem>(*indexResult);
-        const auto &contentItem = std::get<QtNotePubSubItem>(*contentResult);
+        const auto &indexItem   = std::get<QtNotePubSubItem>(indexResult);
+        const auto &contentItem = std::get<QtNotePubSubItem>(contentResult);
         if (!indexItem.isValid() || !contentItem.isValid()) {
             output.error = !indexItem.isValid() ? indexItem.parseError() : contentItem.parseError();
-            return output;
+            co_return output;
         }
         const auto indexKey   = keyring.value(indexItem.payload().keyId);
         const auto contentKey = keyring.value(contentItem.payload().keyId);
@@ -1472,77 +1209,166 @@ XmppRekeyResult XmppWorker::rekeyStorage(const QList<QByteArray> &keys, const QB
         auto note = XmppNoteCodec::decodeIndex(indexItem.payload(), indexKey, config_.indexNodeName());
         if (!note) {
             output.error = note.error.message;
-            return output;
+            co_return output;
         }
         auto content
             = XmppNoteCodec::decodeContent(contentItem.payload(), contentKey, config_.contentNodeName(), note.value);
         if (!content) {
             output.error = content.error.message;
-            return output;
+            co_return output;
         }
-        note.value.content        = content.value;
+        note.value.content        = std::move(content.value);
         note.value.contentPresent = true;
         auto newContent           = XmppNoteCodec::encodeContent(note.value, canonicalKey, config_.contentNodeName());
         auto newIndex             = XmppNoteCodec::encodeIndex(note.value, canonicalKey, config_.indexNodeName());
         if (!newContent || !newIndex) {
             output.error = !newContent ? newContent.error.message : newIndex.error.message;
-            return output;
+            co_return output;
         }
-        auto publishedContent
-            = awaitTask(pubSub_->publishOwnPepItem(config_.contentNodeName(), QtNotePubSubItem(newContent.value),
-                                                   privatePublishOptions()),
-                        config_.timeoutMs, &waitError);
-        if (!publishedContent || std::holds_alternative<QXmppError>(*publishedContent)) {
-            output.error = !publishedContent ? waitError : errorText(std::get<QXmppError>(*publishedContent));
-            return output;
+        auto published = co_await pubSub_
+                             ->publishOwnPepItem(config_.contentNodeName(), QtNotePubSubItem(newContent.value),
+                                                 privatePublishOptions())
+                             .toFuture(this);
+        if (const auto *error = std::get_if<QXmppError>(&published)) {
+            output.error = errorText(*error);
+            co_return output;
         }
-        auto publishedIndex
-            = awaitTask(pubSub_->publishOwnPepItem(config_.indexNodeName(), QtNotePubSubItem(newIndex.value),
-                                                   privatePublishOptions()),
-                        config_.timeoutMs, &waitError);
-        if (!publishedIndex || std::holds_alternative<QXmppError>(*publishedIndex)) {
-            output.error = !publishedIndex ? waitError : errorText(std::get<QXmppError>(*publishedIndex));
-            return output;
+        published = co_await pubSub_
+                        ->publishOwnPepItem(config_.indexNodeName(), QtNotePubSubItem(newIndex.value),
+                                            privatePublishOptions())
+                        .toFuture(this);
+        if (const auto *error = std::get_if<QXmppError>(&published)) {
+            output.error = errorText(*error);
+            co_return output;
         }
         ++output.migrated;
     }
     output.ok = output.inaccessibleNoteIds.isEmpty();
     if (!output.ok)
         output.error = QStringLiteral("Some notes use storage keys that are not available");
-    return output;
+    co_return output;
 }
 
-XmppStatusResult XmppWorker::deleteNote(const QString &id)
+QCoro::Task<> XmppWorker::approveKeySyncRequestTask(const QString &requestId)
 {
-    const auto ready = ensureReady();
-    if (!ready.ok) {
-        return ready;
+    const auto pending = pendingInboundKeyRequests_.take(requestId);
+    if (pending.senderKey.isEmpty()) {
+        qWarning() << "Key-sync approval has no pending request: id=" << requestId;
+        co_return;
     }
+    if (pending.trustBootstrap) {
+        QMultiHash<QString, QByteArray> keys;
+        keys.insert(QXmppUtils::jidToBareJid(config_.jid), pending.senderKey);
+        co_await omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted).toFuture(this);
+        keySyncExtension_->replyTrustApproved(requestId);
+        co_return;
+    }
+    const auto trusted = co_await trustOwnOmemoDeviceTask(pending.senderKey);
+    if (!trusted.ok) {
+        emit backendError(trusted.error);
+        co_return;
+    }
+    if (config_.masterKey.size() == SecureEnvelope::MasterKeySize)
+        keySyncExtension_->replyWithKey(requestId, SecureEnvelope::encodeRecoveryKey(config_.masterKey));
+}
 
-    QString waitError;
-    auto    indexResult
-        = awaitTask(pubSub_->retractItem(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id, true),
-                    config_.timeoutMs, &waitError);
-    if (!indexResult) {
-        return { false, false, false, waitError };
+QCoro::Task<> XmppWorker::handleKeySyncRequestTask(QString requestId, QString from, QByteArray senderKey)
+{
+    qInfo().noquote() << "Handling key-sync request: id=" << requestId << "from=" << from
+                      << "sender-key-size=" << senderKey.size();
+    if (QXmppUtils::jidToBareJid(from) != QXmppUtils::jidToBareJid(config_.jid)) {
+        keySyncExtension_->reject(requestId);
+        co_return;
     }
-    if (const auto *error = resultError(*indexResult)) {
-        const auto text     = errorText(*error);
-        const bool notFound = isItemNotFound(*error);
-        if (!notFound)
-            return { false, false, false, text };
+    const auto trust
+        = co_await omemoManager_->trustLevel(QXmppUtils::jidToBareJid(config_.jid), senderKey).toFuture(this);
+    if (trust != QXmpp::TrustLevel::ManuallyTrusted && trust != QXmpp::TrustLevel::Authenticated) {
+        auto [devices, error] = co_await ownOmemoDevicesTask();
+        const bool ownDevice  = std::any_of(devices.cbegin(), devices.cend(),
+                                            [&senderKey](const auto &device) { return device.keyId == senderKey; });
+        if (!ownDevice) {
+            keySyncExtension_->reject(requestId);
+            emit backendError(
+                error.isEmpty() ? QStringLiteral("Ignored a storage-key request from an unknown OMEMO device") : error);
+            co_return;
+        }
+        pendingInboundKeyRequests_.insert(requestId, { senderKey, false });
+        emit keySyncTrustRequested(requestId, senderKey);
+        co_return;
     }
-    auto contentResult
-        = awaitTask(pubSub_->retractItem(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id, true),
-                    config_.timeoutMs, &waitError);
-    if (!contentResult)
-        return { false, false, false, waitError };
-    if (const auto *error = resultError(*contentResult)) {
-        const bool notFound = isItemNotFound(*error);
-        if (!notFound)
-            return { false, false, false, errorText(*error) };
+    if (config_.masterKey.size() != SecureEnvelope::MasterKeySize) {
+        keySyncExtension_->reject(requestId);
+        co_return;
     }
-    return { true };
+    keySyncExtension_->replyWithKey(requestId, SecureEnvelope::encodeRecoveryKey(config_.masterKey));
+}
+
+QCoro::Task<> XmppWorker::cacheOwnOmemoBundleTask()
+{
+    if (!pubSub_ || !omemoStorage_ || !omemoStorage_->ownDeviceId())
+        co_return;
+    const auto deviceId = omemoStorage_->ownDeviceId();
+    auto       result
+        = co_await pubSub_
+              ->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                 QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(deviceId))
+              .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&result)) {
+        qWarning().noquote() << "Could not cache own OMEMO bundle:" << errorText(*error);
+        co_return;
+    }
+    auto bundle = std::get<XmppOmemoBundleItem>(std::move(result));
+    if (!omemoStorage_ || deviceId != omemoStorage_->ownDeviceId()
+        || bundle.identityKey() != omemoStorage_->ownIdentityKey()) {
+        qWarning() << "Own OMEMO bundle was not cached because its identity key is invalid";
+        co_return;
+    }
+    cachedOwnOmemoBundle_ = std::move(bundle);
+}
+
+QCoro::Task<> XmppWorker::repairOwnOmemoBundleAfterPreKeyUseTask(int attemptsRemaining)
+{
+    ownBundleRepairScheduled_ = false;
+    if (!cachedOwnOmemoBundle_ || !pubSub_ || !client_ || !client_->isConnected())
+        co_return;
+    const auto bareJid  = QXmppUtils::jidToBareJid(config_.jid);
+    const auto deviceId = omemoStorage_->ownDeviceId();
+    auto       result   = co_await pubSub_
+                      ->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                         QString::number(deviceId))
+                      .toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&result)) {
+        qWarning().noquote() << "Could not inspect own OMEMO bundle after pre-key use:" << errorText(*error);
+        co_return;
+    }
+    auto published = std::get<XmppOmemoBundleItem>(std::move(result));
+    if (published.identityKey() == omemoStorage_->ownIdentityKey()) {
+        bool containsConsumed = false;
+        for (const auto id : consumedOwnPreKeyIds_)
+            containsConsumed |= published.publicPreKeys().contains(id);
+        if (containsConsumed && attemptsRemaining > 0) {
+            ownBundleRepairScheduled_ = true;
+            QTimer::singleShot(
+                250, this, [this, attemptsRemaining]() { repairOwnOmemoBundleAfterPreKeyUse(attemptsRemaining - 1); });
+            co_return;
+        }
+        cachedOwnOmemoBundle_ = std::move(published);
+        consumedOwnPreKeyIds_.clear();
+        co_return;
+    }
+    if (!published.identityKey().isEmpty()) {
+        qWarning() << "Refusing to repair own OMEMO bundle with a mismatching identity key";
+        co_return;
+    }
+    auto repaired = published.repairedFrom(*cachedOwnOmemoBundle_, consumedOwnPreKeyIds_);
+    auto outcome
+        = co_await pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), repaired).toFuture(this);
+    if (const auto *error = std::get_if<QXmppError>(&outcome)) {
+        qWarning().noquote() << "Could not repair QXmpp's incomplete own OMEMO bundle:" << errorText(*error);
+        co_return;
+    }
+    cachedOwnOmemoBundle_ = std::move(repaired);
+    consumedOwnPreKeyIds_.clear();
 }
 
 QString XmppWorker::newUuid() { return QUuid::createUuid().toString(QUuid::WithoutBraces); }

@@ -1,8 +1,10 @@
 #include "xmppstorage.h"
 
+#include "draftmanager.h"
 #include "notedata.h"
 #include "securekeystore.h"
 #include "utils.h"
+#include "xmppbackend.h"
 #include "xmppkeyresolutiondialog.h"
 #include "xmppsettingswidget.h"
 #include "xmppworker.h"
@@ -28,24 +30,6 @@ namespace {
         return QStringLiteral("xmpp-storage-master-key-v1:%1").arg(jid.trimmed().section(QLatin1Char('/'), 0, 0));
     }
 
-    template <typename Result, typename Function> Result invokeWorker(XmppWorker *worker, Function &&function)
-    {
-        Result result;
-
-        if (QThread::currentThread() == worker->thread()) {
-            return function();
-        }
-
-        const bool invoked
-            = QMetaObject::invokeMethod(worker, [&]() { result = function(); }, Qt::BlockingQueuedConnection);
-
-        if (!invoked) {
-            result.ok    = false;
-            result.error = QStringLiteral("Failed to invoke the XMPP worker");
-        }
-        return result;
-    }
-
     QIcon themedIcon(const QString &primary, const QString &fallback)
     {
         auto icon = QIcon::fromTheme(primary);
@@ -57,43 +41,39 @@ namespace {
 
 } // namespace
 
-XmppStorage::XmppStorage(QObject *parent) : NoteStorage(parent)
+XmppStorage::XmppStorage(QObject *parent, XmppBackend *backend) : NoteStorage(parent)
 {
-    workerThread_.setObjectName(QStringLiteral("QtNoteXmppPubSubWorker"));
-    worker_ = new XmppWorker;
-    worker_->moveToThread(&workerThread_);
-
-    connect(&workerThread_, &QThread::finished, worker_, &QObject::deleteLater);
-    connect(worker_, &XmppWorker::remoteNotePublished, this, &XmppStorage::onRemoteNotePublished);
-    connect(worker_, &XmppWorker::remoteNoteRetracted, this, &XmppStorage::onRemoteNoteRetracted);
-    connect(worker_, &XmppWorker::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
-    connect(worker_, &XmppWorker::connectionChanged, this, &XmppStorage::onConnectionChanged);
-    connect(worker_, &XmppWorker::workerError, this, [this](const QString &error) {
+    backend_ = backend ? backend : new XmppWorker;
+    backend_->setParent(this);
+    connect(backend_, &XmppBackend::remoteNotePublished, this, &XmppStorage::onRemoteNotePublished);
+    connect(backend_, &XmppBackend::remoteNoteRetracted, this, &XmppStorage::onRemoteNoteRetracted);
+    connect(backend_, &XmppBackend::remoteNodeInvalidated, this, &XmppStorage::onRemoteNodeInvalidated);
+    connect(backend_, &XmppBackend::connectionChanged, this, &XmppStorage::onConnectionChanged);
+    connect(backend_, &XmppBackend::backendError, this, [this](const QString &error) {
         if (error.contains(QStringLiteral("storage key mismatch"), Qt::CaseInsensitive))
             enterErrorState(error, true);
         else
             reportError(error);
     });
-    connect(
-        worker_, &XmppWorker::keySyncTrustRequested, this, [this](const QString &requestId, const QByteArray &keyId) {
-            QMessageBox dialog(QMessageBox::Question, tr("Trust an own QtNote device?"),
-                               tr("Another device on your XMPP account wants to synchronize the QtNote storage "
-                                  "key."),
-                               QMessageBox::NoButton, QApplication::activeWindow());
-            dialog.setInformativeText(
-                tr("OMEMO fingerprint: %1\n\nOnly approve this request if you recognize the device or can "
-                   "compare this fingerprint on both devices.")
-                    .arg(QString::fromLatin1(keyId.toHex())));
-            auto *reject  = dialog.addButton(tr("Reject"), QMessageBox::RejectRole);
-            auto *approve = dialog.addButton(tr("Trust and send key"), QMessageBox::AcceptRole);
-            dialog.setDefaultButton(reject);
-            dialog.exec();
-            if (dialog.clickedButton() == approve) {
-                QMetaObject::invokeMethod(worker_, [this, requestId]() { worker_->approveKeySyncRequest(requestId); });
-            }
-        });
-
-    workerThread_.start();
+    connect(backend_, &XmppBackend::keySyncTrustRequested, this,
+            [this](const QString &requestId, const QByteArray &keyId) {
+                QMessageBox dialog(QMessageBox::Question, tr("Trust an own QtNote device?"),
+                                   tr("Another device on your XMPP account wants to synchronize the QtNote storage "
+                                      "key."),
+                                   QMessageBox::NoButton, QApplication::activeWindow());
+                dialog.setInformativeText(
+                    tr("OMEMO fingerprint: %1\n\nOnly approve this request if you recognize the device or can "
+                       "compare this fingerprint on both devices.")
+                        .arg(QString::fromLatin1(keyId.toHex())));
+                auto *reject  = dialog.addButton(tr("Reject"), QMessageBox::RejectRole);
+                auto *approve = dialog.addButton(tr("Trust and send key"), QMessageBox::AcceptRole);
+                dialog.setDefaultButton(reject);
+                dialog.exec();
+                if (dialog.clickedButton() == approve) {
+                    QMetaObject::invokeMethod(backend_,
+                                              [this, requestId]() { backend_->approveKeySyncRequest(requestId); });
+                }
+            });
 }
 
 void XmppStorage::installReceivedStorageKey(const QString &jid, const QByteArray &key)
@@ -125,51 +105,80 @@ void XmppStorage::resolveStorageKeys(const QString &jid, XmppSettingsWidget *set
     auto config              = readConfig();
     config.jid               = jid;
     QPointer<XmppSettingsWidget> settingsGuard(settings);
-    QMetaObject::invokeMethod(worker_, [this, config, jid, settingsGuard]() {
-        worker_->setConfig(config);
-        QString    deviceError;
-        const auto devices = worker_->ownOmemoDevices(&deviceError);
-        QMetaObject::invokeMethod(this, [this, devices, deviceError, jid, settingsGuard]() {
-            QWidget *parent
-                = settingsGuard ? static_cast<QWidget *>(settingsGuard.data()) : QApplication::activeWindow();
-            const bool              localKeyMissing = readConfig().masterKey.size() != SecureEnvelope::MasterKeySize;
-            XmppKeyResolutionDialog dialog(
-                localKeyMissing, devices, deviceError,
-                [this](const QList<QByteArray> &keyIds) {
-                    return invokeWorker<XmppStatusResult>(worker_, [this, keyIds]() {
-                        for (const auto &keyId : keyIds) {
-                            const auto result = worker_->trustOwnOmemoDevice(keyId);
-                            if (!result.ok)
-                                return result;
-                        }
-                        return XmppStatusResult { true };
-                    });
-                },
-                [this]() {
-                    return invokeWorker<XmppKeyAuditResult>(worker_, [this]() { return worker_->auditStorageKeys(); });
-                },
-                [this](const QList<QByteArray> &keys, const QByteArray &canonical) {
-                    return invokeWorker<XmppRekeyResult>(
-                        worker_, [this, keys, canonical]() { return worker_->rekeyStorage(keys, canonical); });
-                },
-                parent);
-            const auto accepted      = dialog.exec() == QDialog::Accepted;
-            const auto rekeyed       = dialog.rekeyResult();
-            const auto canonical     = dialog.canonicalKey();
-            keyResolutionInProgress_ = false;
-            if (!accepted)
-                return;
-            if (!rekeyed.ok) {
-                if (settingsGuard)
-                    settingsGuard->setKeyState(SecureEnvelope::keyId(canonical), rekeyed.error);
-                return;
-            }
-            installReceivedStorageKey(jid, canonical);
-            if (settingsGuard) {
-                settingsGuard->setKeyState(
-                    SecureEnvelope::keyId(canonical),
-                    tr("Recovery complete: %1 notes use the canonical key").arg(rekeyed.migrated));
-            }
+    QMetaObject::invokeMethod(backend_, [this, config, jid, settingsGuard]() {
+        backend_->setConfig(config);
+        backend_->ownOmemoDevicesAsync([this, jid, settingsGuard](auto devices, QString deviceError) mutable {
+            QMetaObject::invokeMethod(
+                this, [this, devices = std::move(devices), deviceError = std::move(deviceError), jid, settingsGuard]() {
+                    QWidget *parent
+                        = settingsGuard ? static_cast<QWidget *>(settingsGuard.data()) : QApplication::activeWindow();
+                    const bool localKeyMissing = readConfig().masterKey.size() != SecureEnvelope::MasterKeySize;
+                    XmppKeyResolutionDialog dialog(
+                        localKeyMissing, devices, deviceError,
+                        [this](const QList<QByteArray> &keyIds, XmppKeyResolutionDialog::StatusCompletion completion) {
+                            QMetaObject::invokeMethod(
+                                backend_, [this, keyIds, completion = std::move(completion)]() mutable {
+                                    backend_->trustOwnOmemoDevicesAsync(
+                                        keyIds,
+                                        [this, completion = std::move(completion)](XmppStatusResult result) mutable {
+                                            QMetaObject::invokeMethod(
+                                                this,
+                                                [completion = std::move(completion), result]() mutable {
+                                                    completion(result);
+                                                },
+                                                Qt::QueuedConnection);
+                                        });
+                                });
+                        },
+                        [this](XmppKeyResolutionDialog::AuditCompletion completion) {
+                            QMetaObject::invokeMethod(backend_, [this, completion = std::move(completion)]() mutable {
+                                backend_->auditStorageKeysAsync(
+                                    [this, completion = std::move(completion)](XmppKeyAuditResult result) mutable {
+                                        QMetaObject::invokeMethod(
+                                            this,
+                                            [completion = std::move(completion), result = std::move(result)]() mutable {
+                                                completion(std::move(result));
+                                            },
+                                            Qt::QueuedConnection);
+                                    });
+                            });
+                        },
+                        [this](const QList<QByteArray> &keys, const QByteArray &canonical,
+                               XmppKeyResolutionDialog::RekeyCompletion completion) {
+                            QMetaObject::invokeMethod(
+                                backend_, [this, keys, canonical, completion = std::move(completion)]() mutable {
+                                    backend_->rekeyStorageAsync(
+                                        keys, canonical,
+                                        [this, completion = std::move(completion)](XmppRekeyResult result) mutable {
+                                            QMetaObject::invokeMethod(
+                                                this,
+                                                [completion = std::move(completion),
+                                                 result     = std::move(result)]() mutable {
+                                                    completion(std::move(result));
+                                                },
+                                                Qt::QueuedConnection);
+                                        });
+                                });
+                        },
+                        parent);
+                    const auto accepted      = dialog.exec() == QDialog::Accepted;
+                    const auto rekeyed       = dialog.rekeyResult();
+                    const auto canonical     = dialog.canonicalKey();
+                    keyResolutionInProgress_ = false;
+                    if (!accepted)
+                        return;
+                    if (!rekeyed.ok) {
+                        if (settingsGuard)
+                            settingsGuard->setKeyState(SecureEnvelope::keyId(canonical), rekeyed.error);
+                        return;
+                    }
+                    installReceivedStorageKey(jid, canonical);
+                    if (settingsGuard) {
+                        settingsGuard->setKeyState(
+                            SecureEnvelope::keyId(canonical),
+                            tr("Recovery complete: %1 notes use the canonical key").arg(rekeyed.migrated));
+                    }
+                });
         });
     });
 }
@@ -178,11 +187,8 @@ XmppStorage::~XmppStorage() { shutdown(); }
 
 void XmppStorage::shutdown()
 {
-    if (workerThread_.isRunning()) {
-        QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);
-    }
-    workerThread_.quit();
-    workerThread_.wait();
+    if (backend_)
+        backend_->shutdown();
 }
 
 XmppConfig XmppStorage::readConfig() const
@@ -283,17 +289,9 @@ bool XmppStorage::init()
         return false;
     }
 
-    const auto result = invokeWorker<XmppStatusResult>(worker_, [&]() {
-        worker_->setConfig(config_);
-        return worker_->probe();
-    });
-
-    accessible_ = result.ok;
-    cacheValid_ = false;
-    if (!result.ok) {
-        enterErrorState(result.error, true);
-    }
-    return result.ok;
+    auto *job = initAsync(this);
+    connect(job, &StorageJob::finished, job, &QObject::deleteLater);
+    return accessible_;
 }
 
 StorageInitJob *XmppStorage::initAsync(QObject *owner)
@@ -319,25 +317,26 @@ StorageInitJob *XmppStorage::initAsync(QObject *owner)
     const auto               config = config_;
     QPointer<StorageInitJob> guard(job);
     QMetaObject::invokeMethod(
-        worker_,
+        backend_,
         [this, guard, config]() {
-            worker_->setConfig(config);
-            const auto result = worker_->probe();
-            QMetaObject::invokeMethod(
-                this,
-                [this, guard, result]() {
-                    if (!guard || guard->isFinished())
-                        return;
-                    accessible_ = result.ok;
-                    cacheValid_ = false;
-                    if (result.ok)
-                        guard->complete();
-                    else {
-                        enterErrorState(result.error, true);
-                        guard->fail({ StorageError::Network, result.error, false });
-                    }
-                },
-                Qt::QueuedConnection);
+            backend_->setConfig(config);
+            backend_->probeAsync([this, guard](XmppStatusResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, guard, result = std::move(result)]() {
+                        if (!guard || guard->isFinished())
+                            return;
+                        accessible_ = result.ok;
+                        cacheValid_ = false;
+                        if (result.ok)
+                            guard->complete();
+                        else {
+                            enterErrorState(result.error, true);
+                            guard->fail({ StorageError::Network, result.error, true });
+                        }
+                    },
+                    Qt::QueuedConnection);
+            });
         },
         Qt::QueuedConnection);
     return job;
@@ -402,51 +401,6 @@ XmppRemoteNote XmppStorage::toRemote(const Note &note) const
 
 QList<Note> XmppStorage::noteList(int limit)
 {
-    if (cacheValid_) {
-        auto notes = cache_.values();
-        std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
-        return limit > 0 ? notes.mid(0, limit) : notes;
-    }
-    if (errorState_) {
-        auto cached = cache_.values();
-        std::sort(cached.begin(), cached.end(), noteListItemModifyComparer);
-        return limit > 0 ? cached.mid(0, limit) : cached;
-    }
-    if (!accessible_ && !init()) {
-        return {};
-    }
-
-    const auto result = invokeWorker<XmppListResult>(worker_, [&]() { return worker_->listNotes(); });
-
-    if (!result.ok) {
-        reportError(result.error);
-        auto cached = cache_.values();
-        std::sort(cached.begin(), cached.end(), noteListItemModifyComparer);
-        return limit > 0 ? cached.mid(0, limit) : cached;
-    }
-
-    QHash<QString, Note> refreshed;
-    refreshed.reserve(result.notes.size());
-    for (const auto &remote : result.notes) {
-        const auto old = cache_.constFind(remote.id);
-        if (old != cache_.cend()) {
-            if (old.value().backendValue(QStringLiteral("revision")).toString() == remote.revision) {
-                refreshed.insert(remote.id, old.value());
-                continue;
-            }
-        }
-        refreshed.insert(remote.id, fromRemote(remote));
-    }
-
-    cache_      = std::move(refreshed);
-    cacheValid_ = true;
-    accessible_ = true;
-
-    if (result.partial) {
-        reportError(tr("The XMPP server returned only one paginated PubSub page. "
-                       "Some notes may be missing because this server does not expose item IDs."));
-    }
-
     auto notes = cache_.values();
     std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
     return limit > 0 ? notes.mid(0, limit) : notes;
@@ -473,75 +427,43 @@ NoteListJob *XmppStorage::refreshNotesAsync(int limit, QObject *owner)
     const auto            config = readConfig();
     QPointer<NoteListJob> guard(job);
     QMetaObject::invokeMethod(
-        worker_,
+        backend_,
         [this, guard, config, limit]() {
-            worker_->setConfig(config);
-            auto           status = worker_->probe();
-            XmppListResult result;
-            if (status.ok)
-                result = worker_->listNotes();
-            else {
-                result.ok    = false;
-                result.error = status.error;
-            }
-            QMetaObject::invokeMethod(
-                this,
-                [this, guard, result, limit]() {
-                    if (!guard || guard->isFinished())
-                        return;
-                    if (!result.ok) {
-                        enterErrorState(result.error, true);
-                        guard->fail({ StorageError::Network, result.error, false });
-                        return;
-                    }
-                    QHash<QString, Note> refreshed;
-                    for (const auto &remote : result.notes) {
-                        const auto old = cache_.constFind(remote.id);
-                        if (old != cache_.cend()
-                            && old.value().backendValue(QStringLiteral("revision")).toString() == remote.revision)
-                            refreshed.insert(remote.id, old.value());
-                        else
-                            refreshed.insert(remote.id, fromRemote(remote));
-                    }
-                    cache_      = std::move(refreshed);
-                    cacheValid_ = accessible_ = true;
-                    auto notes                = cache_.values();
-                    std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
-                    guard->complete(limit > 0 ? notes.mid(0, limit) : notes);
-                },
-                Qt::QueuedConnection);
+            backend_->setConfig(config);
+            backend_->listNotesAsync([this, guard, limit](XmppListResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, guard, result = std::move(result), limit]() {
+                        if (!guard || guard->isFinished())
+                            return;
+                        if (!result.ok) {
+                            enterErrorState(result.error, true);
+                            guard->fail({ StorageError::Network, result.error, true });
+                            return;
+                        }
+                        QHash<QString, Note> refreshed;
+                        for (const auto &remote : result.notes) {
+                            const auto old = cache_.constFind(remote.id);
+                            if (old != cache_.cend()
+                                && old.value().backendValue(QStringLiteral("revision")).toString() == remote.revision)
+                                refreshed.insert(remote.id, old.value());
+                            else
+                                refreshed.insert(remote.id, fromRemote(remote));
+                        }
+                        cache_      = std::move(refreshed);
+                        cacheValid_ = accessible_ = true;
+                        auto notes                = cache_.values();
+                        std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
+                        guard->complete(limit > 0 ? notes.mid(0, limit) : notes);
+                    },
+                    Qt::QueuedConnection);
+            });
         },
         Qt::QueuedConnection);
     return job;
 }
 
-Note XmppStorage::note(const QString &id)
-{
-    if (id.isEmpty()) {
-        return {};
-    }
-    if (errorState_) {
-        return cache_.value(id);
-    }
-    if (!accessible_ && !init()) {
-        return {};
-    }
-
-    const auto result = invokeWorker<XmppNoteResult>(worker_, [&]() { return worker_->getNote(id); });
-    if (!result.ok) {
-        if (result.notFound) {
-            cache_.remove(id);
-            return {};
-        }
-        reportError(result.error);
-        return {};
-    }
-
-    auto remote = fromRemote(result.note);
-    cache_.insert(id, remote);
-    accessible_ = true;
-    return remote;
-}
+Note XmppStorage::note(const QString &id) { return cache_.value(id); }
 
 NoteLoadJob *XmppStorage::loadNoteAsync(const QString &id, QObject *owner)
 {
@@ -555,28 +477,29 @@ NoteLoadJob *XmppStorage::loadNoteAsync(const QString &id, QObject *owner)
     const auto            config = readConfig();
     QPointer<NoteLoadJob> guard(job);
     QMetaObject::invokeMethod(
-        worker_,
+        backend_,
         [this, guard, config, id]() {
-            worker_->setConfig(config);
-            const auto result = worker_->getNote(id);
-            QMetaObject::invokeMethod(
-                this,
-                [this, guard, result, id]() {
-                    if (!guard || guard->isFinished())
-                        return;
-                    if (!result.ok) {
-                        if (result.notFound)
-                            cache_.remove(id);
-                        guard->fail(
-                            { result.notFound ? StorageError::NotFound : StorageError::Network, result.error, false });
-                        return;
-                    }
-                    auto loaded = fromRemote(result.note);
-                    cache_.insert(id, loaded);
-                    accessible_ = true;
-                    guard->complete(loaded);
-                },
-                Qt::QueuedConnection);
+            backend_->setConfig(config);
+            backend_->getNoteAsync(id, [this, guard, id](XmppNoteResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, guard, result = std::move(result), id]() {
+                        if (!guard || guard->isFinished())
+                            return;
+                        if (!result.ok) {
+                            if (result.notFound)
+                                cache_.remove(id);
+                            guard->fail({ result.notFound ? StorageError::NotFound : StorageError::Network,
+                                          result.error, !result.notFound });
+                            return;
+                        }
+                        auto loaded = fromRemote(result.note);
+                        cache_.insert(id, loaded);
+                        accessible_ = true;
+                        guard->complete(loaded);
+                    },
+                    Qt::QueuedConnection);
+            });
         },
         Qt::QueuedConnection);
     return job;
@@ -593,87 +516,24 @@ Note XmppStorage::createNote()
 bool XmppStorage::loadNote(Note &note)
 {
     const QString id = note.id();
-    if (id.isEmpty()) {
+    if (id.isEmpty())
         return true;
-    }
-    if (errorState_) {
+    const auto cached = cache_.value(id);
+    if (cached.isNull() || !cached.isLoaded())
         return false;
-    }
-    if (!accessible_ && !init()) {
-        return false;
-    }
-
-    const auto result = invokeWorker<XmppNoteResult>(worker_, [&]() { return worker_->getNote(id); });
-    if (!result.ok) {
-        reportError(result.error);
-        return false;
-    }
-
-    applyRemote(note, result.note);
-    accessible_ = true;
+    note = cached;
     return true;
 }
 
 bool XmppStorage::saveNote(const Note &note)
 {
-    if (note.isNull()) {
+    if (note.isNull() || note.storage() != this || !note.isLoaded())
         return false;
-    }
-
-    if (note.storage() != this) {
-        reportError(tr("Attempted to save a note owned by another storage."));
-        return false;
-    }
-
-    Note saved = note;
-    if (!saved.id().isEmpty() && !saved.isLoaded() && !loadNote(saved)) {
-        return false;
-    }
-    if (errorState_) {
-        return false;
-    }
-    if (!accessible_ && !init()) {
-        return false;
-    }
-
-    const QString oldId  = note.id();
-    const auto    local  = toRemote(saved);
-    const auto    result = invokeWorker<XmppNoteResult>(worker_, [&]() { return worker_->saveNote(local); });
-
-    if (!result.ok) {
-        if (result.conflict) {
-            if (result.remoteOnConflict) {
-                cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
-            }
-            reportError(tr("Save conflict: the note changed on another XMPP resource. "
-                           "The local text was preserved and the server item was not overwritten."),
-                        true);
-        } else {
-            reportError(result.error);
-        }
-        return false;
-    }
-
-    applyRemote(saved, result.note);
-    const QString newId   = saved.id();
-    const bool    existed = !oldId.isEmpty() && cache_.contains(oldId);
-
-    if (!oldId.isEmpty() && oldId != newId) {
-        cache_.remove(oldId);
-    }
-    cache_.insert(newId, saved);
-    cacheValid_ = true;
-    accessible_ = true;
-
-    if (!oldId.isEmpty() && oldId != newId) {
-        emit noteIdChanged(saved, oldId);
-    }
-    if (existed || !oldId.isEmpty()) {
-        emit noteModified(saved);
-    } else {
-        emit noteAdded(saved);
-    }
-    return true;
+    const auto draftId = QUuid::createUuid();
+    auto       error   = DraftManager::instance()->saveEditing(draftId, note, note.title(), note.text(), note.format());
+    if (!error)
+        error = DraftManager::instance()->markReady(draftId);
+    return !error;
 }
 
 NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
@@ -690,37 +550,38 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
     const auto            oldId  = note.id();
     QPointer<NoteSaveJob> guard(job);
     QMetaObject::invokeMethod(
-        worker_,
+        backend_,
         [this, guard, config, local, oldId]() {
-            worker_->setConfig(config);
-            const auto result = worker_->saveNote(local);
-            QMetaObject::invokeMethod(
-                this,
-                [this, guard, result, oldId]() {
-                    if (!guard || guard->isFinished())
-                        return;
-                    if (!result.ok) {
-                        if (result.remoteOnConflict)
-                            cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
-                        guard->fail(
-                            { result.conflict ? StorageError::Conflict : StorageError::Network, result.error, false });
-                        return;
-                    }
-                    auto       saved   = fromRemote(result.note);
-                    const bool existed = !oldId.isEmpty() && cache_.contains(oldId);
-                    if (!oldId.isEmpty() && oldId != saved.id())
-                        cache_.remove(oldId);
-                    cache_.insert(saved.id(), saved);
-                    cacheValid_ = accessible_ = true;
-                    if (!oldId.isEmpty() && oldId != saved.id())
-                        emit noteIdChanged(saved, oldId);
-                    if (existed || !oldId.isEmpty())
-                        emit noteModified(saved);
-                    else
-                        emit noteAdded(saved);
-                    guard->complete(saved);
-                },
-                Qt::QueuedConnection);
+            backend_->setConfig(config);
+            backend_->saveNoteAsync(local, [this, guard, oldId](XmppNoteResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, guard, result = std::move(result), oldId]() {
+                        if (!guard || guard->isFinished())
+                            return;
+                        if (!result.ok) {
+                            if (result.remoteOnConflict)
+                                cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
+                            guard->fail({ result.conflict ? StorageError::Conflict : StorageError::Network,
+                                          result.error, !result.conflict });
+                            return;
+                        }
+                        auto       saved   = fromRemote(result.note);
+                        const bool existed = !oldId.isEmpty() && cache_.contains(oldId);
+                        if (!oldId.isEmpty() && oldId != saved.id())
+                            cache_.remove(oldId);
+                        cache_.insert(saved.id(), saved);
+                        cacheValid_ = accessible_ = true;
+                        if (!oldId.isEmpty() && oldId != saved.id())
+                            emit noteIdChanged(saved, oldId);
+                        if (existed || !oldId.isEmpty())
+                            emit noteModified(saved);
+                        else
+                            emit noteAdded(saved);
+                        guard->complete(saved);
+                    },
+                    Qt::QueuedConnection);
+            });
         },
         Qt::QueuedConnection);
     return job;
@@ -728,31 +589,8 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
 
 void XmppStorage::removeNote(const QString &noteId)
 {
-    if (noteId.isEmpty()) {
-        return;
-    }
-    if (errorState_) {
-        return;
-    }
-    if (!accessible_ && !init()) {
-        return;
-    }
-
-    Note removed = cache_.value(noteId);
-    if (removed.isNull()) {
-        removed = note(noteId);
-    }
-
-    const auto result = invokeWorker<XmppStatusResult>(worker_, [&]() { return worker_->deleteNote(noteId); });
-    if (!result.ok && !result.notFound) {
-        reportError(result.error);
-        return;
-    }
-
-    cache_.remove(noteId);
-    if (!removed.isNull()) {
-        emit noteRemoved(removed);
-    }
+    if (!noteId.isEmpty())
+        DraftManager::instance()->queueRemoval(systemName(), noteId);
 }
 
 NoteRemoveJob *XmppStorage::removeNoteAsync(const QString &noteId, QObject *owner)
@@ -768,25 +606,26 @@ NoteRemoveJob *XmppStorage::removeNoteAsync(const QString &noteId, QObject *owne
     const auto              removed = cache_.value(noteId);
     QPointer<NoteRemoveJob> guard(job);
     QMetaObject::invokeMethod(
-        worker_,
+        backend_,
         [this, guard, config, noteId, removed]() {
-            worker_->setConfig(config);
-            const auto result = worker_->deleteNote(noteId);
-            QMetaObject::invokeMethod(
-                this,
-                [this, guard, result, noteId, removed]() {
-                    if (!guard || guard->isFinished())
-                        return;
-                    if (!result.ok && !result.notFound) {
-                        guard->fail({ StorageError::Network, result.error, false });
-                        return;
-                    }
-                    cache_.remove(noteId);
-                    if (!removed.isNull())
-                        emit noteRemoved(removed);
-                    guard->complete();
-                },
-                Qt::QueuedConnection);
+            backend_->setConfig(config);
+            backend_->deleteNoteAsync(noteId, [this, guard, noteId, removed](XmppStatusResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, guard, result = std::move(result), noteId, removed]() {
+                        if (!guard || guard->isFinished())
+                            return;
+                        if (!result.ok && !result.notFound) {
+                            guard->fail({ StorageError::Network, result.error, true });
+                            return;
+                        }
+                        cache_.remove(noteId);
+                        if (!removed.isNull())
+                            emit noteRemoved(removed);
+                        guard->complete();
+                    },
+                    Qt::QueuedConnection);
+            });
         },
         Qt::QueuedConnection);
     return job;
@@ -892,9 +731,8 @@ void XmppStorage::enterErrorState(const QString &error, bool invalidate)
     accessible_        = false;
     cacheValid_        = false;
 
-    if (workerThread_.isRunning() && !keyMismatch) {
-        QMetaObject::invokeMethod(worker_, [this]() { worker_->shutdown(); }, Qt::BlockingQueuedConnection);
-    }
+    if (!keyMismatch)
+        backend_->shutdown();
 
     if (keyMismatch) {
         if (invalidate) {
@@ -1001,18 +839,23 @@ QWidget *XmppStorage::settingsWidget()
         auto config = readConfig();
         config.jid  = jid;
         QPointer<XmppSettingsWidget> guard(widget);
-        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
-            worker_->setConfig(config);
-            QString    error;
-            const auto devices   = worker_->ownOmemoDevices(&error);
-            const auto ownDevice = worker_->ownOmemoDevice();
-            QString    bundleError;
-            const bool ownBundleValid = worker_->ownOmemoBundleValid(&bundleError);
-            if (!ownBundleValid)
-                error = bundleError;
-            QMetaObject::invokeMethod(this, [guard, ownDevice, ownBundleValid, devices, error]() {
-                if (guard)
-                    guard->setOmemoDevices(ownDevice, ownBundleValid, devices, error);
+        QMetaObject::invokeMethod(backend_, [this, guard, config]() {
+            backend_->setConfig(config);
+            backend_->ownOmemoDevicesAsync([this, guard](auto devices, QString error) mutable {
+                const auto ownDevice = backend_->ownOmemoDevice();
+                backend_->ownOmemoBundleValidAsync([this, guard, ownDevice, devices = std::move(devices),
+                                                    error = std::move(error)](XmppStatusResult validity) mutable {
+                    if (!validity.ok)
+                        error = validity.error;
+                    QMetaObject::invokeMethod(
+                        this,
+                        [guard, ownDevice, valid = validity.ok, devices = std::move(devices),
+                         error = std::move(error)]() mutable {
+                            if (guard)
+                                guard->setOmemoDevices(ownDevice, valid, devices, error);
+                        },
+                        Qt::QueuedConnection);
+                });
             });
         });
     });
@@ -1020,15 +863,20 @@ QWidget *XmppStorage::settingsWidget()
         auto config = readConfig();
         config.jid  = jid;
         QPointer<XmppSettingsWidget> guard(widget);
-        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
-            worker_->setConfig(config);
-            const auto result = worker_->repairOwnOmemoDevice();
-            QMetaObject::invokeMethod(this, [guard, result]() {
-                if (!guard)
-                    return;
-                guard->setKeyState({}, result.ok ? XmppSettingsWidget::tr("OMEMO device repaired") : result.error);
-                if (result.ok)
-                    emit guard->omemoDevicesRequested(guard->config().jid);
+        QMetaObject::invokeMethod(backend_, [this, guard, config]() {
+            backend_->setConfig(config);
+            backend_->repairOwnOmemoDeviceAsync([this, guard](XmppStatusResult result) {
+                QMetaObject::invokeMethod(
+                    this,
+                    [guard, result]() {
+                        if (!guard)
+                            return;
+                        guard->setKeyState({},
+                                           result.ok ? XmppSettingsWidget::tr("OMEMO device repaired") : result.error);
+                        if (result.ok)
+                            emit guard->omemoDevicesRequested(guard->config().jid);
+                    },
+                    Qt::QueuedConnection);
             });
         });
     });
@@ -1037,13 +885,17 @@ QWidget *XmppStorage::settingsWidget()
                 auto config = readConfig();
                 config.jid  = jid;
                 QPointer<XmppSettingsWidget> guard(widget);
-                QMetaObject::invokeMethod(worker_, [this, guard, config, keyId]() {
-                    worker_->setConfig(config);
-                    const auto result = worker_->trustOwnOmemoDevice(keyId);
-                    QMetaObject::invokeMethod(this, [guard, result]() {
-                        if (guard)
-                            guard->setKeyState(
-                                {}, result.ok ? XmppSettingsWidget::tr("OMEMO device trusted") : result.error);
+                QMetaObject::invokeMethod(backend_, [this, guard, config, keyId]() {
+                    backend_->setConfig(config);
+                    backend_->trustOwnOmemoDeviceAsync(keyId, [this, guard](XmppStatusResult result) {
+                        QMetaObject::invokeMethod(
+                            this,
+                            [guard, result]() {
+                                if (guard)
+                                    guard->setKeyState(
+                                        {}, result.ok ? XmppSettingsWidget::tr("OMEMO device trusted") : result.error);
+                            },
+                            Qt::QueuedConnection);
                     });
                 });
             });

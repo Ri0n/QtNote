@@ -152,6 +152,35 @@ DraftStoreError DraftManager::discard(const QUuid &draftId)
     return result.code == DraftStoreError::NotFound ? DraftStoreError {} : result;
 }
 
+DraftStoreError DraftManager::queueRemoval(const QString &storageId, const QString &noteId)
+{
+    if (!store_)
+        return { DraftStoreError::Locked, lastError_ };
+    if (storageId.isEmpty() || noteId.isEmpty())
+        return { DraftStoreError::InvalidArgument, tr("Storage or note identifier is empty") };
+
+    auto records = store_->records();
+    if (!records)
+        return records.error;
+    for (const auto &record : records.value) {
+        if (record.operation == DraftRecord::Delete && record.storageId == storageId && record.remoteNoteId == noteId) {
+            return {};
+        }
+    }
+
+    DraftRecord record;
+    record.id           = QUuid::createUuid();
+    record.operation    = DraftRecord::Delete;
+    record.state        = DraftRecord::Ready;
+    record.storageId    = storageId;
+    record.remoteNoteId = noteId;
+    record.updatedAt    = QDateTime::currentDateTimeUtc();
+    auto result         = store_->write(record);
+    if (!result)
+        QTimer::singleShot(0, this, &DraftManager::publishPending);
+    return result;
+}
+
 QList<DraftRecord> DraftManager::recoverableDrafts() const
 {
     QList<DraftRecord> result;
@@ -161,7 +190,7 @@ QList<DraftRecord> DraftManager::recoverableDrafts() const
     if (!records)
         return result;
     for (const auto &record : records.value) {
-        if (record.state == DraftRecord::Editing)
+        if (record.operation == DraftRecord::Publish && record.state == DraftRecord::Editing)
             result.push_back(record);
     }
     return result;
@@ -174,8 +203,9 @@ void DraftManager::publishPending()
     auto records = store_->records();
     if (!records)
         return;
+    const auto now = QDateTime::currentDateTimeUtc();
     for (const auto &record : records.value) {
-        if (record.state == DraftRecord::NeedsRouting) {
+        if (record.operation == DraftRecord::Publish && record.state == DraftRecord::NeedsRouting) {
             auto target = NoteManager::instance()->defaultStorage();
             if (!target)
                 continue;
@@ -187,62 +217,144 @@ void DraftManager::publishPending()
             routed.retryAt = {};
             if (store_->write(routed))
                 continue;
-            publish(routed);
+            process(routed);
             continue;
         }
         if ((record.state == DraftRecord::Ready || record.state == DraftRecord::Retry
              || record.state == DraftRecord::Publishing)
             && !publishing_.contains(record.id)) {
-            publish(record);
+            if (record.state == DraftRecord::Retry) {
+                if (!record.retryAt.isValid())
+                    continue;
+                if (record.retryAt > now) {
+                    QTimer::singleShot(qMax<qint64>(1, now.msecsTo(record.retryAt)), this,
+                                       &DraftManager::publishPending);
+                    continue;
+                }
+            }
+            process(record);
         }
     }
     if (publishing_.isEmpty())
         emit publishingIdle();
 }
 
+void DraftManager::process(const DraftRecord &record)
+{
+    if (record.operation == DraftRecord::Delete)
+        remove(record);
+    else
+        publish(record);
+}
+
+void DraftManager::retry(const DraftRecord &record, const QString &message, bool retryable)
+{
+    constexpr qint64 MinimumDelay = 30;
+    constexpr qint64 MaximumDelay = 300;
+    const auto       now          = QDateTime::currentDateTimeUtc();
+    qint64           delay        = MinimumDelay;
+    if (record.updatedAt.isValid() && record.retryAt.isValid())
+        delay = qBound(MinimumDelay, record.updatedAt.secsTo(record.retryAt) * 2, MaximumDelay);
+
+    auto retry      = record;
+    retry.state     = DraftRecord::Retry;
+    retry.lastError = message;
+    retry.updatedAt = now;
+    retry.retryAt   = retryable ? now.addSecs(delay) : QDateTime {};
+    store_->write(retry);
+    emit draftPublishFailed(record.id, message);
+    if (retryable)
+        QTimer::singleShot(delay * 1000, this, &DraftManager::publishPending);
+}
+
 void DraftManager::publish(const DraftRecord &record)
 {
     auto storage = NoteManager::instance()->storage(record.storageId);
     if (!storage || !storage->isAccessible()) {
-        auto retry      = record;
-        retry.state     = DraftRecord::Retry;
-        retry.lastError = tr("Target storage is unavailable");
-        retry.retryAt   = QDateTime::currentDateTimeUtc().addSecs(30);
-        store_->write(retry);
-        emit draftPublishFailed(record.id, retry.lastError);
-        QTimer::singleShot(30000, this, &DraftManager::publishPending);
+        retry(record, tr("Target storage is unavailable"));
         return;
     }
-    auto note = record.remoteNoteId.isEmpty() ? storage->createNote() : storage->note(record.remoteNoteId);
-    if (note.isNull()) {
-        emit draftPublishFailed(record.id, tr("Target note could not be created or loaded"));
-        return;
-    }
-    note.setTitle(record.title);
-    note.setText(record.body, record.format);
     auto publishing  = record;
     publishing.state = DraftRecord::Publishing;
     if (store_->write(publishing))
         return;
     publishing_.insert(record.id);
-    auto *job = storage->saveNoteAsync(note, this);
+
+    const auto save = [this, record, storage](Note note) {
+        if (note.isNull()) {
+            publishing_.remove(record.id);
+            retry(record, tr("Target note could not be created or loaded"));
+            return;
+        }
+        note.setTitle(record.title);
+        note.setText(record.body, record.format);
+        auto *job = storage->saveNoteAsync(note, this);
+        publishJobs_.insert(record.id, job);
+        connect(job, &StorageJob::finished, this, [this, id = record.id, job]() {
+            publishing_.remove(id);
+            publishJobs_.remove(id);
+            if (job->state() == StorageJob::Succeeded) {
+                store_->remove(id);
+                emit draftPublished(id, job->result());
+            } else {
+                auto pending = store_->load(id);
+                if (pending)
+                    retry(pending.value, job->error().message, job->error().retryable);
+            }
+            job->deleteLater();
+            if (publishing_.isEmpty())
+                emit publishingIdle();
+        });
+    };
+
+    if (record.remoteNoteId.isEmpty()) {
+        save(storage->createNote());
+        return;
+    }
+
+    auto *job = storage->loadNoteAsync(record.remoteNoteId, this);
+    publishJobs_.insert(record.id, job);
+    connect(job, &StorageJob::finished, this, [this, record, job, save]() mutable {
+        publishJobs_.remove(record.id);
+        if (job->state() == StorageJob::Succeeded) {
+            auto note = job->result();
+            job->deleteLater();
+            save(note);
+            return;
+        }
+        publishing_.remove(record.id);
+        retry(record, job->error().message, job->error().retryable);
+        job->deleteLater();
+        if (publishing_.isEmpty())
+            emit publishingIdle();
+    });
+}
+
+void DraftManager::remove(const DraftRecord &record)
+{
+    auto storage = NoteManager::instance()->storage(record.storageId);
+    if (!storage || !storage->isAccessible()) {
+        retry(record, tr("Target storage is unavailable"));
+        return;
+    }
+
+    auto removing  = record;
+    removing.state = DraftRecord::Publishing;
+    if (store_->write(removing))
+        return;
+
+    publishing_.insert(record.id);
+    auto *job = storage->removeNoteAsync(record.remoteNoteId, this);
     publishJobs_.insert(record.id, job);
     connect(job, &StorageJob::finished, this, [this, id = record.id, job]() {
         publishing_.remove(id);
         publishJobs_.remove(id);
         if (job->state() == StorageJob::Succeeded) {
             store_->remove(id);
-            emit draftPublished(id, job->result());
         } else {
-            auto retry = store_->load(id);
-            if (retry) {
-                retry.value.state     = DraftRecord::Retry;
-                retry.value.lastError = job->error().message;
-                retry.value.retryAt   = QDateTime::currentDateTimeUtc().addSecs(30);
-                store_->write(retry.value);
-            }
-            emit draftPublishFailed(id, job->error().message);
-            QTimer::singleShot(30000, this, &DraftManager::publishPending);
+            auto pending = store_->load(id);
+            if (pending)
+                retry(pending.value, job->error().message, job->error().retryable);
         }
         job->deleteLater();
         if (publishing_.isEmpty())
@@ -265,6 +377,14 @@ void DraftManager::storageAboutToBeRemoved(NoteStorage *storage)
             job->cancel();
         publishing_.remove(record.id);
         publishJobs_.remove(record.id);
+        if (record.operation == DraftRecord::Delete) {
+            record.state     = DraftRecord::Retry;
+            record.lastError = tr("The storage plugin was disabled; deletion is still pending");
+            record.retryAt   = {};
+            if (!store_->write(record))
+                ++affected;
+            continue;
+        }
         if (record.state != DraftRecord::Editing)
             record.state = DraftRecord::NeedsRouting;
         record.storageId.clear();

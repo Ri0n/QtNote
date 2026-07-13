@@ -22,6 +22,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QContextMenuEvent>
 #include <QMenu>
 
+#include "draftmanager.h"
 #include "notemanager.h"
 #include "notemanagerview.h"
 #include "notesmodel.h"
@@ -43,12 +44,17 @@ void NoteManagerView::contextMenuEvent(QContextMenuEvent *e)
 
 void NoteManagerView::removeSelected()
 {
-    QModelIndexList indexes = selectedIndexes();
+    QModelIndexList               indexes = selectedIndexes();
+    QSet<QPair<QString, QString>> queued;
     foreach (QModelIndex index, indexes) {
         NoteStorage::Ptr storage = NoteManager::instance()->storage(index.data(NotesModel::StorageIdRole).toString());
         QString          noteId  = index.data(NotesModel::NoteIdRole).toString();
-        if (storage && !noteId.isEmpty()) {
-            storage->removeNote(noteId);
+        const auto       key     = qMakePair(storage ? storage->systemName() : QString(), noteId);
+        if (storage && !noteId.isEmpty() && !queued.contains(key)) {
+            queued.insert(key);
+            const auto error = DraftManager::instance()->queueRemoval(key.first, key.second);
+            if (error)
+                qWarning() << "Failed to queue note removal:" << error.message;
         }
     }
 }

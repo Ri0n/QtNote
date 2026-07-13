@@ -523,7 +523,9 @@ void Main::note_trashRequested()
 #ifdef MAIN_DEBUG
         qDebug() << "Main::note_trashRequested";
 #endif
-        storage->removeNote(nw->noteId());
+        const auto error = DraftManager::instance()->queueRemoval(storage->systemName(), nw->noteId());
+        if (error)
+            notifyError(tr("Failed to queue note removal: %1").arg(error.message));
     }
 }
 

@@ -28,9 +28,10 @@
 #include "qtnote_config.h"
 
 namespace {
-constexpr auto ServiceName   = "com.github.ri0n.QtNote";
-constexpr auto ObjectPath    = "/QtNote";
-constexpr auto InterfaceName = "com.github.ri0n.QtNote";
+constexpr auto ServiceName                 = "com.github.ri0n.QtNote";
+constexpr auto ObjectPath                  = "/QtNote";
+constexpr auto InterfaceName               = "com.github.ri0n.QtNote";
+constexpr auto AutostartSuppressedProperty = "_qtnote_backendAutostartSuppressed";
 
 Q_LOGGING_CATEGORY(logPlasmoid, "qtnote.plasmoid")
 

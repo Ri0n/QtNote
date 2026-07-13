@@ -16,9 +16,12 @@ class XmppKeyResolutionDialog final : public QWizard {
     Q_OBJECT
 
 public:
-    using TrustDevices = std::function<XmppStatusResult(const QList<QByteArray> &)>;
-    using AuditKeys    = std::function<XmppKeyAuditResult()>;
-    using RekeyStorage = std::function<XmppRekeyResult(const QList<QByteArray> &, const QByteArray &)>;
+    using StatusCompletion = std::function<void(XmppStatusResult)>;
+    using AuditCompletion  = std::function<void(XmppKeyAuditResult)>;
+    using RekeyCompletion  = std::function<void(XmppRekeyResult)>;
+    using TrustDevices     = std::function<void(const QList<QByteArray> &, StatusCompletion)>;
+    using AuditKeys        = std::function<void(AuditCompletion)>;
+    using RekeyStorage     = std::function<void(const QList<QByteArray> &, const QByteArray &, RekeyCompletion)>;
 
     explicit XmppKeyResolutionDialog(bool localKeyMissing, const QList<XmppDeviceInfo> &devices,
                                      const QString &deviceError, TrustDevices trustDevices, AuditKeys auditKeys,
@@ -52,6 +55,9 @@ private:
     QLabel               *keyStatus_;
     QLabel               *summary_;
     QLabel               *result_;
+    bool                  devicesComplete_ { false };
+    bool                  rekeyComplete_ { false };
+    bool                  operationPending_ { false };
 };
 
 } // namespace QtNote

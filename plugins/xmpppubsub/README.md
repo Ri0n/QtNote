@@ -1,131 +1,385 @@
-# QtNote XMPP PubSub storage — first version
+# XMPP Private Notes plugin
 
-Copy this directory to `QtNote/plugins/xmpppubsub` and add `xmpppubsub` to
-`plugins_list` in `plugins/CMakeLists.txt`.
+`xmpppubsub` is an encrypted QtNote storage backend. It synchronizes Markdown
+notes between QtNote installations through the user's XMPP account using
+private persistent PEP nodes.
 
-## Build dependency
+The implemented wire protocol is documented separately in
+[Private Encrypted Notes over XMPP](PROTOXEP.md). That document is a ProtoXEP
+and implementation specification, not an XSF-assigned XEP.
 
-The plugin targets QXmpp 1.11 or newer and links `QXmpp::QXmpp`.
+The XMPP server stores encrypted note records and routes synchronization
+events. Note plaintext and the QtNote storage master key are not published to
+PEP. OMEMO is used to authenticate the user's QtNote devices and to transport
+the storage key during device onboarding.
 
-## Storage model
+## Capabilities
 
-- One private PEP node per account, by default `urn:xmpp:qtnote:notes:0`.
-- Each installation gets a stable UUID and a default resource such as
-  `QtNote-1a2b3c4d`, so two QtNote clients can stay connected simultaneously.
-- One persistent PubSub item per note.
-- The PubSub item ID is the QtNote note ID and is generated as a UUID.
-- Re-publishing the same item updates the note.
-- A PubSub retract deletes the note and requests a notification for other resources.
-- The node is configured with `access_model=whitelist`/QXmpp `Allowlist`,
-  `persist_items=true`, `max_items=max`, payload delivery, and retract notifications.
-- The plugin refuses to store notes when the account does not advertise the
-  PubSub `publish-options` feature required by XEP-0223.
+- creates and verifies private persistent PEP nodes;
+- stores the encrypted note index and content in separate nodes;
+- lists notes in batches and supports the QXmpp/RSM-compatible item-ID path;
+- creates, loads, updates, and retracts notes asynchronously;
+- propagates publish, retract, purge, and node invalidation events;
+- detects optimistic revision conflicts before publishing an update;
+- keeps note publication and deletion operations in an encrypted persistent
+  outbox and retries transient failures with exponential backoff;
+- discovers the account's OMEMO devices and displays their fingerprints;
+- repairs incomplete own-device OMEMO bundles produced after pre-key use;
+- establishes trust between two own QtNote devices and transfers the storage
+  key over an OMEMO-protected IQ;
+- audits notes encrypted with different storage keys and can re-encrypt them
+  with a selected canonical key;
+- requires TLS and does not ignore certificate errors.
 
-## Payload schema
+## Building
 
-```xml
-<item id="note-uuid">
-  <note xmlns="urn:xmpp:qtnote:note:0"
-        schema="1"
-        revision="revision-uuid"
-        parent-revision="previous-revision-uuid"
-        origin="installation-uuid"
-        modified="2026-07-11T01:30:00.000Z"
-        format="markdown">
-    <plaintext>
-      <title>Title</title>
-      <content>Markdown text</content>
-    </plaintext>
-  </note>
-</item>
+The plugin is available on Linux/Unix, macOS, and Windows. It is enabled by
+default when all required development packages are present:
+
+- Qt Network and Qt XML for the selected Qt major version;
+- QXmpp 1.11 or newer;
+- the matching QXmpp OMEMO library;
+- QCoro Core for the matching Qt major version.
+
+Configure QtNote normally to build the plugin:
+
+```sh
+cmake -S . -B build
+cmake --build build
 ```
 
-The outer revision envelope is intentionally independent from the content
-container. A future E2E version can replace `<plaintext>` with an `<encrypted>`
-container while retaining note IDs, revision chains and PubSub behavior.
-This first version rejects encrypted or otherwise unknown content containers
-instead of treating their content as empty.
+Disable it explicitly when building without the XMPP dependencies:
 
-A more detailed migration and key-management outline is in `E2E_FUTURE.md`.
+```sh
+cmake -S . -B build -DQTNOTE_PLUGIN_ENABLE_xmpppubsub=OFF
+```
 
-## Conflict behavior
+The CMake cache option is named `QTNOTE_PLUGIN_ENABLE_xmpppubsub`. Dependency
+detection controls its default value. Explicitly forcing it to `ON` while a
+required package is unavailable produces a normal CMake target/dependency
+error.
 
-Before updating an existing item the client fetches the current server item and
-compares its revision with the revision that QtNote loaded. A mismatch aborts the
-publish, preserves the local text and reports a conflict.
+On Debian/Ubuntu the Qt 6 build uses, among the usual Qt development packages,
+`libqxmppqt6-dev` (including the matching OMEMO CMake target) and
+`qcoro-qt6-dev`. Package names may differ in other releases and distributions.
 
-This is optimistic conflict detection, not an atomic compare-and-swap: XEP-0060
-does not provide an `If-Match` equivalent. A narrow race remains between the
-revision check and publication. `parent-revision` and `origin` are stored so a
-future version can keep version history and perform a three-way merge.
+## Configuration
 
-## Events and reconnects
+Open QtNote's plugin settings and configure **XMPP Private Notes**:
 
-The extension advertises `<node>+notify` and handles item publication, retract,
-purge and node deletion events. Private-data events are accepted only when the
-PubSub service JID is empty or matches the configured account's bare JID.
-A full list refresh is expected after reconnect or node invalidation.
+1. enter the bare JID and password;
+2. optionally override the host and port;
+3. keep a distinct resource for every installation (QtNote generates one from
+   a stable installation UUID);
+4. create/import a storage key, or obtain it from another trusted QtNote device;
+5. apply the configuration and inspect the OMEMO device list.
+
+The default base node is `urn:xmpp:qtnote:notes:0`. It expands to:
+
+- `urn:xmpp:qtnote:notes:0:index:1` — encrypted title, tags, timestamp, format,
+  revision, parent revision, and origin;
+- `urn:xmpp:qtnote:notes:0:content:1` — encrypted note body bound to the same
+  note ID and revision.
+
+Both nodes must be persistent, payload-delivering, and allowlist-only. The
+plugin refuses to use a server that does not advertise a PEP identity and
+PubSub `publish-options`.
+
+## Architecture
+
+The storage-facing code does not depend directly on QXmpp. `XmppBackend` is the
+asynchronous boundary intended for both the current QXmpp implementation and a
+future Iris implementation.
+
+```mermaid
+flowchart LR
+    UI["QtNote UI and NoteManager"]
+    OUTBOX["DraftManager<br/>encrypted persistent outbox"]
+    STORAGE["XmppStorage<br/>NoteStorage adapter and memory cache"]
+    API["XmppBackend<br/>asynchronous backend contract"]
+    QXMPP["XmppWorker<br/>QXmpp and QCoro implementation"]
+    IRIS["Iris backend<br/>planned"]
+    CODEC["XmppNoteCodec<br/>AES-256-GCM envelopes"]
+    OMEMO["OMEMO storage and trust storage"]
+    KEYCHAIN["OS keychain"]
+    SERVER["XMPP server<br/>PEP, PubSub, routing"]
+
+    UI -->|refresh and load jobs| STORAGE
+    UI -->|save and delete intent| OUTBOX
+    OUTBOX -->|async jobs| STORAGE
+    STORAGE --> API
+    API --> QXMPP
+    API -. alternative implementation .-> IRIS
+    QXMPP --> CODEC
+    QXMPP --> OMEMO
+    CODEC -->|encrypted index and content| SERVER
+    OMEMO -->|devices, bundles, encrypted IQ| SERVER
+    STORAGE -->|storage master key| KEYCHAIN
+    OMEMO -->|encrypted local OMEMO state| KEYCHAIN
+```
+
+### Component responsibilities
+
+| Component | Responsibility |
+| --- | --- |
+| `XmppStorage` | QtNote `NoteStorage` adapter, configuration, in-memory cache, job completion, UI-facing errors |
+| `XmppBackend` | backend-neutral asynchronous CRUD, lifecycle, OMEMO, audit, and key-sync contract |
+| `XmppWorker` | current QXmpp implementation; connection, PEP, PubSub, OMEMO, and QCoro flows |
+| `XmppPepExtension` | incoming PubSub event filtering and conversion to backend signals |
+| `XmppKeySyncExtension` | `urn:xmpp:qtnote:key-sync:1` IQ parsing, request tracking, and replies |
+| `XmppNoteCodec` | encryption/decryption and binding index/content to node, item ID, kind, and schema |
+| `XmppOmemoStorage` | encrypted persistence of local OMEMO identity, sessions, and pre-keys |
+| `XmppPersistentTrustStorage` | persistent OMEMO trust decisions |
+| `XmppKeyResolutionDialog` | device trust, key audit, canonical-key choice, and recovery progress |
+| `DraftManager` | durable publish/delete intent, retry scheduling, and recovery after restart |
+
+QXmpp runs in Qt's normal event loop. There is no dedicated XMPP thread and no
+nested `QEventLoop`; sequential protocol operations are QCoro tasks. XMPP is
+primarily I/O-bound, so a second thread is not useful here. Expensive CPU work
+can be isolated later without changing the backend contract.
+
+## Connection and initial synchronization
+
+```mermaid
+flowchart TD
+    START[Start or apply configuration] --> VALIDATE{Configuration and protected keys valid?}
+    VALIDATE -- No --> RECOVER{Only storage key is missing?}
+    RECOVER -- Yes --> WIZARD[Open key recovery wizard]
+    RECOVER -- No --> STOP[Stop backend and report configuration error]
+    VALIDATE -- Yes --> TLS[Connect with TLS and authenticate]
+    TLS -->|authentication or permanent error| STOP
+    TLS -->|temporary network error| BACKOFF[Keep outbox and wait for retry or network change]
+    TLS --> OMEMO[Load or create local OMEMO device]
+    OMEMO --> PEP[Discover PEP and publish-options]
+    PEP --> NODES[Create or verify private index and content nodes]
+    NODES --> IDS[Request index item IDs]
+    IDS -->|supported| BATCH[Fetch encrypted index items in batches]
+    IDS -->|unsupported| PAGE[Fetch one item page and mark a partial result if paginated]
+    BATCH --> DECRYPT[Decrypt and validate indexes]
+    PAGE --> DECRYPT
+    DECRYPT --> CACHE[Replace in-memory note index cache]
+    CACHE --> READY[Storage accessible]
+```
+
+Incoming index publication events update or invalidate the cache. Reconnect,
+purge, and node deletion trigger a full refresh rather than assuming that the
+event stream is complete.
+
+## Note synchronization
+
+### Load and save
+
+```mermaid
+sequenceDiagram
+    participant UI as QtNote
+    participant O as Persistent outbox
+    participant S as XmppStorage
+    participant B as XmppBackend
+    participant P as Private PEP nodes
+
+    UI->>S: loadNoteAsync(noteId)
+    S->>B: fetch index and content
+    B->>P: request encrypted index item
+    P-->>B: index envelope
+    B->>P: request encrypted content item
+    P-->>B: content envelope
+    B->>B: decrypt and verify matching ID and revision
+    B-->>S: loaded note
+    S-->>UI: complete load job
+
+    UI->>O: persist save intent and plaintext draft locally
+    O->>S: saveNoteAsync(note)
+    S->>B: save note with loaded revision
+    B->>P: fetch current server revision
+    alt server revision differs
+        P-->>B: newer revision
+        B-->>S: conflict and remote note
+        S-->>O: permanent conflict; retain local draft
+    else revision matches
+        B->>B: generate revision and encrypt content/index
+        B->>P: publish content item
+        B->>P: publish index item
+        B-->>S: saved note
+        S-->>O: success; remove outbox record
+        S-->>UI: noteAdded or noteModified
+    end
+```
+
+Conflict detection is optimistic, not atomic compare-and-swap: XEP-0060 has no
+`If-Match` equivalent. A narrow race remains between checking the server
+revision and publishing. `parentRevision` and `originId` preserve enough
+information for a future history/merge implementation.
+
+Publishing content and index is also not a server-side transaction. Content is
+published first and index second so readers never observe a new index pointing
+at content that has not been uploaded. A failure between the two publications
+leaves an unreferenced content revision; the durable outbox preserves the local
+draft for retry.
+
+### Delete
+
+Deletion is also durable. QtNote first writes a `Delete` record to the encrypted
+outbox, then retracts the index and content items asynchronously. Successful or
+already-missing items complete the operation. A temporary error retains the
+record and retries with a delay capped at five minutes.
+
+```mermaid
+flowchart LR
+    REQUEST[User deletes note] --> RECORD[Persist encrypted Delete operation]
+    RECORD --> INDEX[Retract index item]
+    INDEX --> CONTENT[Retract content item]
+    CONTENT -->|success or item-not-found| DONE[Remove outbox record]
+    INDEX -->|temporary error| RETRY[30, 60, 120, 240, 300 second backoff]
+    CONTENT -->|temporary error| RETRY
+    RETRY --> INDEX
+    INDEX -->|permanent error| HOLD[Keep operation for diagnosis; do not loop]
+```
+
+## Storage-key exchange between own devices
+
+The storage master key and the OMEMO identity key are different things:
+
+- the random storage master key encrypts QtNote index/content envelopes;
+- OMEMO device identities authenticate installations and protect the IQ that
+  transports the encoded storage recovery key;
+- trust is limited to devices published by the same bare JID and still requires
+  explicit user approval when it cannot be established safely.
+
+The first plaintext `trust-request` contains no storage key. It bootstraps trust
+by presenting the new device's public OMEMO identity. The actual key request and
+response are sent only after trust approval and are OMEMO encrypted.
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant N as New QtNote device
+    participant P as Account PEP
+    participant E as Existing QtNote device
+
+    N->>P: request OMEMO device list and bundles
+    P-->>N: device IDs, labels, identity keys, pre-keys
+    N->>E: disco info
+    E-->>N: advertises qtnote key-sync feature
+
+    alt fingerprint or bundle missing
+        N->>P: refresh bundle
+        P-->>N: bundle still invalid or repaired bundle
+        N-->>U: Fingerprint unavailable or Repair required
+    else candidate available
+        N->>E: plaintext trust-request with new public identity
+        E->>P: verify identity belongs to another own published device
+        alt sender is unknown or belongs to another account
+            E-->>N: reject or no approval
+            N-->>U: trust failed or timed out
+        else sender is an own device
+            E-->>U: approve device fingerprint
+            alt user rejects
+                E-->>N: no key exchange
+                N-->>U: approval rejected or timed out
+            else user approves
+                E-->>N: trust-approved
+                N->>N: trust fingerprints and reset stale sessions
+                N->>E: OMEMO-encrypted storage-key request
+                E->>E: validate bare JID and trusted sender key
+                alt existing device has no valid storage key
+                    E-->>N: reject request
+                    N-->>U: key not received
+                else valid key available
+                    E-->>N: OMEMO-encrypted recovery-key response
+                    N->>N: decode, validate, and install key in keychain
+                    N->>P: audit encrypted note indexes
+                    P-->>N: note envelopes and key IDs
+                    N-->>U: choose canonical key if multiple keys exist
+                    N->>P: re-encrypt accessible notes with canonical key
+                end
+            end
+        end
+    end
+```
+
+### Error handling during key exchange
+
+```mermaid
+flowchart TD
+    FAIL[Exchange step failed] --> KIND{Failure class}
+    KIND -->|device list or bundle invalid| REPAIR[Refresh or repair own OMEMO publication]
+    KIND -->|stale or undecryptable OMEMO session| SESSION[Reset cached peer sessions while preserving fingerprints]
+    KIND -->|unknown sender or different bare JID| REJECT[Reject without exposing the storage key]
+    KIND -->|user did not approve| CANCEL[Keep local state unchanged]
+    KIND -->|IQ timeout or peer offline| TIMEOUT[Show timeout and allow a new attempt]
+    KIND -->|response malformed or wrong request ID| INVALID[Discard response]
+    KIND -->|multiple storage key IDs| AUDIT[Audit notes and request canonical-key selection]
+    KIND -->|some note keys unavailable| PARTIAL[Report inaccessible note IDs; do not overwrite them]
+    REPAIR --> RETRY[Retry from device discovery]
+    SESSION --> RETRY
+```
+
+An incomplete OMEMO bundle is never accepted as a fingerprint. Repair only
+restores the local device's publication when the server bundle has an empty
+identity key and a previously cached bundle proves the expected identity. A
+non-empty mismatching identity is not overwritten automatically.
+
+## Encryption and privacy boundary
+
+QtNote uses AES-256-GCM application-level envelopes. Associated data binds an
+envelope to its key domain, node, item ID, schema, and payload kind. The index
+and content payloads additionally cross-check note ID and revision.
+
+The server can still observe:
+
+- the account and connected resources;
+- PEP node names and item UUIDs;
+- ciphertext sizes, update timing, and deletion timing;
+- OMEMO device IDs, labels, and public bundles.
+
+It cannot derive note titles, bodies, tags, formats, revisions, or timestamps
+from the encrypted QtNote payload without the storage master key.
+
+Local drafts, pending deletions, the storage key, and OMEMO state are also
+protected at rest. The storage key and OMEMO-state wrapping key are kept in the
+platform keychain; encrypted draft/outbox and OMEMO state files live in the
+QtNote data directory.
+
+## Backend evolution and Iris
+
+`XmppBackend` deliberately describes QtNote operations instead of exposing
+QXmpp classes. An Iris backend should implement:
+
+1. connection lifecycle and permanent/transient error classification;
+2. PEP discovery/configuration and PubSub item events;
+3. item-ID/RSM pagination;
+4. asynchronous note CRUD returning the existing DTO result types;
+5. OMEMO device, bundle, session, trust, and encrypted-IQ operations;
+6. cancellation/shutdown semantics compatible with `StorageJob` ownership.
+
+The current Psi OMEMO plugin is a useful implementation source, but OMEMO should
+live behind the Iris backend rather than leak Psi plugin interfaces into
+`XmppStorage`. Backend selection can later be made at build time or through a
+factory without changing note synchronization or recovery UI.
 
 ## Current limitations
 
-- No end-to-end encryption yet.
-- No persistent local cache or offline write queue.
-- No automatic merge UI.
-- The legacy synchronous `NoteStorage` methods wait for operations performed by
-  a QXmpp client living in a dedicated worker thread.
-- QXmpp exposes a continuation marker for paginated item responses but no public
-  continuation overload. The plugin therefore first discovers all item IDs and
-  requests them in batches. If a server rejects item-ID discovery, it falls back
-  to one item page and reports when that page is partial.
-- The XMPP password is stored in `QSettings`; a release version should use
-  QtKeychain or the platform secret store.
-- TLS is required and certificate errors are not ignored.
+- the XMPP password is still stored in `QSettings`; it should move to the
+  platform keychain;
+- the note cache is in memory; the durable outbox protects local edits and
+  deletions, but a cold start still refreshes indexes from PEP;
+- there is no automatic merge UI or remote revision history;
+- PubSub does not provide an atomic transaction across revision check, content
+  publication, and index publication;
+- the QXmpp implementation is the only backend currently shipped; Iris is an
+  architectural extension point, not yet a selectable backend;
+- servers that reject item-ID discovery fall back to one page, which may be
+  partial when the server does not expose a usable continuation API.
 
-## Compatibility policy
+## Suggested validation matrix
 
-The implementation is intentionally strict about privacy. It refuses to use a
-server that does not advertise PEP plus `publish-options`, and it verifies that
-the resulting node is persistent and allowlist-only. Missing nodes are created;
-other configuration errors are reported instead of being treated as a missing
-node.
-
-## Validation performed
-
-The code and method signatures were checked against the public QXmpp 1.11.3
-headers and the current public QtNote plugin interfaces. The archive was not
-fully compiled in the generation environment because Qt and QXmpp development
-packages were not available there.
-
-## Suggested first test
-
-Use a test XMPP account and verify in this order:
-
-1. The plugin connects and creates/configures the PEP node.
-2. Create one note and restart QtNote.
-3. Edit it from a second QtNote instance using another XMPP resource.
-4. Verify publication events appear in the first instance.
-5. Delete the note and verify retract propagation.
-6. Open the same revision on both instances, save on the first, then save on the
-   second and verify that the second save is rejected as a conflict.
-
-## v2 build fix
-
-`QXmppError` is now included explicitly in `xmppworker.h`. The previous
-declaration `const class QXmppError &` was inside `namespace QtNote` and
-therefore accidentally declared `QtNote::QXmppError` instead of referring
-to the global QXmpp library type.
-
-## v3 QXmpp discovery API compatibility
-
-QXmpp 1.12 and newer use `QXmppDiscoveryManager::info()`.
-QXmpp 1.11 keeps using `requestDiscoInfo()`. Selection is made at
-compile time with `QXMPP_VERSION`.
-
-
-## v4 QXmpp 1.11 typed PEP retrieval workaround
-
-QXmpp 1.11 convenience methods `requestOwnPepItems<T>()` and
-`requestOwnPepItem<T>()` do not forward `T` to the underlying typed request.
-The plugin now calls `requestItems<T>()` and `requestItem<T>()` directly with
-our own bare JID. The CMake package is also selected as `QXmppQt5` or
-`QXmppQt6` through `QXmppQt${QT_VERSION_MAJOR}`.
+1. New account: create nodes, save, restart, load, edit, and delete.
+2. Two online resources: verify publish/retract events in both directions.
+3. Conflict: load one revision on two devices and save both independently.
+4. Offline save/delete: restart before reconnecting and verify outbox recovery.
+5. Fresh device: clear one installation and complete trust plus key transfer.
+6. Rejected trust: verify no encrypted storage key is sent.
+7. Broken/missing own bundle: verify Repair restores only the expected identity.
+8. Different storage keys: audit, choose canonical key, and re-encrypt notes.
+9. Missing historical key: verify inaccessible notes are reported and preserved.
+10. Server without item-ID discovery: verify partial-page warning behavior.

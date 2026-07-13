@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 // #include "note.h"
+#include "draftmanager.h"
 #include "notedata.h"
 #include "notemanager.h"
 
@@ -70,7 +71,7 @@ void Note::remove()
 {
     auto storage = this->storage();
     if (storage)
-        storage->removeNote(id());
+        DraftManager::instance()->queueRemoval(storage->systemName(), id());
 }
 
 void Note::setTitle(const QString &title) { d->title_ = title; }

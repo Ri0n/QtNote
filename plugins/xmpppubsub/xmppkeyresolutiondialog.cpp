@@ -2,7 +2,6 @@
 
 #include <QAbstractButton>
 #include <QAbstractItemView>
-#include <QApplication>
 #include <QHeaderView>
 #include <QLabel>
 #include <QTableWidget>
@@ -200,13 +199,15 @@ void XmppKeyResolutionDialog::setWorking(const QString &message)
 {
     deviceStatus_->setText(message);
     setEnabled(false);
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 bool XmppKeyResolutionDialog::validateCurrentPage()
 {
     if (currentId() == DevicesPage) {
+        if (devicesComplete_)
+            return true;
+        if (operationPending_)
+            return false;
         const auto selected       = selectedDeviceKeys();
         const bool alreadyTrusted = std::any_of(devices_.cbegin(), devices_.cend(), [](const auto &device) {
             const auto level = QXmpp::TrustLevel(device.trustLevel);
@@ -219,22 +220,27 @@ bool XmppKeyResolutionDialog::validateCurrentPage()
             return false;
         }
         setWorking(tr("Establishing trusted OMEMO sessions and requesting storage keys…"));
-        const auto trusted = trustDevices_(selected);
-        if (!trusted.ok) {
-            QApplication::restoreOverrideCursor();
-            setEnabled(true);
-            deviceStatus_->setText(tr("Could not trust the selected device: %1").arg(trusted.error));
-            return false;
-        }
-        const auto audit = auditKeys_();
-        QApplication::restoreOverrideCursor();
-        setEnabled(true);
-        if (!audit.ok) {
-            deviceStatus_->setText(tr("Could not collect storage keys: %1").arg(audit.error));
-            return false;
-        }
-        populateKeys(audit);
-        return true;
+        operationPending_ = true;
+        trustDevices_(selected, [this](XmppStatusResult trusted) {
+            if (!trusted.ok) {
+                operationPending_ = false;
+                setEnabled(true);
+                deviceStatus_->setText(tr("Could not trust the selected device: %1").arg(trusted.error));
+                return;
+            }
+            auditKeys_([this](XmppKeyAuditResult audit) {
+                operationPending_ = false;
+                setEnabled(true);
+                if (!audit.ok) {
+                    deviceStatus_->setText(tr("Could not collect storage keys: %1").arg(audit.error));
+                    return;
+                }
+                populateKeys(audit);
+                devicesComplete_ = true;
+                next();
+            });
+        });
+        return false;
     }
     if (currentId() == KeysPage) {
         if (canonicalKey().isEmpty()) {
@@ -245,26 +251,33 @@ bool XmppKeyResolutionDialog::validateCurrentPage()
         return true;
     }
     if (currentId() == ReviewPage) {
+        if (rekeyComplete_)
+            return true;
+        if (operationPending_)
+            return false;
         summary_->setText(summary_->text() + tr("\n\nRepairing notes…"));
         setEnabled(false);
-        QApplication::setOverrideCursor(Qt::WaitCursor);
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        rekeyResult_ = rekeyStorage_(availableKeys(), canonicalKey());
-        QApplication::restoreOverrideCursor();
-        setEnabled(true);
-        if (rekeyResult_.ok) {
-            result_->setText(tr("Recovery completed successfully. %1 of %2 note(s) now use the canonical key.\n\n"
-                                "The local storage key will be updated when you close this wizard.")
-                                 .arg(rekeyResult_.migrated)
-                                 .arg(rekeyResult_.total));
-        } else {
-            result_->setText(tr("Recovery is incomplete: %1\n\nMigrated %2 of %3 note(s). The local storage key "
-                                "has not been changed. You can safely run this wizard again.")
-                                 .arg(rekeyResult_.error)
-                                 .arg(rekeyResult_.migrated)
-                                 .arg(rekeyResult_.total));
-        }
-        return true;
+        operationPending_ = true;
+        rekeyStorage_(availableKeys(), canonicalKey(), [this](XmppRekeyResult result) {
+            rekeyResult_      = std::move(result);
+            operationPending_ = false;
+            setEnabled(true);
+            if (rekeyResult_.ok) {
+                result_->setText(tr("Recovery completed successfully. %1 of %2 note(s) now use the canonical key.\n\n"
+                                    "The local storage key will be updated when you close this wizard.")
+                                     .arg(rekeyResult_.migrated)
+                                     .arg(rekeyResult_.total));
+            } else {
+                result_->setText(tr("Recovery is incomplete: %1\n\nMigrated %2 of %3 note(s). The local storage key "
+                                    "has not been changed. You can safely run this wizard again.")
+                                     .arg(rekeyResult_.error)
+                                     .arg(rekeyResult_.migrated)
+                                     .arg(rekeyResult_.total));
+            }
+            rekeyComplete_ = true;
+            next();
+        });
+        return false;
     }
     return QWizard::validateCurrentPage();
 }

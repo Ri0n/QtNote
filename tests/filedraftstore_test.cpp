@@ -13,6 +13,7 @@ class FileDraftStoreTest : public QObject {
 private slots:
     void initTestCase();
     void roundTrip();
+    void deletionRoundTrip();
     void rejectsWrongKey();
     void rejectsTampering();
 };
@@ -63,11 +64,33 @@ void FileDraftStoreTest::roundTrip()
     QCOMPARE(loaded.value.body, record.body);
     QCOMPARE(loaded.value.format, record.format);
     QCOMPARE(loaded.value.tags, record.tags);
+    QCOMPARE(loaded.value.operation, DraftRecord::Publish);
 
     QVERIFY(!store.transition(record.id, DraftRecord::Ready));
     loaded = store.load(record.id);
     QVERIFY(loaded);
     QCOMPARE(loaded.value.state, DraftRecord::Ready);
+}
+
+void FileDraftStoreTest::deletionRoundTrip()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    FileDraftStore store(directory.path(), FileDraftStore::generateMasterKey());
+    DraftRecord    record;
+    record.id           = QUuid::createUuid();
+    record.operation    = DraftRecord::Delete;
+    record.state        = DraftRecord::Retry;
+    record.storageId    = QStringLiteral("xmpp-pubsub");
+    record.remoteNoteId = QStringLiteral("note-to-delete");
+    QVERIFY(!store.write(record));
+
+    const auto loaded = store.load(record.id);
+    QVERIFY2(loaded, qPrintable(loaded.error.message));
+    QCOMPARE(loaded.value.operation, DraftRecord::Delete);
+    QCOMPARE(loaded.value.state, DraftRecord::Retry);
+    QCOMPARE(loaded.value.storageId, record.storageId);
+    QCOMPARE(loaded.value.remoteNoteId, record.remoteNoteId);
 }
 
 void FileDraftStoreTest::rejectsWrongKey()

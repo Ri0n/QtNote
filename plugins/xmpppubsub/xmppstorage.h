@@ -5,11 +5,10 @@
 #include "xmppdto.h"
 
 #include <QHash>
-#include <QThread>
 
 namespace QtNote {
 
-class XmppWorker;
+class XmppBackend;
 class XmppSettingsWidget;
 
 class XmppStorage final : public NoteStorage {
@@ -17,7 +16,7 @@ class XmppStorage final : public NoteStorage {
     Q_DISABLE_COPY(XmppStorage)
 
 public:
-    explicit XmppStorage(QObject *parent = nullptr);
+    explicit XmppStorage(QObject *parent = nullptr, XmppBackend *backend = nullptr);
     ~XmppStorage() override;
     void shutdown() override;
 
@@ -69,8 +68,7 @@ private:
     void           resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings = nullptr);
 
     XmppConfig           config_;
-    QThread              workerThread_;
-    XmppWorker          *worker_ { nullptr };
+    XmppBackend         *backend_ { nullptr };
     QHash<QString, Note> cache_;
     bool                 cacheValid_ { false };
     bool                 accessible_ { false };

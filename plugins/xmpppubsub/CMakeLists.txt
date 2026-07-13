@@ -1,11 +1,26 @@
 include(QtNoteMacro)
 
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network Xml QUIET)
+find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
+find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 QUIET)
+find_package(QCoro${QT_VERSION_MAJOR} QUIET COMPONENTS Core)
+
+set(_xmpppubsub_buildable OFF)
+if(TARGET Qt${QT_VERSION_MAJOR}::Network
+   AND TARGET Qt${QT_VERSION_MAJOR}::Xml
+   AND TARGET QXmpp::QXmpp
+   AND TARGET QXmpp::Omemo
+   AND TARGET QCoro::Core)
+    set(_xmpppubsub_buildable ON)
+endif()
+
 add_qtnote_plugin(
     xmpppubsub
     "Stores notes in a private persistent XMPP PEP node"
-    ON
+    ${_xmpppubsub_buildable}
     unix macosx windows
     SOURCES
+        xmppbackend.h
         xmppdto.h
         qtnotepubsubitem.cpp
         qtnotepubsubitem.h
@@ -33,10 +48,6 @@ add_qtnote_plugin(
         xmppplugin.h
 )
 
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network Xml REQUIRED)
-find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
-find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
-
 target_link_libraries(
     xmpppubsub
     ${EXTRA_LINK_TARGET}
@@ -47,6 +58,7 @@ target_link_libraries(
     Qt${QT_VERSION_MAJOR}::Xml
     QXmpp::QXmpp
     QXmpp::Omemo
+    QCoro::Core
 )
 
 install_qtnote_plugin(xmpppubsub)

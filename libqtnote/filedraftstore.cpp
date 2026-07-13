@@ -10,7 +10,7 @@
 namespace QtNote {
 namespace {
     constexpr quint32 PayloadMagic   = 0x514e4450; // QNDP
-    constexpr quint16 PayloadVersion = 1;
+    constexpr quint16 PayloadVersion = 2;
 
     DraftStoreError error(DraftStoreError::Code code, const QString &message) { return { code, message }; }
 
@@ -21,7 +21,7 @@ namespace {
         out.setVersion(QDataStream::Qt_5_10);
         out << PayloadMagic << PayloadVersion << record.id << quint8(record.state) << record.storageId
             << record.remoteNoteId << record.title << record.body << quint8(record.format) << record.tags
-            << record.updatedAt << record.lastError << record.retryAt;
+            << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation);
         return bytes;
     }
 
@@ -32,19 +32,23 @@ namespace {
         quint16     version;
         quint8      state;
         quint8      format;
+        quint8      operation = DraftRecord::Publish;
         QDataStream in(bytes);
         in.setVersion(QDataStream::Qt_5_10);
         in >> magic >> version;
-        if (magic != PayloadMagic || version != PayloadVersion)
+        if (magic != PayloadMagic || version < 1 || version > PayloadVersion)
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Unsupported draft payload")) };
         in >> record.id >> state >> record.storageId >> record.remoteNoteId >> record.title >> record.body >> format
             >> record.tags >> record.updatedAt >> record.lastError >> record.retryAt;
+        if (version >= 2)
+            in >> operation;
         if (in.status() != QDataStream::Ok || record.id.isNull() || state > DraftRecord::NeedsRouting
-            || format > Note::Html) {
+            || format > Note::Html || operation > DraftRecord::Delete) {
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft payload")) };
         }
-        record.state  = DraftRecord::State(state);
-        record.format = Note::Format(format);
+        record.state     = DraftRecord::State(state);
+        record.format    = Note::Format(format);
+        record.operation = DraftRecord::Operation(operation);
         return { record, {} };
     }
 } // namespace
