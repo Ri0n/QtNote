@@ -20,13 +20,17 @@ public:
     bool        handleStanza(const QDomElement &stanza, const std::optional<QXmppE2eeMetadata> &e2eeMetadata) override;
 
     QXmppIq makeRequest(const QString &to, const QString &requestId) const;
+    QXmppIq makeTrustRequest(const QString &to, const QString &requestId, const QByteArray &senderKey) const;
     void    replyWithKey(const QString &requestId, const QString &recoveryKey);
+    void    replyTrustApproved(const QString &requestId);
     void    reject(const QString &requestId);
 
     static QString responseRecoveryKey(const QDomElement &iq, const QString &requestId);
+    static bool    isTrustApproved(const QDomElement &iq, const QString &requestId);
 
 signals:
     void requestReceived(const QString &requestId, const QString &from, const QByteArray &senderKey);
+    void trustRequestReceived(const QString &requestId, const QString &from, const QByteArray &senderKey);
 
 private:
     struct PendingRequest {

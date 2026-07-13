@@ -159,7 +159,22 @@ void XmppOmemoStorage::persist()
 QXmppTask<QXmppOmemoStorage::OmemoData> XmppOmemoStorage::allData() { return ready(data_); }
 QXmppTask<void>                         XmppOmemoStorage::setOwnDevice(const std::optional<OwnDevice> &value)
 {
-    data_.ownDevice = value;
+    auto merged = value;
+    if (merged && data_.ownDevice) {
+        // Identity keys are immutable for the lifetime of an OMEMO device. Some QXmpp update paths
+        // only modify pre-key counters and pass an OwnDevice value without filling the identity
+        // fields. Never let such a partial update destroy the keys and produce a bundle without <ik>.
+        if (merged->privateIdentityKey.isEmpty())
+            merged->privateIdentityKey = data_.ownDevice->privateIdentityKey;
+        if (merged->publicIdentityKey.isEmpty())
+            merged->publicIdentityKey = data_.ownDevice->publicIdentityKey;
+        if (merged->label.isEmpty())
+            merged->label = data_.ownDevice->label;
+    }
+    qInfo() << "OMEMO own device state write: id=" << (merged ? merged->id : 0)
+            << "private-key-size=" << (merged ? merged->privateIdentityKey.size() : 0)
+            << "public-key-size=" << (merged ? merged->publicIdentityKey.size() : 0);
+    data_.ownDevice = std::move(merged);
     persist();
     return done();
 }
@@ -214,6 +229,21 @@ QXmppTask<void> XmppOmemoStorage::removeAllDevices()
         deviceCount += owner.value().size();
     qInfo() << "Clearing all cached OMEMO peer states: owners=" << data_.devices.size() << "devices=" << deviceCount;
     data_.devices.clear();
+    persist();
+    return done();
+}
+QXmppTask<void> XmppOmemoStorage::resetAllSessions()
+{
+    qsizetype deviceCount = 0;
+    for (auto owner = data_.devices.begin(); owner != data_.devices.end(); ++owner) {
+        for (auto device = owner.value().begin(); device != owner.value().end(); ++device) {
+            device->session.clear();
+            device->unrespondedSentStanzasCount     = 0;
+            device->unrespondedReceivedStanzasCount = 0;
+            ++deviceCount;
+        }
+    }
+    qInfo() << "Reset cached OMEMO peer sessions while preserving fingerprints: devices=" << deviceCount;
     persist();
     return done();
 }

@@ -14,6 +14,8 @@ class XmppOmemoStorageTest : public QObject {
 private slots:
     void persistsEncryptedState();
     void clearsPeerSessionsWithoutResettingOwnDevice();
+    void resetsSessionsWithoutRemovingFingerprints();
+    void preservesIdentityOnPartialOwnDeviceUpdate();
     void rejectsWrongLocalKey();
 };
 
@@ -82,6 +84,59 @@ void XmppOmemoStorageTest::clearsPeerSessionsWithoutResettingOwnDevice()
     QVERIFY(data.ownDevice.has_value());
     QCOMPARE(data.ownDevice->id, uint32_t(42));
     QCOMPARE(data.ownDevice->privateIdentityKey, QByteArrayLiteral("private identity material"));
+}
+
+void XmppOmemoStorageTest::resetsSessionsWithoutRemovingFingerprints()
+{
+    QTemporaryDir             dir;
+    XmppOmemoStorage          storage(dir.filePath(QStringLiteral("omemo.state")), SecureEnvelope::generateMasterKey(),
+                                      QStringLiteral("me@example.org"));
+    QXmppOmemoStorage::Device peer;
+    peer.label                           = QStringLiteral("Other QtNote");
+    peer.keyId                           = QByteArrayLiteral("public identity key");
+    peer.session                         = QByteArrayLiteral("stale ratchet session");
+    peer.unrespondedSentStanzasCount     = 3;
+    peer.unrespondedReceivedStanzasCount = 4;
+    storage.addDevice(QStringLiteral("me@example.org"), 7, peer);
+
+    auto reset = storage.resetAllSessions();
+    QVERIFY(reset.isFinished());
+
+    auto dataTask = storage.allData();
+    QVERIFY(dataTask.isFinished());
+    const auto device = dataTask.takeResult().devices[QStringLiteral("me@example.org")][7];
+    QCOMPARE(device.label, QStringLiteral("Other QtNote"));
+    QCOMPARE(device.keyId, QByteArrayLiteral("public identity key"));
+    QVERIFY(device.session.isEmpty());
+    QCOMPARE(device.unrespondedSentStanzasCount, 0);
+    QCOMPARE(device.unrespondedReceivedStanzasCount, 0);
+}
+
+void XmppOmemoStorageTest::preservesIdentityOnPartialOwnDeviceUpdate()
+{
+    QTemporaryDir    dir;
+    XmppOmemoStorage storage(dir.filePath(QStringLiteral("omemo.state")), SecureEnvelope::generateMasterKey(),
+                             QStringLiteral("me@example.org"));
+    QXmppOmemoStorage::OwnDevice own;
+    own.id                 = 42;
+    own.label              = QStringLiteral("QtNote-device");
+    own.privateIdentityKey = QByteArrayLiteral("private identity");
+    own.publicIdentityKey  = QByteArrayLiteral("public identity");
+    storage.setOwnDevice(own);
+
+    QXmppOmemoStorage::OwnDevice partial;
+    partial.id                   = 42;
+    partial.latestSignedPreKeyId = 8;
+    storage.setOwnDevice(partial);
+
+    auto dataTask = storage.allData();
+    QVERIFY(dataTask.isFinished());
+    const auto updated = dataTask.takeResult().ownDevice;
+    QVERIFY(updated.has_value());
+    QCOMPARE(updated->label, QStringLiteral("QtNote-device"));
+    QCOMPARE(updated->privateIdentityKey, QByteArrayLiteral("private identity"));
+    QCOMPARE(updated->publicIdentityKey, QByteArrayLiteral("public identity"));
+    QCOMPARE(updated->latestSignedPreKeyId, uint32_t(8));
 }
 
 void XmppOmemoStorageTest::rejectsWrongLocalKey()

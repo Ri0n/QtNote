@@ -32,6 +32,7 @@
 #include <QXmppTrustManager.h>
 #include <QXmppUtils.h>
 
+#include <memory>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -275,7 +276,13 @@ void XmppWorker::createClient()
     connect(pepExtension_, &XmppPepExtension::noteRetracted, this, &XmppWorker::remoteNoteRetracted);
     connect(pepExtension_, &XmppPepExtension::nodeInvalidated, this, &XmppWorker::remoteNodeInvalidated);
     connect(pepExtension_, &XmppPepExtension::malformedItem, this, &XmppWorker::workerError);
-    connect(keySyncExtension_, &XmppKeySyncExtension::requestReceived, this, &XmppWorker::handleKeySyncRequest);
+    // The handlers perform synchronous-looking waits for additional PubSub IQs.
+    // Do not run them from inside QXmppClient's stanza dispatch: an IQ response
+    // may need to reach an extension that is later in the dispatch chain.
+    connect(keySyncExtension_, &XmppKeySyncExtension::requestReceived, this, &XmppWorker::handleKeySyncRequest,
+            Qt::QueuedConnection);
+    connect(keySyncExtension_, &XmppKeySyncExtension::trustRequestReceived, this,
+            &XmppWorker::handleKeySyncTrustRequest, Qt::QueuedConnection);
 
     connect(client_, &QXmppClient::connected, this, [this]() {
         prepared_ = false;
@@ -611,14 +618,43 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
 
     // Drop peer sessions at the last possible moment, without reconnecting: reconnecting loses the
     // current presence snapshot and makes online resource discovery race with incoming presences.
-    if (!awaitVoidTask(omemoStorage_->removeAllDevices(), config_.timeoutMs, &waitError)) {
+    if (!awaitVoidTask(omemoStorage_->resetAllSessions(), config_.timeoutMs, &waitError)) {
         output.error = QStringLiteral("Could not reset OMEMO sessions before key sync: %1").arg(waitError);
         return output;
     }
     for (const auto &resource : qtNoteResources) {
-        const auto requestId = newUuid();
-        auto       result = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
-                                      config_.timeoutMs, &waitError);
+        const auto trustRequestId = newUuid();
+        auto       trustResult    = awaitTask(
+            client_->sendIq(
+                keySyncExtension_->makeTrustRequest(resource, trustRequestId, omemoStorage_->ownIdentityKey()), {}),
+            config_.timeoutMs, &waitError);
+        if (!trustResult) {
+            errors.append(QStringLiteral("%1: OMEMO trust bootstrap failed: %2").arg(resource, waitError));
+            continue;
+        }
+        if (const auto *error = std::get_if<QXmppError>(&*trustResult)) {
+            errors.append(QStringLiteral("%1: OMEMO trust bootstrap failed: %2").arg(resource, errorText(*error)));
+            continue;
+        }
+        if (!XmppKeySyncExtension::isTrustApproved(std::get<QDomElement>(*trustResult), trustRequestId)) {
+            errors.append(QStringLiteral("%1: invalid OMEMO trust bootstrap response").arg(resource));
+            continue;
+        }
+
+        auto requestId = newUuid();
+        auto result    = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
+                                   config_.timeoutMs, &waitError);
+        if (!result) {
+            // Some QXmpp versions consume the first pre-key (KEX) stanza to establish the Signal
+            // session without forwarding its decrypted IQ payload to client extensions. Retry once
+            // using the session that the first stanza has just established.
+            qWarning().noquote() << "Key-sync KEX request timed out; retrying with the established OMEMO session:"
+                                 << resource;
+            requestId = newUuid();
+            waitError.clear();
+            result = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
+                               config_.timeoutMs, &waitError);
+        }
         if (!result) {
             errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
             continue;
@@ -696,21 +732,7 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             *error = omemo.error;
         return {};
     }
-    QString waitError;
-    auto    deviceLists = awaitTask(omemoManager_->requestDeviceLists({ QXmppUtils::jidToBareJid(config_.jid) }),
-                                    config_.timeoutMs, &waitError);
-    if (!deviceLists) {
-        if (error)
-            *error = waitError;
-        return {};
-    }
-    for (const auto &deviceList : *deviceLists) {
-        if (const auto *requestError = std::get_if<QXmppError>(&deviceList.result)) {
-            if (error)
-                *error = errorText(*requestError);
-            return {};
-        }
-    }
+    QString    waitError;
     const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
     auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
                               bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
@@ -932,8 +954,23 @@ XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)
 void XmppWorker::approveKeySyncRequest(const QString &requestId)
 {
     const auto pending = pendingInboundKeyRequests_.take(requestId);
-    if (pending.senderKey.isEmpty())
+    if (pending.senderKey.isEmpty()) {
+        qWarning() << "Key-sync approval has no pending request: id=" << requestId;
         return;
+    }
+    qInfo() << "Key-sync request approved: id=" << requestId;
+    if (pending.trustBootstrap) {
+        QMultiHash<QString, QByteArray> keys;
+        keys.insert(QXmppUtils::jidToBareJid(config_.jid), pending.senderKey);
+        QString error;
+        if (!awaitVoidTask(omemoManager_->setTrustLevel(keys, QXmpp::TrustLevel::ManuallyTrusted), config_.timeoutMs,
+                           &error)) {
+            emit workerError(error);
+            return;
+        }
+        keySyncExtension_->replyTrustApproved(requestId);
+        return;
+    }
     const auto trusted = trustOwnOmemoDevice(pending.senderKey);
     if (!trusted.ok) {
         emit workerError(trusted.error);
@@ -944,9 +981,90 @@ void XmppWorker::approveKeySyncRequest(const QString &requestId)
     keySyncExtension_->replyWithKey(requestId, SecureEnvelope::encodeRecoveryKey(config_.masterKey));
 }
 
-void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
+void XmppWorker::handleKeySyncTrustRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
 {
     if (QXmppUtils::jidToBareJid(from) != QXmppUtils::jidToBareJid(config_.jid)) {
+        keySyncExtension_->reject(requestId);
+        return;
+    }
+
+    // This runs in reaction to an incoming stanza. Keep the complete lookup
+    // asynchronous: nested event loops can receive a PubSub IQ response while
+    // preventing QXmppTask's continuation from being dispatched.
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto listTask = pubSub_->requestItem<XmppOmemoDeviceListItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"),
+                                                                  QStringLiteral("current"));
+    listTask.then(this, [this, bareJid, requestId, senderKey](auto &&listResult) {
+        if (const auto *requestError = std::get_if<QXmppError>(&listResult)) {
+            keySyncExtension_->reject(requestId);
+            emit workerError(errorText(*requestError));
+            return;
+        }
+
+        struct LookupState {
+            int     remaining { 0 };
+            bool    matched { false };
+            QString lastError;
+        };
+        const auto state   = std::make_shared<LookupState>();
+        const auto ownId   = omemoStorage_->ownDeviceId();
+        const auto devices = std::get<XmppOmemoDeviceListItem>(listResult).devices();
+        for (const auto &listed : devices) {
+            if (listed.id.toUInt() == ownId)
+                continue;
+            ++state->remaining;
+            auto bundleTask = pubSub_->requestItem<XmppOmemoBundleItem>(
+                bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id);
+            bundleTask.then(this, [this, requestId, senderKey, listed, state](auto &&bundleResult) {
+                if (state->matched)
+                    return;
+                if (const auto *requestError = std::get_if<QXmppError>(&bundleResult)) {
+                    state->lastError = errorText(*requestError);
+                } else {
+                    const auto keyId = std::get<XmppOmemoBundleItem>(bundleResult).identityKey();
+                    qInfo().noquote() << "Trust bootstrap OMEMO bundle: id=" << listed.id
+                                      << "identity-key-size=" << keyId.size();
+                    if (keyId == senderKey) {
+                        state->matched = true;
+                        finishKeySyncTrustRequest(requestId, senderKey);
+                        return;
+                    }
+                }
+                if (--state->remaining == 0) {
+                    keySyncExtension_->reject(requestId);
+                    emit workerError(state->lastError.isEmpty()
+                                         ? QStringLiteral("Ignored a trust request from an unknown OMEMO device")
+                                         : state->lastError);
+                }
+            });
+        }
+        if (state->remaining == 0) {
+            keySyncExtension_->reject(requestId);
+            emit workerError(QStringLiteral("Ignored a trust request because no other OMEMO device is published"));
+        }
+    });
+}
+
+void XmppWorker::finishKeySyncTrustRequest(const QString &requestId, const QByteArray &senderKey)
+{
+    auto trustTask = omemoManager_->trustLevel(QXmppUtils::jidToBareJid(config_.jid), senderKey);
+    trustTask.then(this, [this, requestId, senderKey](QXmpp::TrustLevel trust) {
+        if (trust == QXmpp::TrustLevel::ManuallyTrusted || trust == QXmpp::TrustLevel::Authenticated) {
+            keySyncExtension_->replyTrustApproved(requestId);
+            return;
+        }
+        pendingInboundKeyRequests_.insert(requestId, { senderKey, true });
+        qInfo() << "Key-sync trust bootstrap needs user approval: id=" << requestId;
+        emit keySyncTrustRequested(requestId, senderKey);
+    });
+}
+
+void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
+{
+    qInfo().noquote() << "Handling key-sync request: id=" << requestId << "from=" << from
+                      << "sender-key-size=" << senderKey.size();
+    if (QXmppUtils::jidToBareJid(from) != QXmppUtils::jidToBareJid(config_.jid)) {
+        qWarning().noquote() << "Rejecting key-sync request from a different account:" << from;
         keySyncExtension_->reject(requestId);
         return;
     }
@@ -955,6 +1073,7 @@ void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &f
     auto    trust = awaitTask(omemoManager_->trustLevel(QXmppUtils::jidToBareJid(config_.jid), senderKey),
                               config_.timeoutMs, &waitError);
     if (!trust) {
+        qWarning().noquote() << "Rejecting key-sync request: trust lookup failed:" << waitError;
         keySyncExtension_->reject(requestId);
         emit workerError(waitError);
         return;
@@ -964,17 +1083,20 @@ void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &f
         const bool ownDevice = std::any_of(devices.cbegin(), devices.cend(),
                                            [&](const XmppDeviceInfo &device) { return device.keyId == senderKey; });
         if (!ownDevice) {
+            qWarning().noquote() << "Rejecting key-sync request from an unknown own device:" << from;
             keySyncExtension_->reject(requestId);
             emit workerError(waitError.isEmpty()
                                  ? QStringLiteral("Ignored a storage-key request from an unknown OMEMO device")
                                  : waitError);
             return;
         }
-        pendingInboundKeyRequests_.insert(requestId, { senderKey });
+        pendingInboundKeyRequests_.insert(requestId, { senderKey, false });
+        qInfo() << "Key-sync request needs user approval: id=" << requestId;
         emit keySyncTrustRequested(requestId, senderKey);
         return;
     }
     if (config_.masterKey.size() != SecureEnvelope::MasterKeySize) {
+        qWarning() << "Rejecting key-sync request because this client has no valid storage key: id=" << requestId;
         keySyncExtension_->reject(requestId);
         return;
     }

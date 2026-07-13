@@ -59,6 +59,8 @@ private:
     XmppStatusResult ensureOmemo();
     QStringList      onlineQtNoteResources(QString *error = nullptr);
     void             handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
+    void handleKeySyncTrustRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
+    void finishKeySyncTrustRequest(const QString &requestId, const QByteArray &senderKey);
     XmppStatusResult connectToServer();
     XmppStatusResult verifyPrivateStorageSupport();
     XmppStatusResult ensureNode(const QString &nodeName);
@@ -82,6 +84,7 @@ private:
     bool                   omemoReady_ { false };
     struct PendingInboundKeyRequest {
         QByteArray senderKey;
+        bool       trustBootstrap { false };
     };
     QHash<QString, PendingInboundKeyRequest> pendingInboundKeyRequests_;
 };

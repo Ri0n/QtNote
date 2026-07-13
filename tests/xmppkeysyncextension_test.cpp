@@ -12,13 +12,28 @@ class XmppKeySyncExtensionTest : public QObject {
 private slots:
     void advertisesProtocol();
     void serializesResourceAddressedRequest();
+    void serializesTrustBootstrapWithoutRecoveryKey();
     void parsesMatchingResponseOnly();
+    void parsesTrustBootstrapAcknowledgement();
 };
 
 void XmppKeySyncExtensionTest::advertisesProtocol()
 {
     XmppKeySyncExtension extension;
     QCOMPARE(extension.discoveryFeatures(), QStringList { XmppKeySyncExtension::feature });
+}
+
+void XmppKeySyncExtensionTest::serializesTrustBootstrapWithoutRecoveryKey()
+{
+    XmppKeySyncExtension extension;
+    const auto           iq = extension.makeTrustRequest(QStringLiteral("me@example.org/QtNote-laptop"),
+                                                         QStringLiteral("trust-1"), QByteArrayLiteral("public-key"));
+    QString              xml;
+    QXmlStreamWriter     writer(&xml);
+    iq.toXml(&writer);
+    QVERIFY(xml.contains(QStringLiteral("trust-request")));
+    QVERIFY(xml.contains(QString::fromLatin1(QByteArrayLiteral("public-key").toBase64())));
+    QVERIFY(!xml.contains(QStringLiteral("recoveryKey")));
 }
 
 void XmppKeySyncExtensionTest::serializesResourceAddressedRequest()
@@ -32,6 +47,17 @@ void XmppKeySyncExtensionTest::serializesResourceAddressedRequest()
     QVERIFY(xml.contains(QStringLiteral("type=\"set\"")));
     QVERIFY(xml.contains(QStringLiteral("urn:xmpp:qtnote:key-sync:1")));
     QVERIFY(xml.contains(QStringLiteral("request-1")));
+}
+
+void XmppKeySyncExtensionTest::parsesTrustBootstrapAcknowledgement()
+{
+    QDomDocument document;
+    QVERIFY(document.setContent(
+        QStringLiteral("<iq type='result' id='trust-1'><key-sync xmlns='urn:xmpp:qtnote:key-sync:1'>"
+                       "{&quot;type&quot;:&quot;trust-approved&quot;,&quot;requestId&quot;:&quot;trust-1&quot;}"
+                       "</key-sync></iq>")));
+    QVERIFY(XmppKeySyncExtension::isTrustApproved(document.documentElement(), QStringLiteral("trust-1")));
+    QVERIFY(!XmppKeySyncExtension::isTrustApproved(document.documentElement(), QStringLiteral("other")));
 }
 
 void XmppKeySyncExtensionTest::parsesMatchingResponseOnly()
