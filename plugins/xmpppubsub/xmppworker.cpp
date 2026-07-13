@@ -261,6 +261,7 @@ void XmppWorker::createClient()
     }
     trustManager_ = client_->addNewExtension<QXmppTrustManager>(trustStorage_);
     omemoManager_ = client_->addNewExtension<QXmppOmemoManager>(omemoStorage_);
+    client_->setEncryptionExtension(omemoManager_);
     pepExtension_->setOwnBareJid(config_.jid);
     pepExtension_->setNodeName(config_.indexNodeName());
 
