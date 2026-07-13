@@ -65,6 +65,23 @@ namespace {
                 ? QStringLiteral("[OMEMO public prekeys omitted]")
                 : QStringLiteral("[OMEMO bundle %1; public prekeys omitted]").arg(details.join(QLatin1Char(' ')));
         }
+        if (xml.contains(QStringLiteral("<encrypted"))) {
+            const auto sid
+                = QRegularExpression(QStringLiteral("<header\\s[^>]*sid=['\"]([^'\"]+)['\"]")).match(xml).captured(1);
+            QStringList recipients;
+            auto        keys = QRegularExpression(QStringLiteral("<key\\s([^>]*)>")).globalMatch(xml);
+            while (keys.hasNext()) {
+                const auto attributes = keys.next().captured(1);
+                const auto rid
+                    = QRegularExpression(QStringLiteral("rid=['\"]([^'\"]+)['\"]")).match(attributes).captured(1);
+                const bool kex = QRegularExpression(QStringLiteral("kex=['\"]true['\"]")).match(attributes).hasMatch();
+                if (!rid.isEmpty())
+                    recipients.append(QStringLiteral("%1%2").arg(rid, kex ? QStringLiteral("/kex") : QString {}));
+            }
+            return QStringLiteral("[OMEMO encrypted sid=%1 recipients=%2]")
+                .arg(sid.isEmpty() ? QStringLiteral("?") : sid,
+                     recipients.isEmpty() ? QStringLiteral("?") : recipients.join(QLatin1Char(',')));
+        }
         static const QRegularExpression sensitiveElement(
             QStringLiteral("(<(?:auth|response|encrypted)\\b[^>]*>).*?(</(?:auth|response|encrypted)>)"),
             QRegularExpression::DotMatchesEverythingOption | QRegularExpression::CaseInsensitiveOption);
@@ -587,22 +604,8 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
         errors.append(discoveryError);
     for (const auto &resource : qtNoteResources) {
         const auto requestId = newUuid();
-        auto encrypted = awaitTask(omemoManager_->encryptIq(keySyncExtension_->makeRequest(resource, requestId), {}),
-                                   config_.timeoutMs, &waitError);
-        if (!encrypted) {
-            errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
-            continue;
-        }
-        if (const auto *error = std::get_if<QXmppError>(&*encrypted)) {
-            errors.append(QStringLiteral("%1: OMEMO encryption failed: %2").arg(resource, errorText(*error)));
-            continue;
-        }
-        auto encryptedIq = std::move(std::get<std::unique_ptr<QXmppIq>>(*encrypted));
-        if (!encryptedIq) {
-            errors.append(QStringLiteral("%1: OMEMO returned no encrypted IQ").arg(resource));
-            continue;
-        }
-        auto result = awaitTask(client_->sendIq(std::move(*encryptedIq)), config_.timeoutMs, &waitError);
+        auto       result = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),
+                                      config_.timeoutMs, &waitError);
         if (!result) {
             errors.append(QStringLiteral("%1: %2").arg(resource, waitError));
             continue;
