@@ -32,6 +32,12 @@ constexpr auto ServiceName   = "com.github.ri0n.QtNote";
 constexpr auto ObjectPath    = "/QtNote";
 constexpr auto InterfaceName = "com.github.ri0n.QtNote";
 
+// Plasma can create more than one NotesModel for the same backend (for
+// example, one in the system tray and another pinned directly to a panel).
+// A quit requested from one instance must suppress passive autostart in all
+// the others, otherwise a pending refresh can immediately launch QtNote again.
+bool backendAutostartSuppressed = false;
+
 Q_LOGGING_CATEGORY(logPlasmoid, "qtnote.plasmoid")
 
 void loadTranslations()
@@ -152,7 +158,7 @@ void NotesModel::refresh()
 {
     m_queryRefreshTimer->stop();
     if (!m_available || !m_interface) {
-        if (m_quitRequested)
+        if (backendAutostartSuppressed)
             return;
         startBackend();
         return;
@@ -164,7 +170,7 @@ void NotesModel::refresh()
 void NotesModel::loadMore()
 {
     if (!m_available || !m_interface) {
-        if (m_quitRequested)
+        if (backendAutostartSuppressed)
             return;
         startBackend();
         return;
@@ -291,14 +297,15 @@ void NotesModel::showAbout(QWindow *activationWindow)
 }
 void NotesModel::quit()
 {
-    m_quitRequested = true;
+    backendAutostartSuppressed = true;
     m_pendingCall.clear();
+    qCInfo(logPlasmoid) << "QtNote quit requested; suppressing passive backend autostart";
     call(QStringLiteral("quit"));
 }
 
 void NotesModel::serviceRegistered()
 {
-    m_quitRequested = false;
+    backendAutostartSuppressed = false;
     createInterface();
     m_starting = false;
     setAvailable(true);
@@ -365,7 +372,7 @@ void NotesModel::call(const QString &method)
 void NotesModel::callWithActivationToken(const QString &method, const QVariantList &arguments,
                                          QWindow *activationWindow)
 {
-    m_quitRequested = false;
+    backendAutostartSuppressed = false;
     if (!m_available || !m_interface) {
         if (arguments.isEmpty())
             callOrStart(method);
@@ -399,7 +406,7 @@ void NotesModel::callWithActivationToken(const QString &method, const QVariantLi
 
 bool NotesModel::startBackend()
 {
-    if (m_quitRequested)
+    if (backendAutostartSuppressed)
         return false;
     if (m_starting)
         return true;
@@ -435,7 +442,7 @@ bool NotesModel::startBackend()
 
 void NotesModel::callOrStart(const QString &method)
 {
-    m_quitRequested = false;
+    backendAutostartSuppressed = false;
     if (m_available && m_interface) {
         m_interface->asyncCall(method);
         return;

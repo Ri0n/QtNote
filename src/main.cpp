@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QBuffer>
 #include <QDataStream>
 #include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QSocketNotifier>
 #include <QStringList>
 #include <QtSingleApplication>
@@ -90,6 +91,10 @@ QSocketNotifier *installUnixSignalHandlers(QObject *parent)
 
 int main(int argc, char *argv[])
 {
+    // Prefix every Qt log message, including messages from plugins and Qt
+    // itself, with monotonic seconds elapsed since this process started.
+    qSetMessagePattern(QStringLiteral("[%{time process}] %{message}"));
+
     for (int i = 1; i < argc; i++) {
         QLatin1String v(argv[i]);
         if (v == "-h" || v == "--help") {
