@@ -785,6 +785,9 @@ bool XmppWorker::ownOmemoBundleValid(QString *error)
     }
     const auto publishedKey = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
     if (publishedKey != own.keyId) {
+        qWarning().noquote() << "Own OMEMO publication invalid: local-id=" << own.deviceId << "bundle-identity-key="
+                             << (publishedKey.isEmpty() ? QStringLiteral("<missing>")
+                                                        : QString::fromLatin1(publishedKey.toHex()));
         if (error)
             *error = publishedKey.isEmpty() ? QStringLiteral("The published OMEMO bundle has no identity key")
                                             : QStringLiteral("The published OMEMO identity key does not match");
@@ -800,8 +803,15 @@ bool XmppWorker::ownOmemoBundleValid(QString *error)
         return false;
     }
     const auto &devices = std::get<XmppOmemoDeviceListItem>(*list).devices();
-    if (std::none_of(devices.cbegin(), devices.cend(),
-                     [&own](const auto &device) { return device.id.toUInt() == own.deviceId; })) {
+    QStringList publishedIds;
+    for (const auto &device : devices)
+        publishedIds.append(device.id);
+    const bool announced = std::any_of(devices.cbegin(), devices.cend(),
+                                       [&own](const auto &device) { return device.id.toUInt() == own.deviceId; });
+    qInfo().noquote() << "Own OMEMO publication check: local-id=" << own.deviceId
+                      << "bundle-key-match=true published-device-ids=" << publishedIds.join(QLatin1Char(','))
+                      << "announced=" << announced;
+    if (!announced) {
         if (error)
             *error = QStringLiteral("The local OMEMO device is missing from the published device list");
         return false;
