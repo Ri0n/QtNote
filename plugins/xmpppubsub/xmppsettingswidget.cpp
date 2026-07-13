@@ -146,8 +146,11 @@ void XmppSettingsWidget::setOmemoDevices(const XmppDeviceInfo &ownDevice, const 
     omemoDevices_->clear();
     omemoDeviceKeys_.clear();
     for (const auto &device : devices) {
-        if (device.keyId.isEmpty())
+        if (device.keyId.isEmpty()) {
+            qWarning().noquote() << "Skipping OMEMO device without an identity key: id=" << device.deviceId
+                                 << "label=" << (device.label.isEmpty() ? QStringLiteral("<empty>") : device.label);
             continue;
+        }
         const auto label = device.label.isEmpty() ? tr("Unnamed device") : device.label;
         omemoDevices_->addItem(QStringLiteral("OMEMO %1 — %2 — %3 — trust %4")
                                    .arg(device.deviceId)

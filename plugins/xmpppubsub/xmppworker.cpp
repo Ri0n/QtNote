@@ -54,7 +54,16 @@ namespace {
     {
         if (xml.contains(QStringLiteral("<bundle")) || xml.contains(QStringLiteral("<prekeys"))
             || xml.contains(QRegularExpression(QStringLiteral("<pk\\s")))) {
-            return QStringLiteral("[OMEMO bundle redacted]");
+            const auto itemMatch = QRegularExpression(QStringLiteral("<item\\s[^>]*id=['\"]([^'\"]+)['\"]")).match(xml);
+            const auto identityMatch = QRegularExpression(QStringLiteral("<ik>([^<]+)</ik>")).match(xml);
+            QStringList details;
+            if (itemMatch.hasMatch())
+                details.append(QStringLiteral("device=%1").arg(itemMatch.captured(1)));
+            if (identityMatch.hasMatch())
+                details.append(QStringLiteral("identity-key=%1").arg(identityMatch.captured(1)));
+            return details.isEmpty()
+                ? QStringLiteral("[OMEMO public prekeys omitted]")
+                : QStringLiteral("[OMEMO bundle %1; public prekeys omitted]").arg(details.join(QLatin1Char(' ')));
         }
         static const QRegularExpression sensitiveElement(
             QStringLiteral("(<(?:auth|response|encrypted)\\b[^>]*>).*?(</(?:auth|response|encrypted)>)"),
