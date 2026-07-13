@@ -22,6 +22,8 @@ add_qtnote_plugin(
     SOURCES
         xmppbackend.h
         xmppdto.h
+        xmpperror.cpp
+        xmpperror.h
         qtnotepubsubitem.cpp
         qtnotepubsubitem.h
         xmpppepextension.cpp

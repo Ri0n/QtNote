@@ -33,6 +33,14 @@ target_include_directories(xmppomemopubsubitems_test PRIVATE ../plugins/xmpppubs
 target_link_libraries(xmppomemopubsubitems_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
 add_test(NAME xmppomemopubsubitems_test COMMAND xmppomemopubsubitems_test)
 
+add_executable(xmpperror_test
+    xmpperror_test.cpp
+    ../plugins/xmpppubsub/xmpperror.cpp
+)
+target_include_directories(xmpperror_test PRIVATE ../plugins/xmpppubsub)
+target_link_libraries(xmpperror_test PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Network QXmpp::QXmpp)
+add_test(NAME xmpperror_test COMMAND xmpperror_test)
+
 add_executable(xmpppersistenttruststorage_test
     xmpppersistenttruststorage_test.cpp
     ../plugins/xmpppubsub/xmpppersistenttruststorage.cpp

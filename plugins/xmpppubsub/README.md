@@ -170,6 +170,14 @@ Incoming index publication events update or invalidate the cache. Reconnect,
 purge, and node deletion trigger a full refresh rather than assuming that the
 event stream is complete.
 
+Connection failures are classified by the backend. Authentication, TLS,
+configuration, and protocol failures stop automatic reconnect until the user
+changes the configuration. Socket failures, timeouts, temporary stream errors,
+and retryable stanza errors keep local/outbox state intact and retry after 30,
+60, 120, 240, and then 300 seconds. On Qt 6.4 or newer, a system reachability
+change to an available network triggers an immediate attempt instead of waiting
+for the current delay to expire.
+
 ## Note synchronization
 
 ### Load and save

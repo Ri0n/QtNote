@@ -12,6 +12,15 @@
 
 namespace QtNote {
 
+enum class XmppErrorKind {
+    None,
+    Transient,
+    Authentication,
+    Configuration,
+    Security,
+    Protocol,
+};
+
 struct XmppConfig {
     QString    jid;
     QString    password;
@@ -73,6 +82,9 @@ struct XmppStatusResult {
     bool                          notFound { false };
     QString                       error;
     std::optional<XmppRemoteNote> remoteOnConflict;
+    XmppErrorKind                 errorKind { XmppErrorKind::None };
+
+    bool retryable() const { return errorKind == XmppErrorKind::Transient; }
 };
 
 struct XmppListResult : XmppStatusResult {

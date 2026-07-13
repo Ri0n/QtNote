@@ -5,6 +5,7 @@
 #include "xmppdto.h"
 
 #include <QHash>
+#include <QTimer>
 
 namespace QtNote {
 
@@ -63,6 +64,10 @@ private:
     void           reportError(const QString &error, bool invalidate = false);
     void           enterErrorState(const QString &error, bool invalidate = false);
     void           clearErrorState();
+    void           handleTransientFailure(const QString &error, bool invalidate = true);
+    void           scheduleRetry();
+    void           retryInitialization();
+    void           resetRetryBackoff();
     void           applyConfig(const XmppConfig &config);
     void           installReceivedStorageKey(const QString &jid, const QByteArray &key);
     void           resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings = nullptr);
@@ -76,6 +81,10 @@ private:
     QString              errorStateMessage_;
     QString              lastReportedError_;
     bool                 keyResolutionInProgress_ { false };
+    QTimer              *retryTimer_ { nullptr };
+    int                  retryDelaySeconds_ { 30 };
+    bool                 retryInProgress_ { false };
+    bool                 shuttingDown_ { false };
 };
 
 } // namespace QtNote

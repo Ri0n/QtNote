@@ -13,6 +13,9 @@
 #include <QCryptographicHash>
 #include <QMessageBox>
 #include <QMetaObject>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#include <QNetworkInformation>
+#endif
 #include <QPointer>
 #include <QPushButton>
 #include <QSettings>
@@ -20,11 +23,15 @@
 #include <QUuid>
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 namespace QtNote {
 
 namespace {
+    constexpr int MinimumRetryDelaySeconds = 30;
+    constexpr int MaximumRetryDelaySeconds = 300;
+
     QString storageKeyName(const QString &jid)
     {
         return QStringLiteral("xmpp-storage-master-key-v1:%1").arg(jid.trimmed().section(QLatin1Char('/'), 0, 0));
@@ -37,6 +44,16 @@ namespace {
             icon = QIcon::fromTheme(fallback);
         }
         return icon;
+    }
+
+    StorageError storageError(const XmppStatusResult &result, StorageError::Code fallback)
+    {
+        auto code = fallback;
+        if (result.errorKind == XmppErrorKind::Authentication)
+            code = StorageError::Authentication;
+        else if (result.errorKind == XmppErrorKind::Configuration || result.errorKind == XmppErrorKind::Security)
+            code = StorageError::Unavailable;
+        return { code, result.error, result.retryable() };
     }
 
 } // namespace
@@ -74,6 +91,27 @@ XmppStorage::XmppStorage(QObject *parent, XmppBackend *backend) : NoteStorage(pa
                                               [this, requestId]() { backend_->approveKeySyncRequest(requestId); });
                 }
             });
+
+    retryTimer_ = new QTimer(this);
+    retryTimer_->setSingleShot(true);
+    connect(retryTimer_, &QTimer::timeout, this, &XmppStorage::retryInitialization);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    QNetworkInformation::loadDefaultBackend();
+    if (auto *network = QNetworkInformation::instance()) {
+        connect(network, &QNetworkInformation::reachabilityChanged, this,
+                [this](QNetworkInformation::Reachability reachability) {
+                    if (reachability == QNetworkInformation::Reachability::Disconnected
+                        || reachability == QNetworkInformation::Reachability::Unknown || errorState_) {
+                        return;
+                    }
+                    if (retryTimer_->isActive())
+                        retryTimer_->stop();
+                    retryDelaySeconds_ = MinimumRetryDelaySeconds;
+                    QTimer::singleShot(0, this, &XmppStorage::retryInitialization);
+                });
+    }
+#endif
 }
 
 void XmppStorage::installReceivedStorageKey(const QString &jid, const QByteArray &key)
@@ -187,6 +225,9 @@ XmppStorage::~XmppStorage() { shutdown(); }
 
 void XmppStorage::shutdown()
 {
+    shuttingDown_ = true;
+    if (retryTimer_)
+        retryTimer_->stop();
     if (backend_)
         backend_->shutdown();
 }
@@ -328,11 +369,15 @@ StorageInitJob *XmppStorage::initAsync(QObject *owner)
                             return;
                         accessible_ = result.ok;
                         cacheValid_ = false;
-                        if (result.ok)
+                        if (result.ok) {
+                            resetRetryBackoff();
                             guard->complete();
-                        else {
-                            enterErrorState(result.error, true);
-                            guard->fail({ StorageError::Network, result.error, true });
+                        } else {
+                            if (result.retryable())
+                                handleTransientFailure(result.error);
+                            else
+                                enterErrorState(result.error, true);
+                            guard->fail(storageError(result, StorageError::Network));
                         }
                     },
                     Qt::QueuedConnection);
@@ -437,8 +482,11 @@ NoteListJob *XmppStorage::refreshNotesAsync(int limit, QObject *owner)
                         if (!guard || guard->isFinished())
                             return;
                         if (!result.ok) {
-                            enterErrorState(result.error, true);
-                            guard->fail({ StorageError::Network, result.error, true });
+                            if (result.retryable())
+                                handleTransientFailure(result.error);
+                            else
+                                enterErrorState(result.error, true);
+                            guard->fail(storageError(result, StorageError::Network));
                             return;
                         }
                         QHash<QString, Note> refreshed;
@@ -452,7 +500,8 @@ NoteListJob *XmppStorage::refreshNotesAsync(int limit, QObject *owner)
                         }
                         cache_      = std::move(refreshed);
                         cacheValid_ = accessible_ = true;
-                        auto notes                = cache_.values();
+                        resetRetryBackoff();
+                        auto notes = cache_.values();
                         std::sort(notes.begin(), notes.end(), noteListItemModifyComparer);
                         guard->complete(limit > 0 ? notes.mid(0, limit) : notes);
                     },
@@ -489,8 +538,8 @@ NoteLoadJob *XmppStorage::loadNoteAsync(const QString &id, QObject *owner)
                         if (!result.ok) {
                             if (result.notFound)
                                 cache_.remove(id);
-                            guard->fail({ result.notFound ? StorageError::NotFound : StorageError::Network,
-                                          result.error, !result.notFound });
+                            guard->fail(
+                                storageError(result, result.notFound ? StorageError::NotFound : StorageError::Network));
                             return;
                         }
                         auto loaded = fromRemote(result.note);
@@ -562,8 +611,8 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
                         if (!result.ok) {
                             if (result.remoteOnConflict)
                                 cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
-                            guard->fail({ result.conflict ? StorageError::Conflict : StorageError::Network,
-                                          result.error, !result.conflict });
+                            guard->fail(
+                                storageError(result, result.conflict ? StorageError::Conflict : StorageError::Network));
                             return;
                         }
                         auto       saved   = fromRemote(result.note);
@@ -616,7 +665,7 @@ NoteRemoveJob *XmppStorage::removeNoteAsync(const QString &noteId, QObject *owne
                         if (!guard || guard->isFinished())
                             return;
                         if (!result.ok && !result.notFound) {
-                            guard->fail({ StorageError::Network, result.error, true });
+                            guard->fail(storageError(result, StorageError::Network));
                             return;
                         }
                         cache_.remove(noteId);
@@ -703,6 +752,12 @@ void XmppStorage::onConnectionChanged(bool connected)
     accessible_ = connected;
     cacheValid_ = false;
     emit invalidated();
+    if (!connected) {
+        scheduleRetry();
+    } else if (retryTimer_ && retryTimer_->isActive()) {
+        retryTimer_->stop();
+        QTimer::singleShot(0, this, &XmppStorage::retryInitialization);
+    }
 }
 
 void XmppStorage::reportError(const QString &error, bool invalidate)
@@ -730,6 +785,8 @@ void XmppStorage::enterErrorState(const QString &error, bool invalidate)
     errorStateMessage_ = error;
     accessible_        = false;
     cacheValid_        = false;
+    if (retryTimer_)
+        retryTimer_->stop();
 
     if (!keyMismatch)
         backend_->shutdown();
@@ -752,6 +809,65 @@ void XmppStorage::clearErrorState()
     lastReportedError_.clear();
 }
 
+void XmppStorage::handleTransientFailure(const QString &error, bool invalidate)
+{
+    accessible_ = false;
+    cacheValid_ = false;
+    reportError(error, invalidate);
+    scheduleRetry();
+}
+
+void XmppStorage::scheduleRetry()
+{
+    if (shuttingDown_ || errorState_ || retryInProgress_ || !retryTimer_ || retryTimer_->isActive())
+        return;
+
+    QString validationError;
+    if (!configIsValid(readConfig(), &validationError))
+        return;
+
+    const int delay    = retryDelaySeconds_;
+    retryDelaySeconds_ = qMin(retryDelaySeconds_ * 2, MaximumRetryDelaySeconds);
+    qInfo() << "XMPP storage reconnect scheduled in" << delay << "seconds";
+    retryTimer_->start(delay * 1000);
+}
+
+void XmppStorage::retryInitialization()
+{
+    if (shuttingDown_ || errorState_ || retryInProgress_)
+        return;
+
+    QString validationError;
+    if (!configIsValid(readConfig(), &validationError))
+        return;
+
+    retryInProgress_    = true;
+    auto      *job      = initAsync(this);
+    const auto handled  = std::make_shared<bool>(false);
+    const auto finished = [this, job, handled]() {
+        if (std::exchange(*handled, true))
+            return;
+        retryInProgress_ = false;
+        if (job->state() == StorageJob::Succeeded) {
+            resetRetryBackoff();
+            emit invalidated();
+        } else if (job->error().retryable) {
+            scheduleRetry();
+        }
+        job->deleteLater();
+    };
+    connect(job, &StorageJob::finished, this, finished);
+    if (job->isFinished())
+        finished();
+}
+
+void XmppStorage::resetRetryBackoff()
+{
+    if (retryTimer_)
+        retryTimer_->stop();
+    retryDelaySeconds_ = MinimumRetryDelaySeconds;
+}
+
 void XmppStorage::applyConfig(const XmppConfig &config)
 {
     QSettings settings;
@@ -765,6 +881,7 @@ void XmppStorage::applyConfig(const XmppConfig &config)
     settings.setValue(QStringLiteral("storage.xmpppubsub.originId"), config.originId);
 
     clearErrorState();
+    resetRetryBackoff();
     cache_.clear();
     cacheValid_ = false;
     accessible_ = false;

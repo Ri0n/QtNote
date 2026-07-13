@@ -1,6 +1,7 @@
 #include "xmppworker.h"
 
 #include "qtnotepubsubitem.h"
+#include "xmpperror.h"
 #include "xmppkeysyncextension.h"
 #include "xmppnotecodec.h"
 #include "xmppomemopubsubitems.h"
@@ -134,6 +135,12 @@ namespace {
         return hasStanzaCondition(error, QXmppStanza::Error::ItemNotFound)
             || error.description.contains(QStringLiteral("No such item"), Qt::CaseInsensitive)
             || error.description.contains(QStringLiteral("item-not-found"), Qt::CaseInsensitive);
+    }
+
+    template <typename Result> void setXmppFailure(Result &result, const QXmppError &error, const QString &message)
+    {
+        result.error     = message;
+        result.errorKind = classifyXmppError(error);
     }
 
 } // namespace
@@ -300,13 +307,23 @@ void XmppWorker::connectToServerAsync(StatusCallback callback)
 
     connect(client_, &QXmppClient::connected, guard, [finish]() mutable { finish({ true }); });
     connect(client_, &QXmppClient::errorOccurred, guard, [finish](const QXmppError &error) mutable {
-        finish({ false, false, false, XmppWorker::errorText(error) });
+        finish({ false, false, false, XmppWorker::errorText(error), {}, classifyXmppError(error) });
     });
     connect(client_, &QXmppClient::disconnected, guard, [finish]() mutable {
-        finish({ false, false, false, QStringLiteral("XMPP connection closed before authentication") });
+        finish({ false,
+                 false,
+                 false,
+                 QStringLiteral("XMPP connection closed before authentication"),
+                 {},
+                 XmppErrorKind::Transient });
     });
     connect(timer, &QTimer::timeout, guard, [finish, timeoutMs = config_.timeoutMs]() mutable {
-        finish({ false, false, false, QStringLiteral("XMPP connection timed out after %1 ms").arg(timeoutMs) });
+        finish({ false,
+                 false,
+                 false,
+                 QStringLiteral("XMPP connection timed out after %1 ms").arg(timeoutMs),
+                 {},
+                 XmppErrorKind::Transient });
     });
 
     timer->start(qMax(1000, config_.timeoutMs));
@@ -342,8 +359,9 @@ QCoro::Task<XmppStatusResult> XmppWorker::verifyPrivateStorageSupportTask()
 #endif
     if (const auto *error = std::get_if<QXmppError>(&result)) {
         co_return XmppStatusResult {
-            false, false, false,
-            QStringLiteral("Could not discover the PEP service at %1: %2").arg(pepService, errorText(*error))
+            false, false,
+            false, QStringLiteral("Could not discover the PEP service at %1: %2").arg(pepService, errorText(*error)),
+            {},    classifyXmppError(*error)
         };
     }
 
@@ -369,7 +387,9 @@ QCoro::Task<XmppStatusResult> XmppWorker::verifyNodeTask(const QString &nodeName
     auto result = co_await pubSub_->requestOwnPepNodeConfiguration(nodeName).toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&result)) {
         co_return XmppStatusResult {
-            false, false, false, QStringLiteral("Could not verify the QtNote PEP node: %1").arg(errorText(*error))
+            false, false,
+            false, QStringLiteral("Could not verify the QtNote PEP node: %1").arg(errorText(*error)),
+            {},    classifyXmppError(*error)
         };
     }
     if (!nodeConfigIsPrivate(std::get<QXmppPubSubNodeConfig>(result))) {
@@ -386,8 +406,12 @@ QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(const QString &nodeName
     if (const auto *requestError = std::get_if<QXmppError>(&request)) {
         if (!isItemNotFound(*requestError)) {
             co_return XmppStatusResult {
-                false, false, false,
-                QStringLiteral("Could not read the QtNote PEP node configuration: %1").arg(errorText(*requestError))
+                false,
+                false,
+                false,
+                QStringLiteral("Could not read the QtNote PEP node configuration: %1").arg(errorText(*requestError)),
+                {},
+                classifyXmppError(*requestError)
             };
         }
 
@@ -395,8 +419,9 @@ QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(const QString &nodeName
         if (const auto *error = resultError(created);
             error && !hasStanzaCondition(*error, QXmppStanza::Error::Conflict)) {
             co_return XmppStatusResult {
-                false, false, false,
-                QStringLiteral("Could not create the private QtNote PEP node: %1").arg(errorText(*error))
+                false, false,
+                false, QStringLiteral("Could not create the private QtNote PEP node: %1").arg(errorText(*error)),
+                {},    classifyXmppError(*error)
             };
         }
         co_return co_await verifyNodeTask(nodeName);
@@ -417,8 +442,9 @@ QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(const QString &nodeName
     auto configured = co_await pubSub_->configureOwnPepNode(nodeName, nodeConfig).toFuture(this);
     if (const auto *error = resultError(configured)) {
         co_return XmppStatusResult {
-            false, false, false,
-            QStringLiteral("Could not configure the private QtNote PEP node: %1").arg(errorText(*error))
+            false, false,
+            false, QStringLiteral("Could not configure the private QtNote PEP node: %1").arg(errorText(*error)),
+            {},    classifyXmppError(*error)
         };
     }
     co_return co_await verifyNodeTask(nodeName);
@@ -636,7 +662,8 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
     XmppListResult output;
     const auto     ready = co_await ensureReadyTask();
     if (!ready.ok) {
-        output.error = ready.error;
+        output.error     = ready.error;
+        output.errorKind = ready.errorKind;
         co_return output;
     }
 
@@ -671,7 +698,7 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
                                                                config_.indexNodeName(), batch)
                               .toFuture(this);
             if (const auto *error = std::get_if<QXmppError>(&result)) {
-                output.error = errorText(*error);
+                setXmppFailure(output, *error, errorText(*error));
                 co_return output;
             }
             if (!decodeItems(std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(result).items, output))
@@ -686,7 +713,7 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
                       ->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName())
                       .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&result)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     const auto &items = std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(result);
@@ -704,7 +731,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(const QString &id)
               ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id)
               .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&indexResult)) {
-        output.error    = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         output.notFound = isItemNotFound(*error);
         co_return output;
     }
@@ -724,7 +751,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(const QString &id)
               ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id)
               .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&contentResult)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     const auto &contentItem = std::get<QtNotePubSubItem>(contentResult);
@@ -750,7 +777,8 @@ QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(const QString &id)
     const auto ready = co_await ensureReadyTask();
     if (!ready.ok) {
         XmppNoteResult output;
-        output.error = ready.error;
+        output.error     = ready.error;
+        output.errorKind = ready.errorKind;
         co_return output;
     }
     co_return co_await requestNoteTask(id);
@@ -778,7 +806,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
                                              privatePublishOptions())
                          .toFuture(this);
     if (const auto *error = resultError(published)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     published = co_await pubSub_
@@ -786,7 +814,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
                                         privatePublishOptions())
                     .toFuture(this);
     if (const auto *error = resultError(published)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     output.note = std::move(note);
@@ -799,7 +827,8 @@ QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
     const auto ready = co_await ensureReadyTask();
     if (!ready.ok) {
         XmppNoteResult output;
-        output.error = ready.error;
+        output.error     = ready.error;
+        output.errorKind = ready.errorKind;
         co_return output;
     }
     if (note.id.isEmpty()) {
@@ -829,10 +858,10 @@ QCoro::Task<XmppStatusResult> XmppWorker::deleteNoteTask(const QString &id)
     const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
     auto       result  = co_await pubSub_->retractItem(bareJid, config_.indexNodeName(), id, true).toFuture(this);
     if (const auto *error = resultError(result); error && !isItemNotFound(*error))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     result = co_await pubSub_->retractItem(bareJid, config_.contentNodeName(), id, true).toFuture(this);
     if (const auto *error = resultError(result); error && !isItemNotFound(*error))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     co_return XmppStatusResult { true };
 }
 
@@ -904,7 +933,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::ownOmemoBundleValidTask()
                                                          QString::number(own.deviceId))
                       .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&bundle))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     const auto publishedKey = std::get<XmppOmemoBundleItem>(bundle).identityKey();
     if (publishedKey != own.keyId) {
         co_return XmppStatusResult { false, false, false,
@@ -917,7 +946,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::ownOmemoBundleValidTask()
                                                            QStringLiteral("current"))
                     .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&list))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     const auto &devices   = std::get<XmppOmemoDeviceListItem>(list).devices();
     const bool  announced = std::any_of(devices.cbegin(), devices.cend(),
                                         [&own](const auto &device) { return device.id.toUInt() == own.deviceId; });
@@ -978,7 +1007,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::repairOwnOmemoDeviceTask()
                                                            QStringLiteral("current"))
                     .toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&list))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     auto item    = std::get<XmppOmemoDeviceListItem>(list);
     auto devices = item.devices();
 
@@ -990,7 +1019,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::repairOwnOmemoDeviceTask()
             auto published = co_await pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item)
                                  .toFuture(this);
             if (const auto *error = std::get_if<QXmppError>(&published))
-                co_return XmppStatusResult { false, false, false, errorText(*error) };
+                co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
         }
         co_return XmppStatusResult { true };
     }
@@ -1011,7 +1040,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::repairOwnOmemoDeviceTask()
     auto published
         = co_await pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item).toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&published))
-        co_return XmppStatusResult { false, false, false, errorText(*error) };
+        co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     if (oldDeviceId) {
         auto retracted
             = co_await pubSub_
@@ -1057,7 +1086,8 @@ QCoro::Task<XmppKeyAuditResult> XmppWorker::auditStorageKeysTask()
     if (ready.ok)
         ready = co_await ensureOmemoTask();
     if (!ready.ok) {
-        output.error = ready.error;
+        output.error     = ready.error;
+        output.errorKind = ready.errorKind;
         co_return output;
     }
     if (client_->encryptionExtension() != omemoManager_ || !keySyncExtension_) {
@@ -1120,7 +1150,7 @@ QCoro::Task<XmppKeyAuditResult> XmppWorker::auditStorageKeysTask()
 
     auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&idsResult)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     const auto ids          = std::get<QVector<QString>>(idsResult);
@@ -1133,7 +1163,7 @@ QCoro::Task<XmppKeyAuditResult> XmppWorker::auditStorageKeysTask()
         auto items
             = co_await pubSub_->requestItems<QtNotePubSubItem>(bareJid, config_.indexNodeName(), batch).toFuture(this);
         if (const auto *error = std::get_if<QXmppError>(&items)) {
-            output.error = errorText(*error);
+            setXmppFailure(output, *error, errorText(*error));
             co_return output;
         }
         for (const auto &item : std::get<QXmppPubSubManager::Items<QtNotePubSubItem>>(items).items) {
@@ -1161,7 +1191,8 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
     XmppRekeyResult output;
     const auto      ready = co_await ensureReadyTask();
     if (!ready.ok) {
-        output.error = ready.error;
+        output.error     = ready.error;
+        output.errorKind = ready.errorKind;
         co_return output;
     }
     if (canonicalKey.size() != SecureEnvelope::MasterKeySize) {
@@ -1177,7 +1208,7 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
 
     auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&idsResult)) {
-        output.error = errorText(*error);
+        setXmppFailure(output, *error, errorText(*error));
         co_return output;
     }
     const auto ids     = std::get<QVector<QString>>(idsResult);
@@ -1191,7 +1222,8 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
         const auto *indexError   = std::get_if<QXmppError>(&indexResult);
         const auto *contentError = std::get_if<QXmppError>(&contentResult);
         if (indexError || contentError) {
-            output.error = errorText(indexError ? *indexError : *contentError);
+            const auto &error = indexError ? *indexError : *contentError;
+            setXmppFailure(output, error, errorText(error));
             co_return output;
         }
         const auto &indexItem   = std::get<QtNotePubSubItem>(indexResult);
@@ -1230,7 +1262,7 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
                                                  privatePublishOptions())
                              .toFuture(this);
         if (const auto *error = std::get_if<QXmppError>(&published)) {
-            output.error = errorText(*error);
+            setXmppFailure(output, *error, errorText(*error));
             co_return output;
         }
         published = co_await pubSub_
@@ -1238,7 +1270,7 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
                                             privatePublishOptions())
                         .toFuture(this);
         if (const auto *error = std::get_if<QXmppError>(&published)) {
-            output.error = errorText(*error);
+            setXmppFailure(output, *error, errorText(*error));
             co_return output;
         }
         ++output.migrated;
