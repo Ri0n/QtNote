@@ -593,8 +593,7 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
             output.error = cleanStorage.errorString();
             return output;
         }
-        if (!awaitVoidTask(cleanStorage.removeDevices(QXmppUtils::jidToBareJid(config_.jid)), config_.timeoutMs,
-                           &sessionResetError)) {
+        if (!awaitVoidTask(cleanStorage.removeAllDevices(), config_.timeoutMs, &sessionResetError)) {
             output.error = QStringLiteral("Could not reset cached OMEMO sessions: %1").arg(sessionResetError);
             return output;
         }

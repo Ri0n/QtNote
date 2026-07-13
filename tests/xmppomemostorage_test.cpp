@@ -13,6 +13,7 @@ class XmppOmemoStorageTest : public QObject {
 
 private slots:
     void persistsEncryptedState();
+    void clearsPeerSessionsWithoutResettingOwnDevice();
     void rejectsWrongLocalKey();
 };
 
@@ -51,6 +52,36 @@ void XmppOmemoStorageTest::persistsEncryptedState()
     QVERIFY(data.ownDevice.has_value());
     QCOMPARE(data.ownDevice->id, uint32_t(42));
     QCOMPARE(data.devices[QStringLiteral("me@example.org")][7].session, QByteArrayLiteral("session-secret"));
+}
+
+void XmppOmemoStorageTest::clearsPeerSessionsWithoutResettingOwnDevice()
+{
+    QTemporaryDir dir;
+    const auto    path = dir.filePath(QStringLiteral("omemo.state"));
+    const auto    key  = SecureEnvelope::generateMasterKey();
+
+    XmppOmemoStorage             storage(path, key, QStringLiteral("me@example.org"));
+    QXmppOmemoStorage::OwnDevice own;
+    own.id                 = 42;
+    own.privateIdentityKey = QByteArrayLiteral("private identity material");
+    own.publicIdentityKey  = QByteArrayLiteral("public identity material");
+    storage.setOwnDevice(own);
+
+    QXmppOmemoStorage::Device peer;
+    peer.session = QByteArrayLiteral("stale session");
+    storage.addDevice(QStringLiteral("me@example.org"), 7, peer);
+    storage.addDevice(QStringLiteral("me@example.org/QtNote-other"), 8, peer);
+
+    auto cleared = storage.removeAllDevices();
+    QVERIFY(cleared.isFinished());
+
+    auto dataTask = storage.allData();
+    QVERIFY(dataTask.isFinished());
+    const auto data = dataTask.takeResult();
+    QVERIFY(data.devices.isEmpty());
+    QVERIFY(data.ownDevice.has_value());
+    QCOMPARE(data.ownDevice->id, uint32_t(42));
+    QCOMPARE(data.ownDevice->privateIdentityKey, QByteArrayLiteral("private identity material"));
 }
 
 void XmppOmemoStorageTest::rejectsWrongLocalKey()

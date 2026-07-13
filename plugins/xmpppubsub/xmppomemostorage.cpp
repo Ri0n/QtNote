@@ -204,6 +204,12 @@ QXmppTask<void> XmppOmemoStorage::removeDevices(const QString &jid)
     persist();
     return done();
 }
+QXmppTask<void> XmppOmemoStorage::removeAllDevices()
+{
+    data_.devices.clear();
+    persist();
+    return done();
+}
 QXmppTask<void> XmppOmemoStorage::resetAll()
 {
     data_ = {};
