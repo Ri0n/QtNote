@@ -602,6 +602,11 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
         output.error = omemo.error;
         return output;
     }
+    if (client_->encryptionExtension() != omemoManager_) {
+        output.error = QStringLiteral("OMEMO is not installed as the XMPP encryption extension; refusing to send "
+                                      "the key-sync request without encryption");
+        return output;
+    }
     if (!keySyncExtension_) {
         output.error = QStringLiteral("XMPP resource discovery is unavailable");
         return output;
