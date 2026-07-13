@@ -583,6 +583,25 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
         output.error = omemo.error;
         return output;
     }
+    QString sessionResetError;
+    if (!awaitVoidTask(omemoStorage_->removeDevices(QXmppUtils::jidToBareJid(config_.jid)), config_.timeoutMs,
+                       &sessionResetError)) {
+        output.error = QStringLiteral("Could not reset cached OMEMO sessions: %1").arg(sessionResetError);
+        return output;
+    }
+    // QXmpp keeps a second in-memory copy of peer sessions. Recreate the client so the next
+    // key-sync request starts a fresh, recoverable OMEMO key exchange.
+    resetClient();
+    auto reconnected = connectToServer();
+    if (!reconnected.ok) {
+        output.error = reconnected.error;
+        return output;
+    }
+    omemo = ensureOmemo();
+    if (!omemo.ok) {
+        output.error = omemo.error;
+        return output;
+    }
     if (!keySyncExtension_) {
         output.error = QStringLiteral("XMPP resource discovery is unavailable");
         return output;
