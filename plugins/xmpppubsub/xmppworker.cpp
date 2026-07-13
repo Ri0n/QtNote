@@ -55,7 +55,7 @@ namespace {
         if (xml.contains(QStringLiteral("<bundle")) || xml.contains(QStringLiteral("<prekeys"))
             || xml.contains(QRegularExpression(QStringLiteral("<pk\\s")))) {
             const auto itemMatch = QRegularExpression(QStringLiteral("<item\\s[^>]*id=['\"]([^'\"]+)['\"]")).match(xml);
-            const auto identityMatch = QRegularExpression(QStringLiteral("<ik>([^<]+)</ik>")).match(xml);
+            const auto identityMatch = QRegularExpression(QStringLiteral("<ik\\b[^>]*>([^<]+)</ik>")).match(xml);
             QStringList details;
             if (itemMatch.hasMatch())
                 details.append(QStringLiteral("device=%1").arg(itemMatch.captured(1)));
@@ -712,8 +712,18 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
             config_.timeoutMs, &waitError);
         QByteArray keyId;
-        if (bundle && std::holds_alternative<XmppOmemoBundleItem>(*bundle))
+        if (!bundle) {
+            qWarning().noquote() << "Could not fetch OMEMO bundle: id=" << listed.id << "label=" << listed.label
+                                 << "error=" << waitError;
+        } else if (const auto *requestError = std::get_if<QXmppError>(&*bundle)) {
+            qWarning().noquote() << "Could not fetch OMEMO bundle: id=" << listed.id << "label=" << listed.label
+                                 << "error=" << errorText(*requestError);
+        } else {
             keyId = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
+            qInfo().noquote() << "Parsed OMEMO bundle: id=" << listed.id << "label=" << listed.label
+                              << "identity-key-size=" << keyId.size() << "identity-key="
+                              << (keyId.isEmpty() ? QStringLiteral("<missing>") : QString::fromLatin1(keyId.toHex()));
+        }
         if (!keyId.isEmpty() && keyId == ownKey)
             continue;
         const auto deviceName = listed.label.isEmpty() ? QStringLiteral("OMEMO device %1").arg(listed.id)
