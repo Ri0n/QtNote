@@ -2,8 +2,10 @@
 #define XMPPWORKER_H
 
 #include "xmppdto.h"
+#include "xmppomemopubsubitems.h"
 
 #include <QObject>
+#include <QSet>
 #include <QXmppError.h>
 
 class QXmppClient;
@@ -61,6 +63,9 @@ private:
     void             handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
     void handleKeySyncTrustRequest(const QString &requestId, const QString &from, const QByteArray &senderKey);
     void finishKeySyncTrustRequest(const QString &requestId, const QByteArray &senderKey);
+    void cacheOwnOmemoBundle();
+    void scheduleOwnOmemoBundleRepair(uint32_t consumedPreKeyId);
+    void repairOwnOmemoBundleAfterPreKeyUse(int attemptsRemaining = 8);
     XmppStatusResult connectToServer();
     XmppStatusResult verifyPrivateStorageSupport();
     XmppStatusResult ensureNode(const QString &nodeName);
@@ -69,19 +74,22 @@ private:
     static QString newUuid();
     static QString errorText(const QXmppError &error);
 
-    XmppConfig             config_;
-    QXmppClient           *client_ { nullptr };
-    QXmppDiscoveryManager *discovery_ { nullptr };
-    QXmppRosterManager    *roster_ { nullptr };
-    QXmppPubSubManager    *pubSub_ { nullptr };
-    XmppPepExtension      *pepExtension_ { nullptr };
-    XmppKeySyncExtension  *keySyncExtension_ { nullptr };
-    XmppOmemoStorage      *omemoStorage_ { nullptr };
-    QXmppTrustStorage     *trustStorage_ { nullptr };
-    QXmppTrustManager     *trustManager_ { nullptr };
-    QXmppOmemoManager     *omemoManager_ { nullptr };
-    bool                   prepared_ { false };
-    bool                   omemoReady_ { false };
+    XmppConfig                         config_;
+    QXmppClient                       *client_ { nullptr };
+    QXmppDiscoveryManager             *discovery_ { nullptr };
+    QXmppRosterManager                *roster_ { nullptr };
+    QXmppPubSubManager                *pubSub_ { nullptr };
+    XmppPepExtension                  *pepExtension_ { nullptr };
+    XmppKeySyncExtension              *keySyncExtension_ { nullptr };
+    XmppOmemoStorage                  *omemoStorage_ { nullptr };
+    QXmppTrustStorage                 *trustStorage_ { nullptr };
+    QXmppTrustManager                 *trustManager_ { nullptr };
+    QXmppOmemoManager                 *omemoManager_ { nullptr };
+    bool                               prepared_ { false };
+    bool                               omemoReady_ { false };
+    std::optional<XmppOmemoBundleItem> cachedOwnOmemoBundle_;
+    QSet<uint32_t>                     consumedOwnPreKeyIds_;
+    bool                               ownBundleRepairScheduled_ { false };
     struct PendingInboundKeyRequest {
         QByteArray senderKey;
         bool       trustBootstrap { false };

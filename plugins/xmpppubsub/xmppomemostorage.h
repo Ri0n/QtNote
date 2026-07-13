@@ -3,6 +3,8 @@
 
 #include <QXmppOmemoStorage.h>
 
+#include <functional>
+
 namespace QtNote {
 
 class XmppOmemoStorage final : public QXmppOmemoStorage {
@@ -27,16 +29,18 @@ public:
     QXmppTask<void>      removeDevice(const QString &jid, uint32_t deviceId) override;
     QXmppTask<void>      removeDevices(const QString &jid) override;
     QXmppTask<void>      resetAll() override;
+    void setPreKeyRemovedHandler(std::function<void(uint32_t)> handler) { preKeyRemovedHandler_ = std::move(handler); }
 
 private:
     void load();
     void persist();
 
-    QString    path_;
-    QByteArray encryptionKey_;
-    QString    accountId_;
-    OmemoData  data_;
-    QString    error_;
+    QString                       path_;
+    QByteArray                    encryptionKey_;
+    QString                       accountId_;
+    OmemoData                     data_;
+    QString                       error_;
+    std::function<void(uint32_t)> preKeyRemovedHandler_;
 };
 
 } // namespace QtNote

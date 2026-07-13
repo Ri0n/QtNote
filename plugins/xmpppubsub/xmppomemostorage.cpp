@@ -200,6 +200,8 @@ QXmppTask<void> XmppOmemoStorage::removePreKeyPair(uint32_t id)
 {
     data_.preKeyPairs.remove(id);
     persist();
+    if (preKeyRemovedHandler_)
+        preKeyRemovedHandler_(id);
     return done();
 }
 QXmppTask<void> XmppOmemoStorage::addDevice(const QString &jid, uint32_t id, const Device &value)

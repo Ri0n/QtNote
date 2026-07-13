@@ -216,6 +216,9 @@ void XmppWorker::resetClient()
     trustManager_     = nullptr;
     omemoManager_     = nullptr;
     pendingInboundKeyRequests_.clear();
+    cachedOwnOmemoBundle_.reset();
+    consumedOwnPreKeyIds_.clear();
+    ownBundleRepairScheduled_ = false;
 
     if (client_) {
         client_->disconnectFromServer();
@@ -253,6 +256,7 @@ void XmppWorker::createClient()
     pepExtension_     = client_->addNewExtension<XmppPepExtension>();
     keySyncExtension_ = client_->addNewExtension<XmppKeySyncExtension>();
     omemoStorage_     = new XmppOmemoStorage(config_.omemoStatePath, config_.omemoStateKey, config_.jid);
+    omemoStorage_->setPreKeyRemovedHandler([this](uint32_t id) { scheduleOwnOmemoBundleRepair(id); });
     if (!trustStorage_) {
         auto *persistentTrust = new XmppPersistentTrustStorage(config_.omemoStatePath + QStringLiteral(".trust"),
                                                                config_.omemoStateKey, config_.jid);
@@ -533,7 +537,92 @@ XmppStatusResult XmppWorker::ensureOmemo()
             return { false, false, false, QStringLiteral("Could not initialize the OMEMO device") };
     }
     omemoReady_ = true;
+    cacheOwnOmemoBundle();
     return { true };
+}
+
+void XmppWorker::cacheOwnOmemoBundle()
+{
+    if (!pubSub_ || !omemoStorage_ || !omemoStorage_->ownDeviceId())
+        return;
+    QString error;
+    auto    result = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                                         QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                                         QString::number(omemoStorage_->ownDeviceId())),
+                               config_.timeoutMs, &error);
+    if (!result || !std::holds_alternative<XmppOmemoBundleItem>(*result)) {
+        qWarning().noquote() << "Could not cache own OMEMO bundle:" << error;
+        return;
+    }
+    auto bundle = std::get<XmppOmemoBundleItem>(std::move(*result));
+    if (bundle.identityKey() != omemoStorage_->ownIdentityKey()) {
+        qWarning() << "Own OMEMO bundle was not cached because its identity key is invalid";
+        return;
+    }
+    cachedOwnOmemoBundle_ = std::move(bundle);
+    qInfo() << "Cached valid own OMEMO bundle: device=" << omemoStorage_->ownDeviceId()
+            << "prekeys=" << cachedOwnOmemoBundle_->publicPreKeys().size();
+}
+
+void XmppWorker::scheduleOwnOmemoBundleRepair(uint32_t consumedPreKeyId)
+{
+    consumedOwnPreKeyIds_.insert(consumedPreKeyId);
+    if (ownBundleRepairScheduled_)
+        return;
+    ownBundleRepairScheduled_ = true;
+    // QXmpp publishes its incomplete in-memory bundle after returning from the pre-key storage callback.
+    QTimer::singleShot(350, this, [this]() { repairOwnOmemoBundleAfterPreKeyUse(); });
+}
+
+void XmppWorker::repairOwnOmemoBundleAfterPreKeyUse(int attemptsRemaining)
+{
+    ownBundleRepairScheduled_ = false;
+    if (!cachedOwnOmemoBundle_ || !pubSub_ || !client_ || !client_->isConnected())
+        return;
+
+    const auto bareJid  = QXmppUtils::jidToBareJid(config_.jid);
+    const auto deviceId = omemoStorage_->ownDeviceId();
+    QString    error;
+    auto       result = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(
+                                bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(deviceId)),
+                                  config_.timeoutMs, &error);
+    if (!result || !std::holds_alternative<XmppOmemoBundleItem>(*result)) {
+        qWarning().noquote() << "Could not inspect own OMEMO bundle after pre-key use:" << error;
+        return;
+    }
+
+    auto published = std::get<XmppOmemoBundleItem>(std::move(*result));
+    if (published.identityKey() == omemoStorage_->ownIdentityKey()) {
+        bool stillContainsConsumedKey = false;
+        for (const auto id : consumedOwnPreKeyIds_)
+            stillContainsConsumedKey |= published.publicPreKeys().contains(id);
+        if (stillContainsConsumedKey && attemptsRemaining > 0) {
+            ownBundleRepairScheduled_ = true;
+            QTimer::singleShot(
+                250, this, [this, attemptsRemaining]() { repairOwnOmemoBundleAfterPreKeyUse(attemptsRemaining - 1); });
+            return;
+        }
+        cachedOwnOmemoBundle_ = std::move(published);
+        consumedOwnPreKeyIds_.clear();
+        return;
+    }
+    if (!published.identityKey().isEmpty()) {
+        qWarning() << "Refusing to repair own OMEMO bundle with a mismatching identity key";
+        return;
+    }
+
+    auto repaired = published.repairedFrom(*cachedOwnOmemoBundle_, consumedOwnPreKeyIds_);
+    auto outcome  = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), repaired),
+                              config_.timeoutMs, &error);
+    if (!outcome || std::holds_alternative<QXmppError>(*outcome)) {
+        qWarning().noquote() << "Could not repair QXmpp's incomplete own OMEMO bundle:"
+                             << (!outcome ? error : errorText(std::get<QXmppError>(*outcome)));
+        return;
+    }
+    qInfo() << "Repaired incomplete own OMEMO bundle after pre-key use: device=" << deviceId
+            << "prekeys=" << repaired.publicPreKeys().size();
+    cachedOwnOmemoBundle_ = std::move(repaired);
+    consumedOwnPreKeyIds_.clear();
 }
 
 QStringList XmppWorker::onlineQtNoteResources(QString *error)

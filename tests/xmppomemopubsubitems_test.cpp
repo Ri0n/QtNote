@@ -13,6 +13,7 @@ private slots:
     void parsesDeviceList();
     void serializesDeviceList();
     void parsesBundleIdentityKey();
+    void repairsIncompleteBundle();
 };
 
 void XmppOmemoPubSubItemsTest::parsesDeviceList()
@@ -54,6 +55,38 @@ void XmppOmemoPubSubItemsTest::parsesBundleIdentityKey()
     XmppOmemoBundleItem item;
     item.parse(document.documentElement());
     QCOMPARE(item.identityKey(), identity);
+}
+
+void XmppOmemoPubSubItemsTest::repairsIncompleteBundle()
+{
+    const auto parse = [](const QString &xml) {
+        QDomDocument document;
+        if (!document.setContent(xml, QDomDocument::ParseOption::UseNamespaceProcessing))
+            return XmppOmemoBundleItem {};
+        XmppOmemoBundleItem item;
+        item.parse(document.documentElement());
+        return item;
+    };
+    auto valid      = parse(QStringLiteral(
+        "<item id='7'><bundle xmlns='urn:xmpp:omemo:2'><ik>aWs=</ik><spk id='4'>c3Br</spk>"
+             "<spks>c2ln</spks><prekeys><pk id='10'>b2xk</pk><pk id='11'>a2VlcA==</pk></prekeys></bundle></item>"));
+    auto incomplete = parse(QStringLiteral("<item id='7'><bundle xmlns='urn:xmpp:omemo:2'><ik/><spk id='0'/><spks/>"
+                                           "<prekeys><pk id='12'>bmV3</pk></prekeys></bundle></item>"));
+
+    const auto repaired = incomplete.repairedFrom(valid, { 10 });
+    QCOMPARE(repaired.identityKey(), QByteArrayLiteral("ik"));
+    QVERIFY(!repaired.publicPreKeys().contains(10));
+    QCOMPARE(repaired.publicPreKeys().value(11), QByteArrayLiteral("keep"));
+    QCOMPARE(repaired.publicPreKeys().value(12), QByteArrayLiteral("new"));
+
+    QString          xml;
+    QXmlStreamWriter writer(&xml);
+    repaired.toXml(&writer);
+    QVERIFY(xml.contains(QStringLiteral("<ik>aWs=</ik>")));
+    QVERIFY(xml.contains(QStringLiteral("<spk id=\"4\">c3Br</spk>")));
+    QVERIFY(!xml.contains(QStringLiteral("id=\"10\"")));
+    QVERIFY(xml.contains(QStringLiteral("id=\"11\"")));
+    QVERIFY(xml.contains(QStringLiteral("id=\"12\"")));
 }
 
 QTEST_GUILESS_MAIN(XmppOmemoPubSubItemsTest)
