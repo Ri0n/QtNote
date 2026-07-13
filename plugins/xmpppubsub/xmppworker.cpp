@@ -704,10 +704,13 @@ QList<XmppDeviceInfo> XmppWorker::ownOmemoDevices(QString *error)
             *error = !list ? waitError : errorText(std::get<QXmppError>(*list));
         return {};
     }
-    const auto            ownKey = omemoStorage_->ownIdentityKey();
+    const auto            ownDeviceId = omemoStorage_->ownDeviceId();
+    const auto            ownKey      = omemoStorage_->ownIdentityKey();
     QList<XmppDeviceInfo> result;
     int                   missingFingerprints = 0;
     for (const auto &listed : std::get<XmppOmemoDeviceListItem>(*list).devices()) {
+        if (listed.id.toUInt() == ownDeviceId)
+            continue;
         auto bundle = awaitTask(
             pubSub_->requestItem<XmppOmemoBundleItem>(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), listed.id),
             config_.timeoutMs, &waitError);
@@ -748,6 +751,90 @@ XmppDeviceInfo XmppWorker::ownOmemoDevice() const
         return {};
     return { omemoStorage_->ownDeviceLabel(), omemoStorage_->ownDeviceId(), omemoStorage_->ownIdentityKey(),
              int(QXmpp::TrustLevel::Authenticated) };
+}
+
+bool XmppWorker::ownOmemoBundleValid(QString *error)
+{
+    const auto connected = connectToServer();
+    if (!connected.ok) {
+        if (error)
+            *error = connected.error;
+        return false;
+    }
+    const auto omemo = ensureOmemo();
+    if (!omemo.ok) {
+        if (error)
+            *error = omemo.error;
+        return false;
+    }
+    const auto own = ownOmemoDevice();
+    if (!own.deviceId || own.keyId.isEmpty()) {
+        if (error)
+            *error = QStringLiteral("The local OMEMO device is not initialized");
+        return false;
+    }
+    QString waitError;
+    auto    bundle = awaitTask(pubSub_->requestItem<XmppOmemoBundleItem>(QXmppUtils::jidToBareJid(config_.jid),
+                                                                         QStringLiteral("urn:xmpp:omemo:2:bundles"),
+                                                                         QString::number(own.deviceId)),
+                               config_.timeoutMs, &waitError);
+    if (!bundle || std::holds_alternative<QXmppError>(*bundle)) {
+        if (error)
+            *error = !bundle ? waitError : errorText(std::get<QXmppError>(*bundle));
+        return false;
+    }
+    const auto publishedKey = std::get<XmppOmemoBundleItem>(*bundle).identityKey();
+    if (publishedKey != own.keyId) {
+        if (error)
+            *error = publishedKey.isEmpty() ? QStringLiteral("The published OMEMO bundle has no identity key")
+                                            : QStringLiteral("The published OMEMO identity key does not match");
+        return false;
+    }
+    return true;
+}
+
+XmppStatusResult XmppWorker::repairOwnOmemoDevice()
+{
+    const auto connected = connectToServer();
+    if (!connected.ok)
+        return connected;
+    const auto omemo = ensureOmemo();
+    if (!omemo.ok)
+        return omemo;
+    const auto oldDeviceId = omemoStorage_->ownDeviceId();
+    QString    error;
+    if (!awaitVoidTask(omemoManager_->resetOwnDeviceLocally(), config_.timeoutMs, &error))
+        return { false, false, false, error };
+    omemoReady_ = false;
+    auto setup  = awaitTask(omemoManager_->setUp(config_.resource), config_.timeoutMs, &error);
+    if (!setup)
+        return { false, false, false, error };
+    if (!*setup)
+        return { false, false, false, QStringLiteral("QXmpp could not create a replacement OMEMO device") };
+    omemoReady_ = true;
+
+    const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
+    auto       list    = awaitTask(pubSub_->requestItem<XmppOmemoDeviceListItem>(
+                              bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), QStringLiteral("current")),
+                                   config_.timeoutMs, &error);
+    if (!list || std::holds_alternative<QXmppError>(*list))
+        return { false, false, false, !list ? error : errorText(std::get<QXmppError>(*list)) };
+    auto item    = std::get<XmppOmemoDeviceListItem>(*list);
+    auto devices = item.devices();
+    devices.removeIf([oldDeviceId](const auto &device) { return device.id.toUInt() == oldDeviceId; });
+    item.setDevices(std::move(devices));
+    auto published = awaitTask(pubSub_->publishItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:devices"), item),
+                               config_.timeoutMs, &error);
+    if (!published || std::holds_alternative<QXmppError>(*published))
+        return { false, false, false, !published ? error : errorText(std::get<QXmppError>(*published)) };
+    if (oldDeviceId) {
+        auto retracted = awaitTask(
+            pubSub_->retractItem(bareJid, QStringLiteral("urn:xmpp:omemo:2:bundles"), QString::number(oldDeviceId)),
+            config_.timeoutMs, &error);
+        if (!retracted)
+            qWarning().noquote() << "Could not retract the old OMEMO bundle" << oldDeviceId << error;
+    }
+    return { true };
 }
 
 XmppStatusResult XmppWorker::trustOwnOmemoDevice(const QByteArray &keyId)

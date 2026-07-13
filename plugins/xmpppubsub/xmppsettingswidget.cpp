@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QSpinBox>
@@ -17,7 +18,8 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
     host_(new QLineEdit(this)), port_(new QSpinBox(this)), resource_(new QLineEdit(this)),
     nodeName_(new QLineEdit(this)), timeoutSeconds_(new QSpinBox(this)), keyState_(new QLabel(this)),
     recoveryKey_(new QLineEdit(this)), ownOmemoDevice_(new QLabel(tr("Not initialized"), this)),
-    omemoDevices_(new QComboBox(this)), trustDevice_(new QPushButton(tr("Trust selected device"), this))
+    repairOmemoDevice_(new QPushButton(tr("Repair OMEMO device"), this)), omemoDevices_(new QComboBox(this)),
+    trustDevice_(new QPushButton(tr("Trust selected device"), this))
 {
     jid_->setText(config.jid);
     jid_->setPlaceholderText(QStringLiteral("user@example.org"));
@@ -77,6 +79,8 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
     ownOmemoDevice_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     ownOmemoDevice_->setWordWrap(true);
     form->addRow(tr("This OMEMO device:"), ownOmemoDevice_);
+    repairOmemoDevice_->setVisible(false);
+    form->addRow(QString(), repairOmemoDevice_);
     form->addRow(tr("Other OMEMO devices:"), omemoDevices_);
     form->addRow(QString(), deviceButtons);
 
@@ -91,6 +95,16 @@ XmppSettingsWidget::XmppSettingsWidget(const XmppConfig &config, QWidget *parent
             [this]() { emit omemoSyncRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
     connect(refreshDevices, &QPushButton::clicked, this,
             [this]() { emit omemoDevicesRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0)); });
+    connect(repairOmemoDevice_, &QPushButton::clicked, this, [this]() {
+        const auto answer = QMessageBox::warning(
+            this, tr("Repair OMEMO device"),
+            tr("The published bundle for this OMEMO device is incomplete. Repairing it creates a new OMEMO "
+               "device ID and identity key, resets OMEMO sessions and trust decisions, and requires the new "
+               "device to be trusted again on your other clients. The QtNote storage key is not changed."),
+            QMessageBox::Reset | QMessageBox::Cancel, QMessageBox::Cancel);
+        if (answer == QMessageBox::Reset)
+            emit repairOmemoDeviceRequested(jid_->text().trimmed().section(QLatin1Char('/'), 0, 0));
+    });
     trustDevice_->setEnabled(false);
     connect(trustDevice_, &QPushButton::clicked, this, [this]() {
         const auto index = omemoDevices_->currentIndex();
@@ -129,8 +143,8 @@ void XmppSettingsWidget::setRecoveryKey(const QString &key)
     recoveryKey_->selectAll();
 }
 
-void XmppSettingsWidget::setOmemoDevices(const XmppDeviceInfo &ownDevice, const QList<XmppDeviceInfo> &devices,
-                                         const QString &message)
+void XmppSettingsWidget::setOmemoDevices(const XmppDeviceInfo &ownDevice, bool ownBundleValid,
+                                         const QList<XmppDeviceInfo> &devices, const QString &message)
 {
     if (ownDevice.deviceId) {
         const auto fingerprint
@@ -143,6 +157,7 @@ void XmppSettingsWidget::setOmemoDevices(const XmppDeviceInfo &ownDevice, const 
         ownOmemoDevice_->setText(tr("Not initialized"));
         ownOmemoDevice_->setToolTip({});
     }
+    repairOmemoDevice_->setVisible(ownDevice.deviceId && !ownBundleValid);
     omemoDevices_->clear();
     omemoDeviceKeys_.clear();
     for (const auto &device : devices) {

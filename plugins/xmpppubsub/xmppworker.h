@@ -38,6 +38,8 @@ public:
     XmppKeyAuditResult    auditStorageKeys();
     XmppRekeyResult       rekeyStorage(const QList<QByteArray> &keys, const QByteArray &canonicalKey);
     XmppDeviceInfo        ownOmemoDevice() const;
+    bool                  ownOmemoBundleValid(QString *error);
+    XmppStatusResult      repairOwnOmemoDevice();
     QList<XmppDeviceInfo> ownOmemoDevices(QString *error);
     XmppStatusResult      trustOwnOmemoDevice(const QByteArray &keyId);
     void                  approveKeySyncRequest(const QString &requestId);

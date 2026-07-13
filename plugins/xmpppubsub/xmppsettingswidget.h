@@ -22,8 +22,8 @@ public:
     XmppConfig config() const;
     void       setKeyState(const QByteArray &keyId, const QString &message = {});
     void       setRecoveryKey(const QString &key);
-    void       setOmemoDevices(const XmppDeviceInfo &ownDevice, const QList<XmppDeviceInfo> &devices,
-                               const QString &message = {});
+    void setOmemoDevices(const XmppDeviceInfo &ownDevice, bool ownBundleValid, const QList<XmppDeviceInfo> &devices,
+                         const QString &message = {});
 
 signals:
     void apply();
@@ -33,6 +33,7 @@ signals:
     void omemoSyncRequested(const QString &jid);
     void omemoDevicesRequested(const QString &jid);
     void trustOmemoDeviceRequested(const QString &jid, const QByteArray &keyId);
+    void repairOmemoDeviceRequested(const QString &jid);
 
 private:
     QString           originId_;
@@ -46,6 +47,7 @@ private:
     QLabel           *keyState_;
     QLineEdit        *recoveryKey_;
     QLabel           *ownOmemoDevice_;
+    QPushButton      *repairOmemoDevice_;
     QComboBox        *omemoDevices_;
     QPushButton      *trustDevice_;
     QList<QByteArray> omemoDeviceKeys_;

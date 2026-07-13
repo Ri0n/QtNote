@@ -1006,9 +1006,29 @@ QWidget *XmppStorage::settingsWidget()
             QString    error;
             const auto devices   = worker_->ownOmemoDevices(&error);
             const auto ownDevice = worker_->ownOmemoDevice();
-            QMetaObject::invokeMethod(this, [guard, ownDevice, devices, error]() {
+            QString    bundleError;
+            const bool ownBundleValid = worker_->ownOmemoBundleValid(&bundleError);
+            if (!ownBundleValid)
+                error = bundleError;
+            QMetaObject::invokeMethod(this, [guard, ownDevice, ownBundleValid, devices, error]() {
                 if (guard)
-                    guard->setOmemoDevices(ownDevice, devices, error);
+                    guard->setOmemoDevices(ownDevice, ownBundleValid, devices, error);
+            });
+        });
+    });
+    connect(widget, &XmppSettingsWidget::repairOmemoDeviceRequested, this, [this, widget](const QString &jid) {
+        auto config = readConfig();
+        config.jid  = jid;
+        QPointer<XmppSettingsWidget> guard(widget);
+        QMetaObject::invokeMethod(worker_, [this, guard, config]() {
+            worker_->setConfig(config);
+            const auto result = worker_->repairOwnOmemoDevice();
+            QMetaObject::invokeMethod(this, [guard, result]() {
+                if (!guard)
+                    return;
+                guard->setKeyState({}, result.ok ? XmppSettingsWidget::tr("OMEMO device repaired") : result.error);
+                if (result.ok)
+                    emit guard->omemoDevicesRequested(guard->config().jid);
             });
         });
     });

@@ -1,6 +1,7 @@
 #include "xmppomemopubsubitems.h"
 
 #include <QDomElement>
+#include <QXmlStreamWriter>
 
 namespace QtNote {
 namespace {
@@ -35,8 +36,25 @@ void XmppOmemoDeviceListItem::parsePayload(const QDomElement &element)
         bool       idOk = false;
         id.toUInt(&idOk);
         if (idOk)
-            devices_.append({ device.attribute(QStringLiteral("label")), id });
+            devices_.append(
+                { device.attribute(QStringLiteral("label")), id, device.attribute(QStringLiteral("labelsig")) });
     }
+}
+
+void XmppOmemoDeviceListItem::serializePayload(QXmlStreamWriter *writer) const
+{
+    writer->writeStartElement(QStringLiteral("devices"));
+    writer->writeDefaultNamespace(OmemoNamespace);
+    for (const auto &device : devices_) {
+        writer->writeStartElement(QStringLiteral("device"));
+        writer->writeAttribute(QStringLiteral("id"), device.id);
+        if (!device.label.isEmpty())
+            writer->writeAttribute(QStringLiteral("label"), device.label);
+        if (!device.labelSignature.isEmpty())
+            writer->writeAttribute(QStringLiteral("labelsig"), device.labelSignature);
+        writer->writeEndElement();
+    }
+    writer->writeEndElement();
 }
 
 bool XmppOmemoBundleItem::isItem(const QDomElement &element) { return hasPayload(element, QStringLiteral("bundle")); }

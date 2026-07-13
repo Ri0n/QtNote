@@ -1,6 +1,7 @@
 #include "xmppomemopubsubitems.h"
 
 #include <QDomDocument>
+#include <QXmlStreamWriter>
 #include <QtTest>
 
 using namespace QtNote;
@@ -10,6 +11,7 @@ class XmppOmemoPubSubItemsTest : public QObject {
 
 private slots:
     void parsesDeviceList();
+    void serializesDeviceList();
     void parsesBundleIdentityKey();
 };
 
@@ -26,6 +28,19 @@ void XmppOmemoPubSubItemsTest::parsesDeviceList()
     QCOMPARE(item.devices().size(), 2);
     QCOMPARE(item.devices().at(1).id, QStringLiteral("672"));
     QCOMPARE(item.devices().at(1).label, QStringLiteral("QtNote-two"));
+}
+
+void XmppOmemoPubSubItemsTest::serializesDeviceList()
+{
+    XmppOmemoDeviceListItem item;
+    item.setId(QStringLiteral("current"));
+    item.setDevices({ { QStringLiteral("QtNote-one"), QStringLiteral("9523"), QStringLiteral("signature") },
+                      { QStringLiteral("QtNote-two"), QStringLiteral("672"), {} } });
+    QString          xml;
+    QXmlStreamWriter writer(&xml);
+    item.toXml(&writer);
+    QVERIFY(xml.contains(QStringLiteral("<device id=\"9523\" label=\"QtNote-one\" labelsig=\"signature\"")));
+    QVERIFY(xml.contains(QStringLiteral("<device id=\"672\" label=\"QtNote-two\"")));
 }
 
 void XmppOmemoPubSubItemsTest::parsesBundleIdentityKey()
