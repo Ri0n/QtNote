@@ -633,6 +633,13 @@ XmppKeyAuditResult XmppWorker::auditStorageKeys()
     QStringList errors;
     if (!discoveryError.isEmpty())
         errors.append(discoveryError);
+
+    // setUp() and device discovery may populate peer state again. Drop it at the last possible
+    // moment so encryptIq() must establish a fresh session from the published bundle.
+    if (!awaitVoidTask(omemoStorage_->removeAllDevices(), config_.timeoutMs, &waitError)) {
+        output.error = QStringLiteral("Could not reset OMEMO sessions before key sync: %1").arg(waitError);
+        return output;
+    }
     for (const auto &resource : qtNoteResources) {
         const auto requestId = newUuid();
         auto       result = awaitTask(client_->sendSensitiveIq(keySyncExtension_->makeRequest(resource, requestId), {}),

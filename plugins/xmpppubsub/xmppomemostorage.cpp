@@ -3,6 +3,7 @@
 #include "secureenvelope.h"
 
 #include <QDataStream>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -188,6 +189,8 @@ QXmppTask<void> XmppOmemoStorage::removePreKeyPair(uint32_t id)
 }
 QXmppTask<void> XmppOmemoStorage::addDevice(const QString &jid, uint32_t id, const Device &value)
 {
+    qInfo().noquote() << "OMEMO peer state write: jid=" << jid << "device=" << id
+                      << "key-id-size=" << value.keyId.size() << "session-size=" << value.session.size();
     data_.devices[jid][id] = value;
     persist();
     return done();
@@ -206,6 +209,10 @@ QXmppTask<void> XmppOmemoStorage::removeDevices(const QString &jid)
 }
 QXmppTask<void> XmppOmemoStorage::removeAllDevices()
 {
+    qsizetype deviceCount = 0;
+    for (auto owner = data_.devices.cbegin(); owner != data_.devices.cend(); ++owner)
+        deviceCount += owner.value().size();
+    qInfo() << "Clearing all cached OMEMO peer states: owners=" << data_.devices.size() << "devices=" << deviceCount;
     data_.devices.clear();
     persist();
     return done();
