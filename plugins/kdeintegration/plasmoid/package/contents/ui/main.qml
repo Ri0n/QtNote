@@ -39,6 +39,7 @@ PlasmoidItem {
 
     QtNote.NotesModel {
         id: notesModel
+        inSystemTray: Plasmoid.inSystemTray
     }
 
     compactRepresentation: CompactRepresentation {

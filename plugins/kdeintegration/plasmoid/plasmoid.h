@@ -20,6 +20,7 @@ class NotesModel : public QAbstractListModel {
     Q_PROPERTY(bool loadingMore READ loadingMore NOTIFY loadingMoreChanged)
     Q_PROPERTY(bool hasMore READ hasMore NOTIFY hasMoreChanged)
     Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY queryChanged)
+    Q_PROPERTY(bool inSystemTray READ inSystemTray WRITE setInSystemTray NOTIFY inSystemTrayChanged)
 
 public:
     enum Role {
@@ -43,6 +44,18 @@ public:
     QString query() const;
     void    setQuery(const QString &query);
 
+    bool inSystemTray() const { return m_inSystemTray; }
+
+    void setInSystemTray(bool value)
+    {
+        if (m_inSystemTray == value) {
+            return;
+        }
+
+        m_inSystemTray = value;
+        emit inSystemTrayChanged();
+    }
+
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
     Q_INVOKABLE void openNote(int row, QWindow *activationWindow = nullptr);
@@ -59,6 +72,7 @@ signals:
     void loadingMoreChanged();
     void hasMoreChanged();
     void queryChanged();
+    void inSystemTrayChanged();
 
 private slots:
     void serviceRegistered();
@@ -98,6 +112,9 @@ private:
     bool                 m_starting      = false;
     quint64              m_requestSerial = 0;
     int                  m_pageSize      = 50;
+
+    bool m_inSystemTray               = false;
+    bool m_backendAutostartSuppressed = false;
 };
 
 #endif
