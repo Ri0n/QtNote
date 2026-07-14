@@ -382,7 +382,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::verifyPrivateStorageSupportTask()
     co_return XmppStatusResult { true };
 }
 
-QCoro::Task<XmppStatusResult> XmppWorker::verifyNodeTask(const QString &nodeName)
+QCoro::Task<XmppStatusResult> XmppWorker::verifyNodeTask(QString nodeName)
 {
     auto result = co_await pubSub_->requestOwnPepNodeConfiguration(nodeName).toFuture(this);
     if (const auto *error = std::get_if<QXmppError>(&result)) {
@@ -400,7 +400,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::verifyNodeTask(const QString &nodeName
     co_return XmppStatusResult { true };
 }
 
-QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(const QString &nodeName)
+QCoro::Task<XmppStatusResult> XmppWorker::ensureNodeTask(QString nodeName)
 {
     auto request = co_await pubSub_->requestOwnPepNodeConfiguration(nodeName).toFuture(this);
     if (const auto *requestError = std::get_if<QXmppError>(&request)) {
@@ -723,7 +723,7 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
     co_return output;
 }
 
-QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(const QString &id)
+QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id)
 {
     XmppNoteResult output;
     auto           indexResult
@@ -772,7 +772,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(const QString &id)
     co_return output;
 }
 
-QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(const QString &id)
+QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(QString id)
 {
     const auto ready = co_await ensureReadyTask();
     if (!ready.ok) {
@@ -849,7 +849,7 @@ QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
     co_return co_await publishNoteTask(std::move(note));
 }
 
-QCoro::Task<XmppStatusResult> XmppWorker::deleteNoteTask(const QString &id)
+QCoro::Task<XmppStatusResult> XmppWorker::deleteNoteTask(QString id)
 {
     auto status = co_await ensureReadyTask();
     if (!status.ok)
@@ -957,7 +957,7 @@ QCoro::Task<XmppStatusResult> XmppWorker::ownOmemoBundleValidTask()
     co_return XmppStatusResult { true };
 }
 
-QCoro::Task<XmppStatusResult> XmppWorker::trustOwnOmemoDeviceTask(const QByteArray &keyId)
+QCoro::Task<XmppStatusResult> XmppWorker::trustOwnOmemoDeviceTask(QByteArray keyId)
 {
     if (keyId.isEmpty())
         co_return XmppStatusResult { false, false, false, QStringLiteral("No OMEMO device was selected") };
@@ -1281,7 +1281,7 @@ QCoro::Task<XmppRekeyResult> XmppWorker::rekeyStorageTask(QList<QByteArray> keys
     co_return output;
 }
 
-QCoro::Task<> XmppWorker::approveKeySyncRequestTask(const QString &requestId)
+QCoro::Task<> XmppWorker::approveKeySyncRequestTask(QString requestId)
 {
     const auto pending = pendingInboundKeyRequests_.take(requestId);
     if (pending.senderKey.isEmpty()) {

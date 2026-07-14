@@ -61,26 +61,28 @@ private:
     void connectToServerAsync(StatusCallback callback);
     QCoro::Task<XmppStatusResult> connectToServerTask();
     QCoro::Task<XmppStatusResult> verifyPrivateStorageSupportTask();
-    QCoro::Task<XmppStatusResult> verifyNodeTask(const QString &nodeName);
-    QCoro::Task<XmppStatusResult> ensureNodeTask(const QString &nodeName);
+    // Coroutine arguments used after co_await must be owned by the coroutine
+    // frame. References here would outlive callers and become dangling.
+    QCoro::Task<XmppStatusResult> verifyNodeTask(QString nodeName);
+    QCoro::Task<XmppStatusResult> ensureNodeTask(QString nodeName);
     QCoro::Task<XmppStatusResult> ensureOmemoTask();
     QCoro::Task<XmppStatusResult> ensureReadyTask();
 
     QCoro::Task<XmppListResult>                            listNotesTask();
-    QCoro::Task<XmppNoteResult>                            requestNoteTask(const QString &id);
-    QCoro::Task<XmppNoteResult>                            getNoteTask(const QString &id);
+    QCoro::Task<XmppNoteResult>                            requestNoteTask(QString id);
+    QCoro::Task<XmppNoteResult>                            getNoteTask(QString id);
     QCoro::Task<XmppNoteResult>                            publishNoteTask(XmppRemoteNote note);
     QCoro::Task<XmppNoteResult>                            saveNoteTask(XmppRemoteNote localNote);
-    QCoro::Task<XmppStatusResult>                          deleteNoteTask(const QString &id);
+    QCoro::Task<XmppStatusResult>                          deleteNoteTask(QString id);
     QCoro::Task<std::pair<QList<XmppDeviceInfo>, QString>> ownOmemoDevicesTask();
     QCoro::Task<XmppStatusResult>                          ownOmemoBundleValidTask();
     QCoro::Task<XmppStatusResult>                          repairOwnOmemoDeviceTask();
-    QCoro::Task<XmppStatusResult>                          trustOwnOmemoDeviceTask(const QByteArray &keyId);
+    QCoro::Task<XmppStatusResult>                          trustOwnOmemoDeviceTask(QByteArray keyId);
     QCoro::Task<XmppStatusResult>                          trustOwnOmemoDevicesTask(QList<QByteArray> keyIds);
     QCoro::Task<std::pair<QStringList, QString>>           onlineQtNoteResourcesTask();
     QCoro::Task<XmppKeyAuditResult>                        auditStorageKeysTask();
     QCoro::Task<XmppRekeyResult> rekeyStorageTask(QList<QByteArray> keys, QByteArray canonicalKey);
-    QCoro::Task<>                approveKeySyncRequestTask(const QString &requestId);
+    QCoro::Task<>                approveKeySyncRequestTask(QString requestId);
     QCoro::Task<>                handleKeySyncRequestTask(QString requestId, QString from, QByteArray senderKey);
     QCoro::Task<>                cacheOwnOmemoBundleTask();
     QCoro::Task<>                repairOwnOmemoBundleAfterPreKeyUseTask(int attemptsRemaining);
