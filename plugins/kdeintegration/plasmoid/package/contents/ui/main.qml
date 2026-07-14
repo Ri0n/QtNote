@@ -9,6 +9,7 @@ import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import QtQuick.Layouts
 import plasma.applet.com.github.ri0n.qtnote 1.0 as QtNote
 
 PlasmoidItem {
@@ -58,7 +59,16 @@ PlasmoidItem {
 
         plasmoidItem: root
         notesModel: notesModel
+        inSystemTray: Plasmoid.inSystemTray
         newNoteAction: newNoteAction
+        noteManagerAction: noteManagerAction
+        configureAction: configureAction
+
+        Layout.minimumWidth: Kirigami.Units.gridUnit * 16
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 22
+
+        Layout.minimumHeight: Kirigami.Units.gridUnit * 16
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 22
     }
 
     Plasmoid.contextualActions: [
@@ -73,11 +83,13 @@ PlasmoidItem {
             }
         },
         PlasmaCore.Action {
+            id: configureAction
             text: qsTr("Configure QtNote...")
             icon.name: "configure"
             onTriggered: notesModel.showOptions(root.Window.window)
         },
         PlasmaCore.Action {
+            id: noteManagerAction
             text: qsTr("Note Manager")
             icon.name: "view-list-details"
             onTriggered: notesModel.showNoteManager(root.Window.window)

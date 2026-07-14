@@ -19,11 +19,12 @@ PlasmaExtras.Representation {
 
     required property PlasmoidItem plasmoidItem
     required property var notesModel
+    required property bool inSystemTray
     required property var newNoteAction
+    required property var noteManagerAction
+    required property var configureAction
 
     collapseMarginsHint: true
-    implicitWidth: Kirigami.Units.gridUnit * 18
-    implicitHeight: Kirigami.Units.gridUnit * 22
 
     readonly property bool hasFilter: root.notesModel.query.length > 0
     property int focusAttempts: 0
@@ -67,8 +68,64 @@ PlasmaExtras.Representation {
     header: PlasmaExtras.PlasmoidHeading {
         visible: true
 
-        contentItem: RowLayout {
+        contentItem: ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
+
+            RowLayout {
+                Layout.fillWidth: true
+                visible: !root.inSystemTray
+                spacing: Kirigami.Units.smallSpacing
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                PlasmaComponents3.ToolButton {
+                    id: newNoteButton
+
+                    text: root.newNoteAction.text
+                    icon.name: root.newNoteAction.icon.name
+                    display: QQC2.AbstractButton.IconOnly
+                    enabled: root.newNoteAction.enabled
+                    onClicked: root.newNoteAction.trigger()
+
+                    Accessible.name: text
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.text: text
+                }
+
+                PlasmaComponents3.ToolButton {
+                    id: noteManagerButton
+
+                    text: root.noteManagerAction.text
+                    icon.name: root.noteManagerAction.icon.name
+                    display: QQC2.AbstractButton.IconOnly
+                    enabled: root.noteManagerAction.enabled
+                    onClicked: root.noteManagerAction.trigger()
+
+                    Accessible.name: text
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.text: text
+                }
+
+                PlasmaComponents3.ToolButton {
+                    id: configureButton
+
+                    text: root.configureAction.text
+                    icon.name: root.configureAction.icon.name
+                    display: QQC2.AbstractButton.IconOnly
+                    enabled: root.configureAction.enabled
+                    onClicked: root.configureAction.trigger()
+
+                    Accessible.name: text
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.text: text
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+            }
 
             PlasmaExtras.SearchField {
                 id: filterField
