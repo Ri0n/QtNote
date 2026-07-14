@@ -18,9 +18,15 @@ PlasmoidItem {
     switchHeight: Kirigami.Units.gridUnit * 12
 
     Plasmoid.icon: "qtnote-symbolic"
-    Plasmoid.status: notesModel.available
-        ? PlasmaCore.Types.ActiveStatus
-        : PlasmaCore.Types.HiddenStatus
+    Plasmoid.status: {
+        if (!Plasmoid.inSystemTray) {
+            return PlasmaCore.Types.ActiveStatus;
+        }
+
+        return notesModel.available
+            ? PlasmaCore.Types.ActiveStatus
+            : PlasmaCore.Types.HiddenStatus;
+    }
 
     toolTipMainText: qsTr("Notes")
     toolTipSubText: notesModel.available
