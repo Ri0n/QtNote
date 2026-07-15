@@ -26,6 +26,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QString>
 #include <QStringList>
 #include <QVariant>
+#include <QVariantMap>
 #include <qdatetime.h>
 
 #include "qtnote_export.h"
@@ -73,6 +74,8 @@ public:
     Format       format() const;
     QDateTime    lastChangeUTC() const;
     QVariant     backendValue(const QString &key) const;
+    QVariantMap  backendData() const;
+    void         setBackendData(const QVariantMap &values);
     bool         isUpdated() const;
 
 private:

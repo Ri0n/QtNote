@@ -693,10 +693,13 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
                             return;
                         }
                         if (!result.ok) {
-                            if (result.remoteOnConflict)
-                                cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
-                            guard->fail(
-                                storageError(result, result.conflict ? StorageError::Conflict : StorageError::Network));
+                            auto error = storageError(result,
+                                                      result.conflict ? StorageError::Conflict : StorageError::Network);
+                            if (result.remoteOnConflict) {
+                                error.remoteNote = fromRemote(*result.remoteOnConflict);
+                                cache_.insert(result.remoteOnConflict->id, error.remoteNote);
+                            }
+                            guard->fail(error);
                             return;
                         }
                         auto       saved   = fromRemote(result.note);
@@ -799,6 +802,16 @@ void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
         && previousParentRevision == remote.parentRevision && previousRevision != remote.revision;
 
     auto incoming = fromRemote(remote);
+
+    // XEP-0060 has no atomic compare-and-swap. Two writers can therefore both
+    // pass the revision check and publish sibling revisions. Only the device
+    // that authored the displaced local revision creates a conflict copy;
+    // other devices merely converge on the latest server item.
+    if (siblingConflict && previous.isLoaded()
+        && previous.backendValue(QStringLiteral("originId")).toString() == config_.originId) {
+        DraftManager::instance()->resolveConcurrentEdit(
+            previous, incoming, tr("Parallel XMPP note revisions were detected after publication."));
+    }
     cache_.insert(remote.id, incoming);
     cacheValid_ = true;
 

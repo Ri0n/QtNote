@@ -16,6 +16,8 @@ struct QTNOTE_EXPORT StorageError {
     Code    code { None };
     QString message;
     bool    retryable { false };
+    /// Current remote note supplied with a Conflict when the storage can provide it.
+    Note remoteNote;
 
     explicit operator bool() const { return code != None; }
 };

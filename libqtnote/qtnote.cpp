@@ -134,6 +134,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         return;
     }
     connect(DraftManager::instance(), &DraftManager::publicationAbandoned, this, &Main::notifyError);
+    connect(DraftManager::instance(), &DraftManager::conflictResolved, this, &Main::notifyError);
 
     _pluginManager = new PluginManager(this);
     _pluginManager->loadPlugins();

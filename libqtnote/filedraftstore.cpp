@@ -10,7 +10,7 @@
 namespace QtNote {
 namespace {
     constexpr quint32 PayloadMagic   = 0x514e4450; // QNDP
-    constexpr quint16 PayloadVersion = 2;
+    constexpr quint16 PayloadVersion = 3;
 
     DraftStoreError error(DraftStoreError::Code code, const QString &message) { return { code, message }; }
 
@@ -21,7 +21,7 @@ namespace {
         out.setVersion(QDataStream::Qt_5_10);
         out << PayloadMagic << PayloadVersion << record.id << quint8(record.state) << record.storageId
             << record.remoteNoteId << record.title << record.body << quint8(record.format) << record.tags
-            << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation);
+            << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation) << record.backendData;
         return bytes;
     }
 
@@ -42,6 +42,8 @@ namespace {
             >> record.tags >> record.updatedAt >> record.lastError >> record.retryAt;
         if (version >= 2)
             in >> operation;
+        if (version >= 3)
+            in >> record.backendData;
         if (in.status() != QDataStream::Ok || record.id.isNull() || state > DraftRecord::NeedsRouting
             || format > Note::Html || operation > DraftRecord::Delete) {
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft payload")) };

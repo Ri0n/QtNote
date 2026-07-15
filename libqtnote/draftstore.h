@@ -8,6 +8,7 @@
 #include <QString>
 #include <QStringList>
 #include <QUuid>
+#include <QVariantMap>
 
 namespace QtNote {
 
@@ -33,9 +34,12 @@ struct QTNOTE_EXPORT DraftRecord {
     QString      body;
     Note::Format format { Note::PlainText };
     QStringList  tags;
-    QDateTime    updatedAt;
-    QString      lastError;
-    QDateTime    retryAt;
+    // Opaque storage-specific state (XMPP revision, Nextcloud ETag, Keep base
+    // version, ...), captured when editing starts and restored before save.
+    QVariantMap backendData;
+    QDateTime   updatedAt;
+    QString     lastError;
+    QDateTime   retryAt;
 };
 
 struct QTNOTE_EXPORT DraftStoreError {

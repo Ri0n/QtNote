@@ -570,10 +570,13 @@ NoteSaveJob *NextcloudStorage::saveNoteAsync(const Note &note, QObject *owner)
                     if (!guard || guard->isFinished())
                         return;
                     if (!result.ok) {
-                        if (result.remoteOnConflict)
-                            cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
-                        guard->fail({ result.conflict ? StorageError::Conflict : StorageError::Network, result.error,
-                                      !result.conflict });
+                        StorageError error { result.conflict ? StorageError::Conflict : StorageError::Network,
+                                             result.error, !result.conflict };
+                        if (result.remoteOnConflict) {
+                            error.remoteNote = fromRemote(*result.remoteOnConflict);
+                            cache_.insert(result.remoteOnConflict->id, error.remoteNote);
+                        }
+                        guard->fail(error);
                         return;
                     }
                     auto       saved   = fromRemote(result.note);

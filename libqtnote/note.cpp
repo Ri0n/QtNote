@@ -110,6 +110,14 @@ QDateTime Note::lastChangeUTC() const { return d ? d->lastChange_ : QDateTime();
 
 QVariant Note::backendValue(const QString &key) const { return d ? d->backendValue(key) : QVariant(); }
 
+QVariantMap Note::backendData() const { return d ? d->backendData_ : QVariantMap {}; }
+
+void Note::setBackendData(const QVariantMap &values)
+{
+    if (d)
+        d->backendData_ = values;
+}
+
 bool Note::isUpdated() const
 {
     if (isNull() || id().isEmpty() || !storage()) {
