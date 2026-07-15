@@ -34,7 +34,7 @@ static DraftRecord sampleRecord()
     record.title        = QStringLiteral("Sensitive title");
     record.body         = QStringLiteral("Sensitive body that must not occur in the ciphertext");
     record.format       = Note::Markdown;
-    record.tags         = { QStringLiteral("private"), QStringLiteral("work") };
+    record.tags         = QStringList { QStringLiteral("private"), QStringLiteral("work") };
     record.backendData.insert(QStringLiteral("etag"), QStringLiteral("base-etag"));
     record.backendData.insert(QStringLiteral("revision"), QStringLiteral("base-revision"));
     record.updatedAt = QDateTime::currentDateTimeUtc();

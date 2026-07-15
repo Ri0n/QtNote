@@ -90,7 +90,7 @@ void SecureEnvelopeTest::opensLargeEnvelope()
     const AeadContext context { KeyDomain::OmemoState, QStringLiteral("xmpp-omemo"),
                                 QStringLiteral("account@example.org"), 1, QStringLiteral("state") };
     QByteArray        plainText(16467, '\0');
-    for (qsizetype i = 0; i < plainText.size(); ++i)
+    for (int i = 0; i < plainText.size(); ++i)
         plainText[i] = char(i % 251);
 
     const auto sealed = SecureEnvelope::seal(plainText, key, context);

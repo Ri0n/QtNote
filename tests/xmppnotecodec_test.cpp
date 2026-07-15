@@ -36,7 +36,7 @@ static XmppRemoteNote note()
     note.originId = QStringLiteral("device");
     note.title    = QStringLiteral("Secret title");
     note.content  = QStringLiteral("Secret body");
-    note.tags     = { QStringLiteral("one"), QStringLiteral("two") };
+    note.tags     = QStringList { QStringLiteral("one"), QStringLiteral("two") };
     note.modified = QDateTime::currentDateTimeUtc();
     return note;
 }
