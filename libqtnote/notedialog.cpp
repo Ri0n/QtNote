@@ -28,16 +28,19 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QScreen>
 #include <QSettings>
 
+#include "deintegrationinterface.h"
 #include "notedialog.h"
 #include "notestorage.h"
 #include "notewidget.h"
+#include "qtnote.h"
 #include "typeaheadfind.h"
 #include "ui_notedialog.h"
 #include "utils.h"
 
 namespace QtNote {
 
-NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget)
+NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
+    QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget), main(main)
 {
     setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) | Qt::WindowSystemMenuHint
                    | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
@@ -55,18 +58,32 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     setLayout(l);
 
     QRect rect;
+    bool  geometryHandled = false;
     if (!noteWidget->note().id().isEmpty()) {
-        auto note = noteWidget->note();
-        rect      = QSettings().value(QString("geometry.%1.%2").arg(note.storageId(), note.id())).toRect();
-        if (!rect.isValid() || !screen()->geometry().contains(rect)) {
+        auto          note          = noteWidget->note();
+        const QString geometryKey   = QString("geometry.%1.%2").arg(note.storageId(), note.id());
+        const auto    restoreResult = main->restoreWindowGeometry(this, geometryKey);
+        geometryHandled             = restoreResult != WindowGeometryRestoreResult::Unsupported;
+        rect                        = QSettings().value(geometryKey).toRect();
+        if (restoreResult == WindowGeometryRestoreResult::Pending) {
+            // Wayland applications cannot choose their global position, but they
+            // still own their initial size while KWin restores frameGeometry.
+            if (rect.isValid())
+                resize(rect.size());
+            else
+                resize(sizeHint());
             rect = {};
+        } else if (!geometryHandled) {
+            if (!rect.isValid() || !screen()->geometry().contains(rect)) {
+                rect = {};
+            }
         }
 
         Q_ASSERT(!NoteDialog::findDialog(noteWidget->note().storageId(), noteWidget->note().id()));
         NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->note().storageId(), noteWidget->note().id()),
                                    this);
     }
-    if (rect.isEmpty()) {
+    if (rect.isEmpty() && !geometryHandled) {
         QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
         int   x     = QRandomGenerator::global()->bounded(avail.width() / 4, avail.width() / 2);
         int   y     = QRandomGenerator::global()->bounded(avail.height() / 4, avail.height() / 2);
@@ -81,6 +98,8 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget) : QDialog(0), m_ui(new Ui::NoteDi
     connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
         if (oldId.isEmpty() && !newId.isEmpty()) {
             NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->note().storageId(), newId), this);
+            const QString key = QString("geometry.%1.%2").arg(this->noteWidget->note().storageId(), newId);
+            this->main->restoreWindowGeometry(this, key);
         }
     });
     connect(noteWidget, &NoteWidget::firstLineChanged, this, &NoteDialog::firstLineChanged);
@@ -125,9 +144,11 @@ void NoteDialog::done(int r)
         QString   key
             = QString("geometry.%1.%2").arg(noteWidget->note().storage()->systemName(), noteWidget->note().id());
         if (noteWidget->isTrashRequested()) {
+            main->removeWindowGeometry(key);
             s.remove(key);
         } else {
-            s.setValue(key, geometry());
+            if (!main->saveWindowGeometry(this, key))
+                s.setValue(key, geometry());
         }
         NoteDialog::dialogs.remove(
             QPair<QString, QString>(noteWidget->note().storage()->systemName(), noteWidget->note().id()));

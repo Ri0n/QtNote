@@ -10,6 +10,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSettings>
 #include <QtGlobal>
 
 #include "notemanager.h"
@@ -123,6 +124,33 @@ QString QtNoteDBus::globalShortcutsJson() const
     }
     return QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact));
 }
+
+QString QtNoteDBus::claimWindowGeometry()
+{
+    const QString key = m_qtnote->takePendingWindowGeometryKey();
+    if (key.isEmpty())
+        return {};
+
+    const QRect rect = QSettings().value(key).toRect();
+    return QString::fromUtf8(QJsonDocument(QJsonObject {
+                                               { QStringLiteral("key"), key },
+                                               { QStringLiteral("valid"), rect.isValid() },
+                                               { QStringLiteral("x"), rect.x() },
+                                               { QStringLiteral("y"), rect.y() },
+                                               { QStringLiteral("width"), rect.width() },
+                                               { QStringLiteral("height"), rect.height() },
+                                           })
+                                 .toJson(QJsonDocument::Compact));
+}
+
+void QtNoteDBus::storeWindowGeometry(const QString &key, int x, int y, int width, int height)
+{
+    if (!key.startsWith(QLatin1String("geometry.")) || width <= 0 || height <= 0)
+        return;
+    QSettings().setValue(key, QRect(x, y, width, height));
+}
+
+void QtNoteDBus::windowGeometryScriptReady() { qInfo("QtNote KWin geometry script is ready"); }
 
 void QtNoteDBus::openNote(const QString &storageId, const QString &noteId)
 {

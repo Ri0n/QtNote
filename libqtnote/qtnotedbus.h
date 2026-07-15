@@ -37,6 +37,9 @@ signals:
 public slots:
     Q_SCRIPTABLE QString notesJson(int offset, int limit, const QString &query) const;
     Q_SCRIPTABLE QString globalShortcutsJson() const;
+    Q_SCRIPTABLE QString claimWindowGeometry();
+    Q_SCRIPTABLE void    storeWindowGeometry(const QString &key, int x, int y, int width, int height);
+    Q_SCRIPTABLE void    windowGeometryScriptReady();
     Q_SCRIPTABLE void    setXdgActivationToken(const QString &token);
     Q_SCRIPTABLE void    openNote(const QString &storageId, const QString &noteId);
     Q_SCRIPTABLE void    createNote();

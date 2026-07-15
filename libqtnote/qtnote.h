@@ -39,6 +39,7 @@ class ShortcutsManager;
 class NoteWidget;
 class TrayImpl;
 class DEIntegrationInterface;
+enum class WindowGeometryRestoreResult;
 class GlobalShortcutsInterface;
 class NotificationInterface;
 class NoteDialog;
@@ -53,10 +54,14 @@ public:
     bool isOperable() const { return _inited; }
     void parseAppArguments(const QStringList &args);
 
-    NoteWidget       *noteWidget(const Note &note, const QUuid &draftId = {});
-    virtual void      activateWidget(QWidget *w) const; // virtual for plugins
-    ShortcutsManager *shortcutsManager() const { return _shortcutsManager; }
-    PluginManager    *pluginManager() const { return _pluginManager; }
+    NoteWidget                 *noteWidget(const Note &note, const QUuid &draftId = {});
+    virtual void                activateWidget(QWidget *w) const; // virtual for plugins
+    WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) const;
+    bool                        saveWindowGeometry(QWidget *w, const QString &key) const;
+    bool                        removeWindowGeometry(const QString &key) const;
+    QString                     takePendingWindowGeometryKey() const;
+    ShortcutsManager           *shortcutsManager() const { return _shortcutsManager; }
+    PluginManager              *pluginManager() const { return _pluginManager; }
 
     void setTrayImpl(TrayImpl *tray);
     void setExternalTrayAvailable(bool available);

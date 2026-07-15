@@ -216,7 +216,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         note.setTitle(draft.title);
         note.setText(draft.body, draft.format);
         auto *widget = noteWidget(note, draft.id);
-        auto *dialog = new NoteDialog(widget);
+        auto *dialog = new NoteDialog(widget, this);
         dialog->setWindowIcon(storage->noteIcon());
         dialog->show();
     }
@@ -344,7 +344,7 @@ void Main::openNoteDialog(const QString &storageId, const QString &noteId)
         if (!dlg) {
             auto  storage = NoteManager::instance()->storage(storageId);
             auto *nw      = noteWidget(job->result());
-            dlg           = new NoteDialog(nw);
+            dlg           = new NoteDialog(nw, this);
             dlg->setWindowIcon(storage->noteIcon());
             dlg->setWindowState(Qt::WindowNoState);
         }
@@ -372,7 +372,7 @@ NoteDialog *Main::makeNoteDialog(const QString &storageId, const QString &noteId
     if (!nw) {
         return nullptr;
     }
-    auto dlg = new NoteDialog(nw);
+    auto dlg = new NoteDialog(nw, this);
     dlg->setWindowIcon(storage->noteIcon());
     dlg->setWindowState(Qt::WindowNoState);
     return dlg;
@@ -381,6 +381,17 @@ NoteDialog *Main::makeNoteDialog(const QString &storageId, const QString &noteId
 void Main::notifyError(const QString &text) { d->notifier->notifyError(text); }
 
 void Main::activateWidget(QWidget *w) const { d->de->activateWidget(w); }
+
+WindowGeometryRestoreResult Main::restoreWindowGeometry(QWidget *w, const QString &key) const
+{
+    return d->de->restoreWindowGeometry(w, key);
+}
+
+bool Main::saveWindowGeometry(QWidget *w, const QString &key) const { return d->de->saveWindowGeometry(w, key); }
+
+bool Main::removeWindowGeometry(const QString &key) const { return d->de->removeWindowGeometry(key); }
+
+QString Main::takePendingWindowGeometryKey() const { return d->de->takePendingWindowGeometryKey(); }
 
 void Main::setTrayImpl(TrayImpl *tray) { d->tray = tray; }
 

@@ -1,0 +1,19 @@
+{
+    "KPlugin": {
+        "Name": "QtNote Window Geometry",
+        "Description": "Restores QtNote note windows on Wayland",
+        "Icon": "qtnote",
+        "Id": "qtnotewindowgeometry",
+        "Version": "1.0",
+        "License": "GPLv3",
+        "Authors": [
+            {
+                "Name": "Sergei Ilinykh",
+                "Email": "rion@jabber.ru"
+            }
+        ]
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KPackageStructure": "KWin/Script"
+}

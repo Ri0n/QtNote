@@ -31,12 +31,13 @@ class NoteDialog;
 namespace QtNote {
 
 class NoteWidget;
+class Main;
 
 class NoteDialog : public QDialog {
     Q_OBJECT
     Q_DISABLE_COPY(NoteDialog)
 public:
-    explicit NoteDialog(NoteWidget *noteWidget);
+    explicit NoteDialog(NoteWidget *noteWidget, Main *main);
     virtual ~NoteDialog();
 
     static NoteDialog *findDialog(const QString &storageId, const QString &noteId);
@@ -52,6 +53,7 @@ private slots:
 private:
     Ui::NoteDialog *m_ui;
     NoteWidget     *noteWidget;
+    Main           *main;
 
     static QHash<QPair<QString, QString>, NoteDialog *> dialogs;
 

@@ -2,6 +2,7 @@
 #define KDEINTEGRATION_H
 
 #include <QObject>
+#include <QQueue>
 
 #include "deintegrationinterface.h"
 #include "globalshortcutsinterface.h"
@@ -32,9 +33,13 @@ public:
     virtual PluginMetadata metadata() override;
     void                   setHost(PluginHostInterface *host) override;
 
-    TrayImpl *initTray(Main *qtnote) override;
-    void      notifyError(const QString &msg) override;
-    void      activateWidget(QWidget *w) override;
+    TrayImpl                   *initTray(Main *qtnote) override;
+    void                        notifyError(const QString &msg) override;
+    void                        activateWidget(QWidget *w) override;
+    WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        saveWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        removeWindowGeometry(const QString &key) override;
+    QString                     takePendingWindowGeometryKey() override;
 
     bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action) override;
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key) override;
@@ -46,7 +51,11 @@ public slots:
     void activator();
 
 private:
+    bool ensureWaylandGeometryScript();
+
     QHash<QString, QAction *> _shortcuts;
+    QQueue<QString>           _pendingWindowGeometryKeys;
+    bool                      _waylandGeometryScriptAvailable = false;
 };
 
 } // namespace QtNote

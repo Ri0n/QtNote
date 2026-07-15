@@ -116,9 +116,10 @@ endif()
 find_package(KF${QT_VERSION_MAJOR}GlobalAccel CONFIG)
 find_package(KF${QT_VERSION_MAJOR}Notifications CONFIG)
 find_package(KF${QT_VERSION_MAJOR}WindowSystem CONFIG)
+find_package(KF${QT_VERSION_MAJOR}Config CONFIG)
 
 set(kdeintegration_buildable OFF)
-if(KF${QT_VERSION_MAJOR}GlobalAccel_FOUND AND KF${QT_VERSION_MAJOR}Notifications_FOUND AND KF${QT_VERSION_MAJOR}WindowSystem_FOUND)
+if(KF${QT_VERSION_MAJOR}GlobalAccel_FOUND AND KF${QT_VERSION_MAJOR}Notifications_FOUND AND KF${QT_VERSION_MAJOR}WindowSystem_FOUND AND KF${QT_VERSION_MAJOR}Config_FOUND)
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS DBus REQUIRED)
     set(kdeintegration_buildable ON)
 endif()
@@ -139,11 +140,14 @@ add_qtnote_plugin(kdeintegration "Integration with KDE Plasma" ${kdeintegration_
     kdeintegration.qrc
     kdeintegrationtray.cpp
     kdeintegrationtray.h
+    kwinscript/metadata.json
+    kwinscript/contents/code/main.js
 )
 
 target_link_libraries(kdeintegration qtnote Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::DBus
-    KF${QT_VERSION_MAJOR}::GlobalAccel KF${QT_VERSION_MAJOR}::Notifications KF${QT_VERSION_MAJOR}::WindowSystem)
+    KF${QT_VERSION_MAJOR}::ConfigGui KF${QT_VERSION_MAJOR}::GlobalAccel KF${QT_VERSION_MAJOR}::Notifications
+    KF${QT_VERSION_MAJOR}::WindowSystem)
 
 if("${KF${QT_VERSION_MAJOR}WindowSystem_VERSION}" VERSION_LESS_EQUAL "5.92") # Специфично для Ubuntu 22.04
     target_compile_definitions(kdeintegration PRIVATE OLD_K_FORCE_ACTIVATE)
@@ -163,5 +167,17 @@ if(QTNOTE_DEVEL AND qtnote_plasmoid_buildable)
         QTNOTE_DEVEL_PLASMOID_QML_INSTALL_DIR="${KDE_INSTALL_QMLDIR}/com/github/ri0n/qtnote"
     )
 endif()
+
+if(QTNOTE_DEVEL)
+    target_compile_definitions(kdeintegration PRIVATE
+        QTNOTE_DEVEL_KWIN_SCRIPT="${CMAKE_CURRENT_SOURCE_DIR}/kwinscript/contents/code/main.js"
+    )
+endif()
+
+install(
+    DIRECTORY kwinscript/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/kwin/scripts/qtnotewindowgeometry
+    COMPONENT Libraries
+)
 
 install_qtnote_plugin(kdeintegration)
