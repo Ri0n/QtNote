@@ -221,7 +221,10 @@ sequenceDiagram
     alt server revision differs
         P-->>B: newer revision
         B-->>S: conflict and remote note
-        S-->>O: permanent conflict, retain local draft
+        S-->>O: invoke conflict resolver
+        O->>O: preserve remote winner under original ID
+        O->>S: publish losing local edit as a new note
+        S-->>UI: notify about conflict copy
     else revision matches
         B->>B: generate revision and encrypt content/index
         B->>P: publish content item
@@ -235,13 +238,26 @@ sequenceDiagram
 Conflict detection is optimistic, not atomic compare-and-swap: XEP-0060 has no
 `If-Match` equivalent. A narrow race remains between checking the server
 revision and publishing. `parentRevision` and `originId` preserve enough
-information for a future history/merge implementation.
+information to detect sibling revisions published from the same parent. When a
+PEP event displaces a sibling revision authored by this installation, the same
+resolver is invoked. Other installations converge on the server winner without
+creating duplicate copies.
+
+Conflict handling is policy-based through `ConflictResolver`. The default
+`CopyConflictResolver` is lossless: it retains the visible remote version under
+the original ID, gives the losing local draft a new ID, publishes it as
+`<title> (conflict <local time>)`, and notifies the user. Alternative policies
+can keep the durable draft for an interactive decision, explicitly discard it,
+or later implement a merge UI.
 
 Publishing content and index is also not a server-side transaction. Content is
 published first and index second so readers never observe a new index pointing
 at content that has not been uploaded. A failure between the two publications
 leaves an unreferenced content revision; the durable outbox preserves the local
-draft for retry.
+draft for retry. During a successful publication another reader can briefly
+observe the old index with the new content. QtNote recognizes this revision
+mismatch as a transient inconsistent snapshot and repeats the complete
+index-plus-content read before making a conflict decision.
 
 ### Delete
 
@@ -391,11 +407,13 @@ factory without changing note synchronization or recovery UI.
 
 ## Current limitations
 
-- the XMPP password is still stored in `QSettings`; it should move to the
-  platform keychain;
+- the XMPP password is stored in the platform keychain (with Psi's `xmpp`
+  service used as an import source); `QSettings` remains a compatibility
+  fallback on systems where no usable keychain is available;
 - the note cache is in memory; the durable outbox protects local edits and
   deletions, but a cold start still refreshes indexes from PEP;
-- there is no automatic merge UI or remote revision history;
+- the default resolver creates a lossless conflict copy; there is no automatic
+  merge UI or remote revision history;
 - PubSub does not provide an atomic transaction across revision check, content
   publication, and index publication;
 - the QXmpp implementation is the only backend currently shipped; Iris is an

@@ -293,7 +293,12 @@ result MUST be marked partial; the client MUST NOT infer that missing local
 notes were deleted.
 
 To load a note, the client requests and validates its index item, then requests
-and validates the content item with the same ID and revision.
+and validates the content item with the same ID and revision. Because the two
+items are stored in separate nodes, a reader can observe an old index and new
+content while a writer is between the two publications. An ID/revision mismatch
+in this specific situation SHOULD be treated as a transient inconsistent
+snapshot: the reader SHOULD request both items again. It MUST NOT combine the
+two revisions or report either payload as corrupt solely because of this race.
 
 ### Creating and updating
 
@@ -310,6 +315,37 @@ an index notification pointing to content that has not yet been uploaded.
 Publication is not transactional: after interruption, a content record can be
 newer than the index. Readers MUST regard the index revision as authoritative;
 writers SHOULD retry or repair incomplete publication.
+
+### Concurrent updates and conflict resolution
+
+The revision comparison above is optimistic rather than an atomic
+compare-and-swap. Two writers can load the same revision, both pass the check,
+and publish different child revisions with the same `parentRevision`. These are
+called *sibling revisions*. The last index item accepted by the PubSub service
+is the visible remote version, but the other edit MUST NOT be silently lost by
+a client that still has its plaintext or durable draft.
+
+Conflict detection and conflict resolution are separate concerns. This
+protocol requires a client to preserve the losing local edit and expose it to
+a resolution policy; it does not prescribe a user interface or merge
+algorithm. A policy MAY merge the versions, retain the draft for a later
+decision, discard it with explicit user consent, or publish it as a new note
+with a new note ID. Publishing a conflict copy MUST clear the old revision and
+parent-revision metadata so that it is a genuine create operation rather than
+another update of the contested item.
+
+QtNote's default lossless policy keeps the server winner under the original
+note ID and publishes the losing local edit as a new note titled
+`<title> (conflict <local time>)`. It also notifies the user. For a conflict
+detected before publication, the remote note is passed directly to the policy.
+For sibling revisions detected from a PEP event after publication, only the
+installation that authored the displaced cached revision creates the copy;
+other installations simply converge on the server winner. `originId` is used
+to make that ownership decision and avoid duplicate conflict copies.
+
+Conflict drafts SHOULD be persisted before invoking an interactive or
+asynchronous resolver. A crash, restart, resolver cancellation, or temporary
+publication failure MUST NOT discard the losing edit.
 
 Example index publication:
 
@@ -541,8 +577,8 @@ Errors fall into three classes:
 | Class | Examples | Required behavior |
 | --- | --- | --- |
 | Permanent configuration | bad credentials, no PEP, no publish-options, public/non-persistent node | stop and require user/configuration action |
-| Data/authentication | unknown schema, wrong key ID, GCM failure, ID/revision mismatch, unverified key-sync sender | do not overwrite or auto-repair ciphertext; report or ignore safely |
-| Transient | disconnected network, timeout, temporary server error | retain the operation and retry with bounded exponential backoff |
+| Data/authentication | unknown schema, wrong key ID, GCM failure, persistent ID/revision mismatch, unverified key-sync sender | do not overwrite or auto-repair ciphertext; report or ignore safely |
+| Transient | disconnected network, timeout, temporary server error, index/content mismatch during a publication window | retain the operation and retry with bounded exponential backoff; retry a complete note snapshot for a publication-window mismatch |
 
 Publication and deletion are multi-step operations. A conforming writer SHOULD
 persist enough encrypted operation state to resume after restart. It MUST NOT
