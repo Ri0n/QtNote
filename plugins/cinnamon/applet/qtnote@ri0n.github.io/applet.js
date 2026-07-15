@@ -12,6 +12,9 @@ const BUS_NAME = 'com.github.ri0n.QtNote';
 const OBJECT_PATH = '/QtNote';
 const PAGE_SIZE = 50;
 const SEARCH_DELAY_MS = 250;
+const GEOMETRY_RETRY_MS = 100;
+const GEOMETRY_SAVE_DELAY_MS = 150;
+const MAX_GEOMETRY_ATTEMPTS = 20;
 
 const QTNOTE_IFACE_XML = `
 <node>
@@ -27,6 +30,17 @@ const QTNOTE_IFACE_XML = `
       <arg type="s" name="noteId" direction="in"/>
     </method>
     <method name="createNote"/>
+    <method name="claimWindowGeometry">
+      <arg type="s" name="response" direction="out"/>
+    </method>
+    <method name="storeWindowGeometry">
+      <arg type="s" name="key" direction="in"/>
+      <arg type="i" name="x" direction="in"/>
+      <arg type="i" name="y" direction="in"/>
+      <arg type="i" name="width" direction="in"/>
+      <arg type="i" name="height" direction="in"/>
+    </method>
+    <method name="windowGeometryScriptReady"/>
     <method name="showNoteManager"/>
     <method name="showOptions"/>
     <method name="showAbout"/>
@@ -39,6 +53,192 @@ const QtNoteProxy = Gio.DBusProxy.makeProxyWrapper(QTNOTE_IFACE_XML);
 
 function _(text) {
     return text;
+}
+
+class WindowGeometry {
+    constructor(dbus) {
+        this._dbus = dbus;
+        this._displaySignalId = 0;
+        this._ownerSignalId = 0;
+        this._pid = 0;
+        this._windows = new Map();
+        this._pendingWindows = new Map();
+    }
+
+    enable() {
+        this._updateOwner();
+        this._ownerSignalId = this._dbus.connect('notify::g-name-owner', Lang.bind(this, function() {
+            this._updateOwner();
+        }));
+        this._displaySignalId = global.display.connect('window-created', Lang.bind(this, function(display, window) {
+            this._watch(window);
+        }));
+        let actors = global.get_window_actors();
+        for (let i = 0; i < actors.length; ++i)
+            this._watch(actors[i].meta_window);
+        this._ready();
+    }
+
+    destroy() {
+        if (this._displaySignalId)
+            global.display.disconnect(this._displaySignalId);
+        if (this._ownerSignalId)
+            this._dbus.disconnect(this._ownerSignalId);
+        for (let sourceId of this._pendingWindows.values())
+            Mainloop.source_remove(sourceId);
+        for (let [window, state] of this._windows)
+            this._disconnect(window, state);
+        this._pendingWindows.clear();
+        this._windows.clear();
+    }
+
+    _updateOwner() {
+        this._pid = this._processId();
+        if (this._pid)
+            this._ready();
+    }
+
+    _ready() {
+        this._dbus.windowGeometryScriptReadyRemote(function() {});
+    }
+
+    _processId() {
+        let owner = this._dbus.get_name_owner();
+        if (!owner)
+            return 0;
+        try {
+            let reply = Gio.DBus.session.call_sync(
+                'org.freedesktop.DBus', '/org/freedesktop/DBus',
+                'org.freedesktop.DBus', 'GetConnectionUnixProcessID',
+                new GLib.Variant('(s)', [owner]), null,
+                Gio.DBusCallFlags.NONE, -1, null);
+            return reply.deep_unpack()[0];
+        } catch (error) {
+            global.logError(error, 'Failed to resolve QtNote process ID');
+            return 0;
+        }
+    }
+
+    _isQtNote(window) {
+        if (!this._pid)
+            this._pid = this._processId();
+        let wmClass = window.get_wm_class();
+        return (this._pid && window.get_pid() === this._pid)
+            || (wmClass && wmClass.toLowerCase() === 'qtnote');
+    }
+
+    _watch(window) {
+        if (!window || this._windows.has(window) || this._pendingWindows.has(window))
+            return;
+        let attempt = 0;
+        let tryWatch = Lang.bind(this, function() {
+            attempt++;
+            if (this._isQtNote(window)) {
+                this._pendingWindows.delete(window);
+                this._startWatching(window);
+                return false;
+            }
+            if (attempt >= MAX_GEOMETRY_ATTEMPTS) {
+                this._pendingWindows.delete(window);
+                return false;
+            }
+            return true;
+        });
+        if (!tryWatch())
+            return;
+        this._pendingWindows.set(window, Mainloop.timeout_add(GEOMETRY_RETRY_MS, tryWatch));
+    }
+
+    _startWatching(window) {
+        let state = {key: '', claimAttempt: 0, claimSourceId: 0, saveSourceId: 0, signalIds: []};
+        state.signalIds.push(window.connect('position-changed', Lang.bind(this, function() { this._changed(window); })));
+        state.signalIds.push(window.connect('size-changed', Lang.bind(this, function() { this._changed(window); })));
+        state.signalIds.push(window.connect('unmanaged', Lang.bind(this, function() { this._unmanaged(window); })));
+        this._windows.set(window, state);
+        this._claim(window);
+    }
+
+    _claim(window) {
+        let state = this._windows.get(window);
+        if (!state || state.key || state.claiming)
+            return;
+        state.claiming = true;
+        state.claimAttempt++;
+        this._dbus.claimWindowGeometryRemote(Lang.bind(this, function(response, error) {
+            state.claiming = false;
+            if (!this._windows.has(window))
+                return;
+            if (error || !response) {
+                this._retryClaim(window, state);
+                return;
+            }
+            try {
+                let geometry = JSON.parse(response);
+                if (!geometry.key) {
+                    this._retryClaim(window, state);
+                    return;
+                }
+                state.key = geometry.key;
+                if (geometry.valid)
+                    window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+            } catch (parseError) {
+                global.logError(parseError, 'Failed to parse QtNote window geometry');
+            }
+        }));
+    }
+
+    _retryClaim(window, state) {
+        if (state.claimSourceId || state.claimAttempt >= MAX_GEOMETRY_ATTEMPTS)
+            return;
+        state.claimSourceId = Mainloop.timeout_add(GEOMETRY_RETRY_MS, Lang.bind(this, function() {
+            state.claimSourceId = 0;
+            this._claim(window);
+            return false;
+        }));
+    }
+
+    _changed(window) {
+        let state = this._windows.get(window);
+        if (!state)
+            return;
+        if (!state.key) {
+            this._claim(window);
+            return;
+        }
+        if (state.saveSourceId)
+            Mainloop.source_remove(state.saveSourceId);
+        state.saveSourceId = Mainloop.timeout_add(GEOMETRY_SAVE_DELAY_MS, Lang.bind(this, function() {
+            state.saveSourceId = 0;
+            this._save(window, state);
+            return false;
+        }));
+    }
+
+    _save(window, state) {
+        if (!state.key)
+            return;
+        let rect = window.get_frame_rect();
+        this._dbus.storeWindowGeometryRemote(state.key, rect.x, rect.y, rect.width, rect.height, function() {});
+    }
+
+    _unmanaged(window) {
+        let state = this._windows.get(window);
+        if (!state)
+            return;
+        this._save(window, state);
+        this._disconnect(window, state);
+        this._windows.delete(window);
+    }
+
+    _disconnect(window, state) {
+        if (state.claimSourceId)
+            Mainloop.source_remove(state.claimSourceId);
+        if (state.saveSourceId)
+            Mainloop.source_remove(state.saveSourceId);
+        for (let i = 0; i < state.signalIds.length; ++i) {
+            try { window.disconnect(state.signalIds[i]); } catch (error) {}
+        }
+    }
 }
 
 class QtNoteApplet extends Applet.IconApplet {
@@ -59,6 +259,7 @@ class QtNoteApplet extends Applet.IconApplet {
         this._searchSourceId = 0;
         this._focusSourceId = 0;
         this._signalIds = [];
+        this._windowGeometry = null;
 
         this._dbus = new QtNoteProxy(
             Gio.DBus.session,
@@ -101,6 +302,10 @@ class QtNoteApplet extends Applet.IconApplet {
         for (let i = 0; i < this._signalIds.length; ++i)
             this._dbus.disconnectSignal(this._signalIds[i]);
         this._signalIds = [];
+        if (this._windowGeometry) {
+            this._windowGeometry.destroy();
+            this._windowGeometry = null;
+        }
     }
 
     _onProxyReady(proxy, error) {
@@ -112,6 +317,8 @@ class QtNoteApplet extends Applet.IconApplet {
         }
 
         this._signalIds.push(this._dbus.connectSignal('notesChanged', Lang.bind(this, this._refresh)));
+        this._windowGeometry = new WindowGeometry(this._dbus);
+        this._windowGeometry.enable();
         this._refresh();
     }
 
@@ -141,7 +348,6 @@ class QtNoteApplet extends Applet.IconApplet {
         this._addAction(_('Note Manager'), 'view-list-symbolic', Lang.bind(this, function() { this._call('showNoteManager'); }));
         this._addAction(_('Configure QtNote...'), 'preferences-system-symbolic', Lang.bind(this, function() { this._call('showOptions'); }));
         this._addAction(_('About QtNote'), 'help-about-symbolic', Lang.bind(this, function() { this._call('showAbout'); }));
-        this._addAction(_('Close QtNote'), 'application-exit-symbolic', Lang.bind(this, function() { this._call('quit'); }));
 
         this._searchEntry = new St.Entry({
             name: 'menu-search-entry',
@@ -201,8 +407,6 @@ class QtNoteApplet extends Applet.IconApplet {
         this._addContextAction(_('Note Manager'), 'view-list-symbolic', 'showNoteManager');
         this._addContextAction(_('Configure QtNote...'), 'preferences-system-symbolic', 'showOptions');
         this._addContextAction(_('About QtNote'), 'help-about-symbolic', 'showAbout');
-        this._applet_context_menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._addContextAction(_('Close QtNote'), 'application-exit-symbolic', 'quit');
     }
 
     _addContextAction(label, iconName, method) {

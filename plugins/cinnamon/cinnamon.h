@@ -2,6 +2,7 @@
 #define CINNAMONPLUGIN_H
 
 #include <QObject>
+#include <QQueue>
 
 #include "deintegrationinterface.h"
 #include "notificationinterface.h"
@@ -22,8 +23,13 @@ public:
     PluginMetadata metadata() override;
     void           setHost(PluginHostInterface *host);
 
-    void notifyError(const QString &message) override;
-    void activateWidget(QWidget *w) override;
+    void                        notifyError(const QString &message) override;
+    void                        activateWidget(QWidget *w) override;
+    WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        saveWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        removeWindowGeometry(const QString &key) override;
+    QString                     takePendingWindowGeometryKey() override;
+    void                        windowGeometryBridgeReady() override;
 
 private slots:
     void ensureAppletEnabled();
@@ -35,6 +41,8 @@ private:
     bool enableApplet() const;
 
     PluginHostInterface *host = nullptr;
+    QQueue<QString>      pendingWindowGeometryKeys;
+    bool                 geometryBridgeReady = false;
 };
 
 } // namespace QtNote

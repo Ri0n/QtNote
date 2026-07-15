@@ -206,6 +206,32 @@ void CinnamonPlugin::activateWidget(QWidget *w)
     timer->start(100);
 }
 
+WindowGeometryRestoreResult CinnamonPlugin::restoreWindowGeometry(QWidget *, const QString &key)
+{
+    if (QGuiApplication::platformName() != QLatin1String("wayland") || !geometryBridgeReady)
+        return WindowGeometryRestoreResult::Unsupported;
+    if (!pendingWindowGeometryKeys.contains(key))
+        pendingWindowGeometryKeys.enqueue(key);
+    return WindowGeometryRestoreResult::Pending;
+}
+
+bool CinnamonPlugin::saveWindowGeometry(QWidget *, const QString &)
+{
+    return QGuiApplication::platformName() == QLatin1String("wayland") && geometryBridgeReady;
+}
+
+bool CinnamonPlugin::removeWindowGeometry(const QString &)
+{
+    return QGuiApplication::platformName() == QLatin1String("wayland") && geometryBridgeReady;
+}
+
+QString CinnamonPlugin::takePendingWindowGeometryKey()
+{
+    return pendingWindowGeometryKeys.isEmpty() ? QString() : pendingWindowGeometryKeys.dequeue();
+}
+
+void CinnamonPlugin::windowGeometryBridgeReady() { geometryBridgeReady = true; }
+
 void CinnamonPlugin::activator()
 {
     QTimer  *timer = static_cast<QTimer *>(sender());
