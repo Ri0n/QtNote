@@ -60,6 +60,7 @@ public:
     bool                        saveWindowGeometry(QWidget *w, const QString &key) const;
     bool                        removeWindowGeometry(const QString &key) const;
     QString                     takePendingWindowGeometryKey() const;
+    void                        windowGeometryBridgeReady() const;
     ShortcutsManager           *shortcutsManager() const { return _shortcutsManager; }
     PluginManager              *pluginManager() const { return _pluginManager; }
 

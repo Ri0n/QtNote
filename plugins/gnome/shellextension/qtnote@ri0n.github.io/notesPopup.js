@@ -29,7 +29,6 @@ export class NotesPopup {
         this._addAction(_('Note Manager'), 'view-list-symbolic', () => this._dbus.showNoteManager());
         this._addAction(_('Configure QtNote...'), 'preferences-system-symbolic', () => this._dbus.showOptions());
         this._addAction(_('About QtNote'), 'help-about-symbolic', () => this._dbus.showAbout());
-        this._addAction(_('Close QtNote'), 'application-exit-symbolic', () => this._dbus.quit());
 
         this._searchEntry = new St.Entry({
             hint_text: _('Search notes'),

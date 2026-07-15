@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define NOTEDIALOG_H
 
 #include <QDialog>
+#include <QList>
 
 namespace Ui {
 class NoteDialog;
@@ -40,7 +41,10 @@ public:
     explicit NoteDialog(NoteWidget *noteWidget, Main *main);
     virtual ~NoteDialog();
 
-    static NoteDialog *findDialog(const QString &storageId, const QString &noteId);
+    static NoteDialog         *findDialog(const QString &storageId, const QString &noteId);
+    static QList<NoteDialog *> openDialogs();
+
+    void registerWindowGeometry();
 
     NoteWidget *weidget() { return noteWidget; }
 

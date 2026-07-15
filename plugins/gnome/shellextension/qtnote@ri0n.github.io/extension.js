@@ -8,6 +8,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QtNoteDBusClient} from './dbus.js';
 import {QtNoteIndicator} from './indicator.js';
 import {Keybindings} from './keybindings.js';
+import {WindowGeometry} from './windowGeometry.js';
 
 export default class QtNoteExtension extends Extension {
     enable() {
@@ -15,11 +16,16 @@ export default class QtNoteExtension extends Extension {
         this._settings = this.getSettings('org.gnome.shell.extensions.qtnote');
         this._keybindings = new Keybindings(this._settings, this._dbus);
         this._keybindings.enable();
+        this._windowGeometry = new WindowGeometry(this._dbus);
+        this._windowGeometry.enable();
         this._indicator = new QtNoteIndicator(this, this._dbus);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
 
     disable() {
+        this._windowGeometry?.disable();
+        this._windowGeometry = null;
+
         this._indicator?.destroy();
         this._indicator = null;
 

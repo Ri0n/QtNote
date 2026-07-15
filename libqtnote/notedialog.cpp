@@ -114,6 +114,16 @@ NoteDialog *NoteDialog::findDialog(const QString &storageId, const QString &note
     return NoteDialog::dialogs.value(QPair<QString, QString>(storageId, noteId));
 }
 
+QList<NoteDialog *> NoteDialog::openDialogs() { return NoteDialog::dialogs.values(); }
+
+void NoteDialog::registerWindowGeometry()
+{
+    const auto note = noteWidget->note();
+    if (note.id().isEmpty())
+        return;
+    main->restoreWindowGeometry(this, QString("geometry.%1.%2").arg(note.storageId(), note.id()));
+}
+
 void NoteDialog::changeEvent(QEvent *e)
 {
     switch (e->type()) {

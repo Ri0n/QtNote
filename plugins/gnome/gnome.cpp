@@ -79,7 +79,10 @@ void GnomePlugin::notifyError(const QString &msg)
 
 void GnomePlugin::askEnableShellExtension()
 {
-    if (!isShellExtensionInstalled() || isShellExtensionEnabled())
+    if (!isShellExtensionInstalled())
+        return;
+    shellExtensionEnabled = isShellExtensionEnabled();
+    if (shellExtensionEnabled)
         return;
 
     QSettings settings;
@@ -92,10 +95,13 @@ void GnomePlugin::askEnableShellExtension()
                                         tr("QtNote can enable a native GNOME Shell indicator. "
                                            "It provides Wayland-friendly access to recent notes."),
                                         QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-    if (result == QMessageBox::Yes && !enableShellExtension()) {
-        QMessageBox::warning(nullptr, tr("Enable QtNote GNOME Extension"),
-                             tr("Failed to enable the QtNote GNOME Shell extension. "
-                                "You may need to log out and log back in before enabling it."));
+    if (result == QMessageBox::Yes) {
+        shellExtensionEnabled = enableShellExtension();
+        if (!shellExtensionEnabled) {
+            QMessageBox::warning(nullptr, tr("Enable QtNote GNOME Extension"),
+                                 tr("Failed to enable the QtNote GNOME Shell extension. "
+                                    "You may need to log out and log back in before enabling it."));
+        }
     }
 }
 
@@ -120,8 +126,10 @@ bool GnomePlugin::isShellExtensionEnabled() const
         return false;
 
     const QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).toLower();
+    // GNOME Shell 45+ reports an enabled, running extension as ACTIVE.
+    // Older gnome-extensions versions used ENABLED for the same state.
     return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0
-        && output.contains(QLatin1String("state: enabled"));
+        && (output.contains(QLatin1String("state: active")) || output.contains(QLatin1String("state: enabled")));
 }
 
 bool GnomePlugin::enableShellExtension() const
@@ -137,6 +145,33 @@ bool GnomePlugin::enableShellExtension() const
 
     return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
 }
+
+bool GnomePlugin::geometryExtensionAvailable()
+{
+    if (QGuiApplication::platformName() != QLatin1String("wayland"))
+        return false;
+    return geometryBridgeReady;
+}
+
+WindowGeometryRestoreResult GnomePlugin::restoreWindowGeometry(QWidget *, const QString &key)
+{
+    if (!geometryExtensionAvailable())
+        return WindowGeometryRestoreResult::Unsupported;
+    if (!pendingWindowGeometryKeys.contains(key))
+        pendingWindowGeometryKeys.enqueue(key);
+    return WindowGeometryRestoreResult::Pending;
+}
+
+bool GnomePlugin::saveWindowGeometry(QWidget *, const QString &) { return geometryExtensionAvailable(); }
+
+bool GnomePlugin::removeWindowGeometry(const QString &) { return geometryExtensionAvailable(); }
+
+QString GnomePlugin::takePendingWindowGeometryKey()
+{
+    return pendingWindowGeometryKeys.isEmpty() ? QString() : pendingWindowGeometryKeys.dequeue();
+}
+
+void GnomePlugin::windowGeometryBridgeReady() { geometryBridgeReady = true; }
 
 void GnomePlugin::activateWidget(QWidget *w)
 {

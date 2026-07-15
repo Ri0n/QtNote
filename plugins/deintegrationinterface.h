@@ -22,6 +22,7 @@ public:
     virtual bool    saveWindowGeometry(QWidget *, const QString &) { return false; }
     virtual bool    removeWindowGeometry(const QString &) { return false; }
     virtual QString takePendingWindowGeometryKey() { return {}; }
+    virtual void    windowGeometryBridgeReady() { }
 };
 
 } // namespace QtNote

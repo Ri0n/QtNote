@@ -393,6 +393,13 @@ bool Main::removeWindowGeometry(const QString &key) const { return d->de->remove
 
 QString Main::takePendingWindowGeometryKey() const { return d->de->takePendingWindowGeometryKey(); }
 
+void Main::windowGeometryBridgeReady() const
+{
+    d->de->windowGeometryBridgeReady();
+    for (auto *dialog : NoteDialog::openDialogs())
+        dialog->registerWindowGeometry();
+}
+
 void Main::setTrayImpl(TrayImpl *tray) { d->tray = tray; }
 
 void Main::setExternalTrayAvailable(bool available) { d->externalTrayAvailable = available; }

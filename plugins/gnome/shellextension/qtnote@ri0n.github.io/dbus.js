@@ -22,6 +22,17 @@ const QTNOTE_IFACE_XML = `
     <method name="globalShortcutsJson">
       <arg type="s" name="response" direction="out"/>
     </method>
+    <method name="claimWindowGeometry">
+      <arg type="s" name="response" direction="out"/>
+    </method>
+    <method name="storeWindowGeometry">
+      <arg type="s" name="key" direction="in"/>
+      <arg type="i" name="x" direction="in"/>
+      <arg type="i" name="y" direction="in"/>
+      <arg type="i" name="width" direction="in"/>
+      <arg type="i" name="height" direction="in"/>
+    </method>
+    <method name="windowGeometryScriptReady"/>
     <method name="openNote">
       <arg type="s" name="storageId" direction="in"/>
       <arg type="s" name="noteId" direction="in"/>
@@ -52,6 +63,7 @@ export class QtNoteDBusClient {
             QtNoteInterfaceInfo.name,
             null);
         this._signalIds = [];
+        this._notifySignalIds = [];
         this._windowActivator = new QtNoteWindowActivator();
     }
 
@@ -62,6 +74,9 @@ export class QtNoteDBusClient {
         for (const id of this._signalIds)
             this._proxy.disconnectSignal(id);
         this._signalIds = [];
+        for (const id of this._notifySignalIds)
+            this._proxy.disconnect(id);
+        this._notifySignalIds = [];
         this._proxy = null;
     }
 
@@ -73,6 +88,13 @@ export class QtNoteDBusClient {
     onGlobalShortcutsChanged(callback) {
         const id = this._proxy.connectSignal('globalShortcutsChanged', callback);
         this._signalIds.push(id);
+    }
+
+    onNameOwnerChanged(callback) {
+        const id = this._proxy.connect('notify::g-name-owner', () => {
+            callback(this._proxy.get_name_owner());
+        });
+        this._notifySignalIds.push(id);
     }
 
     notesJson(offset, limit, query) {
@@ -109,6 +131,53 @@ export class QtNoteDBusClient {
                     }
                 });
         });
+    }
+
+    claimWindowGeometry() {
+        return new Promise((resolve, reject) => {
+            this._proxy.call(
+                'claimWindowGeometry',
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                (proxy, result) => {
+                    try {
+                        resolve(proxy.call_finish(result).deepUnpack()[0]);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+        });
+    }
+
+    storeWindowGeometry(key, x, y, width, height) {
+        this._call('storeWindowGeometry', new GLib.Variant('(siiii)', [key, x, y, width, height]));
+    }
+
+    windowGeometryScriptReady() {
+        this._call('windowGeometryScriptReady');
+    }
+
+    processId() {
+        const owner = this._proxy.get_name_owner();
+        if (!owner)
+            return 0;
+        try {
+            return Gio.DBus.session.call_sync(
+                'org.freedesktop.DBus',
+                '/org/freedesktop/DBus',
+                'org.freedesktop.DBus',
+                'GetConnectionUnixProcessID',
+                new GLib.Variant('(s)', [owner]),
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null).deepUnpack()[0];
+        } catch (error) {
+            logError(error, 'Failed to resolve QtNote process ID');
+            return 0;
+        }
     }
 
     _call(method, parameters = null, activateWindow = false) {

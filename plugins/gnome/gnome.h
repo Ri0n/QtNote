@@ -2,6 +2,7 @@
 #define GNOMEPLUGIN_H
 
 #include <QObject>
+#include <QQueue>
 
 #include "deintegrationinterface.h"
 #include "notificationinterface.h"
@@ -24,7 +25,12 @@ public:
 
     void notifyError(const QString &msg);
 
-    void activateWidget(QWidget *w);
+    void                        activateWidget(QWidget *w);
+    WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        saveWindowGeometry(QWidget *w, const QString &key) override;
+    bool                        removeWindowGeometry(const QString &key) override;
+    QString                     takePendingWindowGeometryKey() override;
+    void                        windowGeometryBridgeReady() override;
 
 private slots:
     void askEnableShellExtension();
@@ -34,8 +40,12 @@ private:
     bool isShellExtensionInstalled() const;
     bool isShellExtensionEnabled() const;
     bool enableShellExtension() const;
+    bool geometryExtensionAvailable();
 
-    PluginHostInterface *host;
+    PluginHostInterface *host = nullptr;
+    QQueue<QString>      pendingWindowGeometryKeys;
+    bool                 shellExtensionEnabled = false;
+    bool                 geometryBridgeReady   = false;
 };
 
 } // namespace QtNote
