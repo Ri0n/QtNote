@@ -13,12 +13,9 @@ namespace QtNote {
 struct QTNOTE_EXPORT StorageError {
     enum Code { None, Cancelled, NotConfigured, NotFound, Conflict, Unavailable, Io, Network, Authentication, Other };
 
-    Code    code { None };
-    QString message;
-    bool    retryable { false };
-    /// Current remote note supplied with a Conflict when the storage can provide it.
-    Note remoteNote;
-
+    Code     code { None };
+    QString  message;
+    bool     retryable { false };
     explicit operator bool() const { return code != None; }
 };
 

@@ -163,8 +163,8 @@ void DraftManager::resolveConcurrentEdit(const Note &localVersion, const Note &r
         return;
     }
 
-    StorageError error { StorageError::Conflict, message, false, remoteVersion };
-    resolveConflict(record, error);
+    StorageError error { StorageError::Conflict, message, false };
+    resolveConflict(record, error, remoteVersion);
 }
 
 DraftStoreError DraftManager::markReady(const QUuid &draftId)
@@ -304,7 +304,7 @@ void DraftManager::retry(const DraftRecord &record, const QString &message, bool
         QTimer::singleShot(delay * 1000, this, &DraftManager::publishPending);
 }
 
-void DraftManager::resolveConflict(const DraftRecord &record, const StorageError &error)
+void DraftManager::resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote)
 {
     if (!conflictResolver_) {
         retry(record, error.message, false);
@@ -323,7 +323,7 @@ void DraftManager::resolveConflict(const DraftRecord &record, const StorageError
     }
 
     conflictResolver_->resolve(
-        { recoverable, error.remoteNote, error.message },
+        { recoverable, remoteNote, error.message },
         [this, id = record.id, fallbackMessage = error.message](ConflictResolution resolution) {
             if (!store_)
                 return;

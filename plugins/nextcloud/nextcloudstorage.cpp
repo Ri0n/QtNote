@@ -573,8 +573,7 @@ NoteSaveJob *NextcloudStorage::saveNoteAsync(const Note &note, QObject *owner)
                         StorageError error { result.conflict ? StorageError::Conflict : StorageError::Network,
                                              result.error, !result.conflict };
                         if (result.remoteOnConflict) {
-                            error.remoteNote = fromRemote(*result.remoteOnConflict);
-                            cache_.insert(result.remoteOnConflict->id, error.remoteNote);
+                            cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
                         }
                         guard->fail(error);
                         return;
@@ -587,13 +586,13 @@ NoteSaveJob *NextcloudStorage::saveNoteAsync(const Note &note, QObject *owner)
                     locallySaved_.insert(saved.id(), saved);
                     locallyRemoved_.remove(saved.id());
                     cacheValid_ = accessible_ = true;
+                    guard->complete(saved);
                     if (!oldId.isEmpty() && oldId != saved.id())
                         emit noteIdChanged(saved, oldId);
                     if (existed || !oldId.isEmpty())
                         emit noteModified(saved);
                     else
                         emit noteAdded(saved);
-                    guard->complete(saved);
                 },
                 Qt::QueuedConnection);
         },

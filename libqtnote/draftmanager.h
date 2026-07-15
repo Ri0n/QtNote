@@ -53,7 +53,7 @@ private:
     void       publish(const DraftRecord &record);
     void       remove(const DraftRecord &record);
     void       retry(const DraftRecord &record, const QString &message, bool retryable = true);
-    void       resolveConflict(const DraftRecord &record, const StorageError &error);
+    void       resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote = {});
     void       storageAboutToBeRemoved(NoteStorage *storage);
 
     std::unique_ptr<FileDraftStore>    store_;

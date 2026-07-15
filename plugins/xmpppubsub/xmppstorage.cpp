@@ -696,8 +696,7 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
                             auto error = storageError(result,
                                                       result.conflict ? StorageError::Conflict : StorageError::Network);
                             if (result.remoteOnConflict) {
-                                error.remoteNote = fromRemote(*result.remoteOnConflict);
-                                cache_.insert(result.remoteOnConflict->id, error.remoteNote);
+                                cache_.insert(result.remoteOnConflict->id, fromRemote(*result.remoteOnConflict));
                             }
                             guard->fail(error);
                             return;
@@ -708,13 +707,13 @@ NoteSaveJob *XmppStorage::saveNoteAsync(const Note &note, QObject *owner)
                             cache_.remove(oldId);
                         cache_.insert(saved.id(), saved);
                         cacheValid_ = accessible_ = true;
+                        guard->complete(saved);
                         if (!oldId.isEmpty() && oldId != saved.id())
                             emit noteIdChanged(saved, oldId);
                         if (existed || !oldId.isEmpty())
                             emit noteModified(saved);
                         else
                             emit noteAdded(saved);
-                        guard->complete(saved);
                     },
                     Qt::QueuedConnection);
             });
