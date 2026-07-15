@@ -27,9 +27,9 @@ PluginMetadata XmppPlugin::metadata()
     PluginMetadata metadata;
     metadata.id          = pluginId;
     metadata.icon        = QIcon::fromTheme(QStringLiteral("im-jabber"));
-    metadata.name        = QStringLiteral("XMPP Private Notes");
+    metadata.name        = QString("XMPP Private Notes");
     metadata.description = tr("Stores notes as private persistent items in the account's XMPP PEP service");
-    metadata.author      = QStringLiteral("Sergei Ilinykh");
+    metadata.author      = QString("Sergei Ilinykh");
     metadata.version     = 0x010000;
     metadata.minVersion  = 0x020300;
     metadata.maxVersion  = QTNOTE_VERSION;
