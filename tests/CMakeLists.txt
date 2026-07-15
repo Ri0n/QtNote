@@ -16,44 +16,46 @@ target_include_directories(xmppnotecodec_test PRIVATE ../plugins/xmpppubsub)
 target_link_libraries(xmppnotecodec_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME xmppnotecodec_test COMMAND xmppnotecodec_test)
 
-find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
-add_executable(xmppkeysyncextension_test
-    xmppkeysyncextension_test.cpp
-    ../plugins/xmpppubsub/xmppkeysyncextension.cpp
-)
-target_include_directories(xmppkeysyncextension_test PRIVATE ../plugins/xmpppubsub)
-target_link_libraries(xmppkeysyncextension_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
-add_test(NAME xmppkeysyncextension_test COMMAND xmppkeysyncextension_test)
+find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
+if(TARGET QXmpp::QXmpp)
+    add_executable(xmppkeysyncextension_test
+        xmppkeysyncextension_test.cpp
+        ../plugins/xmpppubsub/xmppkeysyncextension.cpp
+    )
+    target_include_directories(xmppkeysyncextension_test PRIVATE ../plugins/xmpppubsub)
+    target_link_libraries(xmppkeysyncextension_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+    add_test(NAME xmppkeysyncextension_test COMMAND xmppkeysyncextension_test)
 
-add_executable(xmppomemopubsubitems_test
-    xmppomemopubsubitems_test.cpp
-    ../plugins/xmpppubsub/xmppomemopubsubitems.cpp
-)
-target_include_directories(xmppomemopubsubitems_test PRIVATE ../plugins/xmpppubsub)
-target_link_libraries(xmppomemopubsubitems_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
-add_test(NAME xmppomemopubsubitems_test COMMAND xmppomemopubsubitems_test)
+    add_executable(xmppomemopubsubitems_test
+        xmppomemopubsubitems_test.cpp
+        ../plugins/xmpppubsub/xmppomemopubsubitems.cpp
+    )
+    target_include_directories(xmppomemopubsubitems_test PRIVATE ../plugins/xmpppubsub)
+    target_link_libraries(xmppomemopubsubitems_test PRIVATE Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+    add_test(NAME xmppomemopubsubitems_test COMMAND xmppomemopubsubitems_test)
 
-add_executable(xmpperror_test
-    xmpperror_test.cpp
-    ../plugins/xmpppubsub/xmpperror.cpp
-)
-target_include_directories(xmpperror_test PRIVATE ../plugins/xmpppubsub)
-target_link_libraries(xmpperror_test PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Network QXmpp::QXmpp)
-add_test(NAME xmpperror_test COMMAND xmpperror_test)
+    add_executable(xmpperror_test
+        xmpperror_test.cpp
+        ../plugins/xmpppubsub/xmpperror.cpp
+    )
+    target_include_directories(xmpperror_test PRIVATE ../plugins/xmpppubsub)
+    target_link_libraries(xmpperror_test PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Network QXmpp::QXmpp)
+    add_test(NAME xmpperror_test COMMAND xmpperror_test)
 
-add_executable(xmpppersistenttruststorage_test
-    xmpppersistenttruststorage_test.cpp
-    ../plugins/xmpppubsub/xmpppersistenttruststorage.cpp
-)
-target_include_directories(xmpppersistenttruststorage_test PRIVATE ../plugins/xmpppubsub)
-target_link_libraries(xmpppersistenttruststorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
-add_test(NAME xmpppersistenttruststorage_test COMMAND xmpppersistenttruststorage_test)
+    add_executable(xmpppersistenttruststorage_test
+        xmpppersistenttruststorage_test.cpp
+        ../plugins/xmpppubsub/xmpppersistenttruststorage.cpp
+    )
+    target_include_directories(xmpppersistenttruststorage_test PRIVATE ../plugins/xmpppubsub)
+    target_link_libraries(xmpppersistenttruststorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
+    add_test(NAME xmpppersistenttruststorage_test COMMAND xmpppersistenttruststorage_test)
 
-find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
-add_executable(xmppomemostorage_test
-    xmppomemostorage_test.cpp
-    ../plugins/xmpppubsub/xmppomemostorage.cpp
-)
-target_include_directories(xmppomemostorage_test PRIVATE ../plugins/xmpppubsub)
-target_link_libraries(xmppomemostorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::Omemo)
-add_test(NAME xmppomemostorage_test COMMAND xmppomemostorage_test)
+    find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
+    add_executable(xmppomemostorage_test
+        xmppomemostorage_test.cpp
+        ../plugins/xmpppubsub/xmppomemostorage.cpp
+    )
+    target_include_directories(xmppomemostorage_test PRIVATE ../plugins/xmpppubsub)
+    target_link_libraries(xmppomemostorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::Omemo)
+    add_test(NAME xmppomemostorage_test COMMAND xmppomemostorage_test)
+endif()

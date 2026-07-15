@@ -20,6 +20,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include <QContextMenuEvent>
+#include <QDebug>
 #include <QMenu>
 
 #include "draftmanager.h"

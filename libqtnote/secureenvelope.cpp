@@ -27,7 +27,12 @@ namespace {
         constexpr int BlockSize = 64;
         if (key.size() > BlockSize)
             key = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
         key.resize(BlockSize, '\0');
+#else
+        key.resize(BlockSize);
+        memset(key.data(), '\0', BlockSize);
+#endif
         QByteArray outer(BlockSize, char(0x5c));
         QByteArray inner(BlockSize, char(0x36));
         for (int i = 0; i < BlockSize; ++i) {
