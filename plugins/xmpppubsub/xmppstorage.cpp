@@ -31,6 +31,13 @@ namespace QtNote {
 namespace {
     constexpr int MinimumRetryDelaySeconds = 30;
     constexpr int MaximumRetryDelaySeconds = 300;
+    const QString QtNoteKeychainService    = QStringLiteral("com.github.ri0n.qtnote");
+    const QString PsiKeychainService       = QStringLiteral("xmpp");
+
+    QString passwordKeyName(const QString &jid)
+    {
+        return QStringLiteral("xmpp-password-v1:%1").arg(jid.trimmed().section(QLatin1Char('/'), 0, 0));
+    }
 
     QString storageKeyName(const QString &jid)
     {
@@ -244,9 +251,32 @@ XmppConfig XmppStorage::readConfig() const
 
     config.jid
         = settings.value(QStringLiteral("storage.xmpppubsub.jid")).toString().trimmed().section(QLatin1Char('/'), 0, 0);
-    config.password = settings.value(QStringLiteral("storage.xmpppubsub.password")).toString();
-    config.host     = settings.value(QStringLiteral("storage.xmpppubsub.host")).toString();
-    config.port     = settings.value(QStringLiteral("storage.xmpppubsub.port"), 0).toInt();
+    if (!config.jid.isEmpty()) {
+        const auto ownPassword = SecureKeyStore::readPassword(QtNoteKeychainService, passwordKeyName(config.jid));
+        if (ownPassword) {
+            config.password = ownPassword.value;
+            settings.remove(QStringLiteral("storage.xmpppubsub.password"));
+        } else {
+            // Psi uses service "xmpp" and the bare JID as its key. Importing it
+            // also keeps QtNote usable on keychain backends that restrict
+            // cross-application access later.
+            const auto psiPassword = SecureKeyStore::readPassword(PsiKeychainService, config.jid);
+            if (psiPassword) {
+                config.password = psiPassword.value;
+                if (!SecureKeyStore::writePassword(QtNoteKeychainService, passwordKeyName(config.jid), config.password))
+                    settings.remove(QStringLiteral("storage.xmpppubsub.password"));
+            } else {
+                const auto legacy = settings.value(QStringLiteral("storage.xmpppubsub.password")).toString();
+                if (!legacy.isEmpty()) {
+                    config.password = legacy;
+                    if (!SecureKeyStore::writePassword(QtNoteKeychainService, passwordKeyName(config.jid), legacy))
+                        settings.remove(QStringLiteral("storage.xmpppubsub.password"));
+                }
+            }
+        }
+    }
+    config.host = settings.value(QStringLiteral("storage.xmpppubsub.host")).toString();
+    config.port = settings.value(QStringLiteral("storage.xmpppubsub.port"), 0).toInt();
 
     const QString defaultResource = QStringLiteral("QtNote-") + config.originId.left(8);
     config.resource = settings.value(QStringLiteral("storage.xmpppubsub.resource"), defaultResource).toString();
@@ -872,7 +902,16 @@ void XmppStorage::applyConfig(const XmppConfig &config)
 {
     QSettings settings;
     settings.setValue(QStringLiteral("storage.xmpppubsub.jid"), config.jid);
-    settings.setValue(QStringLiteral("storage.xmpppubsub.password"), config.password);
+    const auto passwordError
+        = SecureKeyStore::writePassword(QtNoteKeychainService, passwordKeyName(config.jid), config.password);
+    if (passwordError) {
+        // Preserve compatibility on systems without a usable keychain. The
+        // validation path will continue to report an empty password normally.
+        settings.setValue(QStringLiteral("storage.xmpppubsub.password"), config.password);
+        qWarning().noquote() << "Could not store XMPP password in the system keychain:" << passwordError.message;
+    } else {
+        settings.remove(QStringLiteral("storage.xmpppubsub.password"));
+    }
     settings.setValue(QStringLiteral("storage.xmpppubsub.host"), config.host);
     settings.setValue(QStringLiteral("storage.xmpppubsub.port"), config.port);
     settings.setValue(QStringLiteral("storage.xmpppubsub.resource"), config.resource);

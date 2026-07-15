@@ -20,6 +20,38 @@ namespace {
     }
 }
 
+CryptoResult<QString> SecureKeyStore::readPassword(const QString &service, const QString &keyName)
+{
+    if (!QKeychain::isAvailable())
+        return { {}, { CryptoError::Unavailable, QStringLiteral("No secure system keychain is available") } };
+    QKeychain::ReadPasswordJob job(service);
+    job.setAutoDelete(false);
+    job.setInsecureFallback(false);
+    job.setKey(keyName);
+    waitFor(job);
+    if (job.error() == QKeychain::EntryNotFound)
+        return { {}, { CryptoError::InvalidArgument, QStringLiteral("Password was not found") } };
+    if (job.error() != QKeychain::NoError)
+        return { {}, { CryptoError::Unavailable, job.errorString() } };
+    return { job.textData(), {} };
+}
+
+CryptoError SecureKeyStore::writePassword(const QString &service, const QString &keyName, const QString &password)
+{
+    if (!QKeychain::isAvailable())
+        return { CryptoError::Unavailable, QStringLiteral("No secure system keychain is available") };
+    if (service.isEmpty() || keyName.isEmpty())
+        return { CryptoError::InvalidArgument, QStringLiteral("Password service and key must not be empty") };
+    QKeychain::WritePasswordJob job(service);
+    job.setAutoDelete(false);
+    job.setInsecureFallback(false);
+    job.setKey(keyName);
+    job.setTextData(password);
+    waitFor(job);
+    return job.error() == QKeychain::NoError ? CryptoError {}
+                                             : CryptoError { CryptoError::Unavailable, job.errorString() };
+}
+
 CryptoResult<QByteArray> SecureKeyStore::read(const QString &keyName)
 {
     if (!QKeychain::isAvailable())
