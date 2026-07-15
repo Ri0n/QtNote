@@ -794,22 +794,36 @@ void XmppStorage::onRemoteNotePublished(const XmppRemoteNote &remote)
     }
 
     if (!previous.isNull() && previousRevision == remote.revision) {
+        qInfo().noquote() << "Conflict trace: XMPP event duplicate note=" << remote.id
+                          << "revision=" << remote.revision;
         return;
     }
 
     const bool siblingConflict = !previous.isNull() && !previousParentRevision.isEmpty()
         && previousParentRevision == remote.parentRevision && previousRevision != remote.revision;
 
-    auto incoming = fromRemote(remote);
+    auto       incoming               = fromRemote(remote);
+    const auto previousOrigin         = previous.backendValue(QStringLiteral("originId")).toString();
+    const bool ownedDisplacedRevision = previousOrigin == config_.originId;
+    qInfo().noquote() << "Conflict trace: XMPP event note=" << remote.id << "previous=" << previousRevision
+                      << "previous-parent=" << previousParentRevision << "previous-origin=" << previousOrigin
+                      << "previous-loaded=" << previous.isLoaded() << "incoming=" << remote.revision
+                      << "incoming-parent=" << remote.parentRevision << "incoming-origin=" << remote.originId
+                      << "sibling=" << siblingConflict << "owned-displaced=" << ownedDisplacedRevision;
 
     // XEP-0060 has no atomic compare-and-swap. Two writers can therefore both
     // pass the revision check and publish sibling revisions. Only the device
     // that authored the displaced local revision creates a conflict copy;
     // other devices merely converge on the latest server item.
-    if (siblingConflict && previous.isLoaded()
-        && previous.backendValue(QStringLiteral("originId")).toString() == config_.originId) {
+    if (siblingConflict && previous.isLoaded() && ownedDisplacedRevision) {
+        qInfo().noquote() << "Conflict trace: XMPP sibling resolver triggered note=" << remote.id
+                          << "displaced=" << previousRevision << "winner=" << remote.revision;
         DraftManager::instance()->resolveConcurrentEdit(
             previous, incoming, tr("Parallel XMPP note revisions were detected after publication."));
+    } else if (siblingConflict) {
+        qInfo().noquote() << "Conflict trace: XMPP sibling resolver skipped note=" << remote.id << "reason="
+                          << (!previous.isLoaded() ? QStringLiteral("previous-not-loaded")
+                                                   : QStringLiteral("different-origin"));
     }
     cache_.insert(remote.id, incoming);
     cacheValid_ = true;

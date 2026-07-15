@@ -874,6 +874,9 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note, qui
     note.parentRevision = note.revision;
     note.revision       = newUuid();
     note.originId       = config_.originId;
+    qInfo().noquote() << "Conflict trace: XMPP publish note=" << note.id << "revision=" << note.revision
+                      << "parent=" << note.parentRevision << "origin=" << note.originId
+                      << "generation=" << clientGeneration;
     note.modified       = QDateTime::currentDateTimeUtc();
     note.format         = QStringLiteral("markdown");
     note.contentPresent = true;
@@ -913,7 +916,10 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note, qui
 QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
 {
     const auto generation = clientGeneration_;
-    const auto ready      = co_await ensureReadyTask();
+    qInfo().noquote() << "Conflict trace: XMPP save begin note=" << note.id << "local-revision=" << note.revision
+                      << "local-parent=" << note.parentRevision << "local-origin=" << note.originId
+                      << "generation=" << generation;
+    const auto ready = co_await ensureReadyTask();
     if (generation != clientGeneration_)
         co_return configurationChangedResult<XmppNoteResult>();
     if (!ready.ok) {
@@ -930,7 +936,12 @@ QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
             co_return configurationChangedResult<XmppNoteResult>();
         if (!server.ok)
             co_return server;
+        qInfo().noquote() << "Conflict trace: XMPP revision check note=" << note.id << "local=" << note.revision
+                          << "server=" << server.note.revision << "server-parent=" << server.note.parentRevision
+                          << "server-origin=" << server.note.originId;
         if (server.note.revision != note.revision) {
+            qInfo().noquote() << "Conflict trace: XMPP optimistic conflict note=" << note.id
+                              << "local=" << note.revision << "server=" << server.note.revision;
             XmppNoteResult conflict;
             conflict.conflict         = true;
             conflict.remoteOnConflict = std::move(server.note);
