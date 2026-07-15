@@ -802,55 +802,72 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
 
 QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id, quint64 clientGeneration)
 {
-    XmppNoteResult output;
-    auto           indexResult
-        = co_await pubSub_
-              ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id)
-              .toFuture(this);
-    if (clientGeneration != clientGeneration_)
-        co_return configurationChangedResult<XmppNoteResult>();
-    if (const auto *error = std::get_if<QXmppError>(&indexResult)) {
-        setXmppFailure(output, *error, errorText(*error));
-        output.notFound = isItemNotFound(*error);
-        co_return output;
-    }
-    const auto &indexItem = std::get<QtNotePubSubItem>(indexResult);
-    if (!indexItem.isValid()) {
-        output.error = indexItem.parseError();
-        co_return output;
-    }
-    auto index = XmppNoteCodec::decodeIndex(indexItem.payload(), config_.masterKey, config_.indexNodeName());
-    if (!index) {
-        output.error = index.error.message;
+    // Content and index live in separate PubSub nodes and therefore cannot be
+    // replaced atomically. A reader may briefly observe an old index together
+    // with new content while another client is publishing a note.
+    constexpr int snapshotAttempts          = 3;
+    const auto    inconsistentSnapshotError = QStringLiteral("QtNote content does not match its index revision");
+
+    for (int attempt = 1; attempt <= snapshotAttempts; ++attempt) {
+        XmppNoteResult output;
+        auto           indexResult
+            = co_await pubSub_
+                  ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id)
+                  .toFuture(this);
+        if (clientGeneration != clientGeneration_)
+            co_return configurationChangedResult<XmppNoteResult>();
+        if (const auto *error = std::get_if<QXmppError>(&indexResult)) {
+            setXmppFailure(output, *error, errorText(*error));
+            output.notFound = isItemNotFound(*error);
+            co_return output;
+        }
+        const auto &indexItem = std::get<QtNotePubSubItem>(indexResult);
+        if (!indexItem.isValid()) {
+            output.error = indexItem.parseError();
+            co_return output;
+        }
+        auto index = XmppNoteCodec::decodeIndex(indexItem.payload(), config_.masterKey, config_.indexNodeName());
+        if (!index) {
+            output.error = index.error.message;
+            co_return output;
+        }
+
+        auto contentResult
+            = co_await pubSub_
+                  ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id)
+                  .toFuture(this);
+        if (clientGeneration != clientGeneration_)
+            co_return configurationChangedResult<XmppNoteResult>();
+        if (const auto *error = std::get_if<QXmppError>(&contentResult)) {
+            setXmppFailure(output, *error, errorText(*error));
+            co_return output;
+        }
+        const auto &contentItem = std::get<QtNotePubSubItem>(contentResult);
+        if (!contentItem.isValid()) {
+            output.error = contentItem.parseError();
+            co_return output;
+        }
+        auto content = XmppNoteCodec::decodeContent(contentItem.payload(), config_.masterKey, config_.contentNodeName(),
+                                                    index.value);
+        if (!content) {
+            if (content.error.message == inconsistentSnapshotError) {
+                qInfo().noquote() << "Conflict trace: XMPP inconsistent snapshot note=" << id << "attempt=" << attempt
+                                  << "index-revision=" << index.value.revision;
+                if (attempt < snapshotAttempts)
+                    continue;
+                output.errorKind = XmppErrorKind::Transient;
+            }
+            output.error = content.error.message;
+            co_return output;
+        }
+        output.note                = std::move(index.value);
+        output.note.content        = std::move(content.value);
+        output.note.contentPresent = true;
+        output.ok                  = true;
         co_return output;
     }
 
-    auto contentResult
-        = co_await pubSub_
-              ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id)
-              .toFuture(this);
-    if (clientGeneration != clientGeneration_)
-        co_return configurationChangedResult<XmppNoteResult>();
-    if (const auto *error = std::get_if<QXmppError>(&contentResult)) {
-        setXmppFailure(output, *error, errorText(*error));
-        co_return output;
-    }
-    const auto &contentItem = std::get<QtNotePubSubItem>(contentResult);
-    if (!contentItem.isValid()) {
-        output.error = contentItem.parseError();
-        co_return output;
-    }
-    auto content = XmppNoteCodec::decodeContent(contentItem.payload(), config_.masterKey, config_.contentNodeName(),
-                                                index.value);
-    if (!content) {
-        output.error = content.error.message;
-        co_return output;
-    }
-    output.note                = std::move(index.value);
-    output.note.content        = std::move(content.value);
-    output.note.contentPresent = true;
-    output.ok                  = true;
-    co_return output;
+    Q_UNREACHABLE();
 }
 
 QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(QString id)
