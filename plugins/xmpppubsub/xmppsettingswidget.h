@@ -13,6 +13,13 @@ class QSpinBox;
 
 namespace QtNote {
 
+/**
+ * @brief Settings and maintenance UI for an XMPP storage account.
+ *
+ * The widget only gathers configuration and emits user intentions. Keychain,
+ * OMEMO, repair, and key-sync operations are performed by XmppStorage/backend,
+ * keeping protocol lifetimes outside the QWidget.
+ */
 class XmppSettingsWidget final : public QWidget {
     Q_OBJECT
 
@@ -36,20 +43,22 @@ signals:
     void repairOmemoDeviceRequested(const QString &jid);
 
 private:
-    QString           originId_;
-    QLineEdit        *jid_;
-    QLineEdit        *password_;
-    QLineEdit        *host_;
-    QSpinBox         *port_;
-    QLineEdit        *resource_;
-    QLineEdit        *nodeName_;
-    QSpinBox         *timeoutSeconds_;
-    QLabel           *keyState_;
-    QLineEdit        *recoveryKey_;
-    QLabel           *ownOmemoDevice_;
-    QPushButton      *repairOmemoDevice_;
-    QComboBox        *omemoDevices_;
-    QPushButton      *trustDevice_;
+    /// Stable installation origin preserved when editing visible settings.
+    QString      originId_;
+    QLineEdit   *jid_;
+    QLineEdit   *password_;
+    QLineEdit   *host_;
+    QSpinBox    *port_;
+    QLineEdit   *resource_;
+    QLineEdit   *nodeName_;
+    QSpinBox    *timeoutSeconds_;
+    QLabel      *keyState_;
+    QLineEdit   *recoveryKey_;
+    QLabel      *ownOmemoDevice_;
+    QPushButton *repairOmemoDevice_;
+    QComboBox   *omemoDevices_;
+    QPushButton *trustDevice_;
+    /// Maps omemoDevices_ rows to binary fingerprints without displaying raw data.
     QList<QByteArray> omemoDeviceKeys_;
 };
 

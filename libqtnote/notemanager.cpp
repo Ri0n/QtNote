@@ -201,16 +201,17 @@ void NoteManager::registerStorage(std::unique_ptr<NoteStorage> ownedStorage)
     connect(storage, SIGNAL(noteRemoved(Note)), SLOT(storageChanged()));
     connect(storage, SIGNAL(noteIdChanged(Note, QString)), SLOT(storageChanged()));
 
-    emit  storageAdded(storage);
-    auto *job = storage->initAsync(this);
-    connect(job, &StorageJob::finished, this, [this, storage, job]() {
-        if (!storage) {
+    emit                        storageAdded(storage);
+    auto                       *job = storage->initAsync(this);
+    const QPointer<NoteStorage> storageGuard(storage);
+    connect(job, &StorageJob::finished, this, [this, storageGuard, job]() {
+        if (!storageGuard) {
             job->deleteLater();
             return;
         }
         if (job->state() == StorageJob::Succeeded)
-            emit storageReady(storage);
-        emit storageChanged(storage);
+            emit storageReady(storageGuard);
+        emit storageChanged(storageGuard);
         job->deleteLater();
     });
 }

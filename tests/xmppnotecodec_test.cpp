@@ -1,8 +1,21 @@
+#include "xmppbackend.h"
 #include "xmppnotecodec.h"
 
 #include <QtTest>
 
+#include <type_traits>
+
 using namespace QtNote;
+
+// Async backend inputs must be owned values. This guards against coroutine
+// implementations retaining references to caller-owned QString/QByteArray
+// objects across suspension.
+static_assert(
+    std::is_same_v<decltype(&XmppBackend::getNoteAsync), void (XmppBackend::*)(QString, XmppBackend::NoteCallback)>);
+static_assert(std::is_same_v<decltype(&XmppBackend::saveNoteAsync),
+                             void (XmppBackend::*)(XmppRemoteNote, XmppBackend::NoteCallback)>);
+static_assert(std::is_same_v<decltype(&XmppBackend::deleteNoteAsync),
+                             void (XmppBackend::*)(QString, XmppBackend::StatusCallback)>);
 
 class XmppNoteCodecTest : public QObject {
     Q_OBJECT

@@ -6,6 +6,13 @@
 
 namespace QtNote {
 
+/**
+ * @brief Persistent encrypted counterpart of QXmppTrustMemoryStorage.
+ *
+ * Trust decisions are mirrored in the base memory storage and serialized to an
+ * account-bound encrypted file after every mutation. This preserves OMEMO
+ * fingerprints and trust levels across application restarts.
+ */
 class XmppPersistentTrustStorage final : public QXmppTrustMemoryStorage {
 public:
     XmppPersistentTrustStorage(QString path, QByteArray encryptionKey, QString accountId);
@@ -26,6 +33,7 @@ public:
     QXmppTask<void> resetAll(const QString &encryption) override;
 
 private:
+    /// Flattened serialization form of one trust decision.
     struct Entry {
         QString           encryption;
         QString           owner;

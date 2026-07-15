@@ -12,6 +12,14 @@ class QTableWidget;
 
 namespace QtNote {
 
+/**
+ * @brief Wizard for restoring a missing/divergent note master key.
+ *
+ * The wizard first establishes OMEMO trust, audits candidate keys received
+ * from this account's devices, lets the user select a canonical key, and then
+ * asks the backend to re-encrypt accessible notes. Protocol work is injected
+ * as callbacks so the UI remains independent of QXmpp and Iris.
+ */
 class XmppKeyResolutionDialog final : public QWizard {
     Q_OBJECT
 
@@ -34,6 +42,7 @@ protected:
     bool validateCurrentPage() override;
 
 private:
+    /// Fixed page order used by validateCurrentPage()'s asynchronous transitions.
     enum Page { ProblemPage, DevicesPage, KeysPage, ReviewPage, ResultPage };
 
     void              populateDevices(const QList<XmppDeviceInfo> &devices, const QString &error);
@@ -55,9 +64,9 @@ private:
     QLabel               *keyStatus_;
     QLabel               *summary_;
     QLabel               *result_;
-    bool                  devicesComplete_ { false };
-    bool                  rekeyComplete_ { false };
-    bool                  operationPending_ { false };
+    bool                  devicesComplete_ { false };  ///< OMEMO trust stage completed successfully.
+    bool                  rekeyComplete_ { false };    ///< Remote migration completed successfully.
+    bool                  operationPending_ { false }; ///< Prevents navigation while a callback is outstanding.
 };
 
 } // namespace QtNote

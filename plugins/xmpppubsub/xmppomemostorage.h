@@ -7,6 +7,14 @@
 
 namespace QtNote {
 
+/**
+ * @brief Encrypted persistent implementation of QXmppOmemoStorage.
+ *
+ * All OMEMO state is kept in memory and atomically serialized to an encrypted
+ * account-bound file after mutations. The storage is used from the XMPP event
+ * loop thread. A prekey-removal hook allows the worker to repair affected
+ * server bundles without coupling persistence code to PubSub.
+ */
 class XmppOmemoStorage final : public QXmppOmemoStorage {
 public:
     XmppOmemoStorage(QString path, QByteArray encryptionKey, QString accountId);
@@ -35,11 +43,11 @@ private:
     void load();
     void persist();
 
-    QString                       path_;
-    QByteArray                    encryptionKey_;
-    QString                       accountId_;
-    OmemoData                     data_;
-    QString                       error_;
+    QString                       path_;          ///< Encrypted state file path.
+    QByteArray                    encryptionKey_; ///< Local at-rest encryption key.
+    QString                       accountId_;     ///< Account binding included in authenticated data.
+    OmemoData                     data_;          ///< In-memory authoritative QXmpp OMEMO state.
+    QString                       error_;         ///< Load/validation error that makes the storage unusable.
     std::function<void(uint32_t)> preKeyRemovedHandler_;
 };
 

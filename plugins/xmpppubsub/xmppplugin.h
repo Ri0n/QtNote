@@ -10,6 +10,7 @@ namespace QtNote {
 class Main;
 class PluginHostInterface;
 
+/** @brief Plugin entry point registering the XMPP PubSub NoteStorage backend. */
 class XmppPlugin final : public QObject, public PluginInterface, public RegularPluginInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.xmpppubsub")

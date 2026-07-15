@@ -12,6 +12,19 @@ namespace QtNote {
 class XmppBackend;
 class XmppSettingsWidget;
 
+/**
+ * @brief QtNote storage adapter backed by encrypted XMPP Personal Eventing Protocol nodes.
+ *
+ * XmppStorage translates between QtNote's Note/NoteStorage API and the
+ * backend-neutral XmppBackend contract. It owns the backend when no backend is
+ * injected, maintains a local index cache, classifies failures, and schedules
+ * reconnects for transient failures. Durable write/delete retry remains the
+ * responsibility of QtNote's draft machinery.
+ *
+ * All methods and callbacks run in this object's thread. Asynchronous callbacks
+ * capture configEpoch_ and discard their result after an account/configuration
+ * change, preventing an old operation from mutating the new account's cache.
+ */
 class XmppStorage final : public NoteStorage {
     Q_OBJECT
     Q_DISABLE_COPY(XmppStorage)
@@ -72,19 +85,40 @@ private:
     void           installReceivedStorageKey(const QString &jid, const QByteArray &key);
     void           resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings = nullptr);
 
-    XmppConfig           config_;
-    XmppBackend         *backend_ { nullptr };
+    /// Stable configuration snapshot used by operations until applyConfig().
+    XmppConfig config_;
+    /// Protocol implementation; parented to this storage when constructed internally.
+    XmppBackend *backend_ { nullptr };
+    /// Most recently loaded remote note index, keyed by note ID.
     QHash<QString, Note> cache_;
-    bool                 cacheValid_ { false };
-    bool                 accessible_ { false };
-    bool                 errorState_ { false };
-    QString              errorStateMessage_;
-    QString              lastReportedError_;
-    bool                 keyResolutionInProgress_ { false };
-    QTimer              *retryTimer_ { nullptr };
-    int                  retryDelaySeconds_ { 30 };
-    bool                 retryInProgress_ { false };
-    bool                 shuttingDown_ { false };
+    /// Whether cache_ is a complete representation of the current remote index.
+    bool cacheValid_ { false };
+    /// Whether normal storage operations may currently be attempted.
+    bool accessible_ { false };
+    /// Set for a terminal error that automatic reconnects cannot repair.
+    bool    errorState_ { false };
+    QString errorStateMessage_;
+    /// Suppresses repeated user notifications containing the same error text.
+    QString lastReportedError_;
+    /// Prevents multiple key-recovery wizards from running concurrently.
+    bool keyResolutionInProgress_ { false };
+    /// Single-shot timer implementing storage-level reconnect backoff.
+    QTimer *retryTimer_ { nullptr };
+    /// Current exponential retry delay; reset after successful initialization.
+    int retryDelaySeconds_ { 30 };
+    /// Guards against overlapping retryInitialization() attempts.
+    bool retryInProgress_ { false };
+    /// Makes shutdown idempotent and prevents new callbacks from scheduling work.
+    bool shuttingDown_ { false };
+    /**
+     * @brief Generation of the active storage configuration.
+     *
+     * Incremented by applyConfig() and shutdown(). Every asynchronous storage
+     * operation captures the current value and compares it before applying its
+     * result. A mismatch means that the callback belongs to an obsolete account
+     * or backend lifetime and must be ignored/cancelled.
+     */
+    quint64 configEpoch_ { 0 };
 };
 
 } // namespace QtNote

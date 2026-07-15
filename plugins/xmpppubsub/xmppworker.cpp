@@ -143,11 +143,21 @@ namespace {
         result.errorKind = classifyXmppError(error);
     }
 
+    template <typename Result> Result configurationChangedResult()
+    {
+        Result result;
+        result.error     = QStringLiteral("The XMPP configuration changed while the operation was running");
+        result.errorKind = XmppErrorKind::Configuration;
+        return result;
+    }
+
 } // namespace
 
 XmppWorker::XmppWorker(QObject *parent) : XmppBackend(parent) { qRegisterMetaType<XmppRemoteNote>(); }
 
 XmppWorker::~XmppWorker() { resetClient(); }
+
+void XmppWorker::start() { acceptingWork_ = true; }
 
 void XmppWorker::setConfig(const XmppConfig &config)
 {
@@ -158,10 +168,16 @@ void XmppWorker::setConfig(const XmppConfig &config)
     resetClient();
 }
 
-void XmppWorker::shutdown() { resetClient(); }
+void XmppWorker::shutdown()
+{
+    acceptingWork_ = false;
+    resetClient();
+}
 
 void XmppWorker::resetClient()
 {
+    ++clientGeneration_;
+    readinessAttempt_.reset();
     prepared_         = false;
     omemoReady_       = false;
     discovery_        = nullptr;
@@ -258,6 +274,15 @@ void XmppWorker::createClient()
 
 void XmppWorker::connectToServerAsync(StatusCallback callback)
 {
+    if (!acceptingWork_) {
+        callback({ false,
+                   false,
+                   false,
+                   QStringLiteral("The XMPP backend is shutting down"),
+                   {},
+                   XmppErrorKind::Configuration });
+        return;
+    }
     createClient();
 
     if (client_->isConnected()) {
@@ -269,7 +294,10 @@ void XmppWorker::connectToServerAsync(StatusCallback callback)
     configuration.setJid(config_.jid);
     configuration.setPassword(config_.password);
     configuration.setResource(config_.resource);
-    configuration.setAutoReconnectionEnabled(true);
+    // XmppStorage owns the retry policy and reacts to system reachability.
+    // Enabling QXmpp's independent reconnect loop here creates competing
+    // connection attempts and bypasses permanent/transient error handling.
+    configuration.setAutoReconnectionEnabled(false);
     configuration.setStreamSecurityMode(QXmppConfiguration::TLSRequired);
     configuration.setIgnoreSslErrors(false);
     if (!config_.host.isEmpty())
@@ -477,23 +505,61 @@ QCoro::Task<XmppStatusResult> XmppWorker::ensureOmemoTask()
 
 QCoro::Task<XmppStatusResult> XmppWorker::ensureReadyTask()
 {
+    if (!acceptingWork_)
+        co_return XmppStatusResult { false, false,
+                                     false, QStringLiteral("The XMPP backend is shutting down"),
+                                     {},    XmppErrorKind::Configuration };
+    if (prepared_)
+        co_return XmppStatusResult { true };
+
+    if (readinessAttempt_)
+        co_return co_await readinessAttempt_->future();
+
+    const auto attempt    = std::make_shared<QFutureInterface<XmppStatusResult>>();
+    readinessAttempt_     = attempt;
+    const auto generation = clientGeneration_;
+    const auto finish     = [this, attempt](XmppStatusResult result) {
+        attempt->reportResult(result);
+        attempt->reportFinished();
+        if (readinessAttempt_ == attempt)
+            readinessAttempt_.reset();
+        return result;
+    };
+    const auto configurationChanged
+        = [generation, this]() { return generation != clientGeneration_ || !acceptingWork_; };
+    const auto cancelled = []() {
+        return XmppStatusResult { false, false,
+                                  false, QStringLiteral("The XMPP configuration changed during initialization"),
+                                  {},    XmppErrorKind::Configuration };
+    };
+
     auto status = co_await connectToServerTask();
+    if (configurationChanged())
+        co_return finish(cancelled());
     if (!status.ok)
-        co_return status;
+        co_return finish(std::move(status));
     status = co_await ensureOmemoTask();
-    if (!status.ok || prepared_)
-        co_return status;
+    if (configurationChanged())
+        co_return finish(cancelled());
+    if (!status.ok)
+        co_return finish(std::move(status));
     status = co_await verifyPrivateStorageSupportTask();
+    if (configurationChanged())
+        co_return finish(cancelled());
     if (!status.ok)
-        co_return status;
+        co_return finish(std::move(status));
     status = co_await ensureNodeTask(config_.indexNodeName());
+    if (configurationChanged())
+        co_return finish(cancelled());
     if (!status.ok)
-        co_return status;
+        co_return finish(std::move(status));
     status = co_await ensureNodeTask(config_.contentNodeName());
+    if (configurationChanged())
+        co_return finish(cancelled());
     if (!status.ok)
-        co_return status;
+        co_return finish(std::move(status));
     prepared_ = true;
-    co_return XmppStatusResult { true };
+    co_return finish(XmppStatusResult { true });
 }
 
 void XmppWorker::cacheOwnOmemoBundle() { cacheOwnOmemoBundleTask(); }
@@ -517,16 +583,19 @@ void XmppWorker::probeAsync(StatusCallback callback) { ensureReadyTask().then(st
 
 void XmppWorker::listNotesAsync(ListCallback callback) { listNotesTask().then(std::move(callback)); }
 
-void XmppWorker::getNoteAsync(const QString &id, NoteCallback callback) { getNoteTask(id).then(std::move(callback)); }
-
-void XmppWorker::saveNoteAsync(const XmppRemoteNote &note, NoteCallback callback)
+void XmppWorker::getNoteAsync(QString id, NoteCallback callback)
 {
-    saveNoteTask(note).then(std::move(callback));
+    getNoteTask(std::move(id)).then(std::move(callback));
 }
 
-void XmppWorker::deleteNoteAsync(const QString &id, StatusCallback callback)
+void XmppWorker::saveNoteAsync(XmppRemoteNote note, NoteCallback callback)
 {
-    deleteNoteTask(id).then(std::move(callback));
+    saveNoteTask(std::move(note)).then(std::move(callback));
+}
+
+void XmppWorker::deleteNoteAsync(QString id, StatusCallback callback)
+{
+    deleteNoteTask(std::move(id)).then(std::move(callback));
 }
 
 XmppDeviceInfo XmppWorker::ownOmemoDevice() const
@@ -554,25 +623,24 @@ void XmppWorker::repairOwnOmemoDeviceAsync(StatusCallback callback)
     repairOwnOmemoDeviceTask().then(std::move(callback));
 }
 
-void XmppWorker::trustOwnOmemoDeviceAsync(const QByteArray &keyId, StatusCallback callback)
+void XmppWorker::trustOwnOmemoDeviceAsync(QByteArray keyId, StatusCallback callback)
 {
-    trustOwnOmemoDeviceTask(keyId).then(std::move(callback));
+    trustOwnOmemoDeviceTask(std::move(keyId)).then(std::move(callback));
 }
 
-void XmppWorker::trustOwnOmemoDevicesAsync(const QList<QByteArray> &keyIds, StatusCallback callback)
+void XmppWorker::trustOwnOmemoDevicesAsync(QList<QByteArray> keyIds, StatusCallback callback)
 {
-    trustOwnOmemoDevicesTask(keyIds).then(std::move(callback));
+    trustOwnOmemoDevicesTask(std::move(keyIds)).then(std::move(callback));
 }
 
 void XmppWorker::auditStorageKeysAsync(AuditCallback callback) { auditStorageKeysTask().then(std::move(callback)); }
 
-void XmppWorker::rekeyStorageAsync(const QList<QByteArray> &keys, const QByteArray &canonicalKey,
-                                   RekeyCallback callback)
+void XmppWorker::rekeyStorageAsync(QList<QByteArray> keys, QByteArray canonicalKey, RekeyCallback callback)
 {
-    rekeyStorageTask(keys, canonicalKey).then(std::move(callback));
+    rekeyStorageTask(std::move(keys), std::move(canonicalKey)).then(std::move(callback));
 }
 
-void XmppWorker::approveKeySyncRequest(const QString &requestId) { approveKeySyncRequestTask(requestId); }
+void XmppWorker::approveKeySyncRequest(QString requestId) { approveKeySyncRequestTask(std::move(requestId)); }
 
 void XmppWorker::handleKeySyncRequest(const QString &requestId, const QString &from, const QByteArray &senderKey)
 {
@@ -660,7 +728,10 @@ void XmppWorker::finishKeySyncTrustRequest(const QString &requestId, const QByte
 QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
 {
     XmppListResult output;
-    const auto     ready = co_await ensureReadyTask();
+    const auto     generation = clientGeneration_;
+    const auto     ready      = co_await ensureReadyTask();
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppListResult>();
     if (!ready.ok) {
         output.error     = ready.error;
         output.errorKind = ready.errorKind;
@@ -684,6 +755,8 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
     };
 
     auto idsResult = co_await pubSub_->requestOwnPepItemIds(config_.indexNodeName()).toFuture(this);
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppListResult>();
     if (std::holds_alternative<QVector<QString>>(idsResult)) {
         const auto   &ids       = std::get<QVector<QString>>(idsResult);
         constexpr int BatchSize = 50;
@@ -697,6 +770,8 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
                               ->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid),
                                                                config_.indexNodeName(), batch)
                               .toFuture(this);
+            if (generation != clientGeneration_)
+                co_return configurationChangedResult<XmppListResult>();
             if (const auto *error = std::get_if<QXmppError>(&result)) {
                 setXmppFailure(output, *error, errorText(*error));
                 co_return output;
@@ -712,6 +787,8 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
     auto result = co_await pubSub_
                       ->requestItems<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName())
                       .toFuture(this);
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppListResult>();
     if (const auto *error = std::get_if<QXmppError>(&result)) {
         setXmppFailure(output, *error, errorText(*error));
         co_return output;
@@ -723,13 +800,15 @@ QCoro::Task<XmppListResult> XmppWorker::listNotesTask()
     co_return output;
 }
 
-QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id)
+QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id, quint64 clientGeneration)
 {
     XmppNoteResult output;
     auto           indexResult
         = co_await pubSub_
               ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.indexNodeName(), id)
               .toFuture(this);
+    if (clientGeneration != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (const auto *error = std::get_if<QXmppError>(&indexResult)) {
         setXmppFailure(output, *error, errorText(*error));
         output.notFound = isItemNotFound(*error);
@@ -750,6 +829,8 @@ QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id)
         = co_await pubSub_
               ->requestItem<QtNotePubSubItem>(QXmppUtils::jidToBareJid(config_.jid), config_.contentNodeName(), id)
               .toFuture(this);
+    if (clientGeneration != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (const auto *error = std::get_if<QXmppError>(&contentResult)) {
         setXmppFailure(output, *error, errorText(*error));
         co_return output;
@@ -774,17 +855,20 @@ QCoro::Task<XmppNoteResult> XmppWorker::requestNoteTask(QString id)
 
 QCoro::Task<XmppNoteResult> XmppWorker::getNoteTask(QString id)
 {
-    const auto ready = co_await ensureReadyTask();
+    const auto generation = clientGeneration_;
+    const auto ready      = co_await ensureReadyTask();
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (!ready.ok) {
         XmppNoteResult output;
         output.error     = ready.error;
         output.errorKind = ready.errorKind;
         co_return output;
     }
-    co_return co_await requestNoteTask(id);
+    co_return co_await requestNoteTask(std::move(id), generation);
 }
 
-QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
+QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note, quint64 clientGeneration)
 {
     XmppNoteResult output;
     note.parentRevision = note.revision;
@@ -805,6 +889,8 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
                          ->publishOwnPepItem(config_.contentNodeName(), QtNotePubSubItem(contentPayload.value),
                                              privatePublishOptions())
                          .toFuture(this);
+    if (clientGeneration != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (const auto *error = resultError(published)) {
         setXmppFailure(output, *error, errorText(*error));
         co_return output;
@@ -813,6 +899,8 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
                     ->publishOwnPepItem(config_.indexNodeName(), QtNotePubSubItem(indexPayload.value),
                                         privatePublishOptions())
                     .toFuture(this);
+    if (clientGeneration != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (const auto *error = resultError(published)) {
         setXmppFailure(output, *error, errorText(*error));
         co_return output;
@@ -824,7 +912,10 @@ QCoro::Task<XmppNoteResult> XmppWorker::publishNoteTask(XmppRemoteNote note)
 
 QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
 {
-    const auto ready = co_await ensureReadyTask();
+    const auto generation = clientGeneration_;
+    const auto ready      = co_await ensureReadyTask();
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppNoteResult>();
     if (!ready.ok) {
         XmppNoteResult output;
         output.error     = ready.error;
@@ -834,7 +925,9 @@ QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
     if (note.id.isEmpty()) {
         note.id = newUuid();
     } else {
-        auto server = co_await requestNoteTask(note.id);
+        auto server = co_await requestNoteTask(note.id, generation);
+        if (generation != clientGeneration_)
+            co_return configurationChangedResult<XmppNoteResult>();
         if (!server.ok)
             co_return server;
         if (server.note.revision != note.revision) {
@@ -846,20 +939,27 @@ QCoro::Task<XmppNoteResult> XmppWorker::saveNoteTask(XmppRemoteNote note)
             co_return conflict;
         }
     }
-    co_return co_await publishNoteTask(std::move(note));
+    co_return co_await publishNoteTask(std::move(note), generation);
 }
 
 QCoro::Task<XmppStatusResult> XmppWorker::deleteNoteTask(QString id)
 {
-    auto status = co_await ensureReadyTask();
+    const auto generation = clientGeneration_;
+    auto       status     = co_await ensureReadyTask();
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppStatusResult>();
     if (!status.ok)
         co_return status;
 
     const auto bareJid = QXmppUtils::jidToBareJid(config_.jid);
     auto       result  = co_await pubSub_->retractItem(bareJid, config_.indexNodeName(), id, true).toFuture(this);
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppStatusResult>();
     if (const auto *error = resultError(result); error && !isItemNotFound(*error))
         co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     result = co_await pubSub_->retractItem(bareJid, config_.contentNodeName(), id, true).toFuture(this);
+    if (generation != clientGeneration_)
+        co_return configurationChangedResult<XmppStatusResult>();
     if (const auto *error = resultError(result); error && !isItemNotFound(*error))
         co_return XmppStatusResult { false, false, false, errorText(*error), {}, classifyXmppError(*error) };
     co_return XmppStatusResult { true };

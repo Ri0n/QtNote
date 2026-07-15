@@ -9,12 +9,14 @@
 
 namespace QtNote {
 
+/// One entry in the XEP-0384 OMEMO device list.
 struct XmppOmemoListedDevice {
     QString label;
     QString id;
     QString labelSignature;
 };
 
+/** @brief Parser/serializer for an XEP-0384 OMEMO device-list PubSub item. */
 class XmppOmemoDeviceListItem final : public QXmppPubSubBaseItem {
 public:
     static bool                         isItem(const QDomElement &element);
@@ -29,6 +31,14 @@ private:
     QList<XmppOmemoListedDevice> devices_;
 };
 
+/**
+ * @brief Parser/serializer for an XEP-0384 OMEMO bundle PubSub item.
+ *
+ * repairedFrom() is an interoperability workaround for QXmpp versions that can
+ * republish an incomplete bundle after a prekey is consumed. It combines the
+ * freshly published bundle with stable fields from a previously valid bundle
+ * while excluding prekeys known to have been consumed.
+ */
 class XmppOmemoBundleItem final : public QXmppPubSubBaseItem {
 public:
     static bool                        isItem(const QDomElement &element);

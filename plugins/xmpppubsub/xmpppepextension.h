@@ -8,6 +8,13 @@
 
 namespace QtNote {
 
+/**
+ * @brief Receives and validates QtNote PEP notifications.
+ *
+ * Only events from the configured own bare JID and note index node are
+ * accepted. Valid encrypted items are converted to backend DTOs; ambiguous or
+ * malformed events invalidate the cache instead of applying partial state.
+ */
 class XmppPepExtension final : public QXmppClientExtension, public QXmppPubSubEventHandler {
     Q_OBJECT
 

@@ -10,6 +10,13 @@
 
 namespace QtNote {
 
+/**
+ * @brief Implements QtNote's private key-sync IQ protocol.
+ *
+ * Requests and responses are addressed to full JIDs. Recovery-key replies may
+ * be OMEMO encrypted; QXmppE2eeMetadata retained in PendingRequest lets the
+ * response follow the encryption context of the incoming request.
+ */
 class XmppKeySyncExtension final : public QXmppClientExtension {
     Q_OBJECT
 
@@ -33,12 +40,14 @@ signals:
     void trustRequestReceived(const QString &requestId, const QString &from, const QByteArray &senderKey);
 
 private:
+    /// Information needed to send a deferred result to an inbound IQ request.
     struct PendingRequest {
         QString                          from;
         QString                          iqId;
         std::optional<QXmppE2eeMetadata> metadata;
     };
 
+    /// Deferred inbound requests keyed by application-level request ID.
     QHash<QString, PendingRequest> pendingRequests_;
 };
 

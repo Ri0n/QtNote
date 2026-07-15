@@ -91,6 +91,12 @@ The storage-facing code does not depend directly on QXmpp. `XmppBackend` is the
 asynchronous boundary intended for both the current QXmpp implementation and a
 future Iris implementation.
 
+Arguments of asynchronous backend methods are passed by value deliberately.
+An implementation owns the request data after the call returns and may safely
+retain it across coroutine suspension or queued callbacks. Implementations
+must not replace those values with reference parameters: the caller's stack
+frame is not part of the asynchronous lifetime.
+
 ```mermaid
 graph TD;
     UI["QtNote UI and NoteManager"];
@@ -137,6 +143,14 @@ QXmpp runs in Qt's normal event loop. There is no dedicated XMPP thread and no
 nested `QEventLoop`; sequential protocol operations are QCoro tasks. XMPP is
 primarily I/O-bound, so a second thread is not useful here. Expensive CPU work
 can be isolated later without changing the backend contract.
+
+Concurrent storage requests share a single backend preparation attempt. Login,
+OMEMO loading, PEP discovery, and node verification therefore run once even
+when several load/save jobs arrive while the account is connecting. Reconnect
+backoff belongs to `XmppStorage`; QXmpp's independent automatic reconnect loop
+is disabled so permanent and transient errors cannot start competing retries.
+Backend shutdown is terminal until an explicit `start()`; merely assigning a
+configuration cannot revive stale work queued before plugin shutdown.
 
 ## Connection and initial synchronization
 
