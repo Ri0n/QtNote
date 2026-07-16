@@ -13,7 +13,9 @@ Available profiles:
   components are available. Otherwise it builds QXmpp 1.15.1 with OMEMO as a
   bundled ExternalProject. Bundled QXmpp is linked statically into the XMPP
   plugin, so no private QXmpp shared libraries are shipped. KF6 integration
-  and the Plasma 6 plasmoid are not built.
+  and the Plasma 6 plasmoid are not built. On Noble's GCC 13, bundled QXmpp is
+  compiled with Clang to avoid known GCC coroutine frontend crashes; QtNote
+  itself continues to use the default Debian compiler.
 
 Build binary and source packages with:
 

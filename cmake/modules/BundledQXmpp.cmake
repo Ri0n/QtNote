@@ -72,8 +72,21 @@ set(_qxmpp_cmake_args
     "-DWITH_GSTREAMER=OFF"
     "-DWITH_ENCRYPTION=ON"
 )
-if(CMAKE_CXX_COMPILER)
-    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
+set(_qxmpp_cxx_compiler "${CMAKE_CXX_COMPILER}")
+set(_qxmpp_cxx_flags "${CMAKE_CXX_FLAGS}")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+    # GCC 13 has multiple frontend ICEs in QXmpp 1.15.1 coroutines, including
+    # the OMEMO implementation, even at -O0. Build only this ExternalProject
+    # with Clang; both compilers use the same libstdc++ ABI on Debian/Ubuntu.
+    find_program(_qxmpp_clangxx NAMES clang++-18 clang++-17 clang++ REQUIRED)
+    set(_qxmpp_cxx_compiler "${_qxmpp_clangxx}")
+    # dpkg-buildflags enables GCC LTO flags that must not be passed to Clang.
+    string(REGEX REPLACE "(^| )-flto(=[^ ]+)?( |$)" " " _qxmpp_cxx_flags "${_qxmpp_cxx_flags}")
+    string(REGEX REPLACE "(^| )-ffat-lto-objects( |$)" " " _qxmpp_cxx_flags "${_qxmpp_cxx_flags}")
+    message(STATUS "Building bundled QXmpp with ${_qxmpp_clangxx} to avoid GCC ${CMAKE_CXX_COMPILER_VERSION} coroutine compiler errors")
+endif()
+if(_qxmpp_cxx_compiler)
+    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_COMPILER=${_qxmpp_cxx_compiler}")
 endif()
 if(CMAKE_CXX_COMPILER_LAUNCHER)
     list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}")
@@ -84,17 +97,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # few places. Keep that third-party warning out of QtNote build logs.
     string(APPEND _qxmpp_extra_cxx_flags " -Wno-deprecated-declarations")
 endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
-    # GCC 13 can ICE in build_special_member_call while optimizing
-    # QXmppPubSubManager::requestItem<QXmppMovedItem>() at Debian's -O2.
-    # Debian also enables LTO through the environment. A trailing -O1 and
-    # -fno-lto affect only this ExternalProject and avoid that compiler bug
-    # while retaining optimization and LTO for the rest of QtNote.
-    string(APPEND _qxmpp_extra_cxx_flags " -O1 -fno-lto")
-    message(STATUS "Building bundled QXmpp with -O1 -fno-lto to avoid a GCC ${CMAKE_CXX_COMPILER_VERSION} internal compiler error")
-endif()
 if(_qxmpp_extra_cxx_flags)
-    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}${_qxmpp_extra_cxx_flags}")
+    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${_qxmpp_cxx_flags}${_qxmpp_extra_cxx_flags}")
 endif()
 
 ExternalProject_Add(qtnote_bundled_qxmpp
