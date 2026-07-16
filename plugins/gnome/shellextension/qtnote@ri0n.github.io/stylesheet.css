@@ -70,3 +70,48 @@
     padding: 14px 18px;
     color: #c0c0c0;
 }
+
+.qtnote-sticky {
+    background-color: #fff2a8;
+    border: 1px solid rgba(90, 75, 20, 0.55);
+    border-radius: 6px;
+    box-shadow: 0 3px 10px 2px rgba(0, 0, 0, 0.28);
+    color: #3d361f;
+}
+
+.qtnote-sticky-content {
+    padding: 12px;
+    padding-bottom: 24px;
+    spacing: 8px;
+}
+
+.qtnote-sticky-header {
+    spacing: 6px;
+}
+
+.qtnote-sticky-title {
+    color: #2f2a18;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.qtnote-sticky-body {
+    color: #3d361f;
+}
+
+.qtnote-sticky-close {
+    min-width: 22px;
+    min-height: 22px;
+    padding: 0;
+    border-radius: 11px;
+    font-weight: bold;
+}
+
+.qtnote-sticky-close:hover {
+    background-color: rgba(80, 60, 10, 0.15);
+}
+
+.qtnote-sticky-resize-grip {
+    color: rgba(60, 45, 10, 0.55);
+    font-size: 14px;
+}

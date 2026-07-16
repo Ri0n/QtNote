@@ -7,15 +7,21 @@
 #include "deintegrationinterface.h"
 #include "notificationinterface.h"
 #include "qtnoteplugininterface.h"
+#include "stickynotesintegrationinterface.h"
 
 namespace QtNote {
 
 class PluginHostInterface;
 
-class GnomePlugin : public QObject, public PluginInterface, DEIntegrationInterface, public NotificationInterface {
+class GnomePlugin : public QObject,
+                    public PluginInterface,
+                    DEIntegrationInterface,
+                    public NotificationInterface,
+                    public StickyNotesIntegrationInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.Gnome")
-    Q_INTERFACES(QtNote::PluginInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface)
+    Q_INTERFACES(QtNote::PluginInterface QtNote::DEIntegrationInterface QtNote::NotificationInterface
+                                                                        QtNote::StickyNotesIntegrationInterface)
 public:
     explicit GnomePlugin(QObject *parent = 0);
 
@@ -32,15 +38,22 @@ public:
     QString                     takePendingWindowGeometryKey() override;
     void                        windowGeometryBridgeReady() override;
 
+    bool  isStickyNotesAvailable() const override;
+    bool  presentStickyNote(const QUuid &stickyId, const QRect &preferredGeometry) override;
+    bool  dismissStickyNote(const QUuid &stickyId) override;
+    QUuid stickyNoteIdForPresentation(const QString &presentationId) const override;
+
 private slots:
     void askEnableShellExtension();
     void activator();
 
 private:
-    bool isShellExtensionInstalled() const;
-    bool isShellExtensionEnabled() const;
-    bool enableShellExtension() const;
-    bool geometryExtensionAvailable();
+    bool    isShellExtensionInstalled() const;
+    bool    isShellExtensionEnabled() const;
+    bool    enableShellExtension() const;
+    bool    geometryExtensionAvailable();
+    QString stickyNotesSettings() const;
+    bool    setStickyNotesSettings(const QString &json) const;
 
     PluginHostInterface *host = nullptr;
     QQueue<QString>      pendingWindowGeometryKeys;

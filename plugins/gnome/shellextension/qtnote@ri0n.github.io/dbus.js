@@ -22,6 +22,16 @@ const QTNOTE_IFACE_XML = `
     <method name="globalShortcutsJson">
       <arg type="s" name="response" direction="out"/>
     </method>
+    <method name="stickyNoteJson">
+      <arg type="s" name="stickyId" direction="in"/>
+      <arg type="s" name="response" direction="out"/>
+    </method>
+    <method name="openStickyNote">
+      <arg type="s" name="stickyId" direction="in"/>
+    </method>
+    <method name="unpinStickyNote">
+      <arg type="s" name="stickyId" direction="in"/>
+    </method>
     <method name="claimWindowGeometry">
       <arg type="s" name="response" direction="out"/>
     </method>
@@ -47,6 +57,7 @@ const QTNOTE_IFACE_XML = `
     <method name="quit"/>
     <signal name="notesChanged"/>
     <signal name="globalShortcutsChanged"/>
+    <signal name="stickyNotesChanged"/>
   </interface>
 </node>`;
 
@@ -90,6 +101,11 @@ export class QtNoteDBusClient {
         this._signalIds.push(id);
     }
 
+    onStickyNotesChanged(callback) {
+        const id = this._proxy.connectSignal('stickyNotesChanged', callback);
+        this._signalIds.push(id);
+    }
+
     onNameOwnerChanged(callback) {
         const id = this._proxy.connect('notify::g-name-owner', () => {
             callback(this._proxy.get_name_owner());
@@ -120,6 +136,24 @@ export class QtNoteDBusClient {
             this._proxy.call(
                 'globalShortcutsJson',
                 null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                (proxy, result) => {
+                    try {
+                        resolve(proxy.call_finish(result).deepUnpack()[0]);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+        });
+    }
+
+    stickyNoteJson(stickyId) {
+        return new Promise((resolve, reject) => {
+            this._proxy.call(
+                'stickyNoteJson',
+                new GLib.Variant('(s)', [stickyId]),
                 Gio.DBusCallFlags.NONE,
                 -1,
                 null,
@@ -201,6 +235,14 @@ export class QtNoteDBusClient {
 
     openNote(storageId, noteId) {
         this._call('openNote', new GLib.Variant('(ss)', [storageId, noteId]), true);
+    }
+
+    openStickyNote(stickyId) {
+        this._call('openStickyNote', new GLib.Variant('(s)', [stickyId]), true);
+    }
+
+    unpinStickyNote(stickyId) {
+        this._call('unpinStickyNote', new GLib.Variant('(s)', [stickyId]));
     }
 
     createNote() {

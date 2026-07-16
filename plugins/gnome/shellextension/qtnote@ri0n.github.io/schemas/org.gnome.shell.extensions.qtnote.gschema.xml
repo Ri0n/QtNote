@@ -7,5 +7,9 @@
       <summary>Create a note from the current selection</summary>
       <description>Global shortcut handled by the QtNote GNOME Shell extension.</description>
     </key>
+    <key name="sticky-notes" type="s">
+      <default>'{}'</default>
+      <summary>Pinned QtNote notes and their desktop geometry</summary>
+    </key>
   </schema>
 </schemalist>

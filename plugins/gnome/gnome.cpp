@@ -19,9 +19,13 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QFileInfo>
 #include <QGuiApplication>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMessageBox>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
@@ -40,6 +44,37 @@ namespace QtNote {
 
 static const QLatin1String pluginId("gnome_de");
 static const QLatin1String shellExtensionId("qtnote@ri0n.github.io");
+static const QLatin1String shellExtensionSchema("org.gnome.shell.extensions.qtnote");
+static const QLatin1String stickyNotesKey("sticky-notes");
+
+static QString runGSettings(const QStringList &arguments, bool *ok = nullptr)
+{
+    const QString executable = QStandardPaths::findExecutable(QLatin1String("gsettings"));
+    if (executable.isEmpty()) {
+        if (ok)
+            *ok = false;
+        return {};
+    }
+    QProcess      process;
+    const QString compiledSchema = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+                                                          QLatin1String("gnome-shell/extensions/") + shellExtensionId
+                                                              + QLatin1String("/schemas/gschemas.compiled"));
+    if (!compiledSchema.isEmpty()) {
+        auto environment = QProcessEnvironment::systemEnvironment();
+        environment.insert(QLatin1String("GSETTINGS_SCHEMA_DIR"), QFileInfo(compiledSchema).absolutePath());
+        process.setProcessEnvironment(environment);
+    }
+    process.start(executable, arguments);
+    if (!process.waitForFinished(3000)) {
+        if (ok)
+            *ok = false;
+        return {};
+    }
+    const bool succeeded = process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
+    if (ok)
+        *ok = succeeded;
+    return succeeded ? QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed() : QString();
+}
 
 //------------------------------------------------------------
 // GnomePlugin
@@ -181,6 +216,65 @@ QString GnomePlugin::takePendingWindowGeometryKey()
 }
 
 void GnomePlugin::windowGeometryBridgeReady() { geometryBridgeReady = true; }
+
+QString GnomePlugin::stickyNotesSettings() const
+{
+    bool          ok    = false;
+    const QString value = runGSettings({ QLatin1String("get"), shellExtensionSchema, stickyNotesKey }, &ok);
+    if (!ok || value.size() < 2 || value.front() != QLatin1Char('\'') || value.back() != QLatin1Char('\''))
+        return QStringLiteral("{}");
+    QString json = value.mid(1, value.size() - 2);
+    json.replace(QLatin1String("\\'"), QLatin1String("'"));
+    json.replace(QLatin1String("\\\\"), QLatin1String("\\"));
+    return json;
+}
+
+bool GnomePlugin::setStickyNotesSettings(const QString &json) const
+{
+    QString escaped = json;
+    escaped.replace(QLatin1String("\\"), QLatin1String("\\\\"));
+    escaped.replace(QLatin1String("'"), QLatin1String("\\'"));
+    bool ok = false;
+    runGSettings(
+        { QLatin1String("set"), shellExtensionSchema, stickyNotesKey, QLatin1Char('\'') + escaped + QLatin1Char('\'') },
+        &ok);
+    return ok;
+}
+
+bool GnomePlugin::isStickyNotesAvailable() const { return isShellExtensionInstalled(); }
+
+bool GnomePlugin::presentStickyNote(const QUuid &stickyId, const QRect &preferredGeometry)
+{
+    if (stickyId.isNull() || !isStickyNotesAvailable())
+        return false;
+    auto          document = QJsonDocument::fromJson(stickyNotesSettings().toUtf8());
+    auto          root     = document.isObject() ? document.object() : QJsonObject {};
+    const QString idText   = stickyId.toString(QUuid::WithoutBraces);
+    if (root.contains(idText))
+        return true;
+    const QRect geometry = preferredGeometry.isValid() ? preferredGeometry : QRect(100, 100, 300, 220);
+    root.insert(idText,
+                QJsonObject {
+                    { QStringLiteral("x"), geometry.x() },
+                    { QStringLiteral("y"), geometry.y() },
+                    { QStringLiteral("width"), qMax(220, geometry.width()) },
+                    { QStringLiteral("height"), qMax(140, geometry.height()) },
+                });
+    return setStickyNotesSettings(QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact)));
+}
+
+bool GnomePlugin::dismissStickyNote(const QUuid &stickyId)
+{
+    auto          document = QJsonDocument::fromJson(stickyNotesSettings().toUtf8());
+    auto          root     = document.isObject() ? document.object() : QJsonObject {};
+    const QString idText   = stickyId.toString(QUuid::WithoutBraces);
+    if (!root.contains(idText))
+        return false;
+    root.remove(idText);
+    return setStickyNotesSettings(QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact)));
+}
+
+QUuid GnomePlugin::stickyNoteIdForPresentation(const QString &presentationId) const { return QUuid(presentationId); }
 
 void GnomePlugin::activateWidget(QWidget *w)
 {
