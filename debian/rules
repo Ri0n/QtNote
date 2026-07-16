@@ -18,4 +18,5 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		-DQT_VERSION_MAJOR=$(QT_VERSION_MAJOR) \
 		$(QTNOTE_CMAKE_ARGS) \
+		$(QTNOTE_CMAKE_EXTRA_ARGS) \
 		$(CCACHE_CMAKE_ARGS)

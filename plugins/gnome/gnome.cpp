@@ -32,7 +32,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "freedesktopnotifier.h"
 #include "gnome.h"
 #include "qtnote_config.h"
+#ifdef QTNOTE_ENABLE_X11
 #include "x11util.h"
+#endif
 
 namespace QtNote {
 
@@ -192,8 +194,10 @@ void GnomePlugin::activator()
     w->activateWindow();
     if (auto *window = w->windowHandle())
         window->requestActivate();
+#ifdef QTNOTE_ENABLE_X11
     if (QGuiApplication::platformName() == QLatin1String("xcb"))
         X11Util::forceActivateWindow(w->winId());
+#endif
     timer->deleteLater();
 }
 

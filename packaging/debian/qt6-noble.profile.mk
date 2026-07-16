@@ -3,3 +3,5 @@ QTNOTE_CMAKE_ARGS := -DQTNOTE_BUILD_BUNDLED_QXMPP=ON
 export CC := clang
 export CXX := clang++
 export DEB_BUILD_MAINT_OPTIONS := $(DEB_BUILD_MAINT_OPTIONS) optimize=-lto
+export DEB_CFLAGS_MAINT_APPEND := -gdwarf-4
+export DEB_CXXFLAGS_MAINT_APPEND := -gdwarf-4

@@ -7,14 +7,19 @@ set (QXT_SRC 3rdparty/qxt/qxtglobalshortcut.h
 if (APPLE)
     list(APPEND QXT_SRC 3rdparty/qxt/qxtglobalshortcut_mac.cpp)
 endif()
-if (UNIX AND NOT APPLE)
+if (UNIX AND NOT APPLE AND QTNOTE_ENABLE_X11)
     list(APPEND QXT_SRC 3rdparty/qxt/qxtglobalshortcut_x11.cpp)
 endif()
 if (WIN32)
     list(APPEND QXT_SRC 3rdparty/qxt/qxtglobalshortcut_win.cpp)
 endif()
 
-add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin" ON unix macosx windows SOURCES
+set(_baseintegration_buildable ON)
+if(UNIX AND NOT APPLE AND NOT QTNOTE_ENABLE_X11)
+    set(_baseintegration_buildable OFF)
+endif()
+
+add_qtnote_plugin(baseintegration "Base (fallback) desktop integration plugin" ${_baseintegration_buildable} unix macosx windows SOURCES
     ${QXT_SRC}
     baseintegration.h
     baseintegration.cpp
@@ -28,9 +33,12 @@ target_link_libraries(baseintegration ${EXTRA_LINK_TARGET} Qt${QT_VERSION_MAJOR}
 if (UNIX)
     if (APPLE)
         target_link_libraries(baseintegration "-framework Carbon")
-    elseif(${QT_VERSION_MAJOR} LESS 6)
+    elseif(QTNOTE_ENABLE_X11 AND ${QT_VERSION_MAJOR} LESS 6)
         find_package(Qt${QT_VERSION_MAJOR} COMPONENTS X11Extras REQUIRED)
         target_link_libraries(baseintegration Qt${QT_VERSION_MAJOR}::X11Extras)
+    elseif(QTNOTE_ENABLE_X11)
+        find_package(X11 REQUIRED)
+        target_link_libraries(baseintegration X11::X11)
     endif()
 endif()
 

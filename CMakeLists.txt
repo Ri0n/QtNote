@@ -28,6 +28,7 @@ include(CTest)
 
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
 option(QTNOTE_BUILD_BUNDLED_QXMPP "Build bundled QXmpp when a suitable system QXmpp is unavailable" OFF)
+option(QTNOTE_ENABLE_X11 "Build QtNote components that use X11 directly" ON)
 
 if("${QT_VERSION_MAJOR}" STREQUAL "")
     set(QT_VERSION_MAJOR 6)

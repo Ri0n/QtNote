@@ -47,6 +47,18 @@ network-isolated build, unpack the same release beforehand and configure with:
 Set `-DQTNOTE_BUNDLED_QXMPP_STATIC=OFF` to build and package private shared
 QXmpp libraries instead.
 
+Set `-DQTNOTE_ENABLE_X11=OFF` for a Wayland-only QtNote build. This removes the
+GNOME plugin's X11 activation helper and disables the Linux base-integration
+plugin, whose global-shortcut implementation requires X11. QtNote will not
+search for or link directly to X11 in this mode.
+
+For a Debian profile build, pass additional CMake options through the
+environment, for example:
+
+```sh
+QTNOTE_CMAKE_EXTRA_ARGS=-DQTNOTE_ENABLE_X11=OFF admin/debbuild.sh qt6-noble
+```
+
 An arbitrary package builder can be run under a selected profile after `--`:
 
 ```sh
