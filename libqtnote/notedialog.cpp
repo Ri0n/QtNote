@@ -96,7 +96,7 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
         int   x     = QRandomGenerator::global()->bounded(avail.width() / 4, avail.width() / 2);
         int   y     = QRandomGenerator::global()->bounded(avail.height() / 4, avail.height() / 2);
         move(x, y);
-    } else {
+    } else if (!rect.isEmpty()) {
         setGeometry(rect);
     }
 
