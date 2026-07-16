@@ -164,12 +164,12 @@ WindowGeometryRestoreResult GnomePlugin::restoreWindowGeometry(QWidget *, const 
     return WindowGeometryRestoreResult::Pending;
 }
 
-bool GnomePlugin::saveWindowGeometry(QWidget *, const QString &key)
+bool GnomePlugin::saveWindowGeometry(QWidget *, const QString &)
 {
     if (!geometryExtensionAvailable())
         return false;
-    if (!pendingWindowGeometryKeys.contains(key))
-        pendingWindowGeometryKeys.enqueue(key);
+    // The shell extension keeps the key it claimed when the window appeared.
+    // Enqueuing it again here would leak it into the next window's claim.
     return true;
 }
 

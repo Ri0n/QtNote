@@ -215,12 +215,13 @@ WindowGeometryRestoreResult CinnamonPlugin::restoreWindowGeometry(QWidget *, con
     return WindowGeometryRestoreResult::Pending;
 }
 
-bool CinnamonPlugin::saveWindowGeometry(QWidget *, const QString &key)
+bool CinnamonPlugin::saveWindowGeometry(QWidget *, const QString &)
 {
     if (QGuiApplication::platformName() != QLatin1String("wayland") || !geometryBridgeReady)
         return false;
-    if (!pendingWindowGeometryKeys.contains(key))
-        pendingWindowGeometryKeys.enqueue(key);
+    // The applet has already claimed the key queued by restoreWindowGeometry()
+    // and tracks the window until it is unmanaged. Re-enqueuing here would make
+    // the next window claim this stale key.
     return true;
 }
 
