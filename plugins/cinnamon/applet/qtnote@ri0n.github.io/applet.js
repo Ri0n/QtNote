@@ -11,6 +11,7 @@ const St = imports.gi.St;
 
 const BUS_NAME = 'com.github.ri0n.QtNote';
 const OBJECT_PATH = '/QtNote';
+const INTERFACE_NAME = 'com.github.ri0n.QtNote';
 const PAGE_SIZE = 50;
 const SEARCH_DELAY_MS = 250;
 const GEOMETRY_RETRY_MS = 100;
@@ -173,7 +174,31 @@ class WindowGeometry {
         state.signalIds.push(window.connect('size-changed', Lang.bind(this, function() { this._changed(window); })));
         state.signalIds.push(window.connect('unmanaged', Lang.bind(this, function() { this._unmanaged(window); })));
         this._windows.set(window, state);
-        this._claim(window);
+        if (!this._claimSync(window, state))
+            this._claim(window);
+    }
+
+    _claimSync(window, state) {
+        try {
+            let reply = Gio.DBus.session.call_sync(
+                BUS_NAME, OBJECT_PATH, INTERFACE_NAME, 'claimWindowGeometry',
+                null, null, Gio.DBusCallFlags.NONE, 250, null);
+            let unpacked = reply.deep_unpack();
+            let payload = unpacked.length > 0 ? unpacked[0] : '';
+            if (!payload)
+                return false;
+            let geometry = JSON.parse(payload);
+            if (!geometry.key)
+                return false;
+            state.key = geometry.key;
+            if (geometry.valid)
+                window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+            this._reveal(state);
+            return true;
+        } catch (error) {
+            global.logError(error, 'Failed to synchronously claim QtNote window geometry');
+            return false;
+        }
     }
 
     _claim(window) {
