@@ -60,5 +60,6 @@ target_link_libraries(
     QXmpp::Omemo
     QCoro::Core
 )
+qtnote_configure_qxmpp_target(xmpppubsub)
 
 install_qtnote_plugin(xmpppubsub)

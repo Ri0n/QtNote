@@ -55,6 +55,17 @@ else()
     message(STATUS "QXmpp 1.11+ with OMEMO not found; the XMPP plugin will be disabled")
 endif()
 
+function(qtnote_configure_qxmpp_target target)
+    if(TARGET qtnote_bundled_qxmpp)
+        # Older CMake/Qt AUTOGEN implementations may turn an imported static
+        # library into a file prerequisite without carrying over the imported
+        # target's ExternalProject dependency. Make the ordering explicit for
+        # both the consumer and its generated MOC/UIC timestamp target.
+        add_dependencies(${target} qtnote_bundled_qxmpp)
+        set_property(TARGET ${target} APPEND PROPERTY AUTOGEN_TARGET_DEPENDS qtnote_bundled_qxmpp)
+    endif()
+endfunction()
+
 if(UNIX AND NOT (APPLE OR HAIKU))
     set(UNIXLIKE ON)
 endif()
