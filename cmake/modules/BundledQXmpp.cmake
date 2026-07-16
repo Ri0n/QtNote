@@ -76,6 +76,10 @@ endif()
 ExternalProject_Add(qtnote_bundled_qxmpp
     ${_qxmpp_source_args}
     PREFIX "${_qxmpp_prefix}"
+    PATCH_COMMAND
+        "${CMAKE_COMMAND}"
+        "-DQXMPP_SOURCE_DIR=<SOURCE_DIR>"
+        -P "${CMAKE_CURRENT_LIST_DIR}/../patches/PatchQXmppQt64.cmake"
     INSTALL_DIR "${_qxmpp_install_dir}"
     CMAKE_ARGS ${_qxmpp_cmake_args}
     BUILD_BYPRODUCTS

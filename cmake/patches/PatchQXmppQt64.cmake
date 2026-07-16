@@ -1,0 +1,15 @@
+set(_source "${QXMPP_SOURCE_DIR}/src/omemo/OmemoCryptoProvider.cpp")
+if(NOT EXISTS "${_source}")
+    message(FATAL_ERROR "QXmpp OMEMO source not found: ${_source}")
+endif()
+
+file(READ "${_source}" _contents)
+set(_old "mac->addData(QByteArrayView(reinterpret_cast<const char *>(data), data_len));")
+set(_new "mac->addData(reinterpret_cast<const char *>(data), qsizetype(data_len));")
+
+if(_contents MATCHES "QMessageAuthenticationCode[\\s\\S]*${_old}")
+    string(REPLACE "${_old}" "${_new}" _contents "${_contents}")
+    file(WRITE "${_source}" "${_contents}")
+elseif(NOT _contents MATCHES "${_new}")
+    message(FATAL_ERROR "Unsupported QXmpp OmemoCryptoProvider.cpp; Qt 6.4 compatibility patch could not be applied")
+endif()
