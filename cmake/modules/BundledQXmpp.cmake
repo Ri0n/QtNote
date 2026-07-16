@@ -1,5 +1,6 @@
 include(ExternalProject)
 include(FindPkgConfig)
+include(ProcessorCount)
 
 if(NOT QT_VERSION_MAJOR EQUAL 6)
     message(FATAL_ERROR "Bundled QXmpp is supported only with Qt 6")
@@ -15,6 +16,11 @@ pkg_check_modules(OmemoC REQUIRED IMPORTED_TARGET libomemo-c)
 set(QTNOTE_BUNDLED_QXMPP_VERSION "1.15.1")
 set(QTNOTE_QXMPP_SOURCE_DIR "" CACHE PATH "Local QXmpp source directory (avoids downloading the release tarball)")
 option(QTNOTE_BUNDLED_QXMPP_STATIC "Link bundled QXmpp statically into its consumers" ON)
+ProcessorCount(_qxmpp_detected_jobs)
+if(NOT _qxmpp_detected_jobs)
+    set(_qxmpp_detected_jobs 2)
+endif()
+set(QTNOTE_BUNDLED_QXMPP_JOBS "${_qxmpp_detected_jobs}" CACHE STRING "Parallel jobs used to build bundled QXmpp")
 
 set(_qxmpp_prefix "${CMAKE_BINARY_DIR}/_deps/qxmpp")
 set(_qxmpp_install_dir "${_qxmpp_prefix}/install")
@@ -72,6 +78,11 @@ endif()
 if(CMAKE_CXX_COMPILER_LAUNCHER)
     list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}")
 endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # QXmpp 1.15.1 itself still copies its deprecated QXmppPromise type in a
+    # few places. Keep that third-party warning out of QtNote build logs.
+    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif()
 
 ExternalProject_Add(qtnote_bundled_qxmpp
     ${_qxmpp_source_args}
@@ -82,6 +93,9 @@ ExternalProject_Add(qtnote_bundled_qxmpp
         -P "${CMAKE_CURRENT_LIST_DIR}/../patches/PatchQXmppQt64.cmake"
     INSTALL_DIR "${_qxmpp_install_dir}"
     CMAKE_ARGS ${_qxmpp_cmake_args}
+    BUILD_COMMAND
+        "${CMAKE_COMMAND}" --build <BINARY_DIR>
+        --parallel "${QTNOTE_BUNDLED_QXMPP_JOBS}"
     BUILD_BYPRODUCTS
         "${_qxmpp_library}"
         "${_qxmpp_omemo_library}"
