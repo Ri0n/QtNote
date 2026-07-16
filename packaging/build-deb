@@ -1,0 +1,57 @@
+#!/bin/sh
+
+set -eu
+
+usage()
+{
+    echo "Usage: $0 <qt6|qt6-noble> [dpkg-buildpackage arguments...]" >&2
+    echo "       $0 <qt6|qt6-noble> -- <command> [arguments...]" >&2
+    exit 2
+}
+
+[ "$#" -ge 1 ] || usage
+
+profile=$1
+shift
+
+case "$profile" in
+    qt6|qt6-noble)
+        ;;
+    *)
+        usage
+        ;;
+esac
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+profile_dir="$project_dir/packaging/debian"
+control_file="$profile_dir/$profile.control"
+build_profile_file="$profile_dir/$profile.profile.mk"
+
+control_backup=$(mktemp)
+build_profile_backup=$(mktemp)
+
+restore_packaging()
+{
+    cp "$control_backup" "$project_dir/debian/control"
+    cp "$build_profile_backup" "$project_dir/debian/build-profile.mk"
+    rm -f "$control_backup" "$build_profile_backup"
+}
+
+trap restore_packaging EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+cp "$project_dir/debian/control" "$control_backup"
+cp "$project_dir/debian/build-profile.mk" "$build_profile_backup"
+cp "$control_file" "$project_dir/debian/control"
+cp "$build_profile_file" "$project_dir/debian/build-profile.mk"
+
+cd "$project_dir"
+if [ "${1-}" = "--" ]; then
+    shift
+    [ "$#" -ge 1 ] || usage
+    "$@"
+else
+    dpkg-buildpackage "$@"
+fi
