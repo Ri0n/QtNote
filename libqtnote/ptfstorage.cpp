@@ -104,7 +104,7 @@ Note PTFStorage::note(const QString &noteId)
         QFileInfo fi;
         for (auto const &ext : std::as_const(fileExt)) {
             fi = QFileInfo(QDir(notesDir).absoluteFilePath(QString("%1.%2").arg(noteId, ext)));
-            if (fi.exists() || fi.isWritable()) {
+            if (fi.exists()) {
                 Note loaded(new NoteData(this));
                 loaded.setId(fi.completeBaseName());
                 loaded.setFormat(fi.suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0 ? Note::Markdown
@@ -113,10 +113,10 @@ Note PTFStorage::note(const QString &noteId)
                 loaded.setBackendValue(QStringLiteral("fileName"), fi.filePath());
                 if (loadNote(loaded))
                     return loaded;
+                handleFSError();
                 return {};
             }
         }
-        handleFSError();
     }
     return Note();
 }
