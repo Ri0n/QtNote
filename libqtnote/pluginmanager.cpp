@@ -40,6 +40,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
 #include "qtnote_config.h"
+#include "stickynotesintegrationinterface.h"
 #include "trayinterface.h"
 
 namespace QtNote {
@@ -118,6 +119,8 @@ static QString pluginFeaturesName(PluginManager::PluginFeatures features)
         ret.append(QStringLiteral("shortcuts"));
     if (features & PluginManager::Notifications)
         ret.append(QStringLiteral("notifications"));
+    if (features & PluginManager::StickyNotes)
+        ret.append(QStringLiteral("sticky-notes"));
     return ret.isEmpty() ? QStringLiteral("none") : ret.join(QLatin1Char(','));
 }
 
@@ -388,6 +391,23 @@ void PluginManager::loadPlugins()
         qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
         qInfo() << "Desktop integration plugin selected:" << plugin;
+        break;
+    }
+
+    /* Sticky notes are optional and selected independently from the basic
+     * desktop integration. Native implementations still take precedence. */
+    QStringList stickyPlugins = featurePriority[StickyNotes].native + featurePriority[StickyNotes].base;
+    qInfo().noquote() << "Sticky notes plugin candidates:" << stickyPlugins.join(QLatin1Char(','));
+    foreach (const QString &plugin, stickyPlugins) {
+        auto pd = plugins[plugin];
+        if (!ensureLoaded(pd))
+            continue;
+        auto *sticky = qobject_cast<StickyNotesIntegrationInterface *>(pd->instance);
+        if (!sticky || !sticky->isStickyNotesAvailable())
+            continue;
+        qtnote->setStickyNotesImpl(sticky);
+        pd->loadStatus = LS_Initialized;
+        qInfo() << "Sticky notes plugin selected:" << plugin;
         break;
     }
 
@@ -665,6 +685,9 @@ PluginManager::LoadStatus PluginManager::loadPlugin(const QString &fileName, Plu
         }
         if (qobject_cast<NotificationInterface *>(plugin)) {
             cache->features |= Notifications;
+        }
+        if (qobject_cast<StickyNotesIntegrationInterface *>(plugin)) {
+            cache->features |= StickyNotes;
         }
         if (qobject_cast<RegularPluginInterface *>(plugin)) {
             cache->features |= RegularPlugin;

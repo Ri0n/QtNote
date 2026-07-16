@@ -55,7 +55,9 @@ public:
     const QString    &firstLine() const { return _firstLine; }
     qint64            lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
     bool              isTrashRequested() const { return _trashRequested; }
+    bool              hasPersistedDraft() const { return _draftPersisted; }
     void              setTrashRequested(bool state) { _trashRequested = state; }
+    void              setStickyNotesAvailable(bool available);
     void              rehighlight();
     void              findText(const QString &text, bool focusFindBar = true);
     bool              prepareToClose();
@@ -65,6 +67,7 @@ signals:
     void firstLineChanged();
     void trashRequested();
     void noteIdChanged(const QString &oldId, const QString &newId);
+    void pinRequested();
 
 protected:
     void changeEvent(QEvent *e) override;
@@ -114,6 +117,7 @@ private:
     QAction                              *mdModeAct;
     QAction                              *txtModeAct;
     QAction                              *speechAction = nullptr;
+    QAction                              *pinAction    = nullptr;
     QIcon                                 speechIdleIcon;
     QToolButton                          *speechButton   = nullptr;
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;

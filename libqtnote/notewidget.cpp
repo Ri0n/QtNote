@@ -206,6 +206,13 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
 
     tbar->addSeparator();
 
+    auto pinIcon = QIcon::fromTheme(QLatin1String("view-pin-symbolic"));
+    pinAction    = QtNote::initAction(pinIcon, tr("Pin"), tr("Pin note to the desktop"), "", this);
+    pinAction->setVisible(false);
+    pinAction->setEnabled(!_note.id().isEmpty());
+    tbar->addAction(pinAction);
+    connect(pinAction, &QAction::triggered, this, &NoteWidget::pinRequested);
+
     speechRecorder  = new SpeechAudioRecorder(this);
     auto speechIcon = QIcon::fromTheme(QLatin1String("audio-input-microphone"));
     if (speechIcon.isNull()) {
@@ -390,6 +397,8 @@ void NoteWidget::focusReceived()
 void NoteWidget::textChanged()
 {
     _changed = true;
+    if (pinAction)
+        pinAction->setEnabled(!ui->noteEdit->document()->isEmpty());
     if (!_autosaveTimer.isActive()) {
         _autosaveTimer.start();
         _lastChangeElapsed.restart();
@@ -506,6 +515,14 @@ void NoteWidget::setSpeechRecognitionProvider(SpeechRecognitionProviderInterface
 {
     speechProvider = provider;
     updateSpeechRecognitionAction();
+}
+
+void NoteWidget::setStickyNotesAvailable(bool available)
+{
+    if (pinAction) {
+        pinAction->setVisible(available);
+        pinAction->setEnabled(!_note.id().isEmpty() || !ui->noteEdit->document()->isEmpty());
+    }
 }
 
 void NoteWidget::setNote(const Note &note)

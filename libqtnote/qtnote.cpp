@@ -43,6 +43,7 @@
 #include "qtnotedbus.h"
 #endif
 #include "shortcutsmanager.h"
+#include "stickynotesmanager.h"
 #include "trayimpl.h"
 #include "utils.h"
 
@@ -67,13 +68,15 @@ public:
     bool                      externalTrayAvailable;
     GlobalShortcutsInterface *globalShortcuts;
     NotificationInterface    *notifier;
+    StickyNotesManager       *stickyNotes;
     QSet<QUuid>               recoveredDraftIds;
 #ifdef QTNOTE_DBUS_AVAILABLE
     QtNoteDBus *dbus;
 #endif
 
     Private(Main *parent) :
-        QObject(parent), q(parent), de(0), tray(0), externalTrayAvailable(false), globalShortcuts(0), notifier(0)
+        QObject(parent), q(parent), de(0), tray(0), externalTrayAvailable(false), globalShortcuts(0), notifier(0),
+        stickyNotes(new StickyNotesManager(parent))
 #ifdef QTNOTE_DBUS_AVAILABLE
         ,
         dbus(0)
@@ -330,6 +333,7 @@ NoteWidget *Main::noteWidget(const Note &note, const QUuid &draftId)
 {
     NoteWidget *w = new NoteWidget(note, draftId);
     w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider());
+    w->setStickyNotesAvailable(d->stickyNotes->isAvailable());
 
     emit noteWidgetCreated(w);
 
@@ -338,6 +342,15 @@ NoteWidget *Main::noteWidget(const Note &note, const QUuid &draftId)
             [this, w]() { w->setSpeechRecognitionProvider(_pluginManager->speechRecognitionProvider()); });
     connect(w, SIGNAL(trashRequested()), SLOT(note_trashRequested()));
     return w;
+}
+
+StickyNotesManager *Main::stickyNotesManager() const { return d->stickyNotes; }
+
+void Main::setStickyNotesImpl(StickyNotesIntegrationInterface *stickyNotes) { d->stickyNotes->setBackend(stickyNotes); }
+
+void Main::pinNote(const Note &note, const QUuid &draftId, bool awaitingPublication, const QRect &preferredGeometry)
+{
+    d->stickyNotes->requestPin(note, draftId, awaitingPublication, preferredGeometry);
 }
 
 void Main::openNoteDialog(const QString &storageId, const QString &noteId)

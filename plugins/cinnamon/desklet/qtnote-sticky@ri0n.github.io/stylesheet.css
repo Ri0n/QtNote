@@ -1,0 +1,21 @@
+.qtnote-sticky {
+    width: 300px;
+    min-height: 180px;
+    max-height: 420px;
+    padding: 14px;
+    spacing: 10px;
+    color: #2f2a18;
+    background-color: #fff2a8;
+    border: 1px solid rgba(90, 75, 20, 0.35);
+    border-radius: 5px;
+    box-shadow: 0 3px 10px 2px rgba(0, 0, 0, 0.28);
+}
+
+.qtnote-sticky-title {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.qtnote-sticky-body {
+    color: #3d361f;
+}

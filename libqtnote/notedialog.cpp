@@ -103,6 +103,10 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
     noteWidget->setFocus(Qt::OtherFocusReason);
 
     connect(noteWidget, &NoteWidget::trashRequested, this, &NoteDialog::trashRequested);
+    connect(noteWidget, &NoteWidget::pinRequested, this, [this]() {
+        pinning = true;
+        close();
+    });
     connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
         if (oldId.isEmpty() && !newId.isEmpty()) {
             NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->note().storageId(), newId), this);
@@ -160,6 +164,9 @@ void NoteDialog::done(int r)
     if (!noteWidget->note().id().isEmpty()) {
         NoteDialog::dialogs.remove(
             QPair<QString, QString>(noteWidget->note().storage()->systemName(), noteWidget->note().id()));
+    }
+    if (pinning) {
+        main->pinNote(noteWidget->note(), noteWidget->draftId(), noteWidget->hasPersistedDraft(), frameGeometry());
     }
     QDialog::done(r);
 }

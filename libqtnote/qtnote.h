@@ -31,6 +31,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 class QAction;
 class QMenu;
+class QRect;
 
 namespace QtNote {
 
@@ -45,6 +46,8 @@ class NotificationInterface;
 class NoteDialog;
 class QtNoteDBus;
 class Note;
+class StickyNotesManager;
+class StickyNotesIntegrationInterface;
 
 class QTNOTE_EXPORT Main : public QObject {
     Q_OBJECT
@@ -63,12 +66,16 @@ public:
     void                        windowGeometryBridgeReady() const;
     ShortcutsManager           *shortcutsManager() const { return _shortcutsManager; }
     PluginManager              *pluginManager() const { return _pluginManager; }
+    StickyNotesManager         *stickyNotesManager() const;
 
     void setTrayImpl(TrayImpl *tray);
     void setExternalTrayAvailable(bool available);
     void setDesktopImpl(DEIntegrationInterface *de);
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
     void setNotificationImpl(NotificationInterface *notifier);
+    void setStickyNotesImpl(StickyNotesIntegrationInterface *stickyNotes);
+
+    void pinNote(const Note &note, const QUuid &draftId, bool awaitingPublication, const QRect &preferredGeometry);
 
     void registerStorage(std::unique_ptr<NoteStorage> storage);
     void unregisterStorage(NoteStorage *storage);

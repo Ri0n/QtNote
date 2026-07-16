@@ -17,6 +17,8 @@ namespace QtNote {
 
 static const QLatin1String pluginId("cinnamon_de");
 static const QLatin1String appletId("qtnote@ri0n.github.io");
+static const QLatin1String deskletId("qtnote-sticky@ri0n.github.io");
+static const QLatin1String stickyPresentationsGroup("cinnamonintegration/stickyPresentations");
 
 static QString runGSettings(const QStringList &arguments, bool *ok = nullptr)
 {
@@ -101,6 +103,14 @@ bool CinnamonPlugin::isAppletInstalled() const
 {
     return !QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
                                       QLatin1String("cinnamon/applets/") + appletId + QLatin1String("/metadata.json"),
+                                      QStandardPaths::LocateFile)
+                .isEmpty();
+}
+
+bool CinnamonPlugin::isDeskletInstalled() const
+{
+    return !QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                      QLatin1String("cinnamon/desklets/") + deskletId + QLatin1String("/metadata.json"),
                                       QStandardPaths::LocateFile)
                 .isEmpty();
 }
@@ -236,6 +246,99 @@ QString CinnamonPlugin::takePendingWindowGeometryKey()
 }
 
 void CinnamonPlugin::windowGeometryBridgeReady() { geometryBridgeReady = true; }
+
+bool CinnamonPlugin::isStickyNotesAvailable() const { return isDeskletInstalled(); }
+
+bool CinnamonPlugin::presentStickyNote(const QUuid &stickyId, const QRect &preferredGeometry)
+{
+    if (stickyId.isNull() || !isDeskletInstalled())
+        return false;
+
+    bool        ok       = false;
+    QStringList desklets = parseGSettingsStringList(
+        runGSettings({ QLatin1String("get"), QLatin1String("org.cinnamon"), QLatin1String("enabled-desklets") }, &ok));
+    if (!ok)
+        return false;
+
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    QString       instanceId;
+    const QString idText = stickyId.toString(QUuid::WithoutBraces);
+    for (const auto &key : settings.childKeys()) {
+        if (settings.value(key).toString() == idText) {
+            instanceId = key;
+            break;
+        }
+    }
+
+    if (instanceId.isEmpty()) {
+        instanceId = runGSettings(
+                         { QLatin1String("get"), QLatin1String("org.cinnamon"), QLatin1String("next-desklet-id") }, &ok)
+                         .trimmed();
+        if (!ok || instanceId.isEmpty())
+            return false;
+        runGSettings({ QLatin1String("set"), QLatin1String("org.cinnamon"), QLatin1String("next-desklet-id"),
+                       QString::number(instanceId.toInt() + 1) },
+                     &ok);
+        if (!ok)
+            return false;
+        settings.setValue(instanceId, idText);
+    }
+
+    const QString prefix = deskletId + QLatin1Char(':') + instanceId + QLatin1Char(':');
+    for (const auto &definition : std::as_const(desklets)) {
+        if (definition.startsWith(prefix))
+            return true;
+    }
+
+    const int x = preferredGeometry.isValid() ? qMax(0, preferredGeometry.x()) : 100;
+    const int y = preferredGeometry.isValid() ? qMax(0, preferredGeometry.y()) : 100;
+    desklets.append(QStringLiteral("%1:%2:%3:%4").arg(deskletId, instanceId).arg(x).arg(y));
+    runGSettings({ QLatin1String("set"), QLatin1String("org.cinnamon"), QLatin1String("enabled-desklets"),
+                   serializeGSettingsStringList(desklets) },
+                 &ok);
+    return ok;
+}
+
+bool CinnamonPlugin::dismissStickyNote(const QUuid &stickyId)
+{
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    QString       instanceId;
+    const QString idText = stickyId.toString(QUuid::WithoutBraces);
+    for (const auto &key : settings.childKeys()) {
+        if (settings.value(key).toString() == idText) {
+            instanceId = key;
+            break;
+        }
+    }
+    if (instanceId.isEmpty())
+        return false;
+
+    bool        ok       = false;
+    QStringList desklets = parseGSettingsStringList(
+        runGSettings({ QLatin1String("get"), QLatin1String("org.cinnamon"), QLatin1String("enabled-desklets") }, &ok));
+    if (!ok)
+        return false;
+    const QString prefix = deskletId + QLatin1Char(':') + instanceId + QLatin1Char(':');
+    for (int i = desklets.size() - 1; i >= 0; --i) {
+        if (desklets.at(i).startsWith(prefix))
+            desklets.removeAt(i);
+    }
+    runGSettings({ QLatin1String("set"), QLatin1String("org.cinnamon"), QLatin1String("enabled-desklets"),
+                   serializeGSettingsStringList(desklets) },
+                 &ok);
+    if (ok)
+        settings.remove(instanceId);
+    return ok;
+}
+
+QUuid CinnamonPlugin::stickyNoteIdForPresentation(const QString &presentationId) const
+{
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    return QUuid(settings.value(presentationId).toString());
+}
 
 void CinnamonPlugin::activator()
 {

@@ -16,6 +16,7 @@
 #include "notemanager.h"
 #include "qtnote.h"
 #include "shortcutsmanager.h"
+#include "stickynotesmanager.h"
 
 namespace QtNote {
 
@@ -62,6 +63,7 @@ QtNoteDBus::QtNoteDBus(Main *qtnote, QObject *parent) : QObject(parent), m_qtnot
     connect(manager, qOverload<NoteStorage::Ptr>(&NoteManager::storageChanged), this, &QtNoteDBus::notesChanged);
     connect(qtnote, &Main::settingsUpdated, this, &QtNoteDBus::notesChanged);
     connect(qtnote, &Main::settingsUpdated, this, &QtNoteDBus::globalShortcutsChanged);
+    connect(qtnote->stickyNotesManager(), &StickyNotesManager::notesChanged, this, &QtNoteDBus::stickyNotesChanged);
 
     auto bus = QDBusConnection::sessionBus();
     if (!bus.registerObject(QLatin1String(ObjectPath), this,
@@ -125,6 +127,18 @@ QString QtNoteDBus::globalShortcutsJson() const
     return QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact));
 }
 
+QString QtNoteDBus::stickyNotesJson() const { return m_qtnote->stickyNotesManager()->notesJson(); }
+
+QString QtNoteDBus::stickyNoteJson(const QString &stickyId) const
+{
+    return m_qtnote->stickyNotesManager()->noteJson(QUuid(stickyId));
+}
+
+QString QtNoteDBus::stickyNoteForPresentationJson(const QString &presentationId) const
+{
+    return m_qtnote->stickyNotesManager()->noteForPresentationJson(presentationId);
+}
+
 QString QtNoteDBus::claimWindowGeometry()
 {
     const QString key = m_qtnote->takePendingWindowGeometryKey();
@@ -133,7 +147,7 @@ QString QtNoteDBus::claimWindowGeometry()
 
     const QRect rect  = QSettings().value(key).toRect();
     const bool  valid = rect.isValid();
-    //qInfo() << "Window geometry claimed:" << key << "stored:" << valid << rect;
+    // qInfo() << "Window geometry claimed:" << key << "stored:" << valid << rect;
     return QString::fromUtf8(QJsonDocument(QJsonObject {
                                                { QStringLiteral("key"), key },
                                                { QStringLiteral("valid"), valid },
@@ -151,7 +165,7 @@ void QtNoteDBus::storeWindowGeometry(const QString &key, int x, int y, int width
         qWarning() << "Window geometry rejected:" << key << QRect(x, y, width, height);
         return;
     }
-    //qDebug() << "Window geometry stored:" << key << QRect(x, y, width, height);
+    // qDebug() << "Window geometry stored:" << key << QRect(x, y, width, height);
     QSettings().setValue(key, QRect(x, y, width, height));
 }
 
@@ -174,6 +188,8 @@ void QtNoteDBus::setXdgActivationToken(const QString &token)
 }
 
 void QtNoteDBus::createNote() { emit createNoteRequested(); }
+void QtNoteDBus::openStickyNote(const QString &stickyId) { m_qtnote->stickyNotesManager()->open(QUuid(stickyId)); }
+void QtNoteDBus::unpinStickyNote(const QString &stickyId) { m_qtnote->stickyNotesManager()->unpin(QUuid(stickyId)); }
 void QtNoteDBus::activateGlobalShortcut(const QString &id)
 {
     if (!id.isEmpty())
