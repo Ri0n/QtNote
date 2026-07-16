@@ -19,7 +19,6 @@ const GEOMETRY_SAVE_DELAY_MS = 150;
 const MAX_GEOMETRY_ATTEMPTS = 20;
 const ACTIVATION_RETRY_MS = 100;
 const MAX_ACTIVATION_ATTEMPTS = 15;
-const GEOMETRY_DEBUG = true;
 
 const QTNOTE_IFACE_XML = `
 <node>
@@ -306,11 +305,6 @@ class WindowGeometry {
 
     _changed(window) {
         let state = this._windows.get(window);
-        if (GEOMETRY_DEBUG) {
-            let rect = window.get_frame_rect();
-            global.log('QtNote geometry changed: key=' + (state ? state.key : '<missing>')
-                + ' rect=' + rect.x + ',' + rect.y + ' ' + rect.width + 'x' + rect.height);
-        }
         if (!state)
             return;
         if (!state.key) {
@@ -330,22 +324,14 @@ class WindowGeometry {
         if (!state.key)
             return;
         let rect = window.get_frame_rect();
-        if (GEOMETRY_DEBUG)
-            global.log('QtNote geometry save: key=' + state.key + ' rect=' + rect.x + ',' + rect.y
-                + ' ' + rect.width + 'x' + rect.height);
         this._dbus.storeWindowGeometryRemote(state.key, rect.x, rect.y, rect.width, rect.height, function() {});
     }
 
     _unmanaged(window) {
         let state = this._windows.get(window);
-        if (GEOMETRY_DEBUG)
-            global.log('QtNote geometry unmanaging: state=' + (state ? state.key : '<missing>'));
         if (!state)
             return;
         let rect = window.get_frame_rect();
-        if (GEOMETRY_DEBUG)
-            global.log('QtNote geometry final frame: ' + rect.x + ',' + rect.y + ' '
-                + rect.width + 'x' + rect.height);
         if (state.key) {
             this._dbus.storeWindowGeometryRemote(
                 state.key, rect.x, rect.y, rect.width, rect.height, function() {});

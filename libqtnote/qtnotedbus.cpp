@@ -133,7 +133,7 @@ QString QtNoteDBus::claimWindowGeometry()
 
     const QRect rect  = QSettings().value(key).toRect();
     const bool  valid = rect.isValid();
-    qInfo() << "Window geometry claimed:" << key << "stored:" << valid << rect;
+    //qInfo() << "Window geometry claimed:" << key << "stored:" << valid << rect;
     return QString::fromUtf8(QJsonDocument(QJsonObject {
                                                { QStringLiteral("key"), key },
                                                { QStringLiteral("valid"), valid },
@@ -151,7 +151,7 @@ void QtNoteDBus::storeWindowGeometry(const QString &key, int x, int y, int width
         qWarning() << "Window geometry rejected:" << key << QRect(x, y, width, height);
         return;
     }
-    qDebug() << "Window geometry stored:" << key << QRect(x, y, width, height);
+    //qDebug() << "Window geometry stored:" << key << QRect(x, y, width, height);
     QSettings().setValue(key, QRect(x, y, width, height));
 }
 

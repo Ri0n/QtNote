@@ -102,7 +102,7 @@ public:
         settingIcon.addPixmap(pix.transformed(transform), QIcon::Active);
     }
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override
     {
         if (parent.isValid()) {
             return 0;
@@ -110,7 +110,7 @@ public:
         return pluginIds.count();
     }
 
-    int columnCount(const QModelIndex &parent = QModelIndex()) const
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override
     {
         if (parent.isValid()) {
             return 0;
@@ -118,7 +118,7 @@ public:
         return 3;
     }
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
     {
         QString pluginId = pluginIds[index.row()];
         if (index.column() == 0) {
@@ -210,7 +210,7 @@ public:
         return QVariant();
     }
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override
     {
         if (index.column() == 0 && role == Qt::CheckStateRole) {
             Qt::CheckState cs = (Qt::CheckState)value.value<int>();
@@ -298,7 +298,7 @@ public:
     Qt::DropActions supportedDragActions() const override { return Qt::MoveAction; }
     Qt::DropActions supportedDropActions() const override { return Qt::MoveAction; }
 
-    Qt::ItemFlags flags(const QModelIndex &index) const
+    Qt::ItemFlags flags(const QModelIndex &index) const override
     {
         if (!index.isValid()) {
             return QAbstractTableModel::flags(index) | Qt::ItemIsDropEnabled;

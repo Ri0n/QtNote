@@ -142,7 +142,7 @@ public:
 
 NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     ui(new Ui::NoteWidget), _note(note), _draftId(draftId.isNull() ? QUuid::createUuid() : draftId),
-    _draftPersisted(!draftId.isNull())
+    _draftPersisted(!draftId.isNull()), _draftWasRecovered(!draftId.isNull())
 {
     ui->setupUi(this);
 
@@ -322,6 +322,18 @@ void NoteWidget::save()
     auto txt    = text();
     auto format = isMarkdown() ? Note::Markdown : Note::PlainText;
 
+    // QTextDocument may report changes caused by programmatic formatting or
+    // highlighting. Do not publish a note unless its canonical contents really
+    // differ from what was loaded. A draft recovered from an earlier process is
+    // intentionally kept even when it matches its recovery snapshot.
+    if (txt == _baselineText && format == _baselineFormat) {
+        if (_draftPersisted && !_draftWasRecovered)
+            discardDraft();
+        _changed = false;
+        _autosaveTimer.stop();
+        return;
+    }
+
     auto const &[title, body] = Utils::splitTitle(txt);
     _note.setTitle(title);
     _note.setText(body, format);
@@ -459,6 +471,9 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
     ui->noteEdit->blockSignals(false);
+
+    _baselineText   = text();
+    _baselineFormat = isMarkdown() ? Note::Markdown : Note::PlainText;
 
     const QString firstLine = ui->noteEdit->document()->begin().text();
     if (firstLine != _firstLine || firstLine.isEmpty()) {

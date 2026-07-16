@@ -125,6 +125,8 @@ private:
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
     Note                                  _note;
     QUuid                                 _draftId;
+    QString                               _baselineText;
+    Note::Format                          _baselineFormat = Note::PlainText;
     QString                               _firstLine;
     QString                               _extFileName;
     QString                               _extSelecteFilter;
@@ -134,6 +136,7 @@ private:
     bool                                  _trashRequested       = false;
     bool                                  _changed              = false;
     bool                                  _draftPersisted       = false;
+    bool                                  _draftWasRecovered    = false;
     bool                                  speechRecognitionBusy = false;
 };
 
