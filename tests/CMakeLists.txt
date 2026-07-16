@@ -16,9 +16,6 @@ target_include_directories(xmppnotecodec_test PRIVATE ../plugins/xmpppubsub)
 target_link_libraries(xmppnotecodec_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME xmppnotecodec_test COMMAND xmppnotecodec_test)
 
-if(NOT TARGET QXmpp::QXmpp)
-    find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
-endif()
 if(TARGET QXmpp::QXmpp)
     add_executable(xmppkeysyncextension_test
         xmppkeysyncextension_test.cpp
@@ -52,14 +49,13 @@ if(TARGET QXmpp::QXmpp)
     target_link_libraries(xmpppersistenttruststorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::QXmpp)
     add_test(NAME xmpppersistenttruststorage_test COMMAND xmpppersistenttruststorage_test)
 
-    if(NOT TARGET QXmpp::Omemo)
-        find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 REQUIRED)
+    if(TARGET QXmpp::Omemo)
+        add_executable(xmppomemostorage_test
+            xmppomemostorage_test.cpp
+            ../plugins/xmpppubsub/xmppomemostorage.cpp
+        )
+        target_include_directories(xmppomemostorage_test PRIVATE ../plugins/xmpppubsub)
+        target_link_libraries(xmppomemostorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::Omemo)
+        add_test(NAME xmppomemostorage_test COMMAND xmppomemostorage_test)
     endif()
-    add_executable(xmppomemostorage_test
-        xmppomemostorage_test.cpp
-        ../plugins/xmpppubsub/xmppomemostorage.cpp
-    )
-    target_include_directories(xmppomemostorage_test PRIVATE ../plugins/xmpppubsub)
-    target_link_libraries(xmppomemostorage_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test QXmpp::Omemo)
-    add_test(NAME xmppomemostorage_test COMMAND xmppomemostorage_test)
 endif()

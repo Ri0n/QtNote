@@ -41,16 +41,18 @@ set(QT_VERSION_MAJOR ${Qt${QT_VERSION_MAJOR}Core_VERSION_MAJOR})
 set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR} CACHE STRING "Default Qt major version" FORCE)
 include(GNUInstallDirs)
 
-if(QTNOTE_BUILD_BUNDLED_QXMPP)
-    find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
-    find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 QUIET)
+# The OMEMO package pulls in its matching QXmpp core package. Searching it
+# first also avoids creating a core-only imported target when OMEMO is absent,
+# so the bundled fallback can define a complete, self-consistent target pair.
+find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 QUIET)
 
-    if(TARGET QXmpp::QXmpp AND TARGET QXmpp::Omemo)
-        message(STATUS "Using system QXmpp with OMEMO")
-    else()
-        message(STATUS "System QXmpp 1.11+ with OMEMO not found; using bundled QXmpp")
-        include(BundledQXmpp)
-    endif()
+if(TARGET QXmpp::QXmpp AND TARGET QXmpp::Omemo)
+    message(STATUS "Using system QXmpp with OMEMO")
+elseif(QTNOTE_BUILD_BUNDLED_QXMPP)
+    message(STATUS "System QXmpp 1.11+ with OMEMO not found; using bundled QXmpp")
+    include(BundledQXmpp)
+else()
+    message(STATUS "QXmpp 1.11+ with OMEMO not found; the XMPP plugin will be disabled")
 endif()
 
 if(UNIX AND NOT (APPLE OR HAIKU))

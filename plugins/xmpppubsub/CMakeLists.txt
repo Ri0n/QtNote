@@ -1,12 +1,6 @@
 include(QtNoteMacro)
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Network Xml QUIET)
-if(NOT TARGET QXmpp::QXmpp)
-    find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
-endif()
-if(NOT TARGET QXmpp::Omemo)
-    find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 QUIET)
-endif()
 find_package(QCoro${QT_VERSION_MAJOR} QUIET COMPONENTS Core)
 
 set(_xmpppubsub_buildable OFF)
