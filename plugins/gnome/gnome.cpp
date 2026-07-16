@@ -164,7 +164,14 @@ WindowGeometryRestoreResult GnomePlugin::restoreWindowGeometry(QWidget *, const 
     return WindowGeometryRestoreResult::Pending;
 }
 
-bool GnomePlugin::saveWindowGeometry(QWidget *, const QString &) { return geometryExtensionAvailable(); }
+bool GnomePlugin::saveWindowGeometry(QWidget *, const QString &key)
+{
+    if (!geometryExtensionAvailable())
+        return false;
+    if (!pendingWindowGeometryKeys.contains(key))
+        pendingWindowGeometryKeys.enqueue(key);
+    return true;
+}
 
 bool GnomePlugin::removeWindowGeometry(const QString &) { return geometryExtensionAvailable(); }
 

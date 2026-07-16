@@ -200,10 +200,27 @@ export class WindowGeometry {
             GLib.source_remove(state.claimSourceId);
             state.claimSourceId = 0;
         }
-        this._save(window, state);
+        const rect = window.get_frame_rect();
+        if (state.key)
+            this._dbus.storeWindowGeometry(state.key, rect.x, rect.y, rect.width, rect.height);
+        else
+            this._saveUnclaimed(rect);
         this._disconnectWindow(window, state);
         this._windows.delete(window);
         this._claiming.delete(window);
+    }
+
+    async _saveUnclaimed(rect) {
+        try {
+            const response = await this._dbus.claimWindowGeometry();
+            if (!response)
+                return;
+            const geometry = JSON.parse(response);
+            if (geometry.key)
+                this._dbus.storeWindowGeometry(geometry.key, rect.x, rect.y, rect.width, rect.height);
+        } catch (error) {
+            logError(error, 'Failed to save closing QtNote window geometry');
+        }
     }
 
     _disconnectWindow(window, state) {

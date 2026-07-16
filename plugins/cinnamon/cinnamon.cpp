@@ -215,9 +215,13 @@ WindowGeometryRestoreResult CinnamonPlugin::restoreWindowGeometry(QWidget *, con
     return WindowGeometryRestoreResult::Pending;
 }
 
-bool CinnamonPlugin::saveWindowGeometry(QWidget *, const QString &)
+bool CinnamonPlugin::saveWindowGeometry(QWidget *, const QString &key)
 {
-    return QGuiApplication::platformName() == QLatin1String("wayland") && geometryBridgeReady;
+    if (QGuiApplication::platformName() != QLatin1String("wayland") || !geometryBridgeReady)
+        return false;
+    if (!pendingWindowGeometryKeys.contains(key))
+        pendingWindowGeometryKeys.enqueue(key);
+    return true;
 }
 
 bool CinnamonPlugin::removeWindowGeometry(const QString &)

@@ -71,7 +71,7 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
             if (rect.isValid())
                 resize(rect.size());
             else
-                resize(sizeHint());
+                resize(sizeHint().expandedTo(QSize(320, 240)));
             rect = {};
         } else if (!geometryHandled) {
             if (!rect.isValid() || !screen()->geometry().contains(rect)) {

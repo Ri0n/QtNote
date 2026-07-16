@@ -3,6 +3,7 @@ const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Lang = imports.lang;
+const Main = imports.ui.main;
 const Mainloop = imports.mainloop;
 const Pango = imports.gi.Pango;
 const PopupMenu = imports.ui.popupMenu;
@@ -15,6 +16,8 @@ const SEARCH_DELAY_MS = 250;
 const GEOMETRY_RETRY_MS = 100;
 const GEOMETRY_SAVE_DELAY_MS = 150;
 const MAX_GEOMETRY_ATTEMPTS = 20;
+const ACTIVATION_RETRY_MS = 100;
+const MAX_ACTIVATION_ATTEMPTS = 15;
 
 const QTNOTE_IFACE_XML = `
 <node>
@@ -150,7 +153,11 @@ class WindowGeometry {
     }
 
     _startWatching(window) {
-        let state = {key: '', claimAttempt: 0, claimSourceId: 0, saveSourceId: 0, signalIds: []};
+        let actor = window.get_compositor_private();
+        let state = {key: '', claimAttempt: 0, claimSourceId: 0, saveSourceId: 0,
+            signalIds: [], actor: actor, revealed: false};
+        if (actor)
+            actor.opacity = 0;
         state.signalIds.push(window.connect('position-changed', Lang.bind(this, function() { this._changed(window); })));
         state.signalIds.push(window.connect('size-changed', Lang.bind(this, function() { this._changed(window); })));
         state.signalIds.push(window.connect('unmanaged', Lang.bind(this, function() { this._unmanaged(window); })));
@@ -169,22 +176,34 @@ class WindowGeometry {
             if (!this._windows.has(window))
                 return;
             if (error || !response) {
+                this._reveal(state);
                 this._retryClaim(window, state);
                 return;
             }
             try {
                 let geometry = JSON.parse(response);
                 if (!geometry.key) {
+                    this._reveal(state);
                     this._retryClaim(window, state);
                     return;
                 }
                 state.key = geometry.key;
                 if (geometry.valid)
                     window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+                this._reveal(state);
             } catch (parseError) {
+                this._reveal(state);
                 global.logError(parseError, 'Failed to parse QtNote window geometry');
             }
         }));
+    }
+
+    _reveal(state) {
+        if (state.revealed)
+            return;
+        state.revealed = true;
+        if (state.actor)
+            state.actor.opacity = 255;
     }
 
     _retryClaim(window, state) {
@@ -225,7 +244,26 @@ class WindowGeometry {
         let state = this._windows.get(window);
         if (!state)
             return;
-        this._save(window, state);
+        let rect = window.get_frame_rect();
+        if (state.key) {
+            this._dbus.storeWindowGeometryRemote(
+                state.key, rect.x, rect.y, rect.width, rect.height, function() {});
+        } else {
+            this._dbus.claimWindowGeometryRemote(Lang.bind(this, function(response, error) {
+                if (error || !response)
+                    return;
+                try {
+                    let geometry = JSON.parse(response);
+                    if (geometry.key) {
+                        this._dbus.storeWindowGeometryRemote(
+                            geometry.key, rect.x, rect.y, rect.width, rect.height, function() {});
+                    }
+                } catch (parseError) {
+                    global.logError(parseError, 'Failed to save closing QtNote window geometry');
+                }
+            }));
+        }
+        this._reveal(state);
         this._disconnect(window, state);
         this._windows.delete(window);
     }
@@ -260,6 +298,7 @@ class QtNoteApplet extends Applet.IconApplet {
         this._focusSourceId = 0;
         this._signalIds = [];
         this._windowGeometry = null;
+        this._activationSourceId = 0;
 
         this._dbus = new QtNoteProxy(
             Gio.DBus.session,
@@ -305,6 +344,10 @@ class QtNoteApplet extends Applet.IconApplet {
         if (this._windowGeometry) {
             this._windowGeometry.destroy();
             this._windowGeometry = null;
+        }
+        if (this._activationSourceId) {
+            Mainloop.source_remove(this._activationSourceId);
+            this._activationSourceId = 0;
         }
     }
 
@@ -695,10 +738,12 @@ class QtNoteApplet extends Applet.IconApplet {
             return;
 
         let args = Array.prototype.slice.call(arguments, 1);
-        let callback = function(result, error) {
+        let callback = Lang.bind(this, function(result, error) {
             if (error)
                 global.logError(error, 'Failed to call QtNote.' + method);
-        };
+            else if (method === 'openNote' || method === 'createNote')
+                this._requestActivation();
+        });
 
         switch (method) {
         case 'openNote':
@@ -722,6 +767,39 @@ class QtNoteApplet extends Applet.IconApplet {
         default:
             break;
         }
+    }
+
+    _requestActivation() {
+        if (this._activationSourceId)
+            Mainloop.source_remove(this._activationSourceId);
+        let attempt = 0;
+        this._activationSourceId = Mainloop.timeout_add(ACTIVATION_RETRY_MS, Lang.bind(this, function() {
+            attempt++;
+            let windows = [];
+            let actors = global.get_window_actors();
+            let pid = this._windowGeometry ? this._windowGeometry._pid : 0;
+            for (let i = 0; i < actors.length; ++i) {
+                let window = actors[i].meta_window;
+                let wmClass = window.get_wm_class();
+                if ((pid && window.get_pid() === pid) || (wmClass && wmClass.toLowerCase() === 'qtnote'))
+                    windows.push(window);
+            }
+            let window = windows.find(function(item) { return item.demands_attention || item.urgent; });
+            if (!window && attempt >= 3 && windows.length > 0) {
+                windows.sort(function(a, b) { return b.get_user_time() - a.get_user_time(); });
+                window = windows[0];
+            }
+            if (window) {
+                Main.activateWindow(window, global.get_current_time());
+                this._activationSourceId = 0;
+                return false;
+            }
+            if (attempt >= MAX_ACTIVATION_ATTEMPTS) {
+                this._activationSourceId = 0;
+                return false;
+            }
+            return true;
+        }));
     }
 }
 
