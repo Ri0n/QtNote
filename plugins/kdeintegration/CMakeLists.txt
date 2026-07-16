@@ -47,6 +47,7 @@ if(qtnote_plasmoid_buildable)
     include("${Plasma_DIR}/PlasmaMacros.cmake")
 
     set(qtnote_plasmoid_id com.github.ri0n.qtnote)
+    set(qtnote_sticky_plasmoid_id com.github.ri0n.qtnote.sticky)
 
     install(
         DIRECTORY plasmoid/package/
@@ -57,6 +58,13 @@ if(qtnote_plasmoid_buildable)
         PATTERN "CMakeLists.txt" EXCLUDE
         PATTERN "Messages.sh" EXCLUDE
         PATTERN "dummydata" EXCLUDE
+    )
+
+    install(
+        DIRECTORY stickyplasmoid/package/
+        DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/${qtnote_sticky_plasmoid_id}
+        COMPONENT Executable
+        PATTERN "*.qmlc" EXCLUDE
     )
 
     set(PLASMA_SKIP_APPLET_INSTALL ON)
@@ -74,6 +82,19 @@ if(qtnote_plasmoid_buildable)
     )
     unset(PLASMA_SKIP_APPLET_INSTALL)
 
+    set(PLASMA_SKIP_APPLET_INSTALL ON)
+    plasma_add_applet(${qtnote_sticky_plasmoid_id}
+        QML_SOURCES
+            stickyplasmoid/package/contents/ui/main.qml
+        CPP_SOURCES
+            stickyplasmoid/appletplugin.cpp
+            plasmoid/plasmoid.cpp
+            plasmoid/plasmoid.h
+        QML_ARGS
+            VERSION 1.0
+    )
+    unset(PLASMA_SKIP_APPLET_INSTALL)
+
     add_custom_target(plasmoid_qtnote DEPENDS ${qtnote_plasmoid_id})
     set_target_properties(${qtnote_plasmoid_id} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/plasma/applets"
@@ -83,8 +104,21 @@ if(qtnote_plasmoid_buildable)
         Qt6::Core Qt6::DBus Qt6::Qml
         KF6::CoreAddons KF6::WindowSystem Plasma::Plasma
     )
+    set_target_properties(${qtnote_sticky_plasmoid_id} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/plasma/applets"
+    )
+    target_include_directories(${qtnote_sticky_plasmoid_id} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plasmoid)
+    target_link_libraries(${qtnote_sticky_plasmoid_id} PRIVATE
+        Qt6::Core Qt6::DBus Qt6::Qml
+        KF6::CoreAddons KF6::WindowSystem Plasma::Plasma
+    )
     install(
         TARGETS ${qtnote_plasmoid_id}
+        DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets
+        COMPONENT Executable
+    )
+    install(
+        TARGETS ${qtnote_sticky_plasmoid_id}
         DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets
         COMPONENT Executable
     )
@@ -163,6 +197,7 @@ endif()
 if(QTNOTE_DEVEL AND qtnote_plasmoid_buildable)
     target_compile_definitions(kdeintegration PRIVATE
         QTNOTE_DEVEL_PLASMOID_PACKAGE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/plasmoid/package"
+        QTNOTE_DEVEL_STICKY_PLASMOID_PACKAGE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/stickyplasmoid/package"
         QTNOTE_DEVEL_PLASMOID_QML_DIR="${qtnote_devel_qml_module_dir}"
         QTNOTE_DEVEL_PLASMOID_QML_INSTALL_DIR="${KDE_INSTALL_QMLDIR}/com/github/ri0n/qtnote"
     )

@@ -117,4 +117,51 @@ private:
     bool m_backendAutostartSuppressed = false;
 };
 
+class StickyNoteModel : public QObject {
+    Q_OBJECT
+    QML_ELEMENT
+    Q_PROPERTY(QString presentationId READ presentationId WRITE setPresentationId NOTIFY presentationIdChanged)
+    Q_PROPERTY(QString stickyId READ stickyId NOTIFY noteChanged)
+    Q_PROPERTY(QString title READ title NOTIFY noteChanged)
+    Q_PROPERTY(QString body READ body NOTIFY noteChanged)
+    Q_PROPERTY(bool available READ available NOTIFY availableChanged)
+
+public:
+    explicit StickyNoteModel(QObject *parent = nullptr);
+
+    QString presentationId() const { return m_presentationId; }
+    void    setPresentationId(const QString &presentationId);
+    QString stickyId() const { return m_stickyId; }
+    QString title() const { return m_title; }
+    QString body() const { return m_body; }
+    bool    available() const { return m_available; }
+
+    Q_INVOKABLE void refresh();
+    Q_INVOKABLE void open();
+    Q_INVOKABLE void unpin();
+
+signals:
+    void presentationIdChanged();
+    void noteChanged();
+    void availableChanged();
+
+private slots:
+    void serviceRegistered();
+    void serviceUnregistered();
+
+private:
+    void createInterface();
+    void clear();
+    void setAvailable(bool available);
+
+    QDBusInterface      *m_interface      = nullptr;
+    QDBusServiceWatcher *m_serviceWatcher = nullptr;
+    QString              m_presentationId;
+    QString              m_stickyId;
+    QString              m_title;
+    QString              m_body;
+    bool                 m_available     = false;
+    quint64              m_requestSerial = 0;
+};
+
 #endif

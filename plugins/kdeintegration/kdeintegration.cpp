@@ -14,6 +14,8 @@
 #include <QDir>
 #include <QGuiApplication>
 #include <QLoggingCategory>
+#include <QScreen>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVariant>
@@ -31,6 +33,8 @@ namespace QtNote {
 Q_LOGGING_CATEGORY(logKdeIntegration, "qtnote.kdeintegration")
 
 static const QLatin1String pluginId("kde_de");
+static const QLatin1String stickyPlasmoidId("com.github.ri0n.qtnote.sticky");
+static const QLatin1String stickyPresentationsGroup("kdeintegration/stickyPresentations");
 
 //------------------------------------------------------------
 // KDEIntegration
@@ -144,6 +148,164 @@ WindowGeometryRestoreResult KDEIntegration::restoreWindowGeometry(QWidget *widge
 QString KDEIntegration::takePendingWindowGeometryKey()
 {
     return _pendingWindowGeometryKeys.isEmpty() ? QString() : _pendingWindowGeometryKeys.dequeue();
+}
+
+bool KDEIntegration::isStickyNotesAvailable() const
+{
+    return !QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                      QLatin1String("plasma/plasmoids/") + stickyPlasmoidId
+                                          + QLatin1String("/metadata.json"),
+                                      QStandardPaths::LocateFile)
+                .isEmpty();
+}
+
+bool KDEIntegration::evaluatePlasmaScript(const QString &script, QString *output) const
+{
+    QDBusInterface      plasmaShell(QStringLiteral("org.kde.plasmashell"), QStringLiteral("/PlasmaShell"),
+                                    QStringLiteral("org.kde.PlasmaShell"));
+    QDBusReply<QString> reply = plasmaShell.call(QStringLiteral("evaluateScript"), script);
+    if (!reply.isValid()) {
+        qCWarning(logKdeIntegration) << "Failed to evaluate Plasma script:" << reply.error().message();
+        return false;
+    }
+    if (output)
+        *output = reply.value();
+    if (reply.value().startsWith(QLatin1String("ERROR:"))) {
+        qCWarning(logKdeIntegration).noquote() << "Plasma script failed:" << reply.value();
+        return false;
+    }
+    return true;
+}
+
+bool KDEIntegration::presentStickyNote(const QUuid &stickyId, const QRect &preferredGeometry)
+{
+    if (stickyId.isNull() || !isStickyNotesAvailable())
+        return false;
+
+    const QString idText = stickyId.toString(QUuid::WithoutBraces);
+    int           screen = 0;
+    QPoint        position(100, 100);
+    QSize         size(300, 220);
+    if (preferredGeometry.isValid()) {
+        if (auto *targetScreen = QGuiApplication::screenAt(preferredGeometry.center())) {
+            screen   = QGuiApplication::screens().indexOf(targetScreen);
+            position = preferredGeometry.topLeft() - targetScreen->geometry().topLeft();
+        }
+        size = preferredGeometry.size().expandedTo(QSize(220, 140));
+    }
+
+    const QString script = QStringLiteral(R"JS(
+try {
+    var stickyId = "%1";
+    var pluginId = "%2";
+    var targetScreen = %3;
+    var allDesktops = desktops();
+    var desktop = null;
+    for (var i = 0; i < allDesktops.length; ++i) {
+        if (allDesktops[i].screen === targetScreen) {
+            desktop = allDesktops[i];
+            break;
+        }
+    }
+    if (!desktop && allDesktops.length)
+        desktop = allDesktops[0];
+    if (!desktop)
+        throw new Error("No Plasma desktop containment found");
+
+    var widgets = desktop.widgets();
+    var found = false;
+    for (var j = 0; j < widgets.length; ++j) {
+        if (widgets[j].type !== pluginId && widgets[j].pluginName !== pluginId)
+            continue;
+        widgets[j].currentConfigGroup = ["General"];
+        if (widgets[j].readConfig("stickyId", "") === stickyId) {
+            print("OK:" + widgets[j].id);
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        var widget = desktop.addWidget(pluginId);
+        if (!widget)
+            throw new Error("Failed to create sticky note plasmoid");
+        widget.currentConfigGroup = ["General"];
+        widget.writeConfig("stickyId", stickyId);
+        widget.geometry = new QRectF(%4, %5, %6, %7);
+        print("OK:" + widget.id);
+    }
+} catch (error) {
+    print("ERROR:" + error);
+}
+)JS")
+                               .arg(idText, stickyPlasmoidId)
+                               .arg(screen)
+                               .arg(qMax(0, position.x()))
+                               .arg(qMax(0, position.y()))
+                               .arg(size.width())
+                               .arg(size.height());
+    QString output;
+    if (!evaluatePlasmaScript(script, &output))
+        return false;
+    const QString presentationId = output.trimmed().section(QLatin1Char(':'), 1, 1);
+    if (presentationId.isEmpty()) {
+        qCWarning(logKdeIntegration).noquote() << "Plasma did not return the sticky widget id:" << output;
+        return false;
+    }
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    settings.setValue(presentationId, idText);
+    return true;
+}
+
+bool KDEIntegration::dismissStickyNote(const QUuid &stickyId)
+{
+    if (stickyId.isNull())
+        return false;
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    QString       presentationId;
+    const QString idText = stickyId.toString(QUuid::WithoutBraces);
+    for (const auto &key : settings.childKeys()) {
+        if (settings.value(key).toString() == idText) {
+            presentationId = key;
+            break;
+        }
+    }
+    const QString script = QStringLiteral(R"JS(
+try {
+    var stickyId = "%1";
+    var pluginId = "%2";
+    var presentationId = "%3";
+    var allDesktops = desktops();
+    for (var i = 0; i < allDesktops.length; ++i) {
+        var widgets = allDesktops[i].widgets();
+        for (var j = widgets.length - 1; j >= 0; --j) {
+            if (widgets[j].type !== pluginId && widgets[j].pluginName !== pluginId)
+                continue;
+            widgets[j].currentConfigGroup = ["General"];
+            if ((presentationId && String(widgets[j].id) === presentationId)
+                || widgets[j].readConfig("stickyId", "") === stickyId)
+                widgets[j].remove();
+        }
+    }
+    print("OK");
+} catch (error) {
+    print("ERROR:" + error);
+}
+)JS")
+                               .arg(idText, stickyPlasmoidId, presentationId);
+    const bool removed = evaluatePlasmaScript(script);
+    if (removed && !presentationId.isEmpty())
+        settings.remove(presentationId);
+    return removed;
+}
+
+QUuid KDEIntegration::stickyNoteIdForPresentation(const QString &presentationId) const
+{
+    QSettings settings;
+    settings.beginGroup(stickyPresentationsGroup);
+    return QUuid(settings.value(presentationId).toString());
 }
 
 bool KDEIntegration::saveWindowGeometry(QWidget *widget, const QString &key)

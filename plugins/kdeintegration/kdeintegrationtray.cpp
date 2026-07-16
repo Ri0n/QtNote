@@ -37,10 +37,11 @@ namespace QtNote {
 namespace {
     constexpr auto PlasmoidId = "com.github.ri0n.qtnote";
 #ifdef QTNOTE_DEVEL
-    constexpr auto DevelopmentPlasmoidPackageSetting = "developmentPlasmoidPackageLink";
-    constexpr auto DevelopmentPlasmoidQmlSetting     = "developmentPlasmoidQmlLinks";
-    constexpr auto DevelopmentPlasmoidOldQmlSetting  = "developmentPlasmoidQmlLink";
-    constexpr auto DevelopmentPlasmoidMarker         = ".qtnote-devel-package";
+    constexpr auto DevelopmentPlasmoidPackageSetting       = "developmentPlasmoidPackageLink";
+    constexpr auto DevelopmentStickyPlasmoidPackageSetting = "developmentStickyPlasmoidPackageLink";
+    constexpr auto DevelopmentPlasmoidQmlSetting           = "developmentPlasmoidQmlLinks";
+    constexpr auto DevelopmentPlasmoidOldQmlSetting        = "developmentPlasmoidQmlLink";
+    constexpr auto DevelopmentPlasmoidMarker               = ".qtnote-devel-package";
 #endif
 }
 
@@ -197,9 +198,10 @@ bool KDEIntegrationTray::ensureDevelopmentPlasmoidLinks()
     if (!localPrefix.cdUp())
         return false;
 
-    const QString     packageLink = dataDir + QLatin1String("/plasma/plasmoids/") + QLatin1String(PlasmoidId);
-    const QString     qmlSource   = QLatin1String(QTNOTE_DEVEL_PLASMOID_QML_DIR);
-    const QStringList qmlLinks    = {
+    const QString     packageLink       = dataDir + QLatin1String("/plasma/plasmoids/") + QLatin1String(PlasmoidId);
+    const QString     stickyPackageLink = dataDir + QLatin1String("/plasma/plasmoids/com.github.ri0n.qtnote.sticky");
+    const QString     qmlSource         = QLatin1String(QTNOTE_DEVEL_PLASMOID_QML_DIR);
+    const QStringList qmlLinks          = {
         localPrefix.absoluteFilePath(QLatin1String(QTNOTE_DEVEL_PLASMOID_QML_INSTALL_DIR)),
         dataDir + QLatin1String("/QtProject/qml/com/github/ri0n/qtnote"),
     };
@@ -209,15 +211,18 @@ bool KDEIntegrationTray::ensureDevelopmentPlasmoidLinks()
     QSettings settings;
     settings.beginGroup(QLatin1String("kdeintegration"));
     settings.setValue(QLatin1String(DevelopmentPlasmoidPackageSetting), packageLink);
+    settings.setValue(QLatin1String(DevelopmentStickyPlasmoidPackageSetting), stickyPackageLink);
     settings.setValue(QLatin1String(DevelopmentPlasmoidQmlSetting), qmlLinks);
 
     const bool packageOk
         = updateDevelopmentPackage(QLatin1String(QTNOTE_DEVEL_PLASMOID_PACKAGE_DIR), packageLink, qmlSource);
-    bool qmlOk = true;
+    const bool stickyPackageOk = updateDevelopmentPackage(QLatin1String(QTNOTE_DEVEL_STICKY_PLASMOID_PACKAGE_DIR),
+                                                          stickyPackageLink, qmlSource);
+    bool       qmlOk           = true;
     for (const auto &qmlLink : qmlLinks)
         qmlOk = updateDevelopmentLink(qmlSource, qmlLink) && qmlOk;
 
-    if (!packageOk || !qmlOk)
+    if (!packageOk || !stickyPackageOk || !qmlOk)
         cleanupDevelopmentPlasmoidLinks();
 
     if (packageOk) {
@@ -228,7 +233,7 @@ bool KDEIntegrationTray::ensureDevelopmentPlasmoidLinks()
             QProcess::startDetached(kbuildsycoca, { QLatin1String("--noincremental") });
     }
 
-    return packageOk && qmlOk;
+    return packageOk && stickyPackageOk && qmlOk;
 }
 
 void KDEIntegrationTray::cleanupDevelopmentPlasmoidLinks()
@@ -236,9 +241,10 @@ void KDEIntegrationTray::cleanupDevelopmentPlasmoidLinks()
     QSettings settings;
     settings.beginGroup(QLatin1String("kdeintegration"));
 
-    const QString packageLink = settings.value(QLatin1String(DevelopmentPlasmoidPackageSetting)).toString();
-    QStringList   qmlLinks    = settings.value(QLatin1String(DevelopmentPlasmoidQmlSetting)).toStringList();
-    const QString oldQmlLink  = settings.value(QLatin1String(DevelopmentPlasmoidOldQmlSetting)).toString();
+    const QString packageLink       = settings.value(QLatin1String(DevelopmentPlasmoidPackageSetting)).toString();
+    const QString stickyPackageLink = settings.value(QLatin1String(DevelopmentStickyPlasmoidPackageSetting)).toString();
+    QStringList   qmlLinks          = settings.value(QLatin1String(DevelopmentPlasmoidQmlSetting)).toStringList();
+    const QString oldQmlLink        = settings.value(QLatin1String(DevelopmentPlasmoidOldQmlSetting)).toString();
     if (!oldQmlLink.isEmpty())
         qmlLinks.append(oldQmlLink);
 
@@ -260,10 +266,18 @@ void KDEIntegrationTray::cleanupDevelopmentPlasmoidLinks()
         QDir(packageLink).removeRecursively();
     }
 
+    QFileInfo stickyPackageInfo(stickyPackageLink);
+    if (stickyPackageInfo.isSymLink()) {
+        removeExpectedLink(stickyPackageLink, QLatin1String(QTNOTE_DEVEL_STICKY_PLASMOID_PACKAGE_DIR));
+    } else if (QFileInfo::exists(stickyPackageLink + QLatin1Char('/') + QLatin1String(DevelopmentPlasmoidMarker))) {
+        QDir(stickyPackageLink).removeRecursively();
+    }
+
     for (const auto &qmlLink : std::as_const(qmlLinks))
         removeExpectedLink(qmlLink, QLatin1String(QTNOTE_DEVEL_PLASMOID_QML_DIR));
 
     settings.remove(QLatin1String(DevelopmentPlasmoidPackageSetting));
+    settings.remove(QLatin1String(DevelopmentStickyPlasmoidPackageSetting));
     settings.remove(QLatin1String(DevelopmentPlasmoidQmlSetting));
     settings.remove(QLatin1String(DevelopmentPlasmoidOldQmlSetting));
 }
@@ -535,6 +549,19 @@ bool KDEIntegrationTray::updateDevelopmentPackage(const QString &sourcePath, con
                    : updateDevelopmentFile(uiFile.absoluteFilePath(), targetPath);
         if (!copied)
             return false;
+    }
+
+    QDir sourceConfig(sourceInfo.absoluteFilePath() + QLatin1String("/contents/config"));
+    if (sourceConfig.exists()) {
+        QDir targetConfig(packageDir.absoluteFilePath(QLatin1String("contents/config")));
+        if (!targetConfig.mkpath(QLatin1String(".")))
+            return false;
+        const auto configFiles = sourceConfig.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+        for (const auto &configFile : configFiles) {
+            if (!updateDevelopmentFile(configFile.absoluteFilePath(),
+                                       targetConfig.absoluteFilePath(configFile.fileName())))
+                return false;
+        }
     }
 
     return updateDevelopmentQmlBackend(qmlSourcePath, targetUi.absoluteFilePath(QLatin1String("QtNote")));

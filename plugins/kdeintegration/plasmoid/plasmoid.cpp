@@ -465,3 +465,122 @@ void NotesModel::createInterface()
     m_interface = new QDBusInterface(QLatin1String(ServiceName), QLatin1String(ObjectPath),
                                      QLatin1String(InterfaceName), QDBusConnection::sessionBus(), this);
 }
+
+StickyNoteModel::StickyNoteModel(QObject *parent) : QObject(parent)
+{
+    auto bus         = QDBusConnection::sessionBus();
+    m_serviceWatcher = new QDBusServiceWatcher(
+        QLatin1String(ServiceName), bus,
+        QDBusServiceWatcher::WatchForRegistration | QDBusServiceWatcher::WatchForUnregistration, this);
+    connect(m_serviceWatcher, &QDBusServiceWatcher::serviceRegistered, this, &StickyNoteModel::serviceRegistered);
+    connect(m_serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this, &StickyNoteModel::serviceUnregistered);
+    bus.connect(QLatin1String(ServiceName), QLatin1String(ObjectPath), QLatin1String(InterfaceName),
+                QStringLiteral("stickyNotesChanged"), this, SLOT(refresh()));
+
+    const auto reply = bus.interface()->isServiceRegistered(QLatin1String(ServiceName));
+    setAvailable(reply.isValid() && reply.value());
+    if (m_available)
+        createInterface();
+}
+
+void StickyNoteModel::setPresentationId(const QString &presentationId)
+{
+    if (m_presentationId == presentationId)
+        return;
+    m_presentationId = presentationId;
+    emit presentationIdChanged();
+    refresh();
+}
+
+void StickyNoteModel::refresh()
+{
+    if (!m_available || !m_interface || m_presentationId.isEmpty()) {
+        clear();
+        return;
+    }
+
+    const quint64 serial  = ++m_requestSerial;
+    auto         *watcher = new QDBusPendingCallWatcher(
+        m_interface->asyncCall(QStringLiteral("stickyNoteForPresentationJson"), m_presentationId), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher, serial]() {
+        const QDBusPendingReply<QString> reply = *watcher;
+        watcher->deleteLater();
+        if (serial != m_requestSerial)
+            return;
+        if (reply.isError()) {
+            qCWarning(logPlasmoid) << "Failed to fetch sticky note:" << reply.error().message();
+            clear();
+            return;
+        }
+
+        QJsonParseError error;
+        const auto      document = QJsonDocument::fromJson(reply.value().toUtf8(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isObject()) {
+            clear();
+            return;
+        }
+        const auto object   = document.object();
+        const auto stickyId = object.value(QStringLiteral("stickyId")).toString();
+        if (stickyId.isEmpty()) {
+            clear();
+            return;
+        }
+        m_stickyId = stickyId;
+        m_title    = object.value(QStringLiteral("title")).toString();
+        m_body     = object.value(QStringLiteral("body")).toString();
+        emit noteChanged();
+    });
+}
+
+void StickyNoteModel::open()
+{
+    if (m_available && m_interface && !m_stickyId.isEmpty())
+        m_interface->asyncCall(QStringLiteral("openStickyNote"), m_stickyId);
+}
+
+void StickyNoteModel::unpin()
+{
+    if (m_available && m_interface && !m_stickyId.isEmpty())
+        m_interface->asyncCall(QStringLiteral("unpinStickyNote"), m_stickyId);
+}
+
+void StickyNoteModel::serviceRegistered()
+{
+    createInterface();
+    setAvailable(true);
+    refresh();
+}
+
+void StickyNoteModel::serviceUnregistered()
+{
+    ++m_requestSerial;
+    delete m_interface;
+    m_interface = nullptr;
+    setAvailable(false);
+    clear();
+}
+
+void StickyNoteModel::createInterface()
+{
+    delete m_interface;
+    m_interface = new QDBusInterface(QLatin1String(ServiceName), QLatin1String(ObjectPath),
+                                     QLatin1String(InterfaceName), QDBusConnection::sessionBus(), this);
+}
+
+void StickyNoteModel::clear()
+{
+    if (m_stickyId.isEmpty() && m_title.isEmpty() && m_body.isEmpty())
+        return;
+    m_stickyId.clear();
+    m_title.clear();
+    m_body.clear();
+    emit noteChanged();
+}
+
+void StickyNoteModel::setAvailable(bool available)
+{
+    if (m_available == available)
+        return;
+    m_available = available;
+    emit availableChanged();
+}

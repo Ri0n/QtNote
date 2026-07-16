@@ -8,6 +8,7 @@
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
 #include "qtnoteplugininterface.h"
+#include "stickynotesintegrationinterface.h"
 #include "trayinterface.h"
 
 class KAction;
@@ -21,11 +22,13 @@ class KDEIntegration : public QObject,
                        public NotificationInterface,
                        public TrayInterface,
                        public DEIntegrationInterface,
-                       public GlobalShortcutsInterface {
+                       public GlobalShortcutsInterface,
+                       public StickyNotesIntegrationInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.KdeTrayIcon")
-    Q_INTERFACES(QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface
-                     QtNote::GlobalShortcutsInterface QtNote::NotificationInterface)
+    Q_INTERFACES(
+        QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::GlobalShortcutsInterface
+            QtNote::NotificationInterface QtNote::StickyNotesIntegrationInterface)
 public:
     explicit KDEIntegration(QObject *parent = 0);
 
@@ -41,6 +44,11 @@ public:
     bool                        removeWindowGeometry(const QString &key) override;
     QString                     takePendingWindowGeometryKey() override;
 
+    bool  isStickyNotesAvailable() const override;
+    bool  presentStickyNote(const QUuid &stickyId, const QRect &preferredGeometry) override;
+    bool  dismissStickyNote(const QUuid &stickyId) override;
+    QUuid stickyNoteIdForPresentation(const QString &presentationId) const override;
+
     bool registerGlobalShortcut(const QString &id, const QKeySequence &key, QAction *action) override;
     bool updateGlobalShortcut(const QString &id, const QKeySequence &key) override;
     void setGlobalShortcutEnabled(const QString &id, bool enabled = true) override;
@@ -52,6 +60,7 @@ public slots:
 
 private:
     bool ensureWaylandGeometryScript();
+    bool evaluatePlasmaScript(const QString &script, QString *output = nullptr) const;
 
     QHash<QString, QAction *> _shortcuts;
     QQueue<QString>           _pendingWindowGeometryKeys;
