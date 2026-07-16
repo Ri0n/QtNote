@@ -51,6 +51,7 @@ public:
     Note              note() const { return _note; }
     QString           storageId() const { return _note.storageId(); }
     QString           noteId() const { return _note.id(); }
+    QUuid             draftId() const { return _draftId; }
     const QString    &firstLine() const { return _firstLine; }
     qint64            lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
     bool              isTrashRequested() const { return _trashRequested; }

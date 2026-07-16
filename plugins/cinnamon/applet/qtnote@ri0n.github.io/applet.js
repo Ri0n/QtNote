@@ -83,7 +83,18 @@ class WindowGeometry {
             let state = this._windows.get(window);
             if (state && !state.revealed) {
                 state.actor = actor;
+                state.mapped = false;
                 actor.opacity = 0;
+                if (state.geometry)
+                    window.move_resize_frame(false, state.geometry.x, state.geometry.y,
+                        state.geometry.width, state.geometry.height);
+                Mainloop.idle_add(Lang.bind(this, function() {
+                    if (this._windows.has(window)) {
+                        state.mapped = true;
+                        this._reveal(state);
+                    }
+                    return false;
+                }));
             }
         }));
         let actors = global.get_window_actors();
@@ -167,7 +178,8 @@ class WindowGeometry {
     _startWatching(window) {
         let actor = window.get_compositor_private();
         let state = {key: '', claimAttempt: 0, claimSourceId: 0, saveSourceId: 0,
-            signalIds: [], actor: actor, revealed: false};
+            signalIds: [], actor: actor, mapped: actor ? actor.mapped : false,
+            revealed: false, geometry: null};
         if (actor)
             actor.opacity = 0;
         state.signalIds.push(window.connect('position-changed', Lang.bind(this, function() { this._changed(window); })));
@@ -191,8 +203,10 @@ class WindowGeometry {
             if (!geometry.key)
                 return false;
             state.key = geometry.key;
-            if (geometry.valid)
+            if (geometry.valid) {
+                state.geometry = geometry;
                 window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+            }
             this._reveal(state);
             return true;
         } catch (error) {
@@ -225,8 +239,10 @@ class WindowGeometry {
                     return;
                 }
                 state.key = geometry.key;
-                if (geometry.valid)
+                if (geometry.valid) {
+                    state.geometry = geometry;
                     window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+                }
                 this._reveal(state);
             } catch (parseError) {
                 this._reveal(state);
@@ -236,11 +252,10 @@ class WindowGeometry {
     }
 
     _reveal(state) {
-        if (state.revealed)
+        if (state.revealed || !state.actor || !state.mapped)
             return;
         state.revealed = true;
-        if (state.actor)
-            state.actor.opacity = 255;
+        state.actor.opacity = 255;
     }
 
     _retryClaim(window, state) {

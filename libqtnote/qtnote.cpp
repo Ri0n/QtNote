@@ -135,6 +135,20 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     }
     connect(DraftManager::instance(), &DraftManager::publicationAbandoned, this, &Main::notifyError);
     connect(DraftManager::instance(), &DraftManager::conflictResolved, this, &Main::notifyError);
+    connect(DraftManager::instance(), &DraftManager::draftPublished, this, [](const QUuid &draftId, const Note &note) {
+        // A new note has no stable note id while its window is closing. The compositor
+        // therefore saves its final frame under the draft id first. Migrate it after the
+        // asynchronous unmanaged/store round trip has had time to complete.
+        QTimer::singleShot(750, [draftId, note]() {
+            const QString temporary = QString("geometry.draft.%1").arg(draftId.toString(QUuid::WithoutBraces));
+            const QString permanent = QString("geometry.%1.%2").arg(note.storageId(), note.id());
+            QSettings     settings;
+            const QRect   rect = settings.value(temporary).toRect();
+            if (rect.isValid())
+                settings.setValue(permanent, rect);
+            settings.remove(temporary);
+        });
+    });
 
     _pluginManager = new PluginManager(this);
     _pluginManager->loadPlugins();

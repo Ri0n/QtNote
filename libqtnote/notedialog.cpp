@@ -39,6 +39,14 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 namespace QtNote {
 
+static QString geometryKey(const NoteWidget *widget)
+{
+    const auto note = widget->note();
+    if (!note.id().isEmpty())
+        return QString("geometry.%1.%2").arg(note.storageId(), note.id());
+    return QString("geometry.draft.%1").arg(widget->draftId().toString(QUuid::WithoutBraces));
+}
+
 NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
     QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget), main(main)
 {
@@ -59,12 +67,12 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
 
     QRect rect;
     bool  geometryHandled = false;
-    if (!noteWidget->note().id().isEmpty()) {
+    {
         auto          note          = noteWidget->note();
-        const QString geometryKey   = QString("geometry.%1.%2").arg(note.storageId(), note.id());
-        const auto    restoreResult = main->restoreWindowGeometry(this, geometryKey);
+        const QString key           = geometryKey(noteWidget);
+        const auto    restoreResult = main->restoreWindowGeometry(this, key);
         geometryHandled             = restoreResult != WindowGeometryRestoreResult::Unsupported;
-        rect                        = QSettings().value(geometryKey).toRect();
+        rect                        = QSettings().value(key).toRect();
         if (restoreResult == WindowGeometryRestoreResult::Pending) {
             // Wayland applications cannot choose their global position, but they
             // still own their initial size while KWin restores frameGeometry.
@@ -79,9 +87,10 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
             }
         }
 
-        Q_ASSERT(!NoteDialog::findDialog(noteWidget->note().storageId(), noteWidget->note().id()));
-        NoteDialog::dialogs.insert(QPair<QString, QString>(noteWidget->note().storageId(), noteWidget->note().id()),
-                                   this);
+        if (!note.id().isEmpty()) {
+            Q_ASSERT(!NoteDialog::findDialog(note.storageId(), note.id()));
+            NoteDialog::dialogs.insert(QPair<QString, QString>(note.storageId(), note.id()), this);
+        }
     }
     if (rect.isEmpty() && !geometryHandled) {
         QSize avail = screen()->availableSize() - sizeHint(); //   QApplication::desktop()->size()
@@ -116,13 +125,7 @@ NoteDialog *NoteDialog::findDialog(const QString &storageId, const QString &note
 
 QList<NoteDialog *> NoteDialog::openDialogs() { return NoteDialog::dialogs.values(); }
 
-void NoteDialog::registerWindowGeometry()
-{
-    const auto note = noteWidget->note();
-    if (note.id().isEmpty())
-        return;
-    main->restoreWindowGeometry(this, QString("geometry.%1.%2").arg(note.storageId(), note.id()));
-}
+void NoteDialog::registerWindowGeometry() { main->restoreWindowGeometry(this, geometryKey(noteWidget)); }
 
 void NoteDialog::changeEvent(QEvent *e)
 {
@@ -149,17 +152,16 @@ void NoteDialog::done(int r)
     if (!noteWidget->isTrashRequested() && !noteWidget->prepareToClose()) {
         return;
     }
+    QSettings     s;
+    const QString key = geometryKey(noteWidget);
+    if (noteWidget->isTrashRequested()) {
+        main->removeWindowGeometry(key);
+        s.remove(key);
+    } else {
+        if (!main->saveWindowGeometry(this, key))
+            s.setValue(key, geometry());
+    }
     if (!noteWidget->note().id().isEmpty()) {
-        QSettings s;
-        QString   key
-            = QString("geometry.%1.%2").arg(noteWidget->note().storage()->systemName(), noteWidget->note().id());
-        if (noteWidget->isTrashRequested()) {
-            main->removeWindowGeometry(key);
-            s.remove(key);
-        } else {
-            if (!main->saveWindowGeometry(this, key))
-                s.setValue(key, geometry());
-        }
         NoteDialog::dialogs.remove(
             QPair<QString, QString>(noteWidget->note().storage()->systemName(), noteWidget->note().id()));
     }
