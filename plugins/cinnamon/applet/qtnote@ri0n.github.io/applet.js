@@ -82,14 +82,6 @@ class WindowGeometry {
             let window = actor.meta_window;
             let state = this._windows.get(window);
             if (state && !state.revealed) {
-                // Cinnamon's own map handler runs before applet handlers and may
-                // already be animating the actor towards the position Muffin chose
-                // before we restored the frame. Finish that effect now so it cannot
-                // paint a short movement from the old position.
-                if (Main.wm && typeof Main.wm._mapWindowDone === 'function')
-                    Main.wm._mapWindowDone(global.window_manager, actor);
-                else
-                    actor.remove_all_transitions();
                 state.actor = actor;
                 state.mapped = false;
                 actor.opacity = 0;
