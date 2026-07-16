@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QPluginLoader>
 #include <QProcess>
+#include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStyle>
@@ -66,6 +67,7 @@ public:
     bool                      externalTrayAvailable;
     GlobalShortcutsInterface *globalShortcuts;
     NotificationInterface    *notifier;
+    QSet<QUuid>               recoveredDraftIds;
 #ifdef QTNOTE_DBUS_AVAILABLE
     QtNoteDBus *dbus;
 #endif
@@ -150,6 +152,27 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         });
     });
 
+    // Storage registration starts asynchronous initialization. Never touch a
+    // storage while restoring drafts until its init job has completed.
+    connect(NoteManager::instance(), &NoteManager::storageReady, this, [this](const NoteStorage::Ptr &storage) {
+        if (!storage)
+            return;
+        for (const auto &draft : DraftManager::instance()->recoverableDrafts()) {
+            if (draft.storageId != storage->systemName() || d->recoveredDraftIds.contains(draft.id))
+                continue;
+            auto note = draft.remoteNoteId.isEmpty() ? storage->createNote() : storage->note(draft.remoteNoteId);
+            if (note.isNull())
+                continue;
+            note.setTitle(draft.title);
+            note.setText(draft.body, draft.format);
+            auto *widget = noteWidget(note, draft.id);
+            auto *dialog = new NoteDialog(widget, this);
+            dialog->setWindowIcon(storage->noteIcon());
+            d->recoveredDraftIds.insert(draft.id);
+            dialog->show();
+        }
+    });
+
     _pluginManager = new PluginManager(this);
     _pluginManager->loadPlugins();
     QString pluginError;
@@ -219,21 +242,6 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
                 widget->close();
         }
     });
-
-    for (const auto &draft : DraftManager::instance()->recoverableDrafts()) {
-        auto storage = NoteManager::instance()->storage(draft.storageId);
-        if (!storage)
-            continue;
-        auto note = draft.remoteNoteId.isEmpty() ? storage->createNote() : storage->note(draft.remoteNoteId);
-        if (note.isNull())
-            continue;
-        note.setTitle(draft.title);
-        note.setText(draft.body, draft.format);
-        auto *widget = noteWidget(note, draft.id);
-        auto *dialog = new NoteDialog(widget, this);
-        dialog->setWindowIcon(storage->noteIcon());
-        dialog->show();
-    }
 }
 
 Main::~Main() { }
