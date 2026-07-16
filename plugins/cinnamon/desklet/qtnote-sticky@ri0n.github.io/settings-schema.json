@@ -1,0 +1,20 @@
+{
+    "width": {
+        "default": 300,
+        "type": "spinbutton",
+        "min": 220,
+        "max": 1600,
+        "description": "Width",
+        "units": "pixels",
+        "step": 10
+    },
+    "height": {
+        "default": 180,
+        "type": "spinbutton",
+        "min": 140,
+        "max": 1200,
+        "description": "Height",
+        "units": "pixels",
+        "step": 10
+    }
+}
