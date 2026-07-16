@@ -405,6 +405,10 @@ class QtNoteApplet extends Applet.IconApplet {
         this.menu.toggle();
     }
 
+    on_applet_middle_clicked() {
+        this._call('createNote');
+    }
+
     on_applet_removed_from_panel() {
         this._destroy();
     }
