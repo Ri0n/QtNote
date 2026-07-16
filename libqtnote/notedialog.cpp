@@ -48,7 +48,7 @@ static QString geometryKey(const NoteWidget *widget)
 }
 
 NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
-    QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget), main(main)
+    QDialog(0), m_ui(new Ui::NoteDialog), noteWidget(noteWidget), main(main), windowGeometryKey(geometryKey(noteWidget))
 {
     setWindowFlags((windowFlags() ^ (Qt::Dialog | Qt::WindowContextHelpButtonHint)) | Qt::WindowSystemMenuHint
                    | Qt::CustomizeWindowHint | Qt::Window | Qt::WindowMinMaxButtonsHint);
@@ -68,11 +68,10 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
     QRect rect;
     bool  geometryHandled = false;
     {
-        auto          note          = noteWidget->note();
-        const QString key           = geometryKey(noteWidget);
-        const auto    restoreResult = main->restoreWindowGeometry(this, key);
-        geometryHandled             = restoreResult != WindowGeometryRestoreResult::Unsupported;
-        rect                        = QSettings().value(key).toRect();
+        auto       note          = noteWidget->note();
+        const auto restoreResult = main->restoreWindowGeometry(this, windowGeometryKey);
+        geometryHandled          = restoreResult != WindowGeometryRestoreResult::Unsupported;
+        rect                     = QSettings().value(windowGeometryKey).toRect();
         if (restoreResult == WindowGeometryRestoreResult::Pending) {
             // Wayland applications cannot choose their global position, but they
             // still own their initial size while KWin restores frameGeometry.
@@ -107,8 +106,6 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
     connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
         if (oldId.isEmpty() && !newId.isEmpty()) {
             NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->note().storageId(), newId), this);
-            const QString key = QString("geometry.%1.%2").arg(this->noteWidget->note().storageId(), newId);
-            this->main->restoreWindowGeometry(this, key);
         }
     });
     connect(noteWidget, &NoteWidget::firstLineChanged, this, &NoteDialog::firstLineChanged);
@@ -125,7 +122,7 @@ NoteDialog *NoteDialog::findDialog(const QString &storageId, const QString &note
 
 QList<NoteDialog *> NoteDialog::openDialogs() { return NoteDialog::dialogs.values(); }
 
-void NoteDialog::registerWindowGeometry() { main->restoreWindowGeometry(this, geometryKey(noteWidget)); }
+void NoteDialog::registerWindowGeometry() { main->restoreWindowGeometry(this, windowGeometryKey); }
 
 void NoteDialog::changeEvent(QEvent *e)
 {
@@ -152,14 +149,13 @@ void NoteDialog::done(int r)
     if (!noteWidget->isTrashRequested() && !noteWidget->prepareToClose()) {
         return;
     }
-    QSettings     s;
-    const QString key = geometryKey(noteWidget);
+    QSettings s;
     if (noteWidget->isTrashRequested()) {
-        main->removeWindowGeometry(key);
-        s.remove(key);
+        main->removeWindowGeometry(windowGeometryKey);
+        s.remove(windowGeometryKey);
     } else {
-        if (!main->saveWindowGeometry(this, key))
-            s.setValue(key, geometry());
+        if (!main->saveWindowGeometry(this, windowGeometryKey))
+            s.setValue(windowGeometryKey, geometry());
     }
     if (!noteWidget->note().id().isEmpty()) {
         NoteDialog::dialogs.remove(

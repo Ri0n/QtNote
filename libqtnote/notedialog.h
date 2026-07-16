@@ -58,6 +58,7 @@ private:
     Ui::NoteDialog *m_ui;
     NoteWidget     *noteWidget;
     Main           *main;
+    QString         windowGeometryKey;
 
     static QHash<QPair<QString, QString>, NoteDialog *> dialogs;
 

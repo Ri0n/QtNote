@@ -210,9 +210,6 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     auto speechIcon = QIcon::fromTheme(QLatin1String("audio-input-microphone"));
     if (speechIcon.isNull()) {
         speechIcon = IconUtils::symbolicIcon(QLatin1String(":/svg/microphone"));
-        qDebug() << "Speech microphone theme icon is missing, using bundled fallback icon";
-    } else {
-        qDebug() << "Speech microphone theme icon loaded";
     }
     speechIdleIcon = speechIcon;
     speechAction   = QtNote::initAction(speechIcon, tr("Mic"), tr("Hold to dictate text"), "", this);
@@ -224,9 +221,6 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
         speechButton->setAutoRaise(true);
         connect(speechButton, &QToolButton::pressed, this, &NoteWidget::startSpeechRecognition);
         connect(speechButton, &QToolButton::released, this, &NoteWidget::finishSpeechRecognition);
-        qDebug() << "Speech microphone toolbar button created for action" << speechAction;
-    } else {
-        qDebug() << "Speech microphone toolbar button was not created for action" << speechAction;
     }
     connect(speechRecorder, &SpeechAudioRecorder::elapsedChanged, this, &NoteWidget::updateSpeechRecognitionProgress);
     connect(speechRecorder, &SpeechAudioRecorder::maxDurationReached, this, &NoteWidget::finishSpeechRecognition);
@@ -496,8 +490,6 @@ void NoteWidget::setAcceptRichText(bool state)
 void NoteWidget::setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider)
 {
     speechProvider = provider;
-    qDebug() << "Speech recognition provider set for note" << storageId() << noteId() << "provider" << provider
-             << "ready" << (provider ? provider->isSpeechRecognitionReady() : false);
     updateSpeechRecognitionAction();
 }
 
@@ -765,8 +757,6 @@ void NoteWidget::rereadSettings()
 void NoteWidget::updateSpeechRecognitionAction()
 {
     if (!speechAction || !speechButton || !speechRecorder) {
-        qDebug() << "Speech recognition action skipped: action, button or recorder is missing" << speechAction
-                 << speechButton << speechRecorder;
         return;
     }
     auto language          = speechRecognitionLanguage();
@@ -775,11 +765,6 @@ void NoteWidget::updateSpeechRecognitionAction()
     auto caps = speechProvider ? speechProvider->speechRecognitionCapabilities() : SpeechRecognitionCapabilities();
     bool languageSupported = !language.isEmpty() || caps.languages.isEmpty();
     bool available         = providerReady && recorderAvailable && languageSupported;
-    qDebug() << "Speech recognition action update:"
-             << "provider" << speechProvider << "providerReady" << providerReady << "recorderAvailable"
-             << recorderAvailable << "language" << language << "capsLanguages" << caps.languages << "languageSupported"
-             << languageSupported << "busy" << speechRecognitionBusy << "visible"
-             << (available || speechRecognitionBusy);
     speechAction->setVisible(available || speechRecognitionBusy);
     speechAction->setEnabled(available && !speechRecognitionBusy);
     speechButton->setEnabled(available && !speechRecognitionBusy);

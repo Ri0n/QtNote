@@ -175,24 +175,16 @@ private slots:
     void start()
     {
         auto settings = plugin->settings();
-        qDebug() << "Gemini speech job starting:"
-                 << "audioBytes" << audio.data.size() << "durationMs" << audio.durationMs << "sampleRate"
-                 << audio.sampleRate << "channels" << audio.channels << "bitsPerSample" << audio.bitsPerSample
-                 << "format" << audio.format << "language" << request.language << "contextIdPresent"
-                 << !request.contextId.isEmpty() << "model"
-                 << (settings.model.isEmpty() ? QString(DefaultModel) : settings.model);
         if (settings.apiKey.isEmpty()) {
-            qDebug() << "Gemini speech job failed before request: API key is empty";
+            qWarning() << "Gemini speech job failed before request: API key is empty";
             emit failed(tr("Gemini API key is empty"));
             return;
         }
 
         auto wav = wavFromPcm(audio);
-        qDebug() << "Gemini speech job prepared WAV:"
-                 << "wavBytes" << wav.size() << "pcmBytes" << audio.data.size();
         if (wav.size() > 20 * 1024 * 1024) {
-            qDebug() << "Gemini speech job failed before request: inline audio is too large"
-                     << "wavBytes" << wav.size();
+            qWarning() << "Gemini speech job failed before request: inline audio is too large"
+                       << "wavBytes" << wav.size();
             emit failed(tr("Audio is too large for inline Gemini request"));
             return;
         }
@@ -226,48 +218,37 @@ private slots:
         req.setHeader(QNetworkRequest::ContentTypeHeader, QLatin1String("application/json"));
         req.setRawHeader("x-goog-api-key", settings.apiKey.toUtf8());
 
-        qDebug() << "Gemini speech request posting:"
-                 << "url" << url << "payloadBytes" << payload.size() << "promptChars" << promptText.size()
-                 << "audioBase64Chars" << audioBase64.size();
         reply = plugin->network->post(req, payload);
         connect(reply, &QNetworkReply::finished, this, [this, payload]() {
             if (!reply) {
-                qDebug() << "Gemini speech reply finished after reply was already cleared";
                 return;
             }
             auto r = reply;
             reply  = nullptr;
             if (cancelled) {
-                qDebug() << "Gemini speech request finished after cancellation";
                 r->deleteLater();
                 return;
             }
             auto body = r->readAll();
             r->deleteLater();
             auto httpStatus = r->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            qDebug() << "Gemini speech reply finished:"
-                     << "networkError" << r->error() << "errorString" << r->errorString() << "httpStatus" << httpStatus
-                     << "responseBytes" << body.size();
             if (r->error() != QNetworkReply::NoError) {
                 auto error = apiError(r, body);
-                qDebug() << "Gemini speech request failed:"
-                         << "error" << error << "responsePreview" << QString::fromUtf8(body.left(1000));
+                qWarning() << "Gemini speech request failed:"
+                           << "error" << error << "responsePreview" << QString::fromUtf8(body.left(1000));
                 emit failed(error);
                 return;
             }
 
             auto text = transcriptFromResponse(body);
             if (text.isEmpty()) {
-                qDebug() << "Gemini speech response parse failed:"
-                         << "responsePreview" << QString::fromUtf8(body.left(4000));
+                qWarning() << "Gemini speech response parse failed:"
+                           << "responsePreview" << QString::fromUtf8(body.left(4000));
                 emit failed(tr("Gemini response did not contain recognized text"));
                 return;
             }
 
             plugin->addUsage(audio.durationMs, payload.size());
-            qDebug() << "Gemini speech recognition finished:"
-                     << "textChars" << text.size() << "audioDurationMs" << audio.durationMs << "payloadBytes"
-                     << payload.size();
             emit finished(text);
         });
     }
@@ -379,7 +360,6 @@ bool GeminiPlugin::isSpeechRecognitionReady() const
 {
     auto s     = settings();
     auto ready = !s.apiKey.isEmpty();
-    qDebug() << "Gemini speech readiness:" << ready << "apiKeyPresent" << !s.apiKey.isEmpty() << "model" << s.model;
     return ready;
 }
 
@@ -411,9 +391,6 @@ SpeechRecognitionUsageStats GeminiPlugin::speechRecognitionUsageStats() const
 SpeechRecognitionJob *GeminiPlugin::recognizeSpeech(const SpeechRecognitionAudio   &audio,
                                                     const SpeechRecognitionRequest &request)
 {
-    qDebug() << "Gemini recognizeSpeech requested:"
-             << "audioBytes" << audio.data.size() << "durationMs" << audio.durationMs << "format" << audio.format
-             << "language" << request.language;
     return new GeminiSpeechJob(this, audio, request);
 }
 
@@ -440,9 +417,6 @@ void GeminiPlugin::saveSettings(const Settings &settings)
         model = DefaultModel;
     }
     auto prompt = settings.prompt.isEmpty() ? defaultPrompt() : settings.prompt;
-    qDebug() << "Saving Gemini settings:"
-             << "apiKeyPresent" << !settings.apiKey.isEmpty() << "apiKeyLength" << settings.apiKey.size() << "model"
-             << model << "promptLength" << prompt.size();
     s.setValue(QLatin1String("apiKey"), settings.apiKey);
     s.setValue(QLatin1String("model"), model);
     s.setValue(QLatin1String("prompt"), prompt);
