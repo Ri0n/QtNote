@@ -62,6 +62,7 @@ class WindowGeometry {
     constructor(dbus) {
         this._dbus = dbus;
         this._displaySignalId = 0;
+        this._mapSignalId = 0;
         this._ownerSignalId = 0;
         this._pid = 0;
         this._windows = new Map();
@@ -76,6 +77,14 @@ class WindowGeometry {
         this._displaySignalId = global.display.connect('window-created', Lang.bind(this, function(display, window) {
             this._watch(window);
         }));
+        this._mapSignalId = global.window_manager.connect('map', Lang.bind(this, function(manager, actor) {
+            let window = actor.meta_window;
+            let state = this._windows.get(window);
+            if (state && !state.revealed) {
+                state.actor = actor;
+                actor.opacity = 0;
+            }
+        }));
         let actors = global.get_window_actors();
         for (let i = 0; i < actors.length; ++i)
             this._watch(actors[i].meta_window);
@@ -85,6 +94,8 @@ class WindowGeometry {
     destroy() {
         if (this._displaySignalId)
             global.display.disconnect(this._displaySignalId);
+        if (this._mapSignalId)
+            global.window_manager.disconnect(this._mapSignalId);
         if (this._ownerSignalId)
             this._dbus.disconnect(this._ownerSignalId);
         for (let sourceId of this._pendingWindows.values())
@@ -175,13 +186,14 @@ class WindowGeometry {
             state.claiming = false;
             if (!this._windows.has(window))
                 return;
-            if (error || !response) {
+            let payload = Array.isArray(response) ? response[0] : response;
+            if (error || !payload) {
                 this._reveal(state);
                 this._retryClaim(window, state);
                 return;
             }
             try {
-                let geometry = JSON.parse(response);
+                let geometry = JSON.parse(payload);
                 if (!geometry.key) {
                     this._reveal(state);
                     this._retryClaim(window, state);
@@ -250,10 +262,11 @@ class WindowGeometry {
                 state.key, rect.x, rect.y, rect.width, rect.height, function() {});
         } else {
             this._dbus.claimWindowGeometryRemote(Lang.bind(this, function(response, error) {
-                if (error || !response)
+                let payload = Array.isArray(response) ? response[0] : response;
+                if (error || !payload)
                     return;
                 try {
-                    let geometry = JSON.parse(response);
+                    let geometry = JSON.parse(payload);
                     if (geometry.key) {
                         this._dbus.storeWindowGeometryRemote(
                             geometry.key, rect.x, rect.y, rect.width, rect.height, function() {});
