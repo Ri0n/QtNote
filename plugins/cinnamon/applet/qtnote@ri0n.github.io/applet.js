@@ -19,6 +19,7 @@ const GEOMETRY_SAVE_DELAY_MS = 150;
 const MAX_GEOMETRY_ATTEMPTS = 20;
 const ACTIVATION_RETRY_MS = 100;
 const MAX_ACTIVATION_ATTEMPTS = 15;
+const GEOMETRY_DEBUG = true;
 
 const QTNOTE_IFACE_XML = `
 <node>
@@ -192,7 +193,9 @@ class WindowGeometry {
             actor.opacity = 0;
         state.signalIds.push(window.connect('position-changed', Lang.bind(this, function() { this._changed(window); })));
         state.signalIds.push(window.connect('size-changed', Lang.bind(this, function() { this._changed(window); })));
-        state.signalIds.push(window.connect('unmanaged', Lang.bind(this, function() { this._unmanaged(window); })));
+        // Save while Meta.Window still exposes its final frame. By 'unmanaged'
+        // Muffin may already have torn the frame down to an empty rectangle.
+        state.signalIds.push(window.connect('unmanaging', Lang.bind(this, function() { this._unmanaged(window); })));
         this._windows.set(window, state);
         if (!this._claimSync(window, state))
             this._claim(window);
@@ -214,6 +217,10 @@ class WindowGeometry {
             if (geometry.valid) {
                 state.geometry = geometry;
                 window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+            } else {
+                state.geometry = this._initialGeometry(window);
+                window.move_resize_frame(false, state.geometry.x, state.geometry.y,
+                    state.geometry.width, state.geometry.height);
             }
             this._reveal(state);
             return true;
@@ -250,6 +257,10 @@ class WindowGeometry {
                 if (geometry.valid) {
                     state.geometry = geometry;
                     window.move_resize_frame(false, geometry.x, geometry.y, geometry.width, geometry.height);
+                } else {
+                    state.geometry = this._initialGeometry(window);
+                    window.move_resize_frame(false, state.geometry.x, state.geometry.y,
+                        state.geometry.width, state.geometry.height);
                 }
                 this._reveal(state);
             } catch (parseError) {
@@ -266,6 +277,23 @@ class WindowGeometry {
         state.actor.opacity = 255;
     }
 
+    _initialGeometry(window) {
+        let rect = window.get_frame_rect();
+        let workarea = window.get_work_area_current_monitor();
+        let width = Math.min(workarea.width, Math.max(320, rect.width));
+        let height = Math.min(workarea.height, Math.max(240, rect.height));
+        let xMin = workarea.x + Math.floor((workarea.width - width) / 4);
+        let xMax = workarea.x + Math.floor((workarea.width - width) / 2);
+        let yMin = workarea.y + Math.floor((workarea.height - height) / 4);
+        let yMax = workarea.y + Math.floor((workarea.height - height) / 2);
+        return {
+            x: GLib.random_int_range(xMin, Math.max(xMin + 1, xMax + 1)),
+            y: GLib.random_int_range(yMin, Math.max(yMin + 1, yMax + 1)),
+            width: width,
+            height: height
+        };
+    }
+
     _retryClaim(window, state) {
         if (state.claimSourceId || state.claimAttempt >= MAX_GEOMETRY_ATTEMPTS)
             return;
@@ -278,6 +306,11 @@ class WindowGeometry {
 
     _changed(window) {
         let state = this._windows.get(window);
+        if (GEOMETRY_DEBUG) {
+            let rect = window.get_frame_rect();
+            global.log('QtNote geometry changed: key=' + (state ? state.key : '<missing>')
+                + ' rect=' + rect.x + ',' + rect.y + ' ' + rect.width + 'x' + rect.height);
+        }
         if (!state)
             return;
         if (!state.key) {
@@ -297,14 +330,22 @@ class WindowGeometry {
         if (!state.key)
             return;
         let rect = window.get_frame_rect();
+        if (GEOMETRY_DEBUG)
+            global.log('QtNote geometry save: key=' + state.key + ' rect=' + rect.x + ',' + rect.y
+                + ' ' + rect.width + 'x' + rect.height);
         this._dbus.storeWindowGeometryRemote(state.key, rect.x, rect.y, rect.width, rect.height, function() {});
     }
 
     _unmanaged(window) {
         let state = this._windows.get(window);
+        if (GEOMETRY_DEBUG)
+            global.log('QtNote geometry unmanaging: state=' + (state ? state.key : '<missing>'));
         if (!state)
             return;
         let rect = window.get_frame_rect();
+        if (GEOMETRY_DEBUG)
+            global.log('QtNote geometry final frame: ' + rect.x + ',' + rect.y + ' '
+                + rect.width + 'x' + rect.height);
         if (state.key) {
             this._dbus.storeWindowGeometryRemote(
                 state.key, rect.x, rect.y, rect.width, rect.height, function() {});
