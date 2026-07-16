@@ -208,7 +208,7 @@ void TypeAheadFindBar::init()
     addAction(d->act_replace_all);
 
     d->cb_case = new QCheckBox(tr("&Case sensitive"), this);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
     connect(d->cb_case, &QCheckBox::stateChanged, this,
             [this](int state) { d->caseSensitive = (state == Qt::Checked); });
 #else

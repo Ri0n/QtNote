@@ -19,9 +19,9 @@ class CinnamonPlugin : public QObject, public PluginInterface, DEIntegrationInte
 public:
     explicit CinnamonPlugin(QObject *parent = nullptr);
 
-    int            metadataVersion() const;
+    int            metadataVersion() const override;
     PluginMetadata metadata() override;
-    void           setHost(PluginHostInterface *host);
+    void           setHost(PluginHostInterface *host) override;
 
     void                        notifyError(const QString &message) override;
     void                        activateWidget(QWidget *w) override;

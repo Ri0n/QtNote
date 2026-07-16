@@ -212,7 +212,7 @@ void NextcloudStorage::applyRemote(Note &note, const NextcloudRemoteNote &remote
     note.setBackendValue(QStringLiteral("favorite"), remote.favorite);
     note.setBackendValue(QStringLiteral("readOnly"), remote.readOnly);
     if (remote.modified > 0) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
         note.setLastChangeUTC(QDateTime::fromSecsSinceEpoch(remote.modified, Qt::UTC));
 #else
         note.setLastChangeUTC(QDateTime::fromSecsSinceEpoch(remote.modified, QTimeZone(QTimeZone::UTC)));

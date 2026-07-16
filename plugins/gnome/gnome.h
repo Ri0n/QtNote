@@ -19,13 +19,13 @@ class GnomePlugin : public QObject, public PluginInterface, DEIntegrationInterfa
 public:
     explicit GnomePlugin(QObject *parent = 0);
 
-    int                    metadataVersion() const;
-    virtual PluginMetadata metadata();
-    void                   setHost(PluginHostInterface *host);
+    int                    metadataVersion() const override;
+    virtual PluginMetadata metadata() override;
+    void                   setHost(PluginHostInterface *host) override;
 
-    void notifyError(const QString &msg);
+    void notifyError(const QString &msg) override;
 
-    void                        activateWidget(QWidget *w);
+    void                        activateWidget(QWidget *w) override;
     WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) override;
     bool                        saveWindowGeometry(QWidget *w, const QString &key) override;
     bool                        removeWindowGeometry(const QString &key) override;
