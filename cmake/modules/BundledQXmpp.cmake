@@ -78,10 +78,22 @@ endif()
 if(CMAKE_CXX_COMPILER_LAUNCHER)
     list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}")
 endif()
+set(_qxmpp_extra_cxx_flags "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # QXmpp 1.15.1 itself still copies its deprecated QXmppPromise type in a
     # few places. Keep that third-party warning out of QtNote build logs.
-    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+    string(APPEND _qxmpp_extra_cxx_flags " -Wno-deprecated-declarations")
+endif()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+    # GCC 13 can ICE in build_special_member_call while optimizing
+    # QXmppPubSubManager::requestItem<QXmppMovedItem>() at Debian's -O2.
+    # A trailing -O1 affects only this ExternalProject and avoids that compiler
+    # bug while retaining optimization for the rest of QtNote.
+    string(APPEND _qxmpp_extra_cxx_flags " -O1")
+    message(STATUS "Building bundled QXmpp with -O1 to avoid a GCC ${CMAKE_CXX_COMPILER_VERSION} internal compiler error")
+endif()
+if(_qxmpp_extra_cxx_flags)
+    list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}${_qxmpp_extra_cxx_flags}")
 endif()
 
 ExternalProject_Add(qtnote_bundled_qxmpp
