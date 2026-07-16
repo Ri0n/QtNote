@@ -87,10 +87,11 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
     # GCC 13 can ICE in build_special_member_call while optimizing
     # QXmppPubSubManager::requestItem<QXmppMovedItem>() at Debian's -O2.
-    # A trailing -O1 affects only this ExternalProject and avoids that compiler
-    # bug while retaining optimization for the rest of QtNote.
-    string(APPEND _qxmpp_extra_cxx_flags " -O1")
-    message(STATUS "Building bundled QXmpp with -O1 to avoid a GCC ${CMAKE_CXX_COMPILER_VERSION} internal compiler error")
+    # Debian also enables LTO through the environment. A trailing -O1 and
+    # -fno-lto affect only this ExternalProject and avoid that compiler bug
+    # while retaining optimization and LTO for the rest of QtNote.
+    string(APPEND _qxmpp_extra_cxx_flags " -O1 -fno-lto")
+    message(STATUS "Building bundled QXmpp with -O1 -fno-lto to avoid a GCC ${CMAKE_CXX_COMPILER_VERSION} internal compiler error")
 endif()
 if(_qxmpp_extra_cxx_flags)
     list(APPEND _qxmpp_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}${_qxmpp_extra_cxx_flags}")
