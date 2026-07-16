@@ -9,10 +9,11 @@ Available profiles:
 
 - `qt6`: Qt 6, KF6 and Plasma 6 dependencies.
 - `qt6-noble`: Qt 6 dependencies available in Ubuntu 24.04 Noble and Linux
-  Mint 22.x. It builds QXmpp 1.15.1 with OMEMO as a bundled ExternalProject.
-  QXmpp is linked statically into the XMPP plugin, so no private QXmpp shared
-  libraries are shipped. KF6 integration and the Plasma 6 plasmoid are not
-  built.
+  Mint 22.x. It uses system QXmpp 1.11 or newer when both the core and OMEMO
+  components are available. Otherwise it builds QXmpp 1.15.1 with OMEMO as a
+  bundled ExternalProject. Bundled QXmpp is linked statically into the XMPP
+  plugin, so no private QXmpp shared libraries are shipped. KF6 integration
+  and the Plasma 6 plasmoid are not built.
 
 Build binary and source packages with:
 
@@ -32,9 +33,9 @@ part of the generated source package and is used later by the binary package
 builder. The tracked `debian/control` and `debian/build-profile.mk` files are
 restored when the command exits.
 
-The Noble profile downloads the checksum-pinned official QXmpp release
-tarball during a local build. For a network-isolated build, unpack the same
-release beforehand and configure with:
+When a suitable system QXmpp is unavailable, the Noble profile downloads the
+checksum-pinned official QXmpp release tarball during a local build. For a
+network-isolated build, unpack the same release beforehand and configure with:
 
 ```sh
 -DQTNOTE_BUILD_BUNDLED_QXMPP=ON \

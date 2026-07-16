@@ -27,7 +27,7 @@ project(${APP_NAME} VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 include(CTest)
 
 option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OFF)
-option(QTNOTE_BUILD_BUNDLED_QXMPP "Build QXmpp as an ExternalProject" OFF)
+option(QTNOTE_BUILD_BUNDLED_QXMPP "Build bundled QXmpp when a suitable system QXmpp is unavailable" OFF)
 
 if("${QT_VERSION_MAJOR}" STREQUAL "")
     set(QT_VERSION_MAJOR 6)
@@ -42,7 +42,15 @@ set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR} CACHE STRING "Default Qt major 
 include(GNUInstallDirs)
 
 if(QTNOTE_BUILD_BUNDLED_QXMPP)
-    include(BundledQXmpp)
+    find_package(QXmppQt${QT_VERSION_MAJOR} 1.11 QUIET)
+    find_package(QXmppOmemoQt${QT_VERSION_MAJOR} 1.11 QUIET)
+
+    if(TARGET QXmpp::QXmpp AND TARGET QXmpp::Omemo)
+        message(STATUS "Using system QXmpp with OMEMO")
+    else()
+        message(STATUS "System QXmpp 1.11+ with OMEMO not found; using bundled QXmpp")
+        include(BundledQXmpp)
+    endif()
 endif()
 
 if(UNIX AND NOT (APPLE OR HAIKU))
