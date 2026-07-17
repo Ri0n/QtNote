@@ -479,8 +479,15 @@ StickyNoteModel::StickyNoteModel(QObject *parent) : QObject(parent)
 
     const auto reply = bus.interface()->isServiceRegistered(QLatin1String(ServiceName));
     setAvailable(reply.isValid() && reply.value());
-    if (m_available)
+    if (m_available) {
         createInterface();
+    } else {
+        auto startMessage = QDBusMessage::createMethodCall(
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+        startMessage.setArguments({ QLatin1String(ServiceName), quint32(0) });
+        bus.asyncCall(startMessage);
+    }
 }
 
 void StickyNoteModel::setPresentationId(const QString &presentationId)
