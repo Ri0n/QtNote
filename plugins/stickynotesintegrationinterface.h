@@ -4,7 +4,19 @@
 #include <QRect>
 #include <QUuid>
 
+class QObject;
+
 namespace QtNote {
+
+class StickyNotesServiceInterface {
+public:
+    virtual ~StickyNotesServiceInterface() = default;
+
+    virtual QString  noteJson(const QUuid &stickyId) const = 0;
+    virtual bool     open(const QUuid &stickyId)           = 0;
+    virtual bool     unpin(const QUuid &stickyId)          = 0;
+    virtual QObject *notifier()                            = 0;
+};
 
 class StickyNotesIntegrationInterface {
 public:
@@ -16,8 +28,16 @@ public:
     virtual QUuid stickyNoteIdForPresentation(const QString &presentationId) const { return {}; }
 };
 
+class StickyNotesHostInterface {
+public:
+    virtual ~StickyNotesHostInterface()                                      = default;
+    virtual void initializeStickyNotes(StickyNotesServiceInterface *service) = 0;
+    virtual bool stickyNotesRequireApplicationAutostart() const              = 0;
+};
+
 } // namespace QtNote
 
 Q_DECLARE_INTERFACE(QtNote::StickyNotesIntegrationInterface, "com.rion-soft.QtNote.StickyNotesIntegrationInterface/1.0")
+Q_DECLARE_INTERFACE(QtNote::StickyNotesHostInterface, "com.rion-soft.QtNote.StickyNotesHostInterface/1.0")
 
 #endif // STICKYNOTESINTEGRATIONINTERFACE_H

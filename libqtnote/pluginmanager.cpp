@@ -41,6 +41,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notificationinterface.h"
 #include "qtnote_config.h"
 #include "stickynotesintegrationinterface.h"
+#include "stickynotesmanager.h"
 #include "trayinterface.h"
 
 namespace QtNote {
@@ -402,6 +403,11 @@ void PluginManager::loadPlugins()
         auto pd = plugins[plugin];
         if (!ensureLoaded(pd))
             continue;
+        if (auto *host = qobject_cast<StickyNotesHostInterface *>(pd->instance)) {
+            host->initializeStickyNotes(qtnote->stickyNotesManager());
+            qtnote->stickyNotesManager()->setRequiresApplicationAutostart(
+                host->stickyNotesRequireApplicationAutostart());
+        }
         auto *sticky = qobject_cast<StickyNotesIntegrationInterface *>(pd->instance);
         if (!sticky || !sticky->isStickyNotesAvailable())
             continue;
@@ -611,7 +617,11 @@ void PluginManager::updateMetadata()
             || (!(pd->loadStatus && pd->loadStatus < LS_Errors)
                 && pd->modifyTime < QFileInfo(pd->fileName).lastModified())) { // have to update metadata cache
 
-            loadPlugin(fileName, pd, QLibrary::ExportExternalSymbolsHint);
+            // Some plugin constructors (or libraries they pull in) register process-wide Qt hooks.
+            // Unloading such a plugin immediately after probing its metadata can leave dangling hooks,
+            // especially with Qt 5. Keep probed libraries mapped for the lifetime of the process; disabled
+            // plugins still remain uninitialized and therefore do not perform their runtime work.
+            loadPlugin(fileName, pd, QLibrary::ExportExternalSymbolsHint | QLibrary::PreventUnloadHint);
             if (!pd.isNull()) { // new cache
                 tmpPlugins.insert(pd->metadata.id, pd);
             }

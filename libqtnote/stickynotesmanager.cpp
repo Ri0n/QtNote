@@ -3,12 +3,14 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMessageBox>
 #include <QSettings>
 
 #include "draftmanager.h"
 #include "notemanager.h"
 #include "qtnote.h"
 #include "stickynotesintegrationinterface.h"
+#include "utils.h"
 
 namespace QtNote {
 
@@ -84,6 +86,16 @@ QUuid StickyNotesManager::pinPublished(const Note &note, const QRect &preferredG
                 backend_->presentStickyNote(record.id, preferredGeometry);
             return record.id;
         }
+    }
+
+    if (requiresApplicationAutostart_ && !autostartPromptShown_ && !Utils::isAutostartEnabled()) {
+        autostartPromptShown_ = true;
+        const auto answer     = QMessageBox::question(
+            nullptr, tr("Start QtNote automatically?"),
+            tr("QtNote must be running to restore sticky notes after sign-in. Start it automatically with the system?"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if (answer == QMessageBox::Yes && !Utils::setAutostartEnabled(true))
+            main_->notifyError(tr("Failed to enable automatic startup."));
     }
 
     Record record { QUuid::createUuid(), note.storageId(), note.id() };

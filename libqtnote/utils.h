@@ -38,6 +38,9 @@ public:
     static const QString  genericDataDir();
     static const QString &qtnoteDataDir();
 
+    static bool isAutostartEnabled();
+    static bool setAutostartEnabled(bool enabled);
+
     static QColor perceptiveColor(const QColor &against);
     static QColor mergeColors(const QColor &a, const QColor &b);
 

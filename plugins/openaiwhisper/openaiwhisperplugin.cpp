@@ -295,10 +295,7 @@ private:
     QPlainTextEdit      *prompt = nullptr;
 };
 
-OpenAIWhisperPlugin::OpenAIWhisperPlugin(QObject *parent) : QObject(parent)
-{
-    network = new QNetworkAccessManager(this);
-}
+OpenAIWhisperPlugin::OpenAIWhisperPlugin(QObject *parent) : QObject(parent) { }
 
 OpenAIWhisperPlugin::~OpenAIWhisperPlugin() = default;
 
@@ -323,6 +320,8 @@ void OpenAIWhisperPlugin::setHost(PluginHostInterface *host) { Q_UNUSED(host); }
 bool OpenAIWhisperPlugin::init(Main *qtnote)
 {
     Q_UNUSED(qtnote);
+    if (!network)
+        network = new QNetworkAccessManager(this);
     return true;
 }
 
@@ -375,6 +374,8 @@ SpeechRecognitionJob *OpenAIWhisperPlugin::recognizeSpeech(const SpeechRecogniti
     qDebug() << "OpenAI Whisper recognizeSpeech requested:"
              << "audioBytes" << audio.data.size() << "durationMs" << audio.durationMs << "format" << audio.format
              << "language" << request.language;
+    if (!network)
+        network = new QNetworkAccessManager(this);
     return new OpenAIWhisperSpeechJob(this, audio, request);
 }
 

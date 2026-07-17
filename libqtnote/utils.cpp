@@ -22,10 +22,16 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "utils.h"
 
 #include <QColor>
+#include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QXmlStreamWriter>
+
+#include "qtnote_config.h"
 
 namespace QtNote {
 
@@ -48,6 +54,108 @@ const QString &Utils::qtnoteDataDir()
         dataDir = genericDataDir() + QLatin1Char('/') + s.organizationName() + QLatin1Char('/') + s.applicationName();
     }
     return dataDir;
+}
+
+bool Utils::isAutostartEnabled()
+{
+#ifdef Q_OS_LINUX
+    QFile desktop(QDir::homePath() + QStringLiteral("/.config/autostart/") + APPNAME + QStringLiteral(".desktop"));
+    static const QRegularExpression enabledPattern(QStringLiteral("\\bhidden\\s*=\\s*false"),
+                                                   QRegularExpression::CaseInsensitiveOption);
+    return desktop.open(QIODevice::ReadOnly) && QString::fromUtf8(desktop.readAll()).contains(enabledPattern);
+#elif defined(Q_OS_WIN)
+    QSettings registry(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+                       QSettings::NativeFormat);
+    return registry.contains(QCoreApplication::applicationName());
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    return QFile::exists(QDir::homePath() + QStringLiteral("/Library/LaunchAgents/com.github.ri0n.QtNote.plist"));
+#else
+    return false;
+#endif
+}
+
+bool Utils::setAutostartEnabled(bool enabled)
+{
+#ifdef Q_OS_LINUX
+    QDir home = QDir::home();
+    if (!home.mkpath(QStringLiteral(".config/autostart")))
+        return false;
+
+    const QString destinationPath = home.absoluteFilePath(QStringLiteral(".config/autostart/" APPNAME ".desktop"));
+    QByteArray    contents;
+    QFile         existing(destinationPath);
+    if (existing.open(QIODevice::ReadOnly)) {
+        contents = existing.readAll();
+    } else {
+        const QString sourcePath = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
+                                                          QStringLiteral("applications/" APPNAME ".desktop"));
+        QFile         source(sourcePath);
+        if (sourcePath.isEmpty() || !source.open(QIODevice::ReadOnly))
+            return false;
+        contents = source.readAll();
+    }
+
+    static const QRegularExpression hiddenLine(QStringLiteral("^\\s*Hidden\\s*=.*(?:\\r?\\n|$)"),
+                                               QRegularExpression::CaseInsensitiveOption
+                                                   | QRegularExpression::MultilineOption);
+    QString                         text = QString::fromUtf8(contents);
+    text.remove(hiddenLine);
+    if (!text.endsWith(QLatin1Char('\n')))
+        text += QLatin1Char('\n');
+    text += enabled ? QStringLiteral("Hidden=false\n") : QStringLiteral("Hidden=true\n");
+
+    QSaveFile destination(destinationPath);
+    if (!destination.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+    if (destination.write(text.toUtf8()) < 0)
+        return false;
+    return destination.commit();
+#elif defined(Q_OS_WIN)
+    QSettings registry(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+                       QSettings::NativeFormat);
+    if (enabled)
+        registry.setValue(QCoreApplication::applicationName(),
+                          QLatin1Char('"') + QDir::toNativeSeparators(QCoreApplication::applicationFilePath())
+                              + QLatin1Char('"'));
+    else
+        registry.remove(QCoreApplication::applicationName());
+    return registry.status() == QSettings::NoError;
+#elif defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    QDir home = QDir::home();
+    if (!home.mkpath(QStringLiteral("Library/LaunchAgents")))
+        return false;
+
+    const QString path = home.absoluteFilePath(QStringLiteral("Library/LaunchAgents/com.github.ri0n.QtNote.plist"));
+    if (!enabled)
+        return !QFile::exists(path) || QFile::remove(path);
+
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+    QXmlStreamWriter xml(&file);
+    xml.setAutoFormatting(true);
+    xml.writeStartDocument();
+    xml.writeDTD(QStringLiteral("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
+                                "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">"));
+    xml.writeStartElement(QStringLiteral("plist"));
+    xml.writeAttribute(QStringLiteral("version"), QStringLiteral("1.0"));
+    xml.writeStartElement(QStringLiteral("dict"));
+    xml.writeTextElement(QStringLiteral("key"), QStringLiteral("Label"));
+    xml.writeTextElement(QStringLiteral("string"), QStringLiteral("com.github.ri0n.QtNote"));
+    xml.writeTextElement(QStringLiteral("key"), QStringLiteral("ProgramArguments"));
+    xml.writeStartElement(QStringLiteral("array"));
+    xml.writeTextElement(QStringLiteral("string"), QCoreApplication::applicationFilePath());
+    xml.writeEndElement();
+    xml.writeTextElement(QStringLiteral("key"), QStringLiteral("RunAtLoad"));
+    xml.writeEmptyElement(QStringLiteral("true"));
+    xml.writeEndElement();
+    xml.writeEndElement();
+    xml.writeEndDocument();
+    return !xml.hasError() && file.commit();
+#else
+    Q_UNUSED(enabled)
+    return false;
+#endif
 }
 
 QColor Utils::perceptiveColor(const QColor &against)

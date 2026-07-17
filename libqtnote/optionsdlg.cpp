@@ -109,17 +109,8 @@ OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnot
 {
     ui->setupUi(this);
 
-#ifdef Q_OS_LINUX
-    QFile                     desktop(QDir::homePath() + "/.config/autostart/" APPNAME ".desktop");
-    static QRegularExpression findAutostart("\\bhidden\\s*=\\s*false", QRegularExpression::CaseInsensitiveOption);
-    if (desktop.open(QIODevice::ReadOnly) && QString(desktop.readAll()).contains(findAutostart)) {
-        ui->ckAutostart->setChecked(true);
-    }
-#elif defined(Q_OS_WIN)
-    QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
-                  "CurrentVersion\\Run",
-                  QSettings::NativeFormat);
-    ui->ckAutostart->setChecked(reg.contains(QCoreApplication::applicationName()));
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN) || defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    ui->ckAutostart->setChecked(Utils::isAutostartEnabled());
 #else
     ui->ckAutostart->setVisible(false);
 #endif
@@ -206,30 +197,8 @@ void OptionsDlg::accept()
     s.setValue("ui.title-color", ui->wTitleColor->color());
     s.setValue("ui.default-font", defaultFont.toString());
 
-#ifdef Q_OS_LINUX
-    QDir home = QDir::home();
-    if (!home.exists(".config/autostart")) {
-        home.mkpath(".config/autostart");
-    }
-    QFile desktopFile(DATADIR "/applications/" APPNAME ".desktop");
-    if (desktopFile.open(QIODevice::ReadOnly)) {
-        QByteArray contents = desktopFile.readAll();
-        QFile      f(home.absolutePath() + "/.config/autostart/" APPNAME ".desktop");
-
-        if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            f.write(contents.trimmed());
-            f.write(QString("\nHidden=%1").arg(ui->ckAutostart->isChecked() ? "false\n" : "true\n").toUtf8());
-        }
-    }
-#elif defined(Q_OS_WIN)
-    QSettings reg("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\"
-                  "CurrentVersion\\Run",
-                  QSettings::NativeFormat);
-    if (ui->ckAutostart->isChecked())
-        reg.setValue(QCoreApplication::applicationName(),
-                     '"' + QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) + '"');
-    else
-        reg.remove(QCoreApplication::applicationName());
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN) || defined(Q_OS_MACOS) || defined(Q_OS_MAC)
+    Utils::setAutostartEnabled(ui->ckAutostart->isChecked());
 #endif
     QDialog::accept();
 }

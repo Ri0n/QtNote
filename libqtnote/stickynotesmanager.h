@@ -7,27 +7,30 @@
 #include <QUuid>
 
 #include "note.h"
+#include "stickynotesintegrationinterface.h"
 
 namespace QtNote {
 
 class Main;
 class StickyNotesIntegrationInterface;
 
-class StickyNotesManager : public QObject {
+class StickyNotesManager : public QObject, public StickyNotesServiceInterface {
     Q_OBJECT
 public:
     explicit StickyNotesManager(Main *main);
 
     void setBackend(StickyNotesIntegrationInterface *backend);
+    void setRequiresApplicationAutostart(bool required) { requiresApplicationAutostart_ = required; }
     bool isAvailable() const;
 
     void requestPin(const Note &note, const QUuid &draftId, bool awaitingPublication, const QRect &preferredGeometry);
-    bool unpin(const QUuid &stickyId);
-    bool open(const QUuid &stickyId);
+    bool unpin(const QUuid &stickyId) override;
+    bool open(const QUuid &stickyId) override;
 
-    QString notesJson() const;
-    QString noteJson(const QUuid &stickyId) const;
-    QString noteForPresentationJson(const QString &presentationId) const;
+    QString  notesJson() const;
+    QString  noteJson(const QUuid &stickyId) const override;
+    QString  noteForPresentationJson(const QString &presentationId) const;
+    QObject *notifier() override { return this; }
 
 signals:
     void availabilityChanged(bool available);
@@ -54,6 +57,8 @@ private:
     StickyNotesIntegrationInterface *backend_ = nullptr;
     QHash<QUuid, Record>             records_;
     QHash<QUuid, PendingPin>         pendingPins_;
+    bool                             requiresApplicationAutostart_ = false;
+    bool                             autostartPromptShown_         = false;
 };
 
 } // namespace QtNote
