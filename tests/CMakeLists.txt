@@ -4,6 +4,10 @@ add_executable(filedraftstore_test filedraftstore_test.cpp)
 target_link_libraries(filedraftstore_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME filedraftstore_test COMMAND filedraftstore_test)
 
+add_executable(fileremotecachestore_test fileremotecachestore_test.cpp)
+target_link_libraries(fileremotecachestore_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME fileremotecachestore_test COMMAND fileremotecachestore_test)
+
 add_executable(secureenvelope_test secureenvelope_test.cpp)
 target_link_libraries(secureenvelope_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME secureenvelope_test COMMAND secureenvelope_test)

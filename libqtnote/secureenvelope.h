@@ -8,7 +8,14 @@
 
 namespace QtNote {
 
-enum class KeyDomain : quint8 { LocalDraft = 1, StorageIndex, StorageContent, StorageKeyTransport, OmemoState };
+enum class KeyDomain : quint8 {
+    LocalDraft = 1,
+    StorageIndex,
+    StorageContent,
+    StorageKeyTransport,
+    OmemoState,
+    LocalRemoteCache
+};
 
 struct QTNOTE_EXPORT AeadContext {
     KeyDomain domain { KeyDomain::LocalDraft };

@@ -51,6 +51,8 @@ namespace {
             return QByteArrayLiteral("storage-key-transport");
         case KeyDomain::OmemoState:
             return QByteArrayLiteral("omemo-state");
+        case KeyDomain::LocalRemoteCache:
+            return QByteArrayLiteral("local-remote-cache");
         }
         return {};
     }

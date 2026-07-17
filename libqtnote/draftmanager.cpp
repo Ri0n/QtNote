@@ -3,6 +3,7 @@
 #include "conflictresolver.h"
 
 #include "filedraftstore.h"
+#include "localdatakeystore.h"
 #include "notedata.h"
 #include "notemanager.h"
 #include "notestorage.h"
@@ -11,7 +12,6 @@
 
 #include <QApplication>
 #include <QDebug>
-#include <QEventLoop>
 #include <QTimer>
 
 // Uncomment for detailed draft publication/conflict diagnostics.
@@ -22,22 +22,8 @@
 #else
 #define CONFLICT_TRACE QNoDebug()
 #endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <qt5keychain/keychain.h>
-#else
-#include <qt6keychain/keychain.h>
-#endif
-
 namespace QtNote {
 namespace {
-    const QString KeychainService = QStringLiteral("com.github.ri0n.qtnote");
-    const QString KeychainKey     = QStringLiteral("draft-store-master-key-v1");
-
-    QString keychainError(QKeychain::Job *job)
-    {
-        return DraftManager::tr("Failed to access the secure keychain: %1").arg(job->errorString());
-    }
-
     QString concurrencySummary(const QVariantMap &data)
     {
         QStringList       parts;
@@ -67,58 +53,12 @@ DraftManager *DraftManager::instance()
     return manager;
 }
 
-QByteArray DraftManager::loadOrCreateMasterKey(QString *errorText)
-{
-    if (!QKeychain::isAvailable()) {
-        *errorText = tr("No secure system keychain is available.");
-        return {};
-    }
-
-    QKeychain::ReadPasswordJob read(KeychainService);
-    read.setAutoDelete(false);
-    read.setInsecureFallback(false);
-    read.setKey(KeychainKey);
-    QEventLoop loop;
-    connect(&read, &QKeychain::Job::finished, &loop, &QEventLoop::quit);
-    read.start();
-    loop.exec();
-    if (read.error() == QKeychain::NoError) {
-        const auto key = read.binaryData();
-        if (key.size() != FileDraftStore::MasterKeySize)
-            *errorText = tr("The draft encryption key stored in the keychain is invalid.");
-        return key.size() == FileDraftStore::MasterKeySize ? key : QByteArray();
-    }
-    if (read.error() != QKeychain::EntryNotFound) {
-        *errorText = keychainError(&read);
-        return {};
-    }
-
-    const auto key = FileDraftStore::generateMasterKey();
-    if (key.size() != FileDraftStore::MasterKeySize) {
-        *errorText = tr("A secure draft encryption key could not be generated.");
-        return {};
-    }
-    QKeychain::WritePasswordJob write(KeychainService);
-    write.setAutoDelete(false);
-    write.setInsecureFallback(false);
-    write.setKey(KeychainKey);
-    write.setBinaryData(key);
-    connect(&write, &QKeychain::Job::finished, &loop, &QEventLoop::quit);
-    write.start();
-    loop.exec();
-    if (write.error() != QKeychain::NoError) {
-        *errorText = keychainError(&write);
-        return {};
-    }
-    return key;
-}
-
 bool DraftManager::initialize(QString *errorText)
 {
     if (store_)
         return true;
     QString error;
-    auto    key = loadOrCreateMasterKey(&error);
+    auto    key = LocalDataKeyStore::loadOrCreateMasterKey(&error);
     if (key.isEmpty()) {
         lastError_ = error;
         if (errorText)
@@ -160,8 +100,8 @@ DraftStoreError DraftManager::saveEditing(const QUuid &draftId, const Note &note
     record.backendData  = note.backendData();
     record.updatedAt    = QDateTime::currentDateTimeUtc();
     CONFLICT_TRACE << "Conflict trace: draft captured id=" << draftId.toString(QUuid::WithoutBraces)
-                      << "storage=" << record.storageId << "note=" << record.remoteNoteId
-                      << "base=" << concurrencySummary(record.backendData);
+                   << "storage=" << record.storageId << "note=" << record.remoteNoteId
+                   << "base=" << concurrencySummary(record.backendData);
     return store_->write(record);
 }
 
@@ -188,8 +128,8 @@ void DraftManager::resolveConcurrentEdit(const Note &localVersion, const Note &r
     record.updatedAt    = QDateTime::currentDateTimeUtc();
     record.lastError    = message;
     CONFLICT_TRACE << "Conflict trace: post-publication conflict note=" << record.remoteNoteId
-                      << "local=" << concurrencySummary(record.backendData)
-                      << "remote=" << concurrencySummary(remoteVersion.backendData());
+                   << "local=" << concurrencySummary(record.backendData)
+                   << "remote=" << concurrencySummary(remoteVersion.backendData());
     if (const auto writeError = store_->write(record)) {
         emit publicationAbandoned(tr("Failed to preserve a conflicting note: %1").arg(writeError.message));
         return;
@@ -208,7 +148,7 @@ DraftStoreError DraftManager::markReady(const QUuid &draftId)
         return draft.error;
     draft.value.state = draft.value.storageId.isEmpty() ? DraftRecord::NeedsRouting : DraftRecord::Ready;
     CONFLICT_TRACE << "Conflict trace: draft ready id=" << draftId.toString(QUuid::WithoutBraces)
-                      << "note=" << draft.value.remoteNoteId << "base=" << concurrencySummary(draft.value.backendData);
+                   << "note=" << draft.value.remoteNoteId << "base=" << concurrencySummary(draft.value.backendData);
     auto result = store_->write(draft.value);
     if (!result)
         QTimer::singleShot(0, this, &DraftManager::publishPending);
@@ -341,8 +281,8 @@ void DraftManager::retry(const DraftRecord &record, const QString &message, bool
 void DraftManager::resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote)
 {
     CONFLICT_TRACE << "Conflict trace: invoking resolver draft=" << record.id.toString(QUuid::WithoutBraces)
-                      << "note=" << record.remoteNoteId << "base=" << concurrencySummary(record.backendData)
-                      << "remote=" << concurrencySummary(remoteNote.backendData()) << "message=" << error.message;
+                   << "note=" << record.remoteNoteId << "base=" << concurrencySummary(record.backendData)
+                   << "remote=" << concurrencySummary(remoteNote.backendData()) << "message=" << error.message;
     if (!conflictResolver_) {
         retry(record, error.message, false);
         return;
@@ -373,7 +313,7 @@ void DraftManager::resolveConflict(const DraftRecord &record, const StorageError
             switch (resolution.action) {
             case ConflictResolution::CreateCopy: {
                 CONFLICT_TRACE << "Conflict trace: resolver action=create-copy draft="
-                                  << id.toString(QUuid::WithoutBraces) << "old-note=" << current.value.remoteNoteId;
+                               << id.toString(QUuid::WithoutBraces) << "old-note=" << current.value.remoteNoteId;
                 current.value.remoteNoteId.clear();
                 current.value.backendData.clear();
                 current.value.title = resolution.copyTitle.isEmpty() ? tr("%1 (conflict copy)").arg(current.value.title)
@@ -393,7 +333,7 @@ void DraftManager::resolveConflict(const DraftRecord &record, const StorageError
             }
             case ConflictResolution::KeepDraft: {
                 CONFLICT_TRACE << "Conflict trace: resolver action=keep-draft draft="
-                                  << id.toString(QUuid::WithoutBraces);
+                               << id.toString(QUuid::WithoutBraces);
                 current.value.state     = DraftRecord::Editing;
                 current.value.lastError = fallbackMessage;
                 current.value.retryAt   = {};
@@ -402,8 +342,7 @@ void DraftManager::resolveConflict(const DraftRecord &record, const StorageError
                 break;
             }
             case ConflictResolution::Discard:
-                CONFLICT_TRACE << "Conflict trace: resolver action=discard draft="
-                                  << id.toString(QUuid::WithoutBraces);
+                CONFLICT_TRACE << "Conflict trace: resolver action=discard draft=" << id.toString(QUuid::WithoutBraces);
                 if (const auto removeError = store_->remove(id))
                     emit publicationAbandoned(tr("Failed to discard a conflicting draft: %1").arg(removeError.message));
                 break;
@@ -414,8 +353,8 @@ void DraftManager::resolveConflict(const DraftRecord &record, const StorageError
 void DraftManager::publish(const DraftRecord &record)
 {
     CONFLICT_TRACE << "Conflict trace: publish begin draft=" << record.id.toString(QUuid::WithoutBraces)
-                      << "storage=" << record.storageId << "note=" << record.remoteNoteId
-                      << "base=" << concurrencySummary(record.backendData);
+                   << "storage=" << record.storageId << "note=" << record.remoteNoteId
+                   << "base=" << concurrencySummary(record.backendData);
     auto storage = NoteManager::instance()->storage(record.storageId);
     if (!storage || !storage->isAccessible()) {
         retry(record, tr("Target storage is unavailable"));
@@ -441,15 +380,15 @@ void DraftManager::publish(const DraftRecord &record)
             publishing_.remove(record.id);
             publishJobs_.remove(record.id);
             if (job->state() == StorageJob::Succeeded) {
-                CONFLICT_TRACE << "Conflict trace: publish succeeded draft="
-                                  << record.id.toString(QUuid::WithoutBraces) << "note=" << job->result().id()
-                                  << "result=" << concurrencySummary(job->result().backendData());
+                CONFLICT_TRACE << "Conflict trace: publish succeeded draft=" << record.id.toString(QUuid::WithoutBraces)
+                               << "note=" << job->result().id()
+                               << "result=" << concurrencySummary(job->result().backendData());
                 store_->remove(record.id);
                 emit draftPublished(record.id, job->result());
             } else {
                 CONFLICT_TRACE << "Conflict trace: publish failed draft=" << record.id.toString(QUuid::WithoutBraces)
-                                  << "code=" << int(job->error().code) << "retryable=" << job->error().retryable
-                                  << "message=" << job->error().message;
+                               << "code=" << int(job->error().code) << "retryable=" << job->error().retryable
+                               << "message=" << job->error().message;
                 auto pending = store_->load(record.id);
                 if (pending) {
                     if (job->error().code == StorageError::Conflict)
@@ -476,8 +415,8 @@ void DraftManager::publish(const DraftRecord &record)
         if (job->state() == StorageJob::Succeeded) {
             auto note = job->result();
             CONFLICT_TRACE << "Conflict trace: remote loaded draft=" << record.id.toString(QUuid::WithoutBraces)
-                              << "note=" << record.remoteNoteId << "remote=" << concurrencySummary(note.backendData())
-                              << "restoring-base=" << concurrencySummary(record.backendData);
+                           << "note=" << record.remoteNoteId << "remote=" << concurrencySummary(note.backendData())
+                           << "restoring-base=" << concurrencySummary(record.backendData);
             // Preserve the concurrency token captured when editing began. A
             // freshly loaded remote token would silently rebase and overwrite
             // concurrent edits. Version 1/2 drafts have no snapshot and retain

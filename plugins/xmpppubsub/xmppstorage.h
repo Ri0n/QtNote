@@ -7,10 +7,13 @@
 #include <QHash>
 #include <QTimer>
 
+#include <memory>
+
 namespace QtNote {
 
 class XmppBackend;
 class XmppSettingsWidget;
+class RemoteCacheStore;
 
 /**
  * @brief QtNote storage adapter backed by encrypted XMPP Personal Eventing Protocol nodes.
@@ -84,13 +87,22 @@ private:
     void           applyConfig(const XmppConfig &config);
     void           installReceivedStorageKey(const QString &jid, const QByteArray &key);
     void           resolveStorageKeys(const QString &jid, XmppSettingsWidget *settings = nullptr);
+    bool           openPersistentCache(const XmppConfig &config);
+    void           persistCache();
+    void           startBodyPrefetch(const QStringList &ids);
+    void           prefetchNextBody();
 
     /// Stable configuration snapshot used by operations until applyConfig().
     XmppConfig config_;
     /// Protocol implementation; parented to this storage when constructed internally.
     XmppBackend *backend_ { nullptr };
     /// Most recently loaded remote note index, keyed by note ID.
-    QHash<QString, Note> cache_;
+    QHash<QString, Note>              cache_;
+    std::unique_ptr<RemoteCacheStore> persistentCache_;
+    QString                           persistentCacheInstanceId_;
+    bool                              cacheAvailable_ { false };
+    QStringList                       bodyPrefetchQueue_;
+    bool                              bodyPrefetchRunning_ { false };
     /// Whether cache_ is a complete representation of the current remote index.
     bool cacheValid_ { false };
     /// Whether normal storage operations may currently be attempted.

@@ -24,6 +24,7 @@ enum class XmppErrorKind {
 
 /** @brief Complete backend configuration for one XMPP account. */
 struct XmppConfig {
+    QString    instanceId;                            ///< Stable local identity of this configured storage instance.
     QString    jid;                                   ///< Bare JID used for authentication and own PEP service.
     QString    password;                              ///< Transient keychain value; never persisted in plugin settings.
     QString    host;                                  ///< Optional server override; empty enables normal discovery.

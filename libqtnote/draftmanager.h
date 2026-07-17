@@ -48,13 +48,12 @@ signals:
 
 private:
     explicit DraftManager(QObject *parent = nullptr);
-    QByteArray loadOrCreateMasterKey(QString *error);
-    void       process(const DraftRecord &record);
-    void       publish(const DraftRecord &record);
-    void       remove(const DraftRecord &record);
-    void       retry(const DraftRecord &record, const QString &message, bool retryable = true);
-    void       resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote = {});
-    void       storageAboutToBeRemoved(NoteStorage *storage);
+    void process(const DraftRecord &record);
+    void publish(const DraftRecord &record);
+    void remove(const DraftRecord &record);
+    void retry(const DraftRecord &record, const QString &message, bool retryable = true);
+    void resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote = {});
+    void storageAboutToBeRemoved(NoteStorage *storage);
 
     std::unique_ptr<FileDraftStore>    store_;
     QSet<QUuid>                        publishing_;
