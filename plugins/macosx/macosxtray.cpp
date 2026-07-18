@@ -88,7 +88,7 @@ void MacOSXTray::rebuildMenu()
     QSettings   s;
     QList<Note> notes = host->noteManager()->noteList(s.value("ui.menu-notes-amount", 15).toInt());
     for (int i = 0; i < notes.count(); i++) {
-        h ^= qHash(notes[i].title());
+        h ^= qHash(notes[i].displayTitle());
     }
 
     if (h == menuUpdateHash) {
@@ -101,7 +101,7 @@ void MacOSXTray::rebuildMenu()
     contextMenu->addSeparator();
     for (int i = 0; i < notes.count(); i++) {
         QAction *act = contextMenu->addAction(notes[i].storage()->noteIcon(),
-                                              host->utilsCuttedDots(notes[i].title(), 48).replace('&', "&&"));
+                                              host->utilsCuttedDots(notes[i].displayTitle(), 48).replace('&', "&&"));
         QVariant v;
         v.setValue<NoteIdent>(NoteIdent(notes[i].storageId(), notes[i].id()));
         act->setData(v);

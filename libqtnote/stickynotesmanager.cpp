@@ -150,7 +150,7 @@ QString StickyNotesManager::noteJson(const QUuid &stickyId) const
                                                { "stickyId", item->id.toString(QUuid::WithoutBraces) },
                                                { "storageId", item->storageId },
                                                { "noteId", item->noteId },
-                                               { "title", note.title() },
+                                               { "title", note.displayTitle() },
                                                { "body", note.text() },
                                                { "format", formatName(note.format()) },
                                            })

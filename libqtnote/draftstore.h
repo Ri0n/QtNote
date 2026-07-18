@@ -36,10 +36,11 @@ struct QTNOTE_EXPORT DraftRecord {
     QStringList  tags;
     // Opaque storage-specific state (XMPP revision, Nextcloud ETag, Keep base
     // version, ...), captured when editing starts and restored before save.
-    QVariantMap backendData;
-    QDateTime   updatedAt;
-    QString     lastError;
-    QDateTime   retryAt;
+    QVariantMap           backendData;
+    QList<MediaReference> media;
+    QDateTime             updatedAt;
+    QString               lastError;
+    QDateTime             retryAt;
 };
 
 struct QTNOTE_EXPORT DraftStoreError {

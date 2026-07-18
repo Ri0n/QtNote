@@ -102,7 +102,7 @@ QString QtNoteDBus::notesJson(int offset, int limit, const QString &query) const
         result.append(QJsonObject {
             { "id", note.id() },
             { "storageId", note.storageId() },
-            { "title", note.title() },
+            { "title", note.displayTitle() },
             { "tags", QJsonArray::fromStringList(note.tags()) },
             { "modified", note.lastChangeUTC().toUTC().toString(Qt::ISODateWithMs) },
         });

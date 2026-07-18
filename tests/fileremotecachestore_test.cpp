@@ -22,13 +22,21 @@ static RemoteCacheRecord sampleRecord()
     record.id          = QStringLiteral("note-1");
     record.title       = QStringLiteral("Cached note");
     record.tags        = { QStringLiteral("offline") };
-    record.modified    = QDateTime::fromSecsSinceEpoch(1700000000, Qt::UTC);
+    record.modified    = QDateTime::fromSecsSinceEpoch(1700000000, QTimeZone::UTC);
     record.format      = Note::Markdown;
     record.body        = QStringLiteral("# Cached note\nBody");
     record.bodyPresent = true;
     record.backendData.insert(QStringLiteral("revision"), QStringLiteral("r1"));
     record.syncState    = RemoteCacheRecord::Synced;
-    record.lastOpenedAt = QDateTime::fromSecsSinceEpoch(1700000100, Qt::UTC);
+    record.lastOpenedAt = QDateTime::fromSecsSinceEpoch(1700000100, QTimeZone::UTC);
+    MediaReference media;
+    media.id           = QUuid::createUuid();
+    media.blobId       = QByteArray::fromHex("01020304");
+    media.originalName = QStringLiteral("diagram.png");
+    media.portableName = media.originalName;
+    media.mediaType    = QStringLiteral("image/png");
+    media.size         = 123;
+    record.media.append(media);
     return record;
 }
 
@@ -38,7 +46,8 @@ void FileRemoteCacheStoreTest::roundTrip()
     QVERIFY(directory.isValid());
     const auto           key = SecureEnvelope::generateMasterKey();
     FileRemoteCacheStore store(directory.filePath(QStringLiteral("cache.bin")), QStringLiteral("instance-1"), key);
-    QVERIFY(!store.replaceRecords({ sampleRecord() }));
+    const auto           expected = sampleRecord();
+    QVERIFY(!store.replaceRecords({ expected }));
 
     const auto loaded = store.records();
     QVERIFY(loaded);
@@ -49,6 +58,8 @@ void FileRemoteCacheStoreTest::roundTrip()
     QVERIFY(record.bodyPresent);
     QCOMPARE(record.backendData.value(QStringLiteral("revision")).toString(), QStringLiteral("r1"));
     QVERIFY(record.cachedAt.isValid());
+    QCOMPARE(record.media.size(), 1);
+    QCOMPARE(record.media.first().id, expected.media.first().id);
 
     auto changed = record;
     changed.body = QStringLiteral("changed");

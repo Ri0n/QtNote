@@ -23,21 +23,63 @@ Check https://github.com/Ri0n/QtNote/releases page for the latest downloads.
 
 Some older releases could be found at https://yadi.sk/d/HbnqnaTN6fwzN.
 
-## Compilation
+## Building
+
+QtNote requires:
+
+* a C++20 compiler;
+* CMake 3.25 or newer;
+* Qt 6.4 or newer with the Core, Gui, Widgets, PrintSupport, Network, and XML
+  modules;
+* QCA 2 built for Qt 6;
+* QtKeychain built for Qt 6.
+
+The default Linux configuration also uses Qt DBus and Qml. Qt Test is required
+when configuring with `BUILD_TESTING=ON`, which is the default.
+
+Optional dependencies enable additional features and plugins:
+
+* Qt Multimedia for audio recording;
+* Xlib development files for `baseintegration` and other direct X11 support
+  when `QTNOTE_ENABLE_X11=ON` (the default on Linux);
+* Hunspell for spell checking;
+* ECM, KDE Frameworks 6 (Config, CoreAddons, GlobalAccel, Notifications, and
+  WindowSystem), and Plasma 6 development files for KDE integration;
+* QXmpp 1.11 or newer with OMEMO, QCoro, and Qt Network/XML for XMPP PubSub
+  storage. Alternatively, configure with `QTNOTE_BUILD_BUNDLED_QXMPP=ON`; the
+  bundled build additionally requires OpenSSL 3 and `libomemo-c`.
+
+On Plasma 5 systems, use an X11 session with `baseintegration`. The native KDE
+integration targets Qt 6, KDE Frameworks 6, and Plasma 6; Qt 5/KF5 builds are
+not supported.
+
+Configure and build QtNote with:
+
 ```bash
-$ cmake -B build && cmake --build build -j12 --target install
+cmake -S . -B build
+cmake --build build -j
+cmake --install build
 ```
 
-If installation to the default (usually `/usr/local`) prefix is not needed then remove `--target install`.
+The install step is optional. Its default prefix is normally `/usr/local`; set
+another one during configuration with, for example,
+`-DCMAKE_INSTALL_PREFIX=/usr`.
 
-If you are curious about available options try next command in the source directory
+To list QtNote-specific configuration options after configuring the build
+directory, run:
 
 ```bash
-$ cmake -LA . | grep QTNOTE
+cmake -LA -N build | grep QTNOTE
 ```
 
-* QTNOTE_DEVEL - development mode (it's rather about resources (e.g. plugins) search paths. )
-* QTNOTE_PLUGIN_ - enable/disable plugins. defaults are automatic
+The principal options are:
+
+* `QTNOTE_DEVEL` — use development resource and plugin search paths;
+* `QTNOTE_ENABLE_X11` — build components which access X11 directly;
+* `QTNOTE_BUILD_BUNDLED_QXMPP` — build the bundled QXmpp fallback;
+* `QTNOTE_PLUGIN_ENABLE_<name>` — enable or disable an individual plugin.
+  Plugins default to enabled when the platform and their dependencies support
+  them.
 
 ## Build DEB/RPM
 
@@ -67,6 +109,10 @@ Follow next steps after installing dependencies and configuring PATH:
 ## Internationalization
 
 https://app.transifex.com/rion/qtnote
+
+## Architecture documentation
+
+- [Media storage, encrypted local blobs, drafts, and remote caches](docs/media-storage-architecture.md)
 
 ### Planned major featues
 

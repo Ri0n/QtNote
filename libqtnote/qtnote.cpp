@@ -168,6 +168,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
                 continue;
             note.setTitle(draft.title);
             note.setText(draft.body, draft.format);
+            note.setMedia(draft.media);
             auto *widget = noteWidget(note, draft.id);
             auto *dialog = new NoteDialog(widget, this);
             dialog->setWindowIcon(storage->noteIcon());

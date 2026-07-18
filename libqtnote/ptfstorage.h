@@ -46,6 +46,7 @@ public:
     Note note(const QString &noteId) override;
     bool loadNote(Note &note) override;
     bool saveNote(const Note &note) override;
+    void removeNote(const QString &noteId) override;
 
     QList<Note::Format> availableFormats() const override;
     QString             findStorageDir() const override;

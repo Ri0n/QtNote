@@ -72,6 +72,7 @@ signals:
 protected:
     void changeEvent(QEvent *e) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     bool event(QEvent *event) override;
 #endif
@@ -79,6 +80,8 @@ protected:
 private:
     void     initFromNote();
     void     setContents(const QString &title, const QString &body, Note::Format format);
+    void     loadMediaResources();
+    void     resizeMediaToViewport();
     QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 
 public slots:
@@ -100,6 +103,7 @@ private slots:
     void switchToText();
     void switchToMarkdown();
     void startSpeechRecognition();
+    void insertImage();
     void finishSpeechRecognition();
     void cancelSpeechRecognition();
     void updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDurationMs);
@@ -116,8 +120,9 @@ private:
 
     QAction                              *mdModeAct;
     QAction                              *txtModeAct;
-    QAction                              *speechAction = nullptr;
-    QAction                              *pinAction    = nullptr;
+    QAction                              *speechAction      = nullptr;
+    QAction                              *pinAction         = nullptr;
+    QAction                              *insertImageAction = nullptr;
     QIcon                                 speechIdleIcon;
     QToolButton                          *speechButton   = nullptr;
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;
@@ -135,6 +140,7 @@ private:
     QString                               _extFileName;
     QString                               _extSelecteFilter;
     QTimer                                _autosaveTimer;
+    QTimer                                _mediaResizeTimer;
     QElapsedTimer                         _lastChangeElapsed;
     Features                              _features;
     bool                                  _trashRequested       = false;

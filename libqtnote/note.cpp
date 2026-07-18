@@ -24,8 +24,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notedata.h"
 #include "notemanager.h"
 
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
+#include <QTextBlock>
+#include <QTextDocument>
+#include <QTextImageFormat>
+#include <QUrl>
 
 namespace QtNote {
 
@@ -100,6 +105,34 @@ QString Note::text() const { return d ? d->text_ : QString(); }
 
 QString Note::title() const { return d ? d->title_ : QString(); }
 
+QString Note::displayTitle() const
+{
+    if (!d || d->format_ != Markdown || !d->title_.contains(QLatin1Char('[')))
+        return title();
+
+    QTextDocument document;
+    document.setMarkdown(d->title_);
+    QString result;
+    for (auto fragment = document.begin().begin(); !fragment.atEnd(); ++fragment) {
+        const auto textFragment = fragment.fragment();
+        if (!textFragment.isValid())
+            continue;
+        const auto charFormat = textFragment.charFormat();
+        if (!charFormat.isImageFormat()) {
+            result += textFragment.text();
+            continue;
+        }
+        const auto imageFormat = charFormat.toImageFormat();
+        auto       label       = imageFormat.property(QTextFormat::ImageAltText).toString();
+        if (label.isEmpty())
+            label = imageFormat.property(QTextFormat::ImageTitle).toString();
+        if (label.isEmpty())
+            label = QFileInfo(QUrl(imageFormat.name()).path()).fileName();
+        result += label;
+    }
+    return result.trimmed();
+}
+
 QStringList Note::tags() const { return d ? d->tags() : QStringList(); }
 
 NoteData *Note::data() const { return d.data(); }
@@ -116,6 +149,14 @@ void Note::setBackendData(const QVariantMap &values)
 {
     if (d)
         d->backendData_ = values;
+}
+
+QList<MediaReference> Note::media() const { return d ? d->media_ : QList<MediaReference> {}; }
+
+void Note::setMedia(const QList<MediaReference> &media)
+{
+    if (d)
+        d->media_ = media;
 }
 
 bool Note::isUpdated() const

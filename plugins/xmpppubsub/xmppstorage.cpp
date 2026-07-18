@@ -525,6 +525,7 @@ bool XmppStorage::openPersistentCache(const XmppConfig &config)
         note.setFormat(record.format);
         note.setLastChangeUTC(record.modified);
         note.setBackendData(record.backendData);
+        note.setMedia(record.media);
         if (record.bodyPresent)
             note.setText(record.body, record.format);
         else
@@ -554,6 +555,7 @@ void XmppStorage::persistCache()
         record.body        = note.text();
         record.bodyPresent = note.isLoaded();
         record.backendData = note.backendData();
+        record.media       = note.media();
         record.syncState   = RemoteCacheRecord::Synced;
         record.cachedAt    = now;
         records.append(std::move(record));

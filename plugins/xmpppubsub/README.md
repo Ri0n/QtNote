@@ -8,6 +8,11 @@ The implemented wire protocol is documented separately in
 [Private Encrypted Notes over XMPP](PROTOXEP.md). That document is a ProtoXEP
 and implementation specification, not an XSF-assigned XEP.
 
+The proposed cross-storage attachment model is documented in
+[Media storage architecture](../../docs/media-storage-architecture.md). XEP-0447
+is currently an implementation direction for attachments, not part of the
+implemented private-notes wire protocol.
+
 The XMPP server stores encrypted note records and routes synchronization
 events. Note plaintext and the QtNote storage master key are not published to
 PEP. OMEMO is used to authenticate the user's QtNote devices and to transport

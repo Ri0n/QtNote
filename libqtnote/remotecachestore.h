@@ -15,17 +15,18 @@ namespace QtNote {
 struct QTNOTE_EXPORT RemoteCacheRecord {
     enum SyncState { Synced, Stale, PendingUpload, PendingDelete, Conflict };
 
-    QString      id;
-    QString      title;
-    QStringList  tags;
-    QDateTime    modified;
-    Note::Format format { Note::PlainText };
-    QString      body;
-    bool         bodyPresent { false };
-    QVariantMap  backendData;
-    SyncState    syncState { Synced };
-    QDateTime    lastOpenedAt;
-    QDateTime    cachedAt;
+    QString               id;
+    QString               title;
+    QStringList           tags;
+    QDateTime             modified;
+    Note::Format          format { Note::PlainText };
+    QString               body;
+    bool                  bodyPresent { false };
+    QVariantMap           backendData;
+    SyncState             syncState { Synced };
+    QDateTime             lastOpenedAt;
+    QDateTime             cachedAt;
+    QList<MediaReference> media;
 };
 
 struct QTNOTE_EXPORT RemoteCacheError {

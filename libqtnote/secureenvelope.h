@@ -14,15 +14,20 @@ enum class KeyDomain : quint8 {
     StorageContent,
     StorageKeyTransport,
     OmemoState,
-    LocalRemoteCache
+    LocalRemoteCache,
+    LocalMedia
 };
 
 struct QTNOTE_EXPORT AeadContext {
     KeyDomain domain { KeyDomain::LocalDraft };
     QString   container;
     QString   itemId;
-    quint32   schema { 1 };
-    QString   kind;
+    // Consumer-owned context schema serialized by SecureEnvelope::associatedData().
+    // Increment when the consumer changes the authenticated meaning or identity
+    // mapping of this context and old ciphertext must no longer open. Payload-only
+    // format changes belong to the consumer's payload version instead.
+    quint32 schema { 1 };
+    QString kind;
 };
 
 struct QTNOTE_EXPORT CryptoError {

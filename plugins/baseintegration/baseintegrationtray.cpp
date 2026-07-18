@@ -36,7 +36,7 @@ namespace {
 
         for (int i = 0; i < notes.count(); ++i) {
             const auto &note  = notes.at(i);
-            auto        title = note.title().trimmed();
+            auto        title = note.displayTitle().trimmed();
             if (title.isEmpty()) {
                 title = QObject::tr("Untitled Note");
             }

@@ -98,6 +98,7 @@ DraftStoreError DraftManager::saveEditing(const QUuid &draftId, const Note &note
     record.format       = format;
     record.tags         = NoteData::tagsFromText(body);
     record.backendData  = note.backendData();
+    record.media        = note.media();
     record.updatedAt    = QDateTime::currentDateTimeUtc();
     CONFLICT_TRACE << "Conflict trace: draft captured id=" << draftId.toString(QUuid::WithoutBraces)
                    << "storage=" << record.storageId << "note=" << record.remoteNoteId
@@ -125,6 +126,7 @@ void DraftManager::resolveConcurrentEdit(const Note &localVersion, const Note &r
     record.format       = localVersion.format();
     record.tags         = localVersion.tags();
     record.backendData  = localVersion.backendData();
+    record.media        = localVersion.media();
     record.updatedAt    = QDateTime::currentDateTimeUtc();
     record.lastError    = message;
     CONFLICT_TRACE << "Conflict trace: post-publication conflict note=" << record.remoteNoteId
@@ -374,6 +376,7 @@ void DraftManager::publish(const DraftRecord &record)
         }
         note.setTitle(record.title);
         note.setText(record.body, record.format);
+        note.setMedia(record.media);
         auto *job = storage->saveNoteAsync(note, this);
         publishJobs_.insert(record.id, job);
         connect(job, &StorageJob::finished, this, [this, record, job]() {
@@ -419,8 +422,7 @@ void DraftManager::publish(const DraftRecord &record)
                            << "restoring-base=" << concurrencySummary(record.backendData);
             // Preserve the concurrency token captured when editing began. A
             // freshly loaded remote token would silently rebase and overwrite
-            // concurrent edits. Version 1/2 drafts have no snapshot and retain
-            // their historical behavior for backwards compatibility.
+            // concurrent edits.
             if (!record.backendData.isEmpty())
                 note.setBackendData(record.backendData);
             job->deleteLater();

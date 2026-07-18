@@ -25,8 +25,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QXmlStreamWriter>
@@ -185,8 +187,9 @@ QString Utils::fileNameForText(const QDir &dir, const QString &text, const QStri
     if (title.isEmpty()) {
         return QString();
     }
-    static QRegularExpression r("[<>:\"/\\\\|?*]");
-    title = title.replace(r, QChar('_')).left(255 - pfix.size()); // 255 is a regular max limit for a file name
+    title = portableFileName(title, {}, 255 - pfix.size(), false);
+    if (title.isEmpty())
+        return {};
 
     if (title != sameBaseName) { // filename shoud be changed or it's new note
         QString suf;
@@ -200,9 +203,43 @@ QString Utils::fileNameForText(const QDir &dir, const QString &text, const QStri
         }
         sameBaseName = proposedId;
     } else {
-        fileName = dir.absoluteFilePath(QString("%1.%3").arg(title, fileExt));
+        fileName = dir.absoluteFilePath(QString("%1.%2").arg(title, fileExt));
     }
     return fileName;
+}
+
+QString Utils::portableFileName(const QString &source, const QString &fallback, qsizetype maxLength,
+                                bool preserveSuffix)
+{
+    QString name = source.normalized(QString::NormalizationForm_C);
+    name.replace(QRegularExpression(QStringLiteral("[\\x00-\\x1f<>:\"/\\\\|?*]")), QStringLiteral("_"));
+    name.remove(QRegularExpression(QStringLiteral("[ .]+$")));
+    if (name.isEmpty() || name == QLatin1String(".") || name == QLatin1String(".."))
+        name = fallback;
+    if (name.isEmpty())
+        return {};
+
+    static const QSet<QString> reserved { QStringLiteral("CON"),  QStringLiteral("PRN"),  QStringLiteral("AUX"),
+                                          QStringLiteral("NUL"),  QStringLiteral("COM1"), QStringLiteral("COM2"),
+                                          QStringLiteral("COM3"), QStringLiteral("COM4"), QStringLiteral("COM5"),
+                                          QStringLiteral("COM6"), QStringLiteral("COM7"), QStringLiteral("COM8"),
+                                          QStringLiteral("COM9"), QStringLiteral("LPT1"), QStringLiteral("LPT2"),
+                                          QStringLiteral("LPT3"), QStringLiteral("LPT4"), QStringLiteral("LPT5"),
+                                          QStringLiteral("LPT6"), QStringLiteral("LPT7"), QStringLiteral("LPT8"),
+                                          QStringLiteral("LPT9") };
+    if (reserved.contains(QFileInfo(name).completeBaseName().toUpper()))
+        name.prepend(QLatin1Char('_'));
+
+    maxLength = qMax<qsizetype>(1, maxLength);
+    if (name.size() > maxLength) {
+        const auto      suffix       = preserveSuffix ? QFileInfo(name).suffix() : QString();
+        const qsizetype suffixLength = suffix.isEmpty() ? 0 : suffix.size() + 1;
+        if (suffixLength < maxLength)
+            name = name.left(maxLength - suffixLength) + (suffix.isEmpty() ? QString() : QLatin1Char('.') + suffix);
+        else
+            name = name.left(maxLength);
+    }
+    return name;
 }
 
 std::pair<QString, QString> Utils::splitTitle(const QString &text)

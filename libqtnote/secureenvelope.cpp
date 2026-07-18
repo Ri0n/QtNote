@@ -53,6 +53,8 @@ namespace {
             return QByteArrayLiteral("omemo-state");
         case KeyDomain::LocalRemoteCache:
             return QByteArrayLiteral("local-remote-cache");
+        case KeyDomain::LocalMedia:
+            return QByteArrayLiteral("local-media");
         }
         return {};
     }

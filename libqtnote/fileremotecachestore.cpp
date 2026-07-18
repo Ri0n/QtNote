@@ -12,7 +12,34 @@
 namespace QtNote {
 namespace {
     constexpr quint32 PayloadMagic   = 0x514e5243; // QNRC
-    constexpr quint16 PayloadVersion = 1;
+    constexpr quint16 PayloadVersion = 2;
+    // Consumer schema passed to SecureEnvelope::associatedData(); see AeadContext::schema.
+    constexpr quint32 AeadContextSchema = 1;
+
+    void writeMedia(QDataStream &out, const QList<MediaReference> &media)
+    {
+        out << quint32(media.size());
+        for (const auto &item : media)
+            out << item.id << item.blobId << item.originalName << item.portableName << item.mediaType << item.size
+                << item.checksum << item.remoteData;
+    }
+
+    bool readMedia(QDataStream &in, QList<MediaReference> &media)
+    {
+        quint32 count = 0;
+        in >> count;
+        if (count > 10000)
+            return false;
+        for (quint32 i = 0; i < count; ++i) {
+            MediaReference item;
+            in >> item.id >> item.blobId >> item.originalName >> item.portableName >> item.mediaType >> item.size
+                >> item.checksum >> item.remoteData;
+            if (!item.isValid() || item.size < 0)
+                return false;
+            media.append(std::move(item));
+        }
+        return true;
+    }
 
     RemoteCacheError error(RemoteCacheError::Code code, const QString &message) { return { code, message }; }
 
@@ -26,6 +53,7 @@ namespace {
             out << record.id << record.title << record.tags << record.modified << quint8(record.format) << record.body
                 << record.bodyPresent << record.backendData << quint8(record.syncState) << record.lastOpenedAt
                 << record.cachedAt;
+            writeMedia(out, record.media);
         }
         return bytes;
     }
@@ -50,6 +78,8 @@ namespace {
             quint8            state  = 0;
             in >> record.id >> record.title >> record.tags >> record.modified >> format >> record.body
                 >> record.bodyPresent >> record.backendData >> state >> record.lastOpenedAt >> record.cachedAt;
+            if (!readMedia(in, record.media))
+                return { {}, error(RemoteCacheError::Corrupt, QStringLiteral("Invalid remote cache media manifest")) };
             if (record.id.isEmpty() || ids.contains(record.id) || format > Note::Html
                 || state > RemoteCacheRecord::Conflict) {
                 return { {}, error(RemoteCacheError::Corrupt, QStringLiteral("Invalid remote cache record")) };
@@ -68,7 +98,7 @@ namespace {
 
     AeadContext context(const QString &instanceId)
     {
-        return { KeyDomain::LocalRemoteCache, QStringLiteral("qtnote-remote-cache"), instanceId, PayloadVersion,
+        return { KeyDomain::LocalRemoteCache, QStringLiteral("qtnote-remote-cache"), instanceId, AeadContextSchema,
                  QStringLiteral("records") };
     }
 } // namespace

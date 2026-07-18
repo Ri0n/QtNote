@@ -38,7 +38,7 @@ public:
     }
 
     NMMItem(const Note &note, NMMItem *parent) :
-        parent(parent), type(NotesModel::ItemNote), title(note.title()), id(note.id()), tags(note.tags()),
+        parent(parent), type(NotesModel::ItemNote), title(note.displayTitle()), id(note.id()), tags(note.tags()),
         lastChange(note.lastChangeUTC())
     {
     }
@@ -204,7 +204,7 @@ void NotesModel::noteModified(const Note &note)
     QModelIndex index = noteIndex(note.storage()->systemName(), note.id());
     if (index.isValid()) {
         NMMItem *noteItem    = static_cast<NMMItem *>(index.internalPointer());
-        noteItem->title      = note.title();
+        noteItem->title      = note.displayTitle();
         noteItem->tags       = note.tags();
         noteItem->lastChange = note.lastChangeUTC();
         emit layoutAboutToBeChanged();

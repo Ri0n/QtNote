@@ -12,6 +12,10 @@ add_executable(secureenvelope_test secureenvelope_test.cpp)
 target_link_libraries(secureenvelope_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME secureenvelope_test COMMAND secureenvelope_test)
 
+add_executable(localmediastore_test localmediastore_test.cpp)
+target_link_libraries(localmediastore_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME localmediastore_test COMMAND localmediastore_test)
+
 add_executable(xmppnotecodec_test
     xmppnotecodec_test.cpp
     ../plugins/xmpppubsub/xmppnotecodec.cpp

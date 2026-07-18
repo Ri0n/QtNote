@@ -79,6 +79,7 @@ protected:
     QStringList           tags_;
     QDateTime             lastChange_;
     QVariantMap           backendData_;
+    QList<MediaReference> media_;
 };
 
 } // namespace QtNote

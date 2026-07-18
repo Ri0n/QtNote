@@ -1,3 +1,4 @@
+#include <QBuffer>
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCryptographicHash>
@@ -5,16 +6,20 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QGuiApplication>
+#include <QImageReader>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPalette>
 #include <QPrintDialog>
 #include <QPrinter>
+#include <QResizeEvent>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QStyle>
 #include <QTextFragment>
+#include <QTextImageFormat>
 #include <QToolButton>
 #include <QToolTip>
 #include <QUuid>
@@ -22,6 +27,7 @@
 #include "defaults.h"
 #include "draftmanager.h"
 #include "iconutils.h"
+#include "localmediastore.h"
 #include "note.h"
 #include "notehighlighter.h"
 #include "notestorage.h"
@@ -38,6 +44,53 @@ static std::shared_ptr<HighlighterExtension> firstLineHighlighter;
 static QColor                                firstLineColor;
 
 namespace {
+    QImage decodedMediaImage(const QByteArray &encoded, QString *error = nullptr)
+    {
+        QBuffer buffer;
+        buffer.setData(encoded);
+        if (!buffer.open(QIODevice::ReadOnly)) {
+            if (error)
+                *error = buffer.errorString();
+            return {};
+        }
+
+        QImageReader reader(&buffer);
+        reader.setAutoTransform(true);
+        auto image = reader.read();
+        if (image.isNull() && error)
+            *error = reader.errorString();
+        return image;
+    }
+
+    QSize mediaDisplaySize(const QSize &imageSize, int availableWidth)
+    {
+        return imageSize.scaled(qMin(qMax(1, availableWidth), imageSize.width()), imageSize.height(),
+                                Qt::KeepAspectRatio);
+    }
+
+    QString displayText(const QTextBlock &block)
+    {
+        QString result;
+        for (auto fragment = block.begin(); !fragment.atEnd(); ++fragment) {
+            const auto textFragment = fragment.fragment();
+            if (!textFragment.isValid())
+                continue;
+            const auto charFormat = textFragment.charFormat();
+            if (!charFormat.isImageFormat()) {
+                result += textFragment.text();
+                continue;
+            }
+            const auto imageFormat = charFormat.toImageFormat();
+            auto       label       = imageFormat.property(QTextFormat::ImageAltText).toString();
+            if (label.isEmpty())
+                label = imageFormat.property(QTextFormat::ImageTitle).toString();
+            if (label.isEmpty())
+                label = QFileInfo(QUrl(imageFormat.name()).path()).fileName();
+            result += label;
+        }
+        return result.trimmed();
+    }
+
     QAction *initAction(const QIcon icon, const QString &title, const QString &toolTip, const char *hotkey,
                         QWidget *parent)
     {
@@ -162,6 +215,9 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     _autosaveTimer.setInterval(10000);
     _lastChangeElapsed.start();
     connect(&_autosaveTimer, SIGNAL(timeout()), SLOT(autosave()));
+    _mediaResizeTimer.setSingleShot(true);
+    _mediaResizeTimer.setInterval(50);
+    connect(&_mediaResizeTimer, &QTimer::timeout, this, &NoteWidget::resizeMediaToViewport);
     // connect(parent, SIGNAL(destroyed()), SLOT(close()));
 
     QToolBar *tbar = new QToolBar(this);
@@ -171,6 +227,12 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     act->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+
+    insertImageAction = initAction(nullptr, tr("Insert image"), tr("Insert an image attachment"), "Ctrl+Shift+I");
+    insertImageAction->setIcon(QIcon::fromTheme(QStringLiteral("insert-image")));
+    insertImageAction->setVisible(_note.storageId() == QLatin1String("ptf"));
+    tbar->addAction(insertImageAction);
+    connect(insertImageAction, &QAction::triggered, this, &NoteWidget::insertImage);
 
     mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
     tbar->addAction(mdModeAct);
@@ -344,6 +406,11 @@ void NoteWidget::save()
     auto const &[title, body] = Utils::splitTitle(txt);
     _note.setTitle(title);
     _note.setText(body, format);
+    auto media = _note.media();
+    media.removeIf([&txt](const MediaReference &reference) {
+        return !txt.contains(reference.id.toString(QUuid::WithoutBraces), Qt::CaseInsensitive);
+    });
+    _note.setMedia(media);
     const auto result = DraftManager::instance()->saveEditing(_draftId, _note, title, body, format);
     if (result) {
         qWarning() << "Failed to checkpoint draft:" << result.message;
@@ -406,7 +473,7 @@ void NoteWidget::textChanged()
     QTextDocument *doc        = ui->noteEdit->document();
     QTextBlock     firstBlock = doc->begin();
 
-    QString firstLine = firstBlock.text();
+    QString firstLine = displayText(firstBlock);
     if (firstLine != _firstLine || firstLine.isEmpty()) {
         _firstLine = firstLine;
         emit firstLineChanged();
@@ -476,6 +543,10 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         ui->noteEdit->setUnconditionalLinks(false);
         break;
     }
+    loadMediaResources();
+    resizeMediaToViewport();
+    if (insertImageAction)
+        insertImageAction->setEnabled(format == Note::Markdown && _note.storageId() == QLatin1String("ptf"));
     _changed = false;
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
@@ -484,11 +555,113 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     _baselineText   = text();
     _baselineFormat = isMarkdown() ? Note::Markdown : Note::PlainText;
 
-    const QString firstLine = ui->noteEdit->document()->begin().text();
+    const QString firstLine = displayText(ui->noteEdit->document()->begin());
     if (firstLine != _firstLine || firstLine.isEmpty()) {
         _firstLine = firstLine;
         emit firstLineChanged();
     }
+}
+
+void NoteWidget::loadMediaResources()
+{
+    for (const auto &reference : _note.media()) {
+        if (!reference.mediaType.startsWith(QLatin1String("image/")))
+            continue;
+        const auto loaded = LocalMediaStore::instance()->data(reference.blobId);
+        if (!loaded)
+            continue;
+        const auto preview = decodedMediaImage(loaded.value);
+        if (!preview.isNull())
+            ui->noteEdit->document()->addResource(QTextDocument::ImageResource, QUrl(reference.uri()), preview);
+    }
+    ui->noteEdit->document()->markContentsDirty(0, ui->noteEdit->document()->characterCount());
+}
+
+void NoteWidget::resizeMediaToViewport()
+{
+    auto                *document       = ui->noteEdit->document();
+    const int            availableWidth = qMax(1, ui->noteEdit->viewport()->width() - 16);
+    const bool           wasModified    = document->isModified();
+    const QSignalBlocker editBlocker(ui->noteEdit);
+
+    for (auto block = document->begin(); block.isValid(); block = block.next()) {
+        for (auto fragment = block.begin(); !fragment.atEnd(); ++fragment) {
+            const auto textFragment = fragment.fragment();
+            if (!textFragment.isValid() || !textFragment.charFormat().isImageFormat())
+                continue;
+            auto       format   = textFragment.charFormat().toImageFormat();
+            const auto resource = document->resource(QTextDocument::ImageResource, QUrl(format.name()));
+            const auto image    = resource.value<QImage>();
+            if (image.isNull())
+                continue;
+            const QSize target = mediaDisplaySize(image.size(), availableWidth);
+            QTextCursor cursor(document);
+            cursor.setPosition(textFragment.position());
+            cursor.setPosition(textFragment.position() + textFragment.length(), QTextCursor::KeepAnchor);
+            if (qRound(format.width()) != target.width() || qRound(format.height()) != target.height()) {
+                format.setWidth(target.width());
+                format.setHeight(target.height());
+                cursor.mergeCharFormat(format);
+            }
+        }
+    }
+    document->setModified(wasModified);
+}
+
+void NoteWidget::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    _mediaResizeTimer.start();
+}
+
+void NoteWidget::insertImage()
+{
+    if (_note.storageId() != QLatin1String("ptf") || !isMarkdown())
+        return;
+    const auto fileName = QFileDialog::getOpenFileName(
+        this, tr("Insert image"), QString(), tr("Images (*.png *.jpg *.jpeg *.gif *.webp *.bmp *.svg);;All files (*)"));
+    if (fileName.isEmpty())
+        return;
+    const auto imported = LocalMediaStore::instance()->importFile(fileName);
+    if (!imported) {
+        QMessageBox::warning(this, tr("Insert image"), imported.error);
+        return;
+    }
+    auto media = _note.media();
+    media.append(imported.value);
+    _note.setMedia(media);
+
+    auto cursor = ui->noteEdit->textCursor();
+    if (cursor.hasSelection())
+        cursor.removeSelectedText();
+    if (!cursor.atBlockStart())
+        cursor.insertBlock();
+    if (mdModeAct->isVisible()) {
+        cursor.insertText(QStringLiteral("![%1](%2)").arg(imported.value.originalName, imported.value.uri()));
+    } else {
+        const auto loaded = LocalMediaStore::instance()->data(imported.value.blobId);
+        QString    previewError;
+        const auto preview = loaded ? decodedMediaImage(loaded.value, &previewError) : QImage();
+        if (preview.isNull()) {
+            media.removeLast();
+            _note.setMedia(media);
+            QMessageBox::warning(this, tr("Insert image"), loaded ? previewError : loaded.error);
+            return;
+        }
+        ui->noteEdit->document()->addResource(QTextDocument::ImageResource, QUrl(imported.value.uri()), preview);
+        QTextImageFormat format;
+        format.setName(imported.value.uri());
+        format.setProperty(QTextFormat::ImageAltText, imported.value.originalName);
+        format.setProperty(QTextFormat::ImageTitle, imported.value.originalName);
+        const auto displaySize = mediaDisplaySize(preview.size(), ui->noteEdit->viewport()->width() - 16);
+        format.setWidth(displaySize.width());
+        format.setHeight(displaySize.height());
+        cursor.insertImage(format);
+    }
+    cursor.insertBlock();
+    cursor.setCharFormat(QTextCharFormat());
+    ui->noteEdit->setTextCursor(cursor);
+    _mediaResizeTimer.start();
 }
 
 QString NoteWidget::text()

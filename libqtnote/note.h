@@ -29,6 +29,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QVariantMap>
 #include <qdatetime.h>
 
+#include "mediareference.h"
 #include "qtnote_export.h"
 
 namespace QtNote {
@@ -64,19 +65,22 @@ public:
     void setLastChangeUTC(const QDateTime &lastChange);
     void setBackendValue(const QString &key, const QVariant &value);
 
-    NoteStorage *storage() const;
-    QString      storageId() const;
-    QString      id() const;
-    QString      text() const;
-    QString      title() const;
-    QStringList  tags() const;
-    NoteData    *data() const;
-    Format       format() const;
-    QDateTime    lastChangeUTC() const;
-    QVariant     backendValue(const QString &key) const;
-    QVariantMap  backendData() const;
-    void         setBackendData(const QVariantMap &values);
-    bool         isUpdated() const;
+    NoteStorage          *storage() const;
+    QString               storageId() const;
+    QString               id() const;
+    QString               text() const;
+    QString               title() const;
+    QString               displayTitle() const;
+    QStringList           tags() const;
+    NoteData             *data() const;
+    Format                format() const;
+    QDateTime             lastChangeUTC() const;
+    QVariant              backendValue(const QString &key) const;
+    QVariantMap           backendData() const;
+    void                  setBackendData(const QVariantMap &values);
+    QList<MediaReference> media() const;
+    void                  setMedia(const QList<MediaReference> &media);
+    bool                  isUpdated() const;
 
 private:
     QExplicitlySharedDataPointer<NoteData> d;

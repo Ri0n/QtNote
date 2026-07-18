@@ -22,19 +22,133 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDir>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QRegularExpression>
+#include <QSaveFile>
 #include <QSettings>
 #include <QStyle>
+#include <QUrl>
+
+#include <algorithm>
 
 #ifdef Q_OS_WIN
 #include <QLibrary>
 #include <shlobj.h>
 #endif // Q_OS_WIN
 
+#include "localmediastore.h"
 #include "notedata.h"
 #include "ptfstorage.h"
 #include "utils.h"
 
 namespace QtNote {
+namespace {
+    const QString MediaManifestName = QStringLiteral(".qtnote-media.json");
+
+    struct SidecarMetadata {
+        QUuid   id;
+        QString originalName;
+        QString mediaType;
+    };
+
+    QHash<QString, SidecarMetadata> readMediaMetadata(const QDir &sidecar)
+    {
+        QHash<QString, SidecarMetadata> result;
+        QFile                           file(sidecar.filePath(MediaManifestName));
+        if (!file.open(QIODevice::ReadOnly))
+            return result;
+        const auto document = QJsonDocument::fromJson(file.readAll());
+        for (const auto value : document.array()) {
+            const auto  object = value.toObject();
+            const QUuid id(object.value(QStringLiteral("id")).toString());
+            const auto  name = object.value(QStringLiteral("file")).toString();
+            if (!id.isNull() && !name.isEmpty()) {
+                result.insert(name,
+                              { id, object.value(QStringLiteral("originalName")).toString(),
+                                object.value(QStringLiteral("mediaType")).toString() });
+            }
+        }
+        return result;
+    }
+
+    QString uniqueName(QString proposed, QSet<QString> &used)
+    {
+        if (!used.contains(proposed)) {
+            used.insert(proposed);
+            return proposed;
+        }
+        const QFileInfo info(proposed);
+        const auto      base   = info.completeBaseName();
+        const auto      suffix = info.suffix();
+        for (int i = 2;; ++i) {
+            const auto candidate
+                = base + QStringLiteral(" (%1)").arg(i) + (suffix.isEmpty() ? QString() : QLatin1Char('.') + suffix);
+            if (!used.contains(candidate)) {
+                used.insert(candidate);
+                return candidate;
+            }
+        }
+    }
+
+    QString importSidecarImages(QString body, const QString &noteId, const QDir &notesDir, QList<MediaReference> &media)
+    {
+        const QDir sidecar(notesDir.filePath(noteId));
+        if (!sidecar.exists())
+            return body;
+        const auto                      metadata = readMediaMetadata(sidecar);
+        static const QRegularExpression imagePattern(QStringLiteral(R"(!\[([^\]]*)\]\(([^\s\)]+)(?:\s+"[^"]*")?\))"));
+        auto                            matches = imagePattern.globalMatch(body);
+        struct Replacement {
+            qsizetype start;
+            qsizetype length;
+            QString   value;
+        };
+        QList<Replacement> replacements;
+        while (matches.hasNext()) {
+            const auto match  = matches.next();
+            const auto target = QUrl::fromPercentEncoding(match.captured(2).toUtf8());
+            QString    mediaName;
+            QUuid      uriId;
+            if (target.startsWith(QStringLiteral("qtnote-media:/"))) {
+                const auto parts = QUrl(target).path().split(QLatin1Char('/'), Qt::SkipEmptyParts);
+                if (parts.size() != 2)
+                    continue;
+                uriId                      = QUuid(parts.at(0));
+                mediaName                  = parts.at(1);
+                const auto alreadyImported = std::find_if(media.cbegin(), media.cend(),
+                                                          [&uriId](const auto &item) { return item.id == uriId; });
+                if (alreadyImported != media.cend())
+                    continue;
+            } else {
+                const QFileInfo relative(target);
+                if (relative.isAbsolute() || target.contains(QStringLiteral(".."))
+                    || target.contains(QLatin1Char('\\')))
+                    continue;
+                mediaName = target;
+                if (mediaName.startsWith(noteId + QLatin1Char('/')))
+                    mediaName.remove(0, noteId.size() + 1);
+                if (mediaName.contains(QLatin1Char('/')))
+                    continue;
+            }
+            const auto item     = metadata.value(mediaName);
+            auto       imported = LocalMediaStore::instance()->importFile(sidecar.filePath(mediaName),
+                                                                    uriId.isNull() ? item.id : uriId);
+            if (!imported)
+                continue;
+            if (!item.originalName.isEmpty())
+                imported.value.originalName = item.originalName;
+            if (!item.mediaType.isEmpty())
+                imported.value.mediaType = item.mediaType;
+            media.append(imported.value);
+            replacements.prepend({ match.capturedStart(2), match.capturedLength(2), imported.value.uri() });
+        }
+        for (const auto &replacement : replacements)
+            body.replace(replacement.start, replacement.length, replacement.value);
+        return body;
+    }
+} // namespace
 
 PTFStorage::PTFStorage(QObject *parent) : FileStorage(parent), icon(QLatin1String(":/icons/trayicon"))
 {
@@ -92,8 +206,8 @@ QList<Note> PTFStorage::noteListFromInfoList(const QFileInfoList &files)
 Note PTFStorage::createNote()
 {
     Note note(new NoteData(this));
-    note.setFormat(Note::PlainText);
-    note.setText(QString(), Note::PlainText);
+    note.setFormat(Note::Markdown);
+    note.setText(QString(), Note::Markdown);
     note.setLastChangeUTC(QDateTime::currentDateTimeUtc());
     return note;
 }
@@ -138,13 +252,18 @@ bool PTFStorage::loadNote(Note &note)
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
 
-    const auto [title, body] = Utils::splitTitle(QString::fromUtf8(file.readAll()));
+    QString               contents = QString::fromUtf8(file.readAll());
+    QList<MediaReference> media;
+    if (QFileInfo(fileName).suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0)
+        contents = importSidecarImages(contents, QFileInfo(fileName).completeBaseName(), notesDir, media);
+    auto [title, body] = Utils::splitTitle(contents);
     note.setTitle(title);
     note.setText(body,
                  QFileInfo(fileName).suffix().compare(QLatin1String("md"), Qt::CaseInsensitive) == 0 ? Note::Markdown
                                                                                                      : Note::PlainText);
     note.setLastChangeUTC(QFileInfo(file).lastModified());
     note.setBackendValue(QStringLiteral("fileName"), fileName);
+    note.setMedia(media);
     return true;
 }
 
@@ -157,17 +276,70 @@ bool PTFStorage::saveNote(const Note &note)
         return true;
     }
 
-    QString oldNoteId = note.id();
-    QString newNoteId = oldNoteId;
-    auto    ext       = QString(QLatin1String(note.format() == Note::Markdown ? "md" : "txt"));
-    auto    fileName  = Utils::fileNameForText(notesDir, note.title(), ext, newNoteId);
-    QFile   file(fileName);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)
-        || file.write((note.title() + QLatin1Char('\n') + note.text()).trimmed().toUtf8()) < 0) {
+    QString       oldNoteId = note.id();
+    QString       newNoteId = oldNoteId;
+    auto          ext       = QString(QLatin1String(note.format() == Note::Markdown ? "md" : "txt"));
+    auto          fileName  = Utils::fileNameForText(notesDir, note.title(), ext, newNoteId);
+    QString       contents  = note.title() + QLatin1Char('\n') + note.text();
+    QDir          sidecar(notesDir.filePath(newNoteId));
+    QSet<QString> materializedFiles;
+    if (!note.media().isEmpty()) {
+        if (!notesDir.mkpath(newNoteId)) {
+            handleFSError();
+            return false;
+        }
+        QJsonArray    manifest;
+        QSet<QString> usedNames;
+        for (const auto &reference : note.media()) {
+            const auto loaded = LocalMediaStore::instance()->data(reference.blobId);
+            if (!loaded) {
+                qWarning() << "Failed to materialize note attachment:" << loaded.error;
+                return false;
+            }
+            const auto materializedName
+                = uniqueName(Utils::portableFileName(reference.portableName, QStringLiteral("attachment")), usedNames);
+            materializedFiles.insert(materializedName);
+            QSaveFile mediaFile(sidecar.filePath(materializedName));
+            if (!mediaFile.open(QIODevice::WriteOnly) || mediaFile.write(loaded.value) != loaded.value.size()
+                || !mediaFile.commit()) {
+                handleFSError();
+                return false;
+            }
+            contents.replace(reference.uri(),
+                             QString::fromUtf8(QUrl::toPercentEncoding(newNoteId)) + QLatin1Char('/')
+                                 + QString::fromUtf8(QUrl::toPercentEncoding(materializedName)));
+            QJsonObject item;
+            item.insert(QStringLiteral("id"), reference.id.toString(QUuid::WithoutBraces));
+            item.insert(QStringLiteral("file"), materializedName);
+            item.insert(QStringLiteral("originalName"), reference.originalName);
+            item.insert(QStringLiteral("mediaType"), reference.mediaType);
+            manifest.append(item);
+        }
+        QSaveFile  manifestFile(sidecar.filePath(MediaManifestName));
+        const auto manifestBytes = QJsonDocument(manifest).toJson(QJsonDocument::Indented);
+        if (!manifestFile.open(QIODevice::WriteOnly) || manifestFile.write(manifestBytes) != manifestBytes.size()
+            || !manifestFile.commit()) {
+            handleFSError();
+            return false;
+        }
+    }
+
+    QSaveFile  file(fileName);
+    const auto bytes = contents.trimmed().toUtf8();
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || file.write(bytes) != bytes.size() || !file.commit()) {
         handleFSError();
         return false;
     }
-    file.close();
+    if (note.media().isEmpty()) {
+        sidecar.removeRecursively();
+    } else {
+        materializedFiles.insert(MediaManifestName);
+        const auto staleFiles = sidecar.entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot);
+        for (const auto &staleFile : staleFiles) {
+            if (!materializedFiles.contains(staleFile))
+                sidecar.remove(staleFile);
+        }
+    }
     Note saved = note;
     saved.setId(newNoteId);
     saved.setLastChangeUTC(QFileInfo(fileName).lastModified());
@@ -177,6 +349,7 @@ bool PTFStorage::saveNote(const Note &note)
             for (auto const &ext : std::as_const(fileExt)) {
                 notesDir.remove(oldNoteId + QLatin1Char('.') + ext);
             }
+            QDir(notesDir.filePath(oldNoteId)).removeRecursively();
         } else {
             for (auto const &otherExt : std::as_const(fileExt)) {
                 if (ext != otherExt) {
@@ -187,6 +360,13 @@ bool PTFStorage::saveNote(const Note &note)
     }
     putToCache(saved, oldNoteId);
     return true;
+}
+
+void PTFStorage::removeNote(const QString &noteId)
+{
+    FileStorage::removeNote(noteId);
+    if (!noteId.isEmpty())
+        QDir(notesDir.filePath(noteId)).removeRecursively();
 }
 
 QList<Note::Format> PTFStorage::availableFormats() const

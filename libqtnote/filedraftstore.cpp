@@ -10,7 +10,35 @@
 namespace QtNote {
 namespace {
     constexpr quint32 PayloadMagic   = 0x514e4450; // QNDP
-    constexpr quint16 PayloadVersion = 3;
+    constexpr quint16 PayloadVersion = 4;
+    // Consumer schema passed to SecureEnvelope::associatedData(); see AeadContext::schema.
+    constexpr quint32 AeadContextSchema = 1;
+
+    void writeMedia(QDataStream &out, const QList<MediaReference> &media)
+    {
+        out << quint32(media.size());
+        for (const auto &item : media)
+            out << item.id << item.blobId << item.originalName << item.portableName << item.mediaType << item.size
+                << item.checksum << item.remoteData;
+    }
+
+    bool readMedia(QDataStream &in, QList<MediaReference> &media)
+    {
+        quint32 count = 0;
+        in >> count;
+        if (count > 10000)
+            return false;
+        media.reserve(int(count));
+        for (quint32 i = 0; i < count; ++i) {
+            MediaReference item;
+            in >> item.id >> item.blobId >> item.originalName >> item.portableName >> item.mediaType >> item.size
+                >> item.checksum >> item.remoteData;
+            if (!item.isValid() || item.size < 0)
+                return false;
+            media.append(std::move(item));
+        }
+        return true;
+    }
 
     DraftStoreError error(DraftStoreError::Code code, const QString &message) { return { code, message }; }
 
@@ -22,6 +50,7 @@ namespace {
         out << PayloadMagic << PayloadVersion << record.id << quint8(record.state) << record.storageId
             << record.remoteNoteId << record.title << record.body << quint8(record.format) << record.tags
             << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation) << record.backendData;
+        writeMedia(out, record.media);
         return bytes;
     }
 
@@ -32,18 +61,16 @@ namespace {
         quint16     version;
         quint8      state;
         quint8      format;
-        quint8      operation = DraftRecord::Publish;
+        quint8      operation;
         QDataStream in(bytes);
         in.setVersion(QDataStream::Qt_5_10);
         in >> magic >> version;
-        if (magic != PayloadMagic || version < 1 || version > PayloadVersion)
+        if (magic != PayloadMagic || version != PayloadVersion)
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Unsupported draft payload")) };
         in >> record.id >> state >> record.storageId >> record.remoteNoteId >> record.title >> record.body >> format
-            >> record.tags >> record.updatedAt >> record.lastError >> record.retryAt;
-        if (version >= 2)
-            in >> operation;
-        if (version >= 3)
-            in >> record.backendData;
+            >> record.tags >> record.updatedAt >> record.lastError >> record.retryAt >> operation >> record.backendData;
+        if (!readMedia(in, record.media))
+            return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft media manifest")) };
         if (in.status() != QDataStream::Ok || record.id.isNull() || state > DraftRecord::NeedsRouting
             || format > Note::Html || operation > DraftRecord::Delete) {
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft payload")) };
@@ -95,7 +122,7 @@ DraftStoreResult<QByteArray> FileDraftStore::encrypt(const QUuid &id, const QByt
     if (auto e = ensureDirectories())
         return { {}, e };
     const AeadContext context { KeyDomain::LocalDraft, QStringLiteral("qtnote-local-drafts"),
-                                id.toString(QUuid::WithoutBraces), 1, QStringLiteral("draft") };
+                                id.toString(QUuid::WithoutBraces), AeadContextSchema, QStringLiteral("draft") };
     auto              result = SecureEnvelope::seal(plainText, masterKey_, context);
     if (!result)
         return { {}, error(DraftStoreError::CryptoUnavailable, result.error.message) };
@@ -107,7 +134,7 @@ DraftStoreResult<QByteArray> FileDraftStore::decrypt(const QUuid &id, const QByt
     if (masterKey_.size() != MasterKeySize)
         return { {}, error(DraftStoreError::Locked, QStringLiteral("Draft store master key is unavailable")) };
     const AeadContext context { KeyDomain::LocalDraft, QStringLiteral("qtnote-local-drafts"),
-                                id.toString(QUuid::WithoutBraces), 1, QStringLiteral("draft") };
+                                id.toString(QUuid::WithoutBraces), AeadContextSchema, QStringLiteral("draft") };
     auto              result = SecureEnvelope::open(envelope, masterKey_, context);
     if (!result)
         return { {}, error(DraftStoreError::Corrupt, result.error.message) };

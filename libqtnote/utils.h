@@ -44,6 +44,10 @@ public:
     static QColor perceptiveColor(const QColor &against);
     static QColor mergeColors(const QColor &a, const QColor &b);
 
+    /** Converts one filename component to a cross-platform portable form. */
+    static QString portableFileName(const QString &name, const QString &fallback = {}, qsizetype maxLength = 180,
+                                    bool preserveSuffix = true);
+
     /**
      * @brief fileNameForText converts text to an unique filename with the given extension.
      *     If base part of the converted filename matches with `sameBaseName` or the file doesn't exists in the given

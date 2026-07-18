@@ -1,8 +1,6 @@
 #include "conflictresolver.h"
 #include "filedraftstore.h"
-#include "secureenvelope.h"
 
-#include <QDataStream>
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
@@ -18,7 +16,6 @@ private slots:
     void roundTrip();
     void deletionRoundTrip();
     void copyConflictResolution();
-    void readsVersion2Draft();
     void rejectsWrongKey();
     void rejectsTampering();
 };
@@ -37,6 +34,15 @@ static DraftRecord sampleRecord()
     record.tags         = QStringList { QStringLiteral("private"), QStringLiteral("work") };
     record.backendData.insert(QStringLiteral("etag"), QStringLiteral("base-etag"));
     record.backendData.insert(QStringLiteral("revision"), QStringLiteral("base-revision"));
+    MediaReference media;
+    media.id           = QUuid::createUuid();
+    media.blobId       = QByteArray::fromHex("00112233");
+    media.originalName = QStringLiteral("Схема.png");
+    media.portableName = QStringLiteral("Схема.png");
+    media.mediaType    = QStringLiteral("image/png");
+    media.size         = 42;
+    media.checksum     = QByteArray::fromHex("aabbccdd");
+    record.media.append(media);
     record.updatedAt = QDateTime::currentDateTimeUtc();
     return record;
 }
@@ -72,6 +78,10 @@ void FileDraftStoreTest::roundTrip()
     QCOMPARE(loaded.value.format, record.format);
     QCOMPARE(loaded.value.tags, record.tags);
     QCOMPARE(loaded.value.backendData, record.backendData);
+    QCOMPARE(loaded.value.media.size(), 1);
+    QCOMPARE(loaded.value.media.first().id, record.media.first().id);
+    QCOMPARE(loaded.value.media.first().originalName, record.media.first().originalName);
+    QCOMPARE(loaded.value.media.first().blobId, record.media.first().blobId);
     QCOMPARE(loaded.value.operation, DraftRecord::Publish);
 
     QVERIFY(!store.transition(record.id, DraftRecord::Ready));
@@ -92,37 +102,6 @@ void FileDraftStoreTest::copyConflictResolution()
         QVERIFY(resolution.notification.contains(resolution.copyTitle));
     });
     QVERIFY(invoked);
-}
-
-void FileDraftStoreTest::readsVersion2Draft()
-{
-    QTemporaryDir directory;
-    QVERIFY(directory.isValid());
-    const auto key    = FileDraftStore::generateMasterKey();
-    const auto record = sampleRecord();
-
-    QByteArray  legacy;
-    QDataStream out(&legacy, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_5_10);
-    out << quint32(0x514e4450) << quint16(2) << record.id << quint8(record.state) << record.storageId
-        << record.remoteNoteId << record.title << record.body << quint8(record.format) << record.tags
-        << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation);
-    QCOMPARE(out.status(), QDataStream::Ok);
-
-    const AeadContext context { KeyDomain::LocalDraft, QStringLiteral("qtnote-local-drafts"),
-                                record.id.toString(QUuid::WithoutBraces), 1, QStringLiteral("draft") };
-    const auto        encrypted = SecureEnvelope::seal(legacy, key, context);
-    QVERIFY2(encrypted, qPrintable(encrypted.error.message));
-    QFile file(draftPath(directory.path(), record.id));
-    QVERIFY(file.open(QIODevice::WriteOnly));
-    QCOMPARE(file.write(encrypted.value), encrypted.value.size());
-    file.close();
-
-    FileDraftStore store(directory.path(), key);
-    const auto     loaded = store.load(record.id);
-    QVERIFY2(loaded, qPrintable(loaded.error.message));
-    QCOMPARE(loaded.value.title, record.title);
-    QVERIFY(loaded.value.backendData.isEmpty());
 }
 
 void FileDraftStoreTest::deletionRoundTrip()
