@@ -36,7 +36,7 @@
      <item>
       <widget class="QPushButton" name="pbUseSystemPrefs">
        <property name="text">
-        <string>Use system settings</string>
+        <string>Use system languages</string>
        </property>
       </widget>
      </item>

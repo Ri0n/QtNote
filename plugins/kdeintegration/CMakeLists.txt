@@ -151,6 +151,7 @@ find_package(KF${QT_VERSION_MAJOR}GlobalAccel CONFIG)
 find_package(KF${QT_VERSION_MAJOR}Notifications CONFIG)
 find_package(KF${QT_VERSION_MAJOR}WindowSystem CONFIG)
 find_package(KF${QT_VERSION_MAJOR}Config CONFIG)
+find_package(KF${QT_VERSION_MAJOR}Sonnet CONFIG QUIET)
 
 set(kdeintegration_buildable OFF)
 if(KF${QT_VERSION_MAJOR}GlobalAccel_FOUND AND KF${QT_VERSION_MAJOR}Notifications_FOUND AND KF${QT_VERSION_MAJOR}WindowSystem_FOUND AND KF${QT_VERSION_MAJOR}Config_FOUND)
@@ -174,6 +175,8 @@ add_qtnote_plugin(kdeintegration "Integration with KDE Plasma" ${kdeintegration_
     kdeintegration.qrc
     kdeintegrationtray.cpp
     kdeintegrationtray.h
+    sonnetspellcheckprovider.cpp
+    sonnetspellcheckprovider.h
     kwinscript/metadata.json
     kwinscript/contents/code/main.js
 )
@@ -182,6 +185,11 @@ target_link_libraries(kdeintegration qtnote Qt${QT_VERSION_MAJOR}::Core Qt${QT_V
     Qt${QT_VERSION_MAJOR}::DBus
     KF${QT_VERSION_MAJOR}::ConfigGui KF${QT_VERSION_MAJOR}::GlobalAccel KF${QT_VERSION_MAJOR}::Notifications
     KF${QT_VERSION_MAJOR}::WindowSystem)
+
+if(KF${QT_VERSION_MAJOR}Sonnet_FOUND)
+    target_link_libraries(kdeintegration KF${QT_VERSION_MAJOR}::SonnetCore)
+    target_compile_definitions(kdeintegration PRIVATE QTNOTE_SONNET_AVAILABLE)
+endif()
 
 if("${KF${QT_VERSION_MAJOR}WindowSystem_VERSION}" VERSION_LESS_EQUAL "5.92") # Специфично для Ubuntu 22.04
     target_compile_definitions(kdeintegration PRIVATE OLD_K_FORCE_ACTIVATE)

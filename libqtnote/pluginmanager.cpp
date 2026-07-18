@@ -29,11 +29,13 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <utility>
 
+#include "actionnotificationinterface.h"
 #include "notewidget.h"
 #include "pluginhost.h"
 #include "pluginmanager.h"
 #include "qtnote.h"
 #include "shortcutsmanager.h"
+#include "spellcheckproviderinterface.h"
 #include "utils.h"
 
 #include "deintegrationinterface.h"
@@ -163,6 +165,19 @@ public:
         qDebug() << "Plugins dirs: " << pluginsDirs;
 #else // not devel
 
+        // A binary launched directly from <build>/src must use plugins from
+        // the same build. Otherwise it silently falls back to an older
+        // installed plugin, which is especially confusing while evolving the
+        // editor/highlighter ABI.
+        QDir buildPlugins(qApp->applicationDirPath());
+        if (buildPlugins.cdUp() && buildPlugins.cd(QStringLiteral("plugins"))) {
+            for (const auto &dirName : buildPlugins.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+                QDir pluginDir(buildPlugins);
+                if (pluginDir.cd(dirName))
+                    pluginsDirs << pluginDir.path();
+            }
+        }
+
         pluginsDirs << Utils::qtnoteDataDir() + "/plugins";
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
         pluginsDirs << LIBDIR "/" APPNAME;
@@ -228,7 +243,16 @@ PluginManager::PluginManager(Main *parent) : QObject(parent), qtnote(parent), pl
     connect(qtnote, &Main::noteWidgetCreated, this, [this](QWidget *w) {
         NoteWidget *nw = qobject_cast<NoteWidget *>(w);
         connect(pluginHost, &PluginHost::rehightlight_requested, nw, [nw]() { nw->rehighlight(); });
+        pluginHost->attachSpellCheck(w);
     });
+    connect(pluginHost, &PluginHost::spellCheckProviderConflict, this,
+            [this](const QString &activeName, const QString &ignoredName) {
+                qtnote->notify(
+                    tr("Spell checker selected"),
+                    tr("QtNote is using %1. %2 is also enabled, but is not being used.").arg(activeName, ignoredName),
+                    tr("Configure plugins"),
+                    [this]() { QMetaObject::invokeMethod(qtnote, "showOptions", Qt::QueuedConnection); });
+            });
 }
 
 PluginManager::~PluginManager()
@@ -389,7 +413,10 @@ void PluginManager::loadPlugins()
             qInfo() << "Desktop integration plugin failed to load:" << plugin << loadStatusName(pd->loadStatus);
             continue;
         }
-        qtnote->setDesktopImpl(qobject_cast<DEIntegrationInterface *>(pd->instance));
+        auto *desktop = qobject_cast<DEIntegrationInterface *>(pd->instance);
+        qtnote->setDesktopImpl(desktop);
+        if (auto *spellCheck = qobject_cast<SpellCheckProviderInterface *>(pd->instance))
+            pluginHost->offerSpellCheckProvider(spellCheck->spellCheckProvider());
         pd->loadStatus = LS_Initialized;
         qInfo() << "Desktop integration plugin selected:" << plugin;
         break;
@@ -444,6 +471,7 @@ void PluginManager::loadPlugins()
             continue;
         }
         qtnote->setNotificationImpl(qobject_cast<NotificationInterface *>(pd->instance));
+        qtnote->setActionNotificationImpl(qobject_cast<ActionNotificationInterface *>(pd->instance));
         pd->loadStatus = LS_Initialized;
         qInfo() << "Notifications plugin selected:" << plugin;
         break;
@@ -622,12 +650,12 @@ void PluginManager::updateMetadata()
             // especially with Qt 5. Keep probed libraries mapped for the lifetime of the process; disabled
             // plugins still remain uninitialized and therefore do not perform their runtime work.
             loadPlugin(fileName, pd, QLibrary::ExportExternalSymbolsHint | QLibrary::PreventUnloadHint);
-            if (!pd.isNull()) { // new cache
+            if (!pd.isNull() && !tmpPlugins.contains(pd->metadata.id)) // first search path wins
                 tmpPlugins.insert(pd->metadata.id, pd);
-            }
         } else {
             // cache is not null and filetimestamp is the same
-            tmpPlugins.insert(pd->metadata.id, pd);
+            if (!tmpPlugins.contains(pd->metadata.id)) // first search path wins
+                tmpPlugins.insert(pd->metadata.id, pd);
         }
 
         it.next();

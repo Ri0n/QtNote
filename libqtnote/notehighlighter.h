@@ -8,6 +8,8 @@
 #include "highlighterext.h"
 #include "qtnote_export.h"
 
+class QTextDocument;
+
 namespace QtNote {
 
 class NoteEdit;
@@ -33,6 +35,7 @@ public:
     };
 
     NoteHighlighter(NoteEdit *nde);
+    NoteHighlighter(QTextDocument *document);
     void highlightBlock(const QString &text);
 
     // virtual for plugins

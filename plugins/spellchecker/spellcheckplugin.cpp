@@ -37,104 +37,34 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "highlighterext.h"
 #include "hunspellengine.h"
 #include "noteedit.h"
-#include "notehighlighter.h"
 #include "notewidget.h"
 #include "qtnote.h"
 #include "qtnote_config.h"
 #include "settingsdlg.h"
 #include "spellcheckplugin.h"
+#include "spellcheckprovider.h"
 
 namespace QtNote {
 
 static const QLatin1String pluginId("spellchecker");
 
-static std::shared_ptr<HighlighterExtension> hlExt;
-
-class SpellCheckHighlighterExtension : public HighlighterExtension {
-    SpellEngineInterface *sei;
-    QRegularExpression    expression;
-
+class HunspellProvider final : public SpellCheckProvider {
 public:
-    SpellCheckHighlighterExtension(SpellEngineInterface *sei) : sei(sei)
-    {
-        expression = QRegularExpression("[[:alpha:]]{2,}", QRegularExpression::UseUnicodePropertiesOption);
-    }
+    explicit HunspellProvider(std::shared_ptr<SpellEngineInterface> engine) : engine_(std::move(engine)) { }
 
-    void reset() { }
+    QString     id() const override { return QStringLiteral("hunspell"); }
+    QString     displayName() const override { return QStringLiteral("Hunspell"); }
+    bool        isValid() const override { return engine_ && !engine_->loadedDicts().isEmpty(); }
+    bool        isCorrect(const QString &word) const override { return enabled_ && engine_->spell(word); }
+    QStringList suggestions(const QString &word) const override { return engine_->suggestions(word); }
+    void        addToDictionary(const QString &word) override { engine_->addToDictionary(word); }
 
-    void highlight(NoteHighlighter *nh, const QString &text)
-    {
-        QTextCharFormat myClassFormat;
-        myClassFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+protected:
+    void onDisabled(DisableMode) override { enabled_ = false; }
 
-        QRegularExpressionMatchIterator i = expression.globalMatch(text);
-        while (i.hasNext()) {
-            QRegularExpressionMatch match = i.next();
-            // qDebug() << match.captured();
-            if (!sei->spell(match.captured())) {
-                nh->addFormat(match.capturedStart(), match.capturedLength(), myClassFormat);
-            }
-        }
-    }
-};
-
-class SpellContextMenu : public QObject {
-    Q_OBJECT
-
-    SpellEngineInterface *sei;
-    QTextEdit            *te;
-    QTextCursor           cursor;
-
-public:
-    SpellContextMenu(SpellEngineInterface *sei, QTextEdit *te, const QTextCursor &cursor, QString wrongWord,
-                     QMenu *menu) : QObject(menu), sei(sei), te(te), cursor(cursor)
-    {
-        QList<QString>   suggestions = sei->suggestions(wrongWord);
-        QList<QAction *> actions;
-        foreach (QString suggestion, suggestions) {
-            QAction *act_suggestion = new QAction(suggestion, menu);
-            actions.append(act_suggestion);
-            connect(act_suggestion, SIGNAL(triggered()), SLOT(applySuggestion()));
-        }
-        if (actions.count()) {
-            QAction *sep = new QAction(menu);
-            sep->setSeparator(true);
-            actions.append(sep);
-        }
-        QAction *act_add = new QAction(tr("Add to dictionary"), menu);
-        act_add->setData(wrongWord);
-        actions.append(act_add);
-        connect(act_add, SIGNAL(triggered()), SLOT(addToDictionary()));
-        QAction *sep = new QAction(menu);
-        sep->setSeparator(true);
-        actions.append(sep);
-        menu->insertActions(menu->actions().value(0), actions);
-    }
-
-signals:
-    void needRehighlight();
-
-private slots:
-    void applySuggestion()
-    {
-        QString word      = ((QAction *)sender())->text();
-        int     oldPos    = te->textCursor().position();
-        int     oldLength = cursor.position() - cursor.anchor();
-
-        cursor.insertText(word);
-        cursor.clearSelection();
-
-        // Put the cursor where it belongs
-        cursor.setPosition(oldPos - oldLength + word.length());
-        te->setTextCursor(cursor);
-    }
-
-    void addToDictionary()
-    {
-        QString word = ((QAction *)sender())->data().toString();
-        sei->addToDictionary(word);
-        emit needRehighlight();
-    }
+private:
+    std::shared_ptr<SpellEngineInterface> engine_;
+    bool                                  enabled_ = true;
 };
 
 //------------------------------------------------------------
@@ -166,9 +96,11 @@ void SpellCheckPlugin::setHost(PluginHostInterface *host) { this->host = host; }
 bool SpellCheckPlugin::init(Main *qtnote)
 {
     deinit();
-    qtnote_    = qtnote;
-    sei        = new HunspellEngine(host);
-    auto langs = userLanguagePreferences();
+    initializationFailure_.clear();
+    qtnote_      = qtnote;
+    engineOwner_ = std::make_shared<HunspellEngine>(host);
+    sei          = engineOwner_.get();
+    auto langs   = userLanguagePreferences();
     if (langs.empty()) {
         langs = systemLanguagePreferences();
     }
@@ -188,8 +120,17 @@ bool SpellCheckPlugin::init(Main *qtnote)
             });
         }
     }
-    hlExt = std::make_shared<SpellCheckHighlighterExtension>(sei);
-    connect(qtnote, &Main::noteWidgetCreated, this, &SpellCheckPlugin::noteWidgetCreated);
+    qInfo() << "Spell checker initialized with" << sei->loadedDicts().size() << "dictionary/dictionaries";
+    auto       provider = std::make_shared<HunspellProvider>(engineOwner_);
+    const auto accepted = host->offerSpellCheckProvider(provider);
+    qInfo() << "Hunspell provider" << (accepted ? "accepted" : "not selected");
+    if (!accepted) {
+        const auto failure = provider->disabledReason();
+        deinit();
+        initializationFailure_ = failure;
+        qInfo() << "Hunspell dictionaries unloaded after provider rejection";
+        return false;
+    }
     connect(sei, &HunspellEngine::availableDictsUpdated, this, &SpellCheckPlugin::availableDictsUpdated);
     return true;
 }
@@ -197,15 +138,13 @@ bool SpellCheckPlugin::init(Main *qtnote)
 void SpellCheckPlugin::deinit()
 {
     if (qtnote_) {
-        disconnect(qtnote_, &Main::noteWidgetCreated, this, &SpellCheckPlugin::noteWidgetCreated);
         qtnote_ = nullptr;
     }
     if (sei) {
         disconnect(sei, nullptr, this, nullptr);
-        delete sei;
         sei = nullptr;
     }
-    hlExt.reset();
+    engineOwner_.reset();
     if (host) {
         host->rehighlight();
     }
@@ -214,7 +153,7 @@ void SpellCheckPlugin::deinit()
 QString SpellCheckPlugin::tooltip() const
 {
     if (!sei) {
-        return tr("Spell checker is disabled.");
+        return initializationFailure_.isEmpty() ? tr("Spell checker is disabled.") : initializationFailure_;
     }
     QList<SpellEngineInterface::DictInfo> dicts = sei->loadedDicts();
     QStringList                           dictsHtml;
@@ -248,26 +187,6 @@ QDialog *SpellCheckPlugin::optionsDialog()
     auto s = new SettingsDlg(this);
     connect(s, SIGNAL(accepted()), SLOT(settingsAccepted()));
     return s;
-}
-
-void SpellCheckPlugin::populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu)
-{
-    if (!sei) {
-        return;
-    }
-    auto last_click_ = event->pos();
-    if (!te->textCursor().selection().isEmpty()) {
-        return;
-    }
-    // Check if the word under the cursor is misspelled
-    QTextCursor cursor = te->cursorForPosition(last_click_);
-    cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
-    cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
-    QString wrongWord = cursor.selectedText();
-    if (!wrongWord.isEmpty() && !sei->spell(wrongWord)) {
-        auto cm = new SpellContextMenu(sei, te, cursor, wrongWord, menu);
-        connect(cm, &SpellContextMenu::needRehighlight, this, [this]() { host->rehighlight(); });
-    }
 }
 
 QList<QLocale> SpellCheckPlugin::systemLanguagePreferences() const
@@ -393,35 +312,25 @@ void SpellCheckPlugin::settingsAccepted()
     if (!sei) {
         return;
     }
-    auto      dlg = (SettingsDlg *)sender();
-    auto      ret = dlg->preferredList();
-    QSettings s;
+    auto       dlg             = (SettingsDlg *)sender();
+    auto       ret             = dlg->preferredList();
+    const auto activeLanguages = ret.isEmpty() ? systemLanguagePreferences() : ret;
+    QSettings  s;
     s.beginGroup("plugins");
     s.beginGroup(pluginId);
-    const auto prevLangs = s.value(QLatin1String("langs")).toStringList();
-
     QStringList langs;
-    foreach (const QLocale &locale, ret) {
-        langs.append(locale.bcp47Name());
+    foreach (const QLocale &locale, activeLanguages) {
         sei->addLanguage(locale);
     }
-    for (const auto &p : prevLangs) {
-        if (!langs.contains(p)) {
-            sei->removeLanguage(QLocale(p));
-        }
+    foreach (const QLocale &locale, ret) {
+        langs.append(locale.bcp47Name());
+    }
+    for (const auto &dict : sei->loadedDicts()) {
+        const auto locale = dict.toLocale();
+        if (!activeLanguages.contains(locale))
+            sei->removeLanguage(locale);
     }
     s.setValue(QLatin1String("langs"), langs);
 }
 
-void SpellCheckPlugin::noteWidgetCreated(QWidget *w)
-{
-    if (!sei || !hlExt) {
-        return;
-    }
-    host->addHighlightExtension(w, hlExt, int(NoteHighlighter::SpellCheck));
-    host->noteTextWidget(w)->addContextMenuHandler(this);
-}
-
 } // namespace QtNote
-
-#include "spellcheckplugin.moc"

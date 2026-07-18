@@ -168,6 +168,16 @@ SettingsDlg::SettingsDlg(SpellCheckPlugin *plugin, QWidget *parent) : QDialog(pa
             });
         }
     });
+    connect(ui->pbUseSystemPrefs, &QPushButton::clicked, this, [this]() {
+        ui->tblLangs->blockSignals(true);
+        for (int row = 0; row < ui->tblLangs->rowCount(); ++row) {
+            auto *item = static_cast<LocaleWidgetItem *>(ui->tblLangs->item(row, 0));
+            item->setCheckState(item->dict.flags & SpellCheckPlugin::DictSystemSelected ? Qt::PartiallyChecked
+                                                                                        : Qt::Unchecked);
+        }
+        ui->tblLangs->blockSignals(false);
+        ui->pbUseSystemPrefs->setEnabled(false);
+    });
 }
 
 SettingsDlg::~SettingsDlg() { delete ui; }

@@ -9,15 +9,20 @@
 #endif
 
 #include <QAction>
+#include <QCheckBox>
 #include <QDBusInterface>
 #include <QDBusReply>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QGuiApplication>
+#include <QLabel>
 #include <QLoggingCategory>
 #include <QScreen>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QVBoxLayout>
 #include <QVariant>
 #include <QWidget>
 #include <QWindow>
@@ -27,6 +32,7 @@
 #include "kdeintegrationtray.h"
 #include "pluginhostinterface.h"
 #include "qtnote_config.h"
+#include "sonnetspellcheckprovider.h"
 
 namespace QtNote {
 
@@ -35,6 +41,7 @@ Q_LOGGING_CATEGORY(logKdeIntegration, "qtnote.kdeintegration")
 static const QLatin1String pluginId("kde_de");
 static const QLatin1String stickyPlasmoidId("com.github.ri0n.qtnote.sticky");
 static const QLatin1String stickyPresentationsGroup("kdeintegration/stickyPresentations");
+static const QLatin1String useSonnetSetting("kdeintegration/useSonnet");
 
 //------------------------------------------------------------
 // KDEIntegration
@@ -102,12 +109,60 @@ PluginMetadata KDEIntegration::metadata()
 
 void KDEIntegration::setHost(PluginHostInterface *) { }
 
+std::shared_ptr<SpellCheckProvider> KDEIntegration::spellCheckProvider()
+{
+    QSettings settings;
+    if (!settings.value(useSonnetSetting, true).toBool())
+        return {};
+    auto provider = std::make_shared<SonnetSpellCheckProvider>();
+    if (!provider->isValid()) {
+        qCWarning(logKdeIntegration) << "Sonnet is enabled but no usable dictionaries were found";
+        return {};
+    }
+    qCInfo(logKdeIntegration) << "Sonnet languages:" << provider->languages();
+    return provider;
+}
+
+QDialog *KDEIntegration::optionsDialog()
+{
+    auto *dialog = new QDialog;
+    dialog->setWindowTitle(tr("KDE Integration"));
+    auto     *layout  = new QVBoxLayout(dialog);
+    auto     *enabled = new QCheckBox(tr("Use Sonnet for spell checking"), dialog);
+    QSettings settings;
+    enabled->setChecked(settings.value(useSonnetSetting, true).toBool());
+    layout->addWidget(enabled);
+    auto *hint = new QLabel(tr("The spell checker selection is applied after restarting QtNote."), dialog);
+    hint->setWordWrap(true);
+    layout->addWidget(hint);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, dialog);
+    layout->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::accepted, dialog, [dialog, enabled]() {
+        QSettings settings;
+        settings.setValue(useSonnetSetting, enabled->isChecked());
+        dialog->accept();
+    });
+    connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    return dialog;
+}
+
 TrayImpl *KDEIntegration::initTray(Main *qtnote) { return new KDEIntegrationTray(qtnote, this); }
 
 void KDEIntegration::notifyError(const QString &msg)
 {
-    KNotification *n = KNotification::event(KNotification::Error, tr("Error"), msg, QPixmap(":/svg/qtnote"));
-    n->sendEvent();
+    KNotification::event(KNotification::Error, tr("Error"), msg, QPixmap(":/svg/qtnote"));
+}
+
+void KDEIntegration::notify(const QString &title, const QString &message, const QString &actionText,
+                            std::function<void()> action)
+{
+    auto *notification = KNotification::event(KNotification::Notification, title, message, QPixmap(":/svg/qtnote"),
+                                              KNotification::CloseOnTimeout);
+    if (!actionText.isEmpty() && action) {
+        auto *notificationAction = notification->addAction(actionText);
+        connect(notificationAction, &KNotificationAction::activated, notification,
+                [action = std::move(action)]() { action(); });
+    }
 }
 
 void KDEIntegration::activateWidget(QWidget *w)

@@ -23,9 +23,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #define SpellCheckPlugin_H
 
 #include <QObject>
+#include <memory>
 
 #include "deintegrationinterface.h"
-#include "notecontextmenuhandler.h"
 #include "pluginoptionsinterface.h"
 #include "qtnoteplugininterface.h"
 #include "trayinterface.h"
@@ -40,12 +40,11 @@ class SpellCheckPlugin : public QObject,
                          public PluginInterface,
                          public RegularPluginInterface,
                          public PluginOptionsTooltipInterface,
-                         public PluginOptionsInterface,
-                         public NoteContextMenuHandler {
+                         public PluginOptionsInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.spellchecker")
     Q_INTERFACES(QtNote::PluginInterface QtNote::RegularPluginInterface QtNote::PluginOptionsTooltipInterface
-                     QtNote::PluginOptionsInterface QtNote::NoteContextMenuHandler)
+                                                                        QtNote::PluginOptionsInterface)
 public:
     enum DictFlag {
         DictNone           = 0,
@@ -81,9 +80,6 @@ public:
     // PluginOptionsInterface
     QDialog *optionsDialog();
 
-    // NoteContextMenuHandler
-    void populateNoteContextMenu(QTextEdit *te, QContextMenuEvent *event, QMenu *menu);
-
     SpellEngineInterface *engine() const { return sei; }
 
     QList<QLocale> userLanguagePreferences() const;
@@ -96,13 +92,14 @@ public:
 signals:
     void availableDictsUpdated();
 private slots:
-    void noteWidgetCreated(QWidget *w);
     void settingsAccepted();
 
 private:
-    Main                 *qtnote_;
-    PluginHostInterface  *host;
-    SpellEngineInterface *sei;
+    Main                                 *qtnote_;
+    PluginHostInterface                  *host;
+    SpellEngineInterface                 *sei;
+    std::shared_ptr<SpellEngineInterface> engineOwner_;
+    QString                               initializationFailure_;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(SpellCheckPlugin::DictFlags)

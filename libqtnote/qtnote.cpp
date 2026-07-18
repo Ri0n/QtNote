@@ -25,6 +25,7 @@
 #endif
 
 #include "aboutdlg.h"
+#include "actionnotificationinterface.h"
 #include "deintegrationinterface.h"
 #include "draftmanager.h"
 #include "globalshortcutsinterface.h"
@@ -62,21 +63,22 @@ class Main::Private : public QObject {
     Q_OBJECT
 
 public:
-    Main                     *q;
-    DEIntegrationInterface   *de;
-    TrayImpl                 *tray;
-    bool                      externalTrayAvailable;
-    GlobalShortcutsInterface *globalShortcuts;
-    NotificationInterface    *notifier;
-    StickyNotesManager       *stickyNotes;
-    QSet<QUuid>               recoveredDraftIds;
+    Main                        *q;
+    DEIntegrationInterface      *de;
+    TrayImpl                    *tray;
+    bool                         externalTrayAvailable;
+    GlobalShortcutsInterface    *globalShortcuts;
+    NotificationInterface       *notifier;
+    ActionNotificationInterface *actionNotifier;
+    StickyNotesManager          *stickyNotes;
+    QSet<QUuid>                  recoveredDraftIds;
 #ifdef QTNOTE_DBUS_AVAILABLE
     QtNoteDBus *dbus;
 #endif
 
     Private(Main *parent) :
         QObject(parent), q(parent), de(0), tray(0), externalTrayAvailable(false), globalShortcuts(0), notifier(0),
-        stickyNotes(new StickyNotesManager(parent))
+        actionNotifier(0), stickyNotes(new StickyNotesManager(parent))
 #ifdef QTNOTE_DBUS_AVAILABLE
         ,
         dbus(0)
@@ -416,6 +418,14 @@ NoteDialog *Main::makeNoteDialog(const QString &storageId, const QString &noteId
 
 void Main::notifyError(const QString &text) { d->notifier->notifyError(text); }
 
+void Main::notify(const QString &title, const QString &message, const QString &actionText, std::function<void()> action)
+{
+    if (d->actionNotifier)
+        d->actionNotifier->notify(title, message, actionText, std::move(action));
+    else
+        d->notifier->notifyError(message);
+}
+
 void Main::activateWidget(QWidget *w) const { d->de->activateWidget(w); }
 
 WindowGeometryRestoreResult Main::restoreWindowGeometry(QWidget *w, const QString &key) const
@@ -445,6 +455,8 @@ void Main::setDesktopImpl(DEIntegrationInterface *de) { d->de = de; }
 void Main::setGlobalShortcutsImpl(GlobalShortcutsInterface *gs) { d->globalShortcuts = gs; }
 
 void Main::setNotificationImpl(NotificationInterface *notifier) { d->notifier = notifier; }
+
+void Main::setActionNotificationImpl(ActionNotificationInterface *notifier) { d->actionNotifier = notifier; }
 
 void Main::registerStorage(std::unique_ptr<NoteStorage> storage)
 {

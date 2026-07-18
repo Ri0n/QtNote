@@ -24,6 +24,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include <QObject>
 #include <QUuid>
+#include <functional>
 #include <memory>
 
 #include "notestorage.h"
@@ -43,6 +44,7 @@ class DEIntegrationInterface;
 enum class WindowGeometryRestoreResult;
 class GlobalShortcutsInterface;
 class NotificationInterface;
+class ActionNotificationInterface;
 class NoteDialog;
 class QtNoteDBus;
 class Note;
@@ -73,6 +75,7 @@ public:
     void setDesktopImpl(DEIntegrationInterface *de);
     void setGlobalShortcutsImpl(GlobalShortcutsInterface *gs);
     void setNotificationImpl(NotificationInterface *notifier);
+    void setActionNotificationImpl(ActionNotificationInterface *notifier);
     void setStickyNotesImpl(StickyNotesIntegrationInterface *stickyNotes);
 
     void pinNote(const Note &note, const QUuid &draftId, bool awaitingPublication, const QRect &preferredGeometry);
@@ -89,6 +92,7 @@ signals:
 
 public slots:
     void notifyError(const QString &);
+    void notify(const QString &title, const QString &message, const QString &actionText, std::function<void()> action);
     void openNoteDialog(const QString &storageId, const QString &noteId);
     void appMessageReceived(const QString &message);
 

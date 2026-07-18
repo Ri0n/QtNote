@@ -4,10 +4,13 @@
 #include <QObject>
 #include <QQueue>
 
+#include "actionnotificationinterface.h"
 #include "deintegrationinterface.h"
 #include "globalshortcutsinterface.h"
 #include "notificationinterface.h"
+#include "pluginoptionsinterface.h"
 #include "qtnoteplugininterface.h"
+#include "spellcheckproviderinterface.h"
 #include "stickynotesintegrationinterface.h"
 #include "trayinterface.h"
 
@@ -20,24 +23,32 @@ class PluginHostInterface;
 class KDEIntegration : public QObject,
                        public PluginInterface,
                        public NotificationInterface,
+                       public ActionNotificationInterface,
                        public TrayInterface,
                        public DEIntegrationInterface,
                        public GlobalShortcutsInterface,
-                       public StickyNotesIntegrationInterface {
+                       public StickyNotesIntegrationInterface,
+                       public SpellCheckProviderInterface,
+                       public PluginOptionsInterface {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.rion-soft.QtNote.KdeTrayIcon")
     Q_INTERFACES(
         QtNote::PluginInterface QtNote::TrayInterface QtNote::DEIntegrationInterface QtNote::GlobalShortcutsInterface
-            QtNote::NotificationInterface QtNote::StickyNotesIntegrationInterface)
+            QtNote::NotificationInterface QtNote::ActionNotificationInterface QtNote::StickyNotesIntegrationInterface
+                QtNote::SpellCheckProviderInterface QtNote::PluginOptionsInterface)
 public:
     explicit KDEIntegration(QObject *parent = 0);
 
-    int                    metadataVersion() const override;
-    virtual PluginMetadata metadata() override;
-    void                   setHost(PluginHostInterface *host) override;
+    int                                 metadataVersion() const override;
+    virtual PluginMetadata              metadata() override;
+    void                                setHost(PluginHostInterface *host) override;
+    std::shared_ptr<SpellCheckProvider> spellCheckProvider() override;
+    QDialog                            *optionsDialog() override;
 
     TrayImpl                   *initTray(Main *qtnote) override;
     void                        notifyError(const QString &msg) override;
+    void                        notify(const QString &title, const QString &message, const QString &actionText,
+                                       std::function<void()> action) override;
     void                        activateWidget(QWidget *w) override;
     WindowGeometryRestoreResult restoreWindowGeometry(QWidget *w, const QString &key) override;
     bool                        saveWindowGeometry(QWidget *w, const QString &key) override;

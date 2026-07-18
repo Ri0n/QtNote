@@ -117,7 +117,11 @@ public:
         if (tb.position() == 0) {
             QTextCharFormat titleHighlightFormat;
             titleHighlightFormat.setForeground(firstLineColor);
-            titleHighlightFormat.setFontPointSize(tb.charFormat().font().pointSize() * 1.5);
+            auto pointSize = tb.charFormat().font().pointSizeF();
+            if (pointSize <= 0)
+                pointSize = tb.document()->defaultFont().pointSizeF();
+            if (pointSize > 0)
+                titleHighlightFormat.setFontPointSize(pointSize * 1.5);
             nh->addFormat(0, tb.length(), titleHighlightFormat);
         }
     }
@@ -328,7 +332,7 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
         firstLineHighlighter = std::make_shared<FirstLineHighlighter>();
     }
     _highlighter = new NoteHighlighter(ui->noteEdit);
-    _highlighter->addExtension(firstLineHighlighter, NoteHighlighter::Title);
+    addHighlightExtension(firstLineHighlighter, NoteHighlighter::Title);
 
     _linkHighlighter = std::make_shared<CurrentLinkHighlighter>(this);
     std::dynamic_pointer_cast<CurrentLinkHighlighter>(_linkHighlighter)->init();
@@ -745,7 +749,17 @@ void NoteWidget::setNote(const Note &note)
     }
 }
 
-void NoteWidget::rehighlight() { _highlighter->rehighlight(); }
+void NoteWidget::rehighlight()
+{
+    _highlighter->rehighlight();
+    qmlEditor->rehighlight();
+}
+
+void NoteWidget::addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type)
+{
+    _highlighter->addExtension(extension, NoteHighlighter::ExtType(type));
+    qmlEditor->addHighlightExtension(extension, type);
+}
 
 void NoteWidget::startSpeechRecognition()
 {
@@ -988,6 +1002,8 @@ void NoteWidget::updateFirstLineColor()
         if (_highlighter) {
             _highlighter->rehighlight();
         }
+        if (qmlEditor)
+            qmlEditor->rehighlight();
     }
 }
 

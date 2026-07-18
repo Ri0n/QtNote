@@ -8,12 +8,16 @@
 #include <QQmlEngine>
 #include <QQuickImageProvider>
 #include <QQuickItem>
+#include <QQuickTextDocument>
 #include <QQuickWidget>
+#include <QTextBlock>
+#include <QTextLayout>
 #include <QTimer>
 #include <QVBoxLayout>
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
+#include "notehighlighter.h"
 
 namespace QtNote {
 namespace {
@@ -48,6 +52,7 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     quick_->setClearColor(palette().color(QPalette::Base));
     quick_->engine()->addImageProvider(QStringLiteral("qtnote-media"), new LocalMediaImageProvider);
     quick_->rootContext()->setContextProperty(QStringLiteral("noteBlockModel"), model_);
+    quick_->rootContext()->setContextProperty(QStringLiteral("qmlNoteEditor"), this);
     quick_->setSource(QUrl(QStringLiteral("qrc:/qml/NoteBlockEditor.qml")));
     quick_->installEventFilter(this);
     layout->addWidget(quick_);
@@ -92,6 +97,119 @@ void QmlNoteEditor::focusEditor()
     quick_->setFocus(Qt::OtherFocusReason);
     if (quick_->rootObject())
         QMetaObject::invokeMethod(quick_->rootObject(), "focusInitialEditor");
+}
+
+void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
+{
+    if (!document || !document->textDocument())
+        return;
+    auto highlighter = new NoteHighlighter(document->textDocument());
+    for (const auto &item : extensions_) {
+        const auto type = NoteHighlighter::ExtType(item.type);
+        if (type == NoteHighlighter::Other || (type == NoteHighlighter::Title && !titleDocument))
+            continue;
+        highlighter->addExtension(item.extension, type);
+        if (type == NoteHighlighter::SpellCheck && !spellCheckEnabled_)
+            highlighter->disableExtension(type);
+    }
+    highlighters_.append({ highlighter, titleDocument });
+    qInfo() << "QML text document registered" << static_cast<const void *>(document->textDocument())
+            << "title=" << titleDocument << "extensions=" << extensions_.size();
+    highlighter->rehighlight();
+}
+
+QVariantList QmlNoteEditor::spellCheckRanges(QQuickTextDocument *document)
+{
+    QVariantList result;
+    if (!spellCheckEnabled_ || !document || !document->textDocument())
+        return result;
+    for (const auto &registered : std::as_const(highlighters_)) {
+        if (registered.highlighter && registered.highlighter->document() == document->textDocument()) {
+            registered.highlighter->rehighlight();
+            break;
+        }
+    }
+    for (auto block = document->textDocument()->begin(); block.isValid(); block = block.next()) {
+        if (!block.layout())
+            continue;
+        for (const auto &range : block.layout()->formats()) {
+            if (!range.format.property(SpellCheckFormatProperty).toBool())
+                continue;
+            QVariantMap value;
+            value.insert(QStringLiteral("start"), block.position() + range.start);
+            value.insert(QStringLiteral("length"), range.length);
+            result.append(value);
+        }
+    }
+    return result;
+}
+
+QStringList QmlNoteEditor::spellingSuggestions(const QString &word) const
+{
+    if (!spellCheckEnabled_)
+        return {};
+    for (const auto &item : extensions_) {
+        if (item.type != int(NoteHighlighter::SpellCheck))
+            continue;
+        if (auto spell = std::dynamic_pointer_cast<SpellCheckExtension>(item.extension))
+            return spell->suggestions(word);
+    }
+    return {};
+}
+
+void QmlNoteEditor::copyToClipboard(const QString &text) { QGuiApplication::clipboard()->setText(text); }
+
+void QmlNoteEditor::setSpellCheckEnabled(bool enabled)
+{
+    if (spellCheckEnabled_ == enabled)
+        return;
+    spellCheckEnabled_ = enabled;
+    for (const auto &registered : std::as_const(highlighters_)) {
+        if (!registered.highlighter)
+            continue;
+        if (enabled)
+            registered.highlighter->enableExtension(NoteHighlighter::SpellCheck);
+        else
+            registered.highlighter->disableExtension(NoteHighlighter::SpellCheck);
+    }
+    rehighlight();
+    emit spellCheckEnabledChanged();
+}
+
+void QmlNoteEditor::addToSpellingDictionary(const QString &word)
+{
+    for (const auto &item : extensions_) {
+        if (item.type != int(NoteHighlighter::SpellCheck))
+            continue;
+        if (auto spell = std::dynamic_pointer_cast<SpellCheckExtension>(item.extension)) {
+            spell->addToDictionary(word);
+            rehighlight();
+            return;
+        }
+    }
+}
+
+void QmlNoteEditor::addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type)
+{
+    extensions_.append({ extension, type });
+    int attached = 0;
+    for (const auto &registered : std::as_const(highlighters_)) {
+        if (registered.highlighter && type != int(NoteHighlighter::Other)
+            && (type != int(NoteHighlighter::Title) || registered.titleDocument)) {
+            registered.highlighter->addExtension(extension, NoteHighlighter::ExtType(type));
+            ++attached;
+        }
+    }
+    qInfo() << "QML highlight extension added: type=" << type << "documents=" << highlighters_.size()
+            << "attached=" << attached;
+    rehighlight();
+}
+
+void QmlNoteEditor::rehighlight()
+{
+    highlighters_.removeIf([](const auto &registered) { return registered.highlighter.isNull(); });
+    for (const auto &registered : std::as_const(highlighters_))
+        registered.highlighter->rehighlight();
 }
 
 bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)

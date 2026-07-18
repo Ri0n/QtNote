@@ -61,6 +61,7 @@ public:
     void              setTrashRequested(bool state) { _trashRequested = state; }
     void              setStickyNotesAvailable(bool available);
     void              rehighlight();
+    void              addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
     void              findText(const QString &text, bool focusFindBar = true);
     bool              prepareToClose();
     void              discardDraft();
