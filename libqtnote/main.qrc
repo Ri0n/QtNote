@@ -22,6 +22,6 @@
         <file alias="txt">images/txt.svg</file>
     </qresource>
     <qresource prefix="/qml">
-        <file>qml/NoteBlockEditor.qml</file>
+        <file alias="NoteBlockEditor.qml">qml/NoteBlockEditor.qml</file>
     </qresource>
 </RCC>

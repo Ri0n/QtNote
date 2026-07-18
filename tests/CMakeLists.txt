@@ -3,6 +3,12 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Test REQUIRED)
 add_executable(noteblockmodel_test noteblockmodel_test.cpp)
 target_link_libraries(noteblockmodel_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME noteblockmodel_test COMMAND noteblockmodel_test)
+set_tests_properties(noteblockmodel_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(qmlnoteeditor_test qmlnoteeditor_test.cpp)
+target_link_libraries(qmlnoteeditor_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::QuickWidgets)
+add_test(NAME qmlnoteeditor_test COMMAND qmlnoteeditor_test)
+set_tests_properties(qmlnoteeditor_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QSG_RHI_BACKEND=software")
 
 add_executable(filedraftstore_test filedraftstore_test.cpp)
 target_link_libraries(filedraftstore_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)

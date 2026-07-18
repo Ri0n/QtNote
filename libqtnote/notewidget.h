@@ -24,6 +24,7 @@ namespace QtNote {
 
 class NoteEdit;
 class NoteHighlighter;
+class QmlNoteEditor;
 class SpeechAudioRecorder;
 class SpeechRecognitionJob;
 class NoteSaveJob;
@@ -120,7 +121,8 @@ private:
     bool    canInsertImages() const;
     bool    insertImportedImage(const MediaReference &reference);
 
-    Ui::NoteWidget *ui = nullptr;
+    Ui::NoteWidget *ui        = nullptr;
+    QmlNoteEditor  *qmlEditor = nullptr;
 
     QAction                              *mdModeAct;
     QAction                              *txtModeAct;

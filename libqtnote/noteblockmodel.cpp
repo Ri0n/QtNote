@@ -157,6 +157,38 @@ void NoteBlockModel::appendTextBlock()
     emit contentsChanged();
 }
 
+void NoteBlockModel::appendText(const QString &text)
+{
+    if (!blocks_.isEmpty() && blocks_.last().type == Text) {
+        auto &value = blocks_.last().text;
+        if (!value.isEmpty() && !value.back().isSpace())
+            value += QLatin1Char(' ');
+        value += text;
+        changed(blocks_.size() - 1, { TextRole });
+        return;
+    }
+    const int row = blocks_.size();
+    beginInsertRows({}, row, row);
+    Block block;
+    block.text = text;
+    blocks_.append(block);
+    endInsertRows();
+    emit contentsChanged();
+}
+
+void NoteBlockModel::appendImage(const QString &url, const QString &alt)
+{
+    const int row = blocks_.size();
+    beginInsertRows({}, row, row);
+    Block block;
+    block.type = Image;
+    block.url  = url;
+    block.alt  = alt;
+    blocks_.append(block);
+    endInsertRows();
+    emit contentsChanged();
+}
+
 void NoteBlockModel::removeBlock(int row)
 {
     if (row < 0 || row >= blocks_.size())

@@ -37,6 +37,8 @@ public:
     Q_INVOKABLE void setImageUrl(int row, const QString &url);
     Q_INVOKABLE void setImageAlt(int row, const QString &alt);
     Q_INVOKABLE void appendTextBlock();
+    Q_INVOKABLE void appendText(const QString &text);
+    Q_INVOKABLE void appendImage(const QString &url, const QString &alt);
     Q_INVOKABLE void removeBlock(int row);
 
 signals:

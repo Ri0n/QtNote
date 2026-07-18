@@ -34,7 +34,7 @@ if("${QT_VERSION_MAJOR}" STREQUAL "")
     set(QT_VERSION_MAJOR 6)
 endif()
 
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Core Gui PrintSupport REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Core Gui PrintSupport Quick QuickWidgets Qml REQUIRED)
 if (Qt${QT_VERSION_MAJOR}Widgets_VERSION VERSION_LESS 5.10.0)
     message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")
 endif()

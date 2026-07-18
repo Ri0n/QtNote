@@ -29,9 +29,11 @@
 #include "iconutils.h"
 #include "localmediastore.h"
 #include "note.h"
+#include "noteblockmodel.h"
 #include "notehighlighter.h"
 #include "notestorage.h"
 #include "notewidget.h"
+#include "qmlnoteeditor.h"
 #include "speechaudiorecorder.h"
 #include "speechrecognitionprovider.h"
 #include "typeaheadfind.h"
@@ -199,12 +201,16 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
 {
     ui->setupUi(this);
 
+    qmlEditor = new QmlNoteEditor(this);
+    ui->noteLayout->insertWidget(1, qmlEditor);
+    ui->noteEdit->hide(); // compatibility adapter for the legacy plugin API
+
     if (!_note.isNull() && _note.storage()) {
         auto storageFormats = _note.storage()->availableFormats();
         setAcceptRichText(storageFormats.contains(Note::Markdown) || storageFormats.contains(Note::Html));
     }
 
-    setFocusProxy(ui->noteEdit);
+    setFocusProxy(qmlEditor);
     // ui->saveBtn->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
 
     QHBoxLayout *hb3a = new QHBoxLayout();
@@ -310,6 +316,9 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     }
 
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
+    connect(qmlEditor, &QmlNoteEditor::contentsChanged, this, &NoteWidget::textChanged);
+    connect(qmlEditor, &QmlNoteEditor::focusLost, this, &NoteWidget::save);
+    connect(qmlEditor, &QmlNoteEditor::focusReceived, this, &NoteWidget::focusReceived, Qt::QueuedConnection);
 
     ui->noteEdit->setText(""); // to force update event
 
@@ -466,15 +475,12 @@ void NoteWidget::textChanged()
 {
     _changed = true;
     if (pinAction)
-        pinAction->setEnabled(!ui->noteEdit->document()->isEmpty());
+        pinAction->setEnabled(!text().isEmpty());
     if (!_autosaveTimer.isActive()) {
         _autosaveTimer.start();
         _lastChangeElapsed.restart();
     }
-    QTextDocument *doc        = ui->noteEdit->document();
-    QTextBlock     firstBlock = doc->begin();
-
-    QString firstLine = displayText(firstBlock);
+    const QString firstLine = text().section(QLatin1Char('\n'), 0, 0).trimmed();
     if (firstLine != _firstLine || firstLine.isEmpty()) {
         _firstLine = firstLine;
         emit firstLineChanged();
@@ -483,16 +489,7 @@ void NoteWidget::textChanged()
 
 void NoteWidget::setText(QString text)
 {
-    if (mdModeAct->isVisible()) {
-        ui->noteEdit->setPlainText(text);
-    } else {
-        auto idx = text.indexOf('\n');
-        if (idx == -1 || idx + 1 == text.size() || text[idx + 1] == '\n') {
-            ui->noteEdit->setMarkdown(text);
-        } else {
-            ui->noteEdit->setMarkdown(text.left(idx) + '\n' + text.mid(idx));
-        }
-    }
+    qmlEditor->load(text, isMarkdown() ? Note::Markdown : Note::PlainText);
     _changed = _note.id().isEmpty(); // force saving note if noteId is not set.
     _autosaveTimer.stop();           // timer not required atm
     _lastChangeElapsed.restart();
@@ -513,6 +510,7 @@ void NoteWidget::initFromNote()
 void NoteWidget::setContents(const QString &title, const QString &body, Note::Format format)
 {
     ui->noteEdit->blockSignals(true);
+    const QSignalBlocker qmlBlocker(qmlEditor);
     _linkHighlighter->reset();
 
     auto cursor = ui->noteEdit->textCursor();
@@ -524,6 +522,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     case Note::Html:
         ui->noteEdit->setHtml(title + QLatin1String("<br/>") + body);
         ui->noteEdit->setMarkdown(ui->noteEdit->toMarkdown()); // to cleanup html
+        qmlEditor->load(ui->noteEdit->toMarkdown(), Note::Markdown);
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
         ui->noteEdit->setAcceptRichText(true);
@@ -531,6 +530,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         break;
     case Note::Markdown:
         ui->noteEdit->setMarkdown(title + QLatin1String("\n\n") + body);
+        qmlEditor->load(title + QLatin1String("\n\n") + body, Note::Markdown);
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
         ui->noteEdit->setAcceptRichText(true);
@@ -538,6 +538,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         break;
     case Note::PlainText:
         ui->noteEdit->setPlainText(title + QLatin1Char('\n') + body);
+        qmlEditor->load(title + QLatin1Char('\n') + body, Note::PlainText);
         mdModeAct->setVisible(true);
         txtModeAct->setVisible(false);
         ui->noteEdit->setAcceptRichText(false);
@@ -557,7 +558,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     _baselineText   = text();
     _baselineFormat = isMarkdown() ? Note::Markdown : Note::PlainText;
 
-    const QString firstLine = displayText(ui->noteEdit->document()->begin());
+    const QString firstLine = text().section(QLatin1Char('\n'), 0, 0).trimmed();
     if (firstLine != _firstLine || firstLine.isEmpty()) {
         _firstLine = firstLine;
         emit firstLineChanged();
@@ -664,6 +665,11 @@ bool NoteWidget::insertImportedImage(const MediaReference &reference)
     media.append(reference);
     _note.setMedia(media);
 
+    if (qmlEditor && isMarkdown()) {
+        qmlEditor->model()->appendImage(reference.uri(), reference.originalName);
+        return true;
+    }
+
     auto cursor = ui->noteEdit->textCursor();
     if (cursor.hasSelection())
         cursor.removeSelectedText();
@@ -698,15 +704,9 @@ bool NoteWidget::insertImportedImage(const MediaReference &reference)
     return true;
 }
 
-QString NoteWidget::text()
-{
-    if (mdModeAct->isVisible()) {
-        return ui->noteEdit->toPlainText().trimmed();
-    }
-    return ui->noteEdit->toMarkdown().trimmed();
-}
+QString NoteWidget::text() { return qmlEditor ? qmlEditor->contents().trimmed() : QString(); }
 
-bool NoteWidget::isMarkdown() const { return !mdModeAct->isVisible(); }
+bool NoteWidget::isMarkdown() const { return qmlEditor ? qmlEditor->isMarkdown() : !mdModeAct->isVisible(); }
 
 NoteEdit *NoteWidget::editWidget() const { return ui->noteEdit; }
 
@@ -728,7 +728,7 @@ void NoteWidget::setStickyNotesAvailable(bool available)
 {
     if (pinAction) {
         pinAction->setVisible(available);
-        pinAction->setEnabled(!_note.id().isEmpty() || !ui->noteEdit->document()->isEmpty());
+        pinAction->setEnabled(!_note.id().isEmpty() || !text().isEmpty());
     }
 }
 
@@ -888,11 +888,12 @@ void NoteWidget::onPrintClicked()
         QPrintDialog printDialog(&printer, this);
 
         if (printDialog.exec() == QDialog::Accepted) {
-            _highlighter->disableExtension(NoteHighlighter::SpellCheck);
-            _highlighter->rehighlight();
-            ui->noteEdit->print(&printer);
-            _highlighter->enableExtension(NoteHighlighter::SpellCheck);
-            _highlighter->rehighlight();
+            QTextDocument document;
+            if (isMarkdown())
+                document.setMarkdown(text(), QTextDocument::MarkdownDialectGitHub);
+            else
+                document.setPlainText(text());
+            document.print(&printer);
             lastOutputFilename = printer.outputFileName();
             lastFormat         = printer.outputFormat();
             lastPrinterName    = printer.printerName();
@@ -924,9 +925,14 @@ void NoteWidget::onSaveClicked()
             QString text;
             Format  format = allFormats.key(_extSelecteFilter);
             if (format == Format::RichText) {
-                text = ui->noteEdit->toHtml();
+                QTextDocument document;
+                if (isMarkdown())
+                    document.setMarkdown(this->text(), QTextDocument::MarkdownDialectGitHub);
+                else
+                    document.setPlainText(this->text());
+                text = document.toHtml();
             } else {
-                text = ui->noteEdit->toPlainText();
+                text = this->text();
             }
             QByteArray data = text.toLocal8Bit();
 #ifdef Q_OS_WIN
@@ -1026,12 +1032,7 @@ void NoteWidget::appendRecognizedText(const QString &text)
         return;
     }
 
-    auto cursor = ui->noteEdit->textCursor();
-    if (!cursor.atBlockStart() && !cursor.document()->isEmpty()) {
-        cursor.insertText(QLatin1String(" "));
-    }
-    cursor.insertText(trimmed);
-    ui->noteEdit->setTextCursor(cursor);
+    qmlEditor->model()->appendText(trimmed);
 }
 
 QString NoteWidget::speechRecognitionLanguage() const

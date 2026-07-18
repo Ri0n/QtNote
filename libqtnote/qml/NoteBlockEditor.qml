@@ -6,7 +6,7 @@ import QtQuick.Layouts
 
 ScrollView {
     id: root
-    required property var blockModel
+    property var blockModel: noteBlockModel
     clip: true
 
     ListView {
