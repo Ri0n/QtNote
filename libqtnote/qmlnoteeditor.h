@@ -7,6 +7,7 @@
 #include "note.h"
 
 class QQuickWidget;
+class QImage;
 
 namespace QtNote {
 class NoteBlockModel;
@@ -23,11 +24,13 @@ public:
     QString         contents() const;
     bool            isMarkdown() const;
     void            insertText(const QString &text);
+    void            focusEditor();
 
 signals:
     void contentsChanged();
     void focusReceived();
     void focusLost();
+    void imagePasteRequested(const QImage &image);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

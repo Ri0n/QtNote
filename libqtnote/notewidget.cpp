@@ -317,6 +317,7 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
 
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
     connect(qmlEditor, &QmlNoteEditor::contentsChanged, this, &NoteWidget::textChanged);
+    connect(qmlEditor, &QmlNoteEditor::imagePasteRequested, this, &NoteWidget::insertClipboardImage);
     connect(qmlEditor, &QmlNoteEditor::focusLost, this, &NoteWidget::save);
     connect(qmlEditor, &QmlNoteEditor::focusReceived, this, &NoteWidget::focusReceived, Qt::QueuedConnection);
 

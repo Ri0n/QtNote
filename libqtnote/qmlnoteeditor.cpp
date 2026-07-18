@@ -1,10 +1,15 @@
 #include "qmlnoteeditor.h"
 
+#include <QClipboard>
+#include <QGuiApplication>
+#include <QKeyEvent>
+#include <QMimeData>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
 #include <QQuickItem>
 #include <QQuickWidget>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "localmediastore.h"
@@ -36,6 +41,9 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     auto layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     quick_ = new QQuickWidget(this);
+    setFocusPolicy(Qt::StrongFocus);
+    quick_->setFocusPolicy(Qt::StrongFocus);
+    setFocusProxy(quick_);
     quick_->setResizeMode(QQuickWidget::SizeRootObjectToView);
     quick_->setClearColor(palette().color(QPalette::Base));
     quick_->engine()->addImageProvider(QStringLiteral("qtnote-media"), new LocalMediaImageProvider);
@@ -79,12 +87,33 @@ void QmlNoteEditor::insertText(const QString &text)
     model_->appendText(text);
 }
 
+void QmlNoteEditor::focusEditor()
+{
+    quick_->setFocus(Qt::OtherFocusReason);
+    if (quick_->rootObject())
+        QMetaObject::invokeMethod(quick_->rootObject(), "focusInitialEditor");
+}
+
 bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == quick_) {
-        if (event->type() == QEvent::FocusIn)
+        if (event->type() == QEvent::KeyPress) {
+            auto keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->matches(QKeySequence::Paste)) {
+                const auto mime = QGuiApplication::clipboard()->mimeData();
+                if (mime && mime->hasImage()) {
+                    const auto image = qvariant_cast<QImage>(mime->imageData());
+                    if (!image.isNull()) {
+                        emit imagePasteRequested(image);
+                        return true;
+                    }
+                }
+            }
+        }
+        if (event->type() == QEvent::FocusIn) {
             emit focusReceived();
-        else if (event->type() == QEvent::FocusOut)
+            QTimer::singleShot(0, this, &QmlNoteEditor::focusEditor);
+        } else if (event->type() == QEvent::FocusOut)
             emit focusLost();
     }
     return QWidget::eventFilter(watched, event);
