@@ -50,6 +50,7 @@ public:
     virtual bool          isAccessible() const = 0;
 
     virtual QList<Note::Format> availableFormats() const = 0;
+    virtual bool                supportsMedia() const { return false; }
 
     /* 0 - not limit */
     virtual QList<Note> noteList(int limit = 0) = 0;

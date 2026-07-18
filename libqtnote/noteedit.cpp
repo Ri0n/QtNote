@@ -23,6 +23,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDesktopServices>
 #include <QDropEvent>
 #include <QFile>
+#include <QImage>
 #include <QMenu>
 #include <QMimeData>
 #include <QRegularExpression>
@@ -36,6 +37,18 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 namespace QtNote {
 
 NoteEdit::NoteEdit(QWidget *parent) : QTextEdit(parent) { }
+
+void NoteEdit::insertFromMimeData(const QMimeData *source)
+{
+    if (imagePasteEnabled && source && source->hasImage()) {
+        const auto image = qvariant_cast<QImage>(source->imageData());
+        if (!image.isNull()) {
+            emit imagePasteRequested(image);
+            return;
+        }
+    }
+    QTextEdit::insertFromMimeData(source);
+}
 
 void NoteEdit::addContextMenuHandler(NoteContextMenuHandler *handler)
 {

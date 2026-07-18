@@ -30,6 +30,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "qtnote_export.h"
 
 class QDropEvent;
+class QImage;
+class QMimeData;
 
 namespace QtNote {
 
@@ -53,8 +55,10 @@ public:
     virtual void               addContextMenuHandler(NoteContextMenuHandler *handler);
     const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
     void                       setUnconditionalLinks(bool enabled);
+    void                       setImagePasteEnabled(bool enabled) { imagePasteEnabled = enabled; }
 
 protected:
+    void insertFromMimeData(const QMimeData *source) override;
     void dropEvent(QDropEvent *e);
     void focusOutEvent(QFocusEvent *event);
     void focusInEvent(QFocusEvent *);
@@ -75,6 +79,10 @@ signals:
     void focusReceived();
     void linkHovered();
     void linkUnhovered();
+    void imagePasteRequested(const QImage &image);
+
+private:
+    bool imagePasteEnabled = false;
 };
 
 } // namespace QtNote

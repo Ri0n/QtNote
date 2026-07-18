@@ -18,6 +18,7 @@ class NoteWidget;
 class TypeAheadFindBar;
 class QAction;
 class QToolButton;
+class QImage;
 
 namespace QtNote {
 
@@ -104,6 +105,7 @@ private slots:
     void switchToMarkdown();
     void startSpeechRecognition();
     void insertImage();
+    void insertClipboardImage(const QImage &image);
     void finishSpeechRecognition();
     void cancelSpeechRecognition();
     void updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDurationMs);
@@ -115,6 +117,8 @@ private:
     QString speechRecognitionLanguage() const;
     QString normalizeSpeechRecognitionLanguage(const QString &language) const;
     QString speechContextId() const;
+    bool    canInsertImages() const;
+    bool    insertImportedImage(const MediaReference &reference);
 
     Ui::NoteWidget *ui = nullptr;
 

@@ -218,6 +218,7 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     _mediaResizeTimer.setSingleShot(true);
     _mediaResizeTimer.setInterval(50);
     connect(&_mediaResizeTimer, &QTimer::timeout, this, &NoteWidget::resizeMediaToViewport);
+    connect(ui->noteEdit, &NoteEdit::imagePasteRequested, this, &NoteWidget::insertClipboardImage);
     // connect(parent, SIGNAL(destroyed()), SLOT(close()));
 
     QToolBar *tbar = new QToolBar(this);
@@ -230,7 +231,7 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
 
     insertImageAction = initAction(nullptr, tr("Insert image"), tr("Insert an image attachment"), "Ctrl+Shift+I");
     insertImageAction->setIcon(QIcon::fromTheme(QStringLiteral("insert-image")));
-    insertImageAction->setVisible(_note.storageId() == QLatin1String("ptf"));
+    insertImageAction->setVisible(_note.storage() && _note.storage()->supportsMedia());
     tbar->addAction(insertImageAction);
     connect(insertImageAction, &QAction::triggered, this, &NoteWidget::insertImage);
 
@@ -546,7 +547,8 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     loadMediaResources();
     resizeMediaToViewport();
     if (insertImageAction)
-        insertImageAction->setEnabled(format == Note::Markdown && _note.storageId() == QLatin1String("ptf"));
+        insertImageAction->setEnabled(canInsertImages());
+    ui->noteEdit->setImagePasteEnabled(canInsertImages());
     _changed = false;
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
@@ -616,7 +618,7 @@ void NoteWidget::resizeEvent(QResizeEvent *event)
 
 void NoteWidget::insertImage()
 {
-    if (_note.storageId() != QLatin1String("ptf") || !isMarkdown())
+    if (!canInsertImages())
         return;
     const auto fileName = QFileDialog::getOpenFileName(
         this, tr("Insert image"), QString(), tr("Images (*.png *.jpg *.jpeg *.gif *.webp *.bmp *.svg);;All files (*)"));
@@ -627,8 +629,39 @@ void NoteWidget::insertImage()
         QMessageBox::warning(this, tr("Insert image"), imported.error);
         return;
     }
+    insertImportedImage(imported.value);
+}
+
+void NoteWidget::insertClipboardImage(const QImage &image)
+{
+    if (!canInsertImages() || image.isNull())
+        return;
+
+    QByteArray encoded;
+    QBuffer    buffer(&encoded);
+    if (!buffer.open(QIODevice::WriteOnly) || !image.save(&buffer, "PNG")) {
+        QMessageBox::warning(this, tr("Insert image"), tr("Could not encode the clipboard image."));
+        return;
+    }
+    const auto name = QStringLiteral("Clipboard_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    const auto imported = LocalMediaStore::instance()->importData(encoded, name, QStringLiteral("image/png"));
+    if (!imported) {
+        QMessageBox::warning(this, tr("Insert image"), imported.error);
+        return;
+    }
+    insertImportedImage(imported.value);
+}
+
+bool NoteWidget::canInsertImages() const
+{
+    const auto storage = _note.storage();
+    return storage && storage->supportsMedia() && isMarkdown();
+}
+
+bool NoteWidget::insertImportedImage(const MediaReference &reference)
+{
     auto media = _note.media();
-    media.append(imported.value);
+    media.append(reference);
     _note.setMedia(media);
 
     auto cursor = ui->noteEdit->textCursor();
@@ -637,22 +670,22 @@ void NoteWidget::insertImage()
     if (!cursor.atBlockStart())
         cursor.insertBlock();
     if (mdModeAct->isVisible()) {
-        cursor.insertText(QStringLiteral("![%1](%2)").arg(imported.value.originalName, imported.value.uri()));
+        cursor.insertText(QStringLiteral("![%1](%2)").arg(reference.originalName, reference.uri()));
     } else {
-        const auto loaded = LocalMediaStore::instance()->data(imported.value.blobId);
+        const auto loaded = LocalMediaStore::instance()->data(reference.blobId);
         QString    previewError;
         const auto preview = loaded ? decodedMediaImage(loaded.value, &previewError) : QImage();
         if (preview.isNull()) {
             media.removeLast();
             _note.setMedia(media);
             QMessageBox::warning(this, tr("Insert image"), loaded ? previewError : loaded.error);
-            return;
+            return false;
         }
-        ui->noteEdit->document()->addResource(QTextDocument::ImageResource, QUrl(imported.value.uri()), preview);
+        ui->noteEdit->document()->addResource(QTextDocument::ImageResource, QUrl(reference.uri()), preview);
         QTextImageFormat format;
-        format.setName(imported.value.uri());
-        format.setProperty(QTextFormat::ImageAltText, imported.value.originalName);
-        format.setProperty(QTextFormat::ImageTitle, imported.value.originalName);
+        format.setName(reference.uri());
+        format.setProperty(QTextFormat::ImageAltText, reference.originalName);
+        format.setProperty(QTextFormat::ImageTitle, reference.originalName);
         const auto displaySize = mediaDisplaySize(preview.size(), ui->noteEdit->viewport()->width() - 16);
         format.setWidth(displaySize.width());
         format.setHeight(displaySize.height());
@@ -662,6 +695,7 @@ void NoteWidget::insertImage()
     cursor.setCharFormat(QTextCharFormat());
     ui->noteEdit->setTextCursor(cursor);
     _mediaResizeTimer.start();
+    return true;
 }
 
 QString NoteWidget::text()
