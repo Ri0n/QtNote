@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -7,7 +5,17 @@ import QtQuick.Layouts
 ScrollView {
     id: root
     property var blockModel: noteBlockModel
+    property var activeEditor: null
     clip: true
+
+    function insertTextAtCursor(value) {
+        if (!activeEditor)
+            return false
+        const position = activeEditor.cursorPosition
+        activeEditor.insert(position, value)
+        activeEditor.cursorPosition = position + value.length
+        return true
+    }
 
     ListView {
         id: blocks
@@ -24,6 +32,7 @@ ScrollView {
             required property var table
             required property string url
             required property string alt
+            required property url previewUrl
             width: blocks.width
             sourceComponent: blockType === 1 ? bulletEditor
                            : blockType === 2 ? checkEditor
@@ -37,6 +46,7 @@ ScrollView {
         selectByMouse: true
         background: null
         padding: 4
+        onActiveFocusChanged: if (activeFocus) root.activeEditor = this
     }
 
     Component {
@@ -121,9 +131,8 @@ ScrollView {
             width: blockLoader.width
             Image {
                 Layout.fillWidth: true
-                source: blockLoader.url
+                source: blockLoader.previewUrl
                 fillMode: Image.PreserveAspectFit
-                asynchronous: true
             }
             RowLayout {
                 BlockTextArea {

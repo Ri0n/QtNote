@@ -20,6 +20,8 @@ private slots:
         editor.load(QStringLiteral("plain\ntext"), Note::PlainText);
         QCOMPARE(editor.model()->rowCount(), 1);
         QCOMPARE(editor.contents(), QStringLiteral("plain\ntext"));
+        editor.insertText(QStringLiteral("dictated"));
+        QCOMPARE(editor.contents(), QStringLiteral("plain\ntext dictated"));
 
         editor.load(QStringLiteral("- [ ] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |"), Note::Markdown);
         QCOMPARE(editor.model()->rowCount(), 2);

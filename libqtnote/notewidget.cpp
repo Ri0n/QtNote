@@ -511,6 +511,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
 {
     ui->noteEdit->blockSignals(true);
     const QSignalBlocker qmlBlocker(qmlEditor);
+    qmlEditor->setMedia(_note.media());
     _linkHighlighter->reset();
 
     auto cursor = ui->noteEdit->textCursor();
@@ -666,6 +667,7 @@ bool NoteWidget::insertImportedImage(const MediaReference &reference)
     _note.setMedia(media);
 
     if (qmlEditor && isMarkdown()) {
+        qmlEditor->setMedia(media);
         qmlEditor->model()->appendImage(reference.uri(), reference.originalName);
         return true;
     }
@@ -1032,7 +1034,7 @@ void NoteWidget::appendRecognizedText(const QString &text)
         return;
     }
 
-    qmlEditor->model()->appendText(trimmed);
+    qmlEditor->insertText(trimmed);
 }
 
 QString NoteWidget::speechRecognitionLanguage() const

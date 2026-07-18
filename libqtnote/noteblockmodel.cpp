@@ -54,6 +54,8 @@ QVariant NoteBlockModel::data(const QModelIndex &index, int role) const
         return block.url;
     case AltRole:
         return block.alt;
+    case PreviewUrlRole:
+        return previewUrls_.value(block.url, block.url);
     default:
         return {};
     }
@@ -97,7 +99,7 @@ QHash<int, QByteArray> NoteBlockModel::roleNames() const
     return { { TypeRole, "blockType" }, { TextRole, "blockText" },
              { ItemsRole, "items" },    { CheckedRole, "checkedItems" },
              { CellsRole, "table" },    { UrlRole, "url" },
-             { AltRole, "alt" } };
+             { AltRole, "alt" },        { PreviewUrlRole, "previewUrl" } };
 }
 
 QString NoteBlockModel::contents() const
@@ -197,6 +199,13 @@ void NoteBlockModel::removeBlock(int row)
     blocks_.removeAt(row);
     endRemoveRows();
     emit contentsChanged();
+}
+
+void NoteBlockModel::setPreviewUrls(const QHash<QString, QString> &urls)
+{
+    previewUrls_ = urls;
+    if (!blocks_.isEmpty())
+        emit dataChanged(index(0), index(blocks_.size() - 1), { PreviewUrlRole });
 }
 
 QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source)

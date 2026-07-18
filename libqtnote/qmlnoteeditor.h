@@ -3,6 +3,7 @@
 
 #include <QWidget>
 
+#include "mediareference.h"
 #include "note.h"
 
 class QQuickWidget;
@@ -18,8 +19,10 @@ public:
 
     NoteBlockModel *model() const { return model_; }
     void            load(const QString &contents, Note::Format format);
+    void            setMedia(const QList<MediaReference> &media);
     QString         contents() const;
     bool            isMarkdown() const;
+    void            insertText(const QString &text);
 
 signals:
     void contentsChanged();

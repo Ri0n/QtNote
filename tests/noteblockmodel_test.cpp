@@ -45,6 +45,16 @@ private slots:
         model.setListItem(0, 0, QStringLiteral("changed"));
         QCOMPARE(model.contents(), QStringLiteral("- [x] changed"));
     }
+
+    void previewUrlDoesNotChangeMarkdown()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("![cat](media://one)"), true);
+        model.setPreviewUrls({ { QStringLiteral("media://one"), QStringLiteral("image://qtnote-media/blob") } });
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::PreviewUrlRole).toString(),
+                 QStringLiteral("image://qtnote-media/blob"));
+        QCOMPARE(model.contents(), QStringLiteral("![cat](media://one)"));
+    }
 };
 
 QTEST_MAIN(NoteBlockModelTest)

@@ -15,7 +15,16 @@ class QTNOTE_EXPORT NoteBlockModel : public QAbstractListModel {
 public:
     enum BlockType { Text, BulletList, CheckList, Table, Image };
     Q_ENUM(BlockType)
-    enum Role { TypeRole = Qt::UserRole + 1, TextRole, ItemsRole, CheckedRole, CellsRole, UrlRole, AltRole };
+    enum Role {
+        TypeRole = Qt::UserRole + 1,
+        TextRole,
+        ItemsRole,
+        CheckedRole,
+        CellsRole,
+        UrlRole,
+        AltRole,
+        PreviewUrlRole
+    };
 
     explicit NoteBlockModel(QObject *parent = nullptr);
 
@@ -40,6 +49,7 @@ public:
     Q_INVOKABLE void appendText(const QString &text);
     Q_INVOKABLE void appendImage(const QString &url, const QString &alt);
     Q_INVOKABLE void removeBlock(int row);
+    void             setPreviewUrls(const QHash<QString, QString> &urls);
 
 signals:
     void markdownChanged();
@@ -61,8 +71,9 @@ private:
     static QString      writeMarkdown(const QList<Block> &blocks);
     void                changed(int row, const QList<int> &roles);
 
-    QList<Block> blocks_;
-    bool         markdown_ = false;
+    QList<Block>            blocks_;
+    QHash<QString, QString> previewUrls_;
+    bool                    markdown_ = false;
 };
 
 } // namespace QtNote
