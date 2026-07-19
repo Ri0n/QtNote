@@ -108,7 +108,9 @@ private slots:
         auto activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
         auto document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
+        const int callsBeforeRanges = extension->calls;
         QCOMPARE(editor.spellCheckRanges(document).size(), 1);
+        QCOMPARE(extension->calls, callsBeforeRanges);
         editor.setSpellCheckEnabled(false);
         QVERIFY(editor.spellCheckRanges(document).isEmpty());
         editor.setSpellCheckEnabled(true);
@@ -142,11 +144,254 @@ private slots:
         QTRY_COMPARE(editor.contents(), QString());
     }
 
-    void dragsSelectionAcrossTextBlocks()
+    void adjacentParagraphsUseOneTextEditor()
     {
         QmlNoteEditor editor;
         editor.resize(500, 400);
         editor.load(QStringLiteral("first paragraph\n\nsecond paragraph"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        auto geometry = [root](int index) {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, result), Q_ARG(QVariant, index));
+            return result.toMap();
+        };
+        QTRY_VERIFY(!geometry(0).isEmpty());
+        QVERIFY(geometry(1).isEmpty());
+    }
+
+    void editingTableCellKeepsTextDocuments()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("| Name | Value |\n| --- | --- |\n| one | two |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        auto geometry = [root](int index) {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, result), Q_ARG(QVariant, index));
+            return result.toMap();
+        };
+        QTRY_VERIFY(!geometry(3).isEmpty());
+        const int registrations = root->property("editorRegistrations").toInt();
+        QCOMPARE(registrations, 4);
+
+        const auto   first = geometry(0);
+        const QPoint position(first[QStringLiteral("x")].toInt() + first[QStringLiteral("width")].toInt() / 2,
+                              first[QStringLiteral("y")].toInt() + first[QStringLiteral("height")].toInt() / 2);
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, position);
+        QTest::keyClicks(quick, QStringLiteral("x"));
+        QTRY_VERIFY(editor.contents().contains(QLatin1Char('x')));
+        QCOMPARE(root->property("editorRegistrations").toInt(), registrations);
+
+        const auto   last = geometry(3);
+        const QPoint lastPosition(last[QStringLiteral("x")].toInt() + last[QStringLiteral("width")].toInt() / 2,
+                                  last[QStringLiteral("y")].toInt() + last[QStringLiteral("height")].toInt() / 2);
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, lastPosition);
+        QTest::keyClick(quick, Qt::Key_End);
+        QTest::keyClick(quick, Qt::Key_Return, Qt::ShiftModifier);
+        QTRY_COMPARE(geometry(2)[QStringLiteral("height")].toInt(), geometry(3)[QStringLiteral("height")].toInt());
+        QCOMPARE(root->property("editorRegistrations").toInt(), registrations);
+        QTRY_VERIFY(editor.contents().contains(QStringLiteral("<br>")));
+
+        QTest::keyClick(quick, Qt::Key_End);
+        QTest::keyClick(quick, Qt::Key_Return);
+        QTRY_VERIFY(!geometry(5).isEmpty());
+        const int registrationsAfterInsert = root->property("editorRegistrations").toInt();
+        editor.model()->removeTableRow(0, 1);
+        QTRY_VERIFY(geometry(4).isEmpty());
+        QCOMPARE(root->property("editorRegistrations").toInt(), registrationsAfterInsert);
+    }
+
+    void editingChecklistItemKeepsTextDocumentsAndFocus()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("- [ ] first item\n- [x] second item"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 0)));
+        const auto geometry = geometryValue.toMap();
+        QVERIFY(!geometry.isEmpty());
+        const int registrations = root->property("editorRegistrations").toInt();
+        QCOMPARE(registrations, 2);
+        const QPoint position(geometry[QStringLiteral("x")].toInt() + geometry[QStringLiteral("width")].toInt() / 2,
+                              geometry[QStringLiteral("y")].toInt() + geometry[QStringLiteral("height")].toInt() / 2);
+
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, position);
+        auto activeIndex = [root]() {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "activeEditorIndex", Q_RETURN_ARG(QVariant, result));
+            return result.toInt();
+        };
+        QTest::keyClick(quick, Qt::Key_Home);
+        QTest::keyClick(quick, Qt::Key_Down);
+        QTRY_COMPARE(activeIndex(), 1);
+        QTest::keyClick(quick, Qt::Key_Up);
+        QTRY_COMPARE(activeIndex(), 0);
+        QTest::keyClicks(quick, QStringLiteral("xyz"));
+        QTRY_VERIFY(editor.contents().contains(QStringLiteral("xyz")));
+        QVERIFY(!editor.contents().contains(QStringLiteral("<br>")));
+        QCOMPARE(root->property("editorRegistrations").toInt(), registrations);
+        QVERIFY(root->property("activeEditor").value<QObject *>()->property("activeFocus").toBool());
+
+        QTest::keyClick(quick, Qt::Key_Return);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList().size(),
+                     3);
+        QTRY_COMPARE(root->property("editorRegistrations").toInt(), registrations + 1);
+        QVERIFY(root->property("activeEditor").value<QObject *>()->property("activeFocus").toBool());
+
+        QTest::keyClick(quick, Qt::Key_Home);
+        QTest::keyClick(quick, Qt::Key_End, Qt::ShiftModifier);
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList().size(),
+                     2);
+        QVERIFY(root->property("activeEditor").value<QObject *>()->property("activeFocus").toBool());
+    }
+
+    void backspaceConvertsLastEmptyChecklistItemToText()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("- [ ] "), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 0)));
+        const auto geometry = geometryValue.toMap();
+        QTRY_VERIFY(!geometry.isEmpty());
+        const QPoint position(geometry[QStringLiteral("x")].toInt() + 8,
+                              geometry[QStringLiteral("y")].toInt() + geometry[QStringLiteral("height")].toInt() / 2);
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, position);
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        QTest::keyClick(quick, Qt::Key_Backspace);
+
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                     int(NoteBlockModel::Text));
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        QVERIFY(root->property("activeEditor").value<QObject *>()->property("activeFocus").toBool());
+        QTest::keyClicks(quick, QStringLiteral("plain"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("plain"));
+    }
+
+    void selectingInsideTableCellAvoidsFullEditorScan()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("| Name | Value |\n| --- | --- |\n| one | a fairly long value to select |"),
+                    Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 3)));
+        const auto geometry = geometryValue.toMap();
+        QVERIFY(!geometry.isEmpty());
+        const QPoint start(geometry[QStringLiteral("x")].toInt() + 8,
+                           geometry[QStringLiteral("y")].toInt() + geometry[QStringLiteral("height")].toInt() / 2);
+        const QPoint end(geometry[QStringLiteral("x")].toInt() + geometry[QStringLiteral("width")].toInt() - 8,
+                         start.y());
+
+        for (int iteration = 0; iteration < 20; ++iteration) {
+            QVERIFY(QMetaObject::invokeMethod(root, "selectAllDocument"));
+            QVERIFY(QMetaObject::invokeMethod(root, "clearDocumentSelection"));
+        }
+
+        QTest::mousePress(quick, Qt::LeftButton, Qt::NoModifier, start);
+        const int fullSelectionPasses = root->property("fullSelectionPasses").toInt();
+        QTest::mouseMove(quick, end, 30);
+        QTest::mouseRelease(quick, Qt::LeftButton, Qt::NoModifier, end);
+
+        QCOMPARE(root->property("fullSelectionPasses").toInt(), fullSelectionPasses);
+    }
+
+    void navigatesTableCellsWithArrowKeys()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("| Aaa | Bbb |\n| --- | --- |\n| Ccc | Ddd |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        auto isBold = [root](int index) {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "editorIsBold", Q_RETURN_ARG(QVariant, result), Q_ARG(QVariant, index));
+            return result.toBool();
+        };
+        QTRY_VERIFY(isBold(0));
+        QVERIFY(isBold(1));
+        QVERIFY(!isBold(2));
+        QVERIFY(!isBold(3));
+        auto activeIndex = [root]() {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "activeEditorIndex", Q_RETURN_ARG(QVariant, result));
+            return result.toInt();
+        };
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 0)));
+        const auto   geometry = geometryValue.toMap();
+        const QPoint cellCenter(geometry[QStringLiteral("x")].toInt() + geometry[QStringLiteral("width")].toInt() / 2,
+                                geometry[QStringLiteral("y")].toInt() + geometry[QStringLiteral("height")].toInt() / 2);
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, cellCenter);
+        QTRY_COMPARE(activeIndex(), 0);
+
+        QTest::keyClick(quick, Qt::Key_Home);
+        QTest::keyClick(quick, Qt::Key_Left);
+        QTRY_COMPARE(activeIndex(), 0);
+        QTest::keyClick(quick, Qt::Key_Right);
+        QTRY_COMPARE(activeIndex(), 0);
+
+        QTest::keyClick(quick, Qt::Key_End);
+        QTest::keyClick(quick, Qt::Key_Right);
+        QTRY_COMPARE(activeIndex(), 1);
+        QTest::keyClick(quick, Qt::Key_Down);
+        QTRY_COMPARE(activeIndex(), 3);
+        QTest::keyClick(quick, Qt::Key_Home);
+        QTest::keyClick(quick, Qt::Key_Left);
+        QTRY_COMPARE(activeIndex(), 2);
+        QTest::keyClick(quick, Qt::Key_Up);
+        QTRY_COMPARE(activeIndex(), 0);
+    }
+
+    void dragsSelectionAcrossTextBlocks()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("first paragraph\n\n- middle\n\nsecond paragraph"), Note::Markdown);
         editor.show();
         QTest::qWait(40);
         auto *quick = editor.findChild<QQuickWidget *>();
@@ -159,9 +404,9 @@ private slots:
             QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, result), Q_ARG(QVariant, index));
             return result.toMap();
         };
-        QTRY_VERIFY(!geometry(1).isEmpty());
+        QTRY_VERIFY(!geometry(2).isEmpty());
         const auto   firstGeometry  = geometry(0);
-        const auto   secondGeometry = geometry(1);
+        const auto   secondGeometry = geometry(2);
         const QPoint first(firstGeometry[QStringLiteral("x")].toInt() + 8,
                            firstGeometry[QStringLiteral("y")].toInt()
                                + firstGeometry[QStringLiteral("height")].toInt() / 2);
@@ -178,7 +423,7 @@ private slots:
             QMetaObject::invokeMethod(root, "selectedEditorCount", Q_RETURN_ARG(QVariant, result));
             return result.toInt();
         };
-        QTRY_COMPARE(selectedEditorCount(), 2);
+        QTRY_COMPARE(selectedEditorCount(), 3);
     }
 };
 

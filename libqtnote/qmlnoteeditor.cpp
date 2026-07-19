@@ -123,12 +123,6 @@ QVariantList QmlNoteEditor::spellCheckRanges(QQuickTextDocument *document)
     QVariantList result;
     if (!spellCheckEnabled_ || !document || !document->textDocument())
         return result;
-    for (const auto &registered : std::as_const(highlighters_)) {
-        if (registered.highlighter && registered.highlighter->document() == document->textDocument()) {
-            registered.highlighter->rehighlight();
-            break;
-        }
-    }
     for (auto block = document->textDocument()->begin(); block.isValid(); block = block.next()) {
         if (!block.layout())
             continue;

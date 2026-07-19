@@ -41,8 +41,15 @@ public:
     Q_INVOKABLE void load(const QString &contents, bool markdown);
     Q_INVOKABLE void setBlockText(int row, const QString &text);
     Q_INVOKABLE void setListItem(int row, int item, const QString &text);
+    Q_INVOKABLE void insertListItem(int row, int item, const QString &text);
+    Q_INVOKABLE void removeListItem(int row, int item);
+    Q_INVOKABLE void convertListToText(int row);
     Q_INVOKABLE void setChecked(int row, int item, bool checked);
     Q_INVOKABLE void setTableCell(int row, int cell, const QString &text);
+    Q_INVOKABLE void insertTableRow(int row, int tableRow);
+    Q_INVOKABLE void removeTableRow(int row, int tableRow);
+    Q_INVOKABLE void insertTableColumn(int row, int column);
+    Q_INVOKABLE void removeTableColumn(int row, int column);
     Q_INVOKABLE void setImageUrl(int row, const QString &url);
     Q_INVOKABLE void setImageAlt(int row, const QString &alt);
     Q_INVOKABLE void appendTextBlock();

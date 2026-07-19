@@ -234,57 +234,15 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     QToolBar *tbar = new QToolBar(this);
     ui->toolbarLayout->addWidget(tbar);
 
-    QAction *act = initAction(nullptr, tr("Save"), tr("Save note to file"), "Ctrl+S");
-    act->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
-    tbar->addAction(act);
-    connect(act, SIGNAL(triggered()), SLOT(onSaveClicked()));
+    QAction *exportAction = initAction(nullptr, tr("Export"), tr("Export note to file"), "Ctrl+S");
+    exportAction->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+    connect(exportAction, SIGNAL(triggered()), SLOT(onSaveClicked()));
 
     insertImageAction = initAction(nullptr, tr("Insert image"), tr("Insert an image attachment"), "Ctrl+Shift+I");
     insertImageAction->setIcon(QIcon::fromTheme(QStringLiteral("insert-image")));
     insertImageAction->setVisible(_note.storage() && _note.storage()->supportsMedia());
     tbar->addAction(insertImageAction);
     connect(insertImageAction, &QAction::triggered, this, &NoteWidget::insertImage);
-
-    mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
-    tbar->addAction(mdModeAct);
-    connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
-    mdModeAct->setVisible(false); // we are initially in rich text mode
-    ui->noteEdit->setUnconditionalLinks(true);
-
-    txtModeAct = initAction(":/svg/txt", tr("Text"), tr("Plain text mode"), "Ctrl+T");
-    tbar->addAction(txtModeAct);
-    connect(txtModeAct, &QAction::triggered, this, &NoteWidget::switchToText);
-
-    act = initAction(":/icons/copy", tr("Copy"), tr("Copy note to clipboard"), "Ctrl+Shift+C");
-    tbar->addAction(act);
-    connect(act, SIGNAL(triggered()), SLOT(onCopyClicked()));
-
-    act = initAction(":/icons/print", tr("Print"), tr("Print note"), "Ctrl+P");
-    tbar->addAction(act);
-    connect(act, SIGNAL(triggered()), SLOT(onPrintClicked()));
-
-    tbar->addSeparator();
-
-    act = initAction(":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
-    tbar->addAction(act);
-    connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
-
-    QToolButton *findButton = dynamic_cast<QToolButton *>(tbar->widgetForAction(act));
-    findButton->setPopupMode(QToolButton::InstantPopup);
-
-    act = initAction(":/icons/replace-text", tr("Replace"), tr("Replace text in note"), "Ctrl+R");
-    // tbar->addAction(act);
-    connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
-    findButton->addAction(act);
-
-    tbar->addSeparator();
-
-    auto pinIcon = QIcon::fromTheme(QLatin1String("view-pin-symbolic"));
-    pinAction    = QtNote::initAction(pinIcon, tr("Pin"), tr("Pin note to the desktop"), "", this);
-    pinAction->setVisible(false);
-    pinAction->setEnabled(!_note.id().isEmpty());
-    tbar->addAction(pinAction);
-    connect(pinAction, &QAction::triggered, this, &NoteWidget::pinRequested);
 
     speechRecorder  = new SpeechAudioRecorder(this);
     auto speechIcon = QIcon::fromTheme(QLatin1String("audio-input-microphone"));
@@ -307,9 +265,59 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     connect(speechRecorder, &SpeechAudioRecorder::failed, this,
             [this](const QString &error) { showSpeechRecognitionError(error); });
 
+    mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
+    tbar->addAction(mdModeAct);
+    connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
+    mdModeAct->setVisible(false); // we are initially in rich text mode
+    ui->noteEdit->setUnconditionalLinks(true);
+
+    txtModeAct = initAction(":/svg/txt", tr("Text"), tr("Plain text mode"), "Ctrl+T");
+    tbar->addAction(txtModeAct);
+    connect(txtModeAct, &QAction::triggered, this, &NoteWidget::switchToText);
+
+    QAction *act = initAction(":/icons/copy", tr("Copy"), tr("Copy note to clipboard"), "Ctrl+Shift+C");
+    tbar->addAction(act);
+    connect(act, SIGNAL(triggered()), SLOT(onCopyClicked()));
+
+    tbar->addSeparator();
+
+    act = initAction(":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
+    tbar->addAction(act);
+    connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
+
+    QToolButton *findButton = dynamic_cast<QToolButton *>(tbar->widgetForAction(act));
+    findButton->setPopupMode(QToolButton::InstantPopup);
+
+    act = initAction(":/icons/replace-text", tr("Replace"), tr("Replace text in note"), "Ctrl+R");
+    // tbar->addAction(act);
+    connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
+    findButton->addAction(act);
+
+    tbar->addSeparator();
+
+    auto pinIcon = QIcon::fromTheme(QLatin1String("view-pin-symbolic"));
+    if (pinIcon.isNull())
+        pinIcon = QIcon::fromTheme(QLatin1String("window-pin"));
+    if (pinIcon.isNull())
+        pinIcon = IconUtils::symbolicIcon(QLatin1String(":/svg/pin"));
+    pinAction = QtNote::initAction(pinIcon, tr("Pin"), tr("Pin note to the desktop"), "", this);
+    pinAction->setVisible(false);
+    pinAction->setEnabled(!_note.id().isEmpty());
+    tbar->addAction(pinAction);
+    connect(pinAction, &QAction::triggered, this, &NoteWidget::pinRequested);
+
     act = initAction(":/icons/trash", tr("Delete"), tr("Delete note"), "Ctrl+D");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onTrashClicked()));
+
+    auto *toolbarSpacer = new QWidget(tbar);
+    toolbarSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    tbar->addWidget(toolbarSpacer);
+
+    auto *printAction = initAction(":/icons/print", tr("Print"), tr("Print note"), "Ctrl+P");
+    tbar->addAction(printAction);
+    connect(printAction, SIGNAL(triggered()), SLOT(onPrintClicked()));
+    tbar->addAction(exportAction);
 
     QSettings s;
     auto      fs = s.value("ui.default-font").toString();

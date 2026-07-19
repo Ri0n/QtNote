@@ -5,6 +5,8 @@
 
 namespace QtNote {
 namespace {
+    const QString TableLineBreakMarker = QStringLiteral("QTNOTE_TABLE_LINE_BREAK_7F3A");
+
     QStringList tableCells(QString line)
     {
         line = line.trimmed();
@@ -12,9 +14,14 @@ namespace {
             line.remove(0, 1);
         if (line.endsWith('|'))
             line.chop(1);
-        auto cells = line.split('|');
-        for (auto &cell : cells)
+        auto                            cells = line.split('|');
+        static const QRegularExpression lineBreak(QStringLiteral("<br\\s*/?>"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+        for (auto &cell : cells) {
             cell = cell.trimmed();
+            cell.replace(lineBreak, QStringLiteral("\n"));
+            cell.replace(TableLineBreakMarker, QStringLiteral("\n"));
+        }
         return cells;
     }
 
@@ -23,6 +30,33 @@ namespace {
         static const QRegularExpression separator(
             QStringLiteral(R"(^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$)"));
         return separator.match(line).hasMatch();
+    }
+
+    QString decodeLineBreaks(QString text)
+    {
+        text.replace(TableLineBreakMarker, QStringLiteral("\n"));
+        return text;
+    }
+
+    QString encodeLineBreaks(QString text)
+    {
+        text.replace(QLatin1Char('\n'), QStringLiteral("<br>"));
+        return text;
+    }
+
+    QString decodeListItem(QString text)
+    {
+        text = decodeLineBreaks(std::move(text));
+        while (text.endsWith(QLatin1Char('\n')))
+            text.chop(1);
+        return text;
+    }
+
+    QString encodeListItem(QString text)
+    {
+        while (text.endsWith(QLatin1Char('\n')))
+            text.chop(1);
+        return encodeLineBreaks(std::move(text));
     }
 }
 
@@ -131,6 +165,39 @@ void NoteBlockModel::setListItem(int row, int item, const QString &text)
     changed(row, { ItemsRole });
 }
 
+void NoteBlockModel::insertListItem(int row, int item, const QString &text)
+{
+    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+        return;
+    auto &block = blocks_[row];
+    item        = qBound(0, item, block.items.size());
+    block.items.insert(item, text);
+    if (block.type == CheckList)
+        block.checked.insert(item, false);
+    changed(row, { ItemsRole, CheckedRole });
+}
+
+void NoteBlockModel::removeListItem(int row, int item)
+{
+    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+        return;
+    auto &block = blocks_[row];
+    if (block.items.size() <= 1 || item < 0 || item >= block.items.size())
+        return;
+    block.items.removeAt(item);
+    if (block.type == CheckList)
+        block.checked.removeAt(item);
+    changed(row, { ItemsRole, CheckedRole });
+}
+
+void NoteBlockModel::convertListToText(int row)
+{
+    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+        return;
+    blocks_[row] = Block {};
+    changed(row, { TypeRole, TextRole, ItemsRole, CheckedRole });
+}
+
 void NoteBlockModel::setChecked(int row, int item, bool checked)
 {
     if (row < 0 || row >= blocks_.size() || item < 0 || item >= blocks_[row].checked.size())
@@ -144,6 +211,58 @@ void NoteBlockModel::setTableCell(int row, int cell, const QString &text)
     if (row < 0 || row >= blocks_.size() || cell < 0 || cell >= blocks_[row].cells.size())
         return;
     blocks_[row].cells[cell] = text;
+    changed(row, { CellsRole });
+}
+
+void NoteBlockModel::insertTableRow(int row, int tableRow)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
+        return;
+    auto     &block = blocks_[row];
+    const int rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
+    tableRow        = qBound(0, tableRow, rows);
+    for (int column = 0; column < block.columns; ++column)
+        block.cells.insert(tableRow * block.columns, QString());
+    changed(row, { CellsRole });
+}
+
+void NoteBlockModel::removeTableRow(int row, int tableRow)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
+        return;
+    auto     &block = blocks_[row];
+    const int rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
+    if (rows <= 1 || tableRow < 0 || tableRow >= rows)
+        return;
+    for (int column = 0; column < block.columns; ++column)
+        block.cells.removeAt(tableRow * block.columns);
+    changed(row, { CellsRole });
+}
+
+void NoteBlockModel::insertTableColumn(int row, int column)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
+        return;
+    auto     &block = blocks_[row];
+    const int rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
+    column          = qBound(0, column, block.columns);
+    for (int tableRow = rows - 1; tableRow >= 0; --tableRow)
+        block.cells.insert(tableRow * block.columns + column, QString());
+    ++block.columns;
+    changed(row, { CellsRole });
+}
+
+void NoteBlockModel::removeTableColumn(int row, int column)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
+        return;
+    auto &block = blocks_[row];
+    if (block.columns <= 1 || column < 0 || column >= block.columns)
+        return;
+    const int rows = block.cells.size() / block.columns;
+    for (int tableRow = rows - 1; tableRow >= 0; --tableRow)
+        block.cells.removeAt(tableRow * block.columns + column);
+    --block.columns;
     changed(row, { CellsRole });
 }
 
@@ -212,8 +331,14 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
 {
     // QTextDocument is the Markdown reader. Parsing its canonical Markdown keeps
     // Qt's CommonMark interpretation as the single source of truth.
-    QTextDocument document;
-    document.setMarkdown(source, QTextDocument::MarkdownDialectGitHub);
+    QTextDocument                   document;
+    QString                         protectedSource = source;
+    static const QRegularExpression lineBreak(QStringLiteral("<br\\s*/?>"), QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression trailingListBreaks(QStringLiteral("(?:<br\\s*/?>\\s*)+(?=\\n|$)"),
+                                                       QRegularExpression::CaseInsensitiveOption);
+    protectedSource.replace(trailingListBreaks, QString());
+    protectedSource.replace(lineBreak, TableLineBreakMarker);
+    document.setMarkdown(protectedSource, QTextDocument::MarkdownDialectGitHub);
     const auto                      lines = document.toMarkdown(QTextDocument::MarkdownDialectGitHub).split('\n');
     QList<Block>                    result;
     static const QRegularExpression task(QStringLiteral(R"(^\s*[-*+]\s+\[([ xX])\]\s+(.*)$)"));
@@ -231,7 +356,7 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
             block.type = CheckList;
             while (i < lines.size() && (match = task.match(lines[i])).hasMatch()) {
                 block.checked.append(match.captured(1).compare(QStringLiteral("x"), Qt::CaseInsensitive) == 0);
-                block.items.append(match.captured(2));
+                block.items.append(decodeListItem(match.captured(2)));
                 ++i;
             }
             result.append(block);
@@ -243,7 +368,7 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
             block.type = BulletList;
             while (i < lines.size() && !task.match(lines[i]).hasMatch()
                    && (match = bullet.match(lines[i])).hasMatch()) {
-                block.items.append(match.captured(1));
+                block.items.append(decodeListItem(match.captured(1)));
                 ++i;
             }
             result.append(block);
@@ -275,15 +400,22 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
             ++i;
             continue;
         }
-        Block block;
-        block.type = Text;
         QStringList paragraph;
         while (i < lines.size() && !lines[i].trimmed().isEmpty() && !task.match(lines[i]).hasMatch()
                && !bullet.match(lines[i]).hasMatch() && !image.match(lines[i]).hasMatch()
                && !(i + 1 < lines.size() && lines[i].contains('|') && isTableSeparator(lines[i + 1])))
             paragraph.append(lines[i++]);
-        block.text = paragraph.join('\n');
-        result.append(block);
+        const QString text = paragraph.join('\n');
+        if (!result.isEmpty() && result.constLast().type == Text) {
+            if (!result.last().text.isEmpty() && !text.isEmpty())
+                result.last().text += QStringLiteral("\n\n");
+            result.last().text += text;
+        } else {
+            Block block;
+            block.type = Text;
+            block.text = text;
+            result.append(block);
+        }
     }
     if (result.isEmpty())
         result.append(Block {});
@@ -301,19 +433,23 @@ QString NoteBlockModel::writeMarkdown(const QList<Block> &blocks)
             break;
         case BulletList:
             for (const auto &item : block.items)
-                value += QStringLiteral("- %1\n").arg(item);
+                value += QStringLiteral("- %1\n").arg(encodeListItem(item));
             value.chop(value.endsWith('\n') ? 1 : 0);
             break;
         case CheckList:
             for (int i = 0; i < block.items.size(); ++i)
-                value += QStringLiteral("- [%1] %2\n").arg(block.checked.value(i).toBool() ? "x" : " ", block.items[i]);
+                value += QStringLiteral("- [%1] %2\n")
+                             .arg(block.checked.value(i).toBool() ? "x" : " ", encodeListItem(block.items[i]));
             value.chop(value.endsWith('\n') ? 1 : 0);
             break;
         case Table:
             for (int row = 0; row * block.columns < block.cells.size(); ++row) {
                 value += QLatin1String("| ");
-                for (int col = 0; col < block.columns; ++col)
-                    value += block.cells.value(row * block.columns + col) + QLatin1String(" | ");
+                for (int col = 0; col < block.columns; ++col) {
+                    auto cell = block.cells.value(row * block.columns + col);
+                    cell.replace(QLatin1Char('\n'), QStringLiteral("<br>"));
+                    value += cell + QLatin1String(" | ");
+                }
                 value.chop(1);
                 value += QLatin1Char('\n');
                 if (row == 0) {
