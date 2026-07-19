@@ -11,6 +11,8 @@
 #include <QQuickTextDocument>
 #include <QQuickWidget>
 #include <QTextBlock>
+#include <QTextCharFormat>
+#include <QTextCursor>
 #include <QTextLayout>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -109,6 +111,50 @@ void QmlNoteEditor::insertList(int type)
 {
     if (quick_->rootObject())
         QMetaObject::invokeMethod(quick_->rootObject(), "insertListBlock", Q_ARG(QVariant, type));
+}
+
+int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int start, int end, const QString &style)
+{
+    if (!quickDocument || !quickDocument->textDocument())
+        return -1;
+    auto *document = quickDocument->textDocument();
+    start          = qBound(0, start, document->characterCount() - 1);
+    end            = qBound(start, end, document->characterCount() - 1);
+    QTextCursor cursor(document);
+    cursor.setPosition(start);
+    cursor.setPosition(end, QTextCursor::KeepAnchor);
+
+    QString placeholder;
+    if (!cursor.hasSelection()) {
+        placeholder = style == QLatin1String("code") ? tr("code")
+            : style == QLatin1String("link")         ? tr("link")
+                                                     : tr("text");
+        cursor.insertText(placeholder);
+        cursor.setPosition(start);
+        cursor.setPosition(start + placeholder.size(), QTextCursor::KeepAnchor);
+        end = start + placeholder.size();
+    }
+
+    const auto      current = cursor.charFormat();
+    QTextCharFormat format;
+    if (style == QLatin1String("bold"))
+        format.setFontWeight(current.fontWeight() >= QFont::Bold ? QFont::Normal : QFont::Bold);
+    else if (style == QLatin1String("italic"))
+        format.setFontItalic(!current.fontItalic());
+    else if (style == QLatin1String("strike"))
+        format.setFontStrikeOut(!current.fontStrikeOut());
+    else if (style == QLatin1String("code")) {
+        format.setFontFixedPitch(!current.fontFixedPitch());
+        if (!current.fontFixedPitch())
+            format.setFontFamilies({ QStringLiteral("monospace") });
+    } else if (style == QLatin1String("link")) {
+        format.setAnchor(!current.isAnchor());
+        format.setAnchorHref(current.isAnchor() ? QString() : QStringLiteral("url"));
+    } else {
+        return -1;
+    }
+    cursor.mergeCharFormat(format);
+    return end;
 }
 
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)

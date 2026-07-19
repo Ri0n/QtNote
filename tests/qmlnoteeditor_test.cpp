@@ -382,6 +382,137 @@ private slots:
         QCOMPARE(activeBefore->property("cursorPosition").toInt(), 1);
     }
 
+    void listKeyboardShortcutsConvertActiveLevel()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("1. one\n2. two"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 2);
+        auto *first = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(first);
+        QVERIFY(QMetaObject::invokeMethod(first, "forceActiveFocus"));
+
+        QTest::keyClick(quick, Qt::Key_8, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemTypesRole).toList(),
+                     QVariantList({ int(NoteBlockModel::BulletList), int(NoteBlockModel::BulletList) }));
+        QTest::keyClick(quick, Qt::Key_9, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemTypesRole).toList(),
+                     QVariantList({ int(NoteBlockModel::CheckList), int(NoteBlockModel::CheckList) }));
+        QTest::keyClick(quick, Qt::Key_7, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemTypesRole).toList(),
+                     QVariantList({ int(NoteBlockModel::NumberedList), int(NoteBlockModel::NumberedList) }));
+    }
+
+    void headingKeyboardShortcutsConvertTextBlock()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("heading"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+
+        QTest::keyClick(quick, Qt::Key_2, Qt::ControlModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                     int(NoteBlockModel::Heading));
+        QCOMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::HeadingLevelRole).toInt(), 2);
+        QCOMPARE(editor.contents(), QStringLiteral("## heading"));
+
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *heading = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(heading);
+        QVERIFY(QMetaObject::invokeMethod(heading, "forceActiveFocus"));
+        QTest::keyClick(quick, Qt::Key_0, Qt::ControlModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                     int(NoteBlockModel::Text));
+        QCOMPARE(editor.contents(), QStringLiteral("heading"));
+    }
+
+    void inlineFormattingShortcutsWrapSelection()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("bold text"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+        QVERIFY(QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4)));
+
+        QTest::keyClick(quick, Qt::Key_B, Qt::ControlModifier);
+
+        QTRY_COMPARE(editor.contents(), QStringLiteral("**bold** text"));
+        QTest::keyClick(quick, Qt::Key_B, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("bold text"));
+
+        QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4));
+        QTest::keyClick(quick, Qt::Key_B, Qt::ControlModifier);
+        QMetaObject::invokeMethod(text, "select", Q_ARG(int, 5), Q_ARG(int, 9));
+        QTest::keyClick(quick, Qt::Key_I, Qt::ControlModifier);
+        QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 9));
+        QTest::keyClick(quick, Qt::Key_K, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents().count(QStringLiteral("(url)")), 1);
+        QVERIFY(editor.contents().startsWith(QLatin1Char('[')));
+        QVERIFY(editor.contents().endsWith(QStringLiteral("](url)")));
+    }
+
+    void downLeavesHeadingForFollowingTextBlock()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("## heading\n\nfollowing"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 2);
+        auto *heading = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(heading);
+        QVERIFY(QMetaObject::invokeMethod(heading, "forceActiveFocus"));
+        heading->setProperty("cursorPosition", heading->property("length"));
+
+        QTest::keyClick(quick, Qt::Key_Down);
+
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 1);
+        QCOMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 0);
+    }
+
+    void downFromLastHeadingCreatesTextBlock()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("## heading"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *heading = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(heading);
+        QVERIFY(QMetaObject::invokeMethod(heading, "forceActiveFocus"));
+        heading->setProperty("cursorPosition", heading->property("length"));
+
+        QTest::keyClick(quick, Qt::Key_Down);
+
+        QTRY_COMPARE(editor.model()->rowCount(), 2);
+        QCOMPARE(editor.model()->data(editor.model()->index(1), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Text));
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 1);
+    }
+
     void shiftSelectsAcrossEditors()
     {
         QmlNoteEditor editor;

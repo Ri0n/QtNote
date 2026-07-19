@@ -64,6 +64,17 @@ namespace {
             text.chop(1);
         return encodeLineBreaks(std::move(text));
     }
+
+    QString coalesceAdjacentMarkdownLinks(QString text)
+    {
+        static const QRegularExpression adjacentLinks(QStringLiteral(R"(\[([^\]]*)\]\(([^)\s]+)\)\[([^\]]*)\]\(\2\))"));
+        QString                         previous;
+        do {
+            previous = text;
+            text.replace(adjacentLinks, QStringLiteral("[\\1\\3](\\2)"));
+        } while (text != previous);
+        return text;
+    }
 }
 
 NoteBlockModel::NoteBlockModel(QObject *parent) : QAbstractListModel(parent) { }
@@ -100,6 +111,8 @@ QVariant NoteBlockModel::data(const QModelIndex &index, int role) const
         return block.indents;
     case ItemTypesRole:
         return block.itemTypes;
+    case HeadingLevelRole:
+        return block.headingLevel;
     default:
         return {};
     }
@@ -149,7 +162,8 @@ QHash<int, QByteArray> NoteBlockModel::roleNames() const
              { AltRole, "alt" },
              { PreviewUrlRole, "previewUrl" },
              { IndentsRole, "itemIndents" },
-             { ItemTypesRole, "itemTypes" } };
+             { ItemTypesRole, "itemTypes" },
+             { HeadingLevelRole, "headingLevel" } };
 }
 
 QString NoteBlockModel::contents() const
@@ -175,13 +189,16 @@ void NoteBlockModel::load(const QString &contents, bool markdown)
     emit contentsChanged();
 }
 
-void NoteBlockModel::setBlockText(int row, const QString &text) { setData(index(row), text, TextRole); }
+void NoteBlockModel::setBlockText(int row, const QString &text)
+{
+    setData(index(row), coalesceAdjacentMarkdownLinks(text), TextRole);
+}
 
 void NoteBlockModel::setListItem(int row, int item, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || item < 0 || item >= blocks_[row].items.size())
         return;
-    blocks_[row].items[item] = text;
+    blocks_[row].items[item] = coalesceAdjacentMarkdownLinks(text);
     changed(row, { ItemsRole });
 }
 
@@ -284,6 +301,22 @@ void NoteBlockModel::indentListItems(int row, int firstItem, int lastItem, int d
                     break;
                 }
             }
+        } else if (indent > oldIndent) {
+            bool foundType = false;
+            for (int sibling = item - 1; sibling >= 0 && block.indents[sibling].toInt() >= indent; --sibling) {
+                if (block.indents[sibling].toInt() == indent) {
+                    block.itemTypes[item] = block.itemTypes[sibling];
+                    foundType             = true;
+                    break;
+                }
+            }
+            for (int sibling = item + 1;
+                 !foundType && sibling < block.items.size() && block.indents[sibling].toInt() >= indent; ++sibling) {
+                if (block.indents[sibling].toInt() == indent) {
+                    block.itemTypes[item] = block.itemTypes[sibling];
+                    foundType             = true;
+                }
+            }
         }
     }
     changed(row, { IndentsRole, ItemTypesRole });
@@ -301,7 +334,7 @@ void NoteBlockModel::setTableCell(int row, int cell, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || cell < 0 || cell >= blocks_[row].cells.size())
         return;
-    blocks_[row].cells[cell] = text;
+    blocks_[row].cells[cell] = coalesceAdjacentMarkdownLinks(text);
     changed(row, { CellsRole });
 }
 
@@ -470,6 +503,53 @@ bool NoteBlockModel::convertListLevel(int row, int item, BlockType type)
     return true;
 }
 
+int NoteBlockModel::convertTextBlockToHeading(int row, int position, int level)
+{
+    if (row < 0 || row >= blocks_.size() || level < 0 || level > 6)
+        return -1;
+    if (blocks_[row].type == Heading) {
+        blocks_[row].type         = level == 0 ? Text : Heading;
+        blocks_[row].headingLevel = level;
+        changed(row, { TypeRole, HeadingLevelRole });
+        return row;
+    }
+    if (blocks_[row].type != Text || level == 0)
+        return -1;
+
+    const QString text        = blocks_[row].text;
+    position                  = qBound(0, position, text.size());
+    const int separatorBefore = text.lastIndexOf(QStringLiteral("\n\n"), qMax(0, position - 1));
+    const int paragraphStart  = separatorBefore < 0 ? 0 : separatorBefore + 2;
+    const int separatorAfter  = text.indexOf(QStringLiteral("\n\n"), position);
+    const int paragraphEnd    = separatorAfter < 0 ? text.size() : separatorAfter;
+
+    QList<Block> replacement;
+    if (paragraphStart > 0) {
+        Block before;
+        before.text = text.left(paragraphStart - 2);
+        replacement.append(before);
+    }
+    Block heading;
+    heading.type            = Heading;
+    heading.text            = text.mid(paragraphStart, paragraphEnd - paragraphStart);
+    heading.headingLevel    = level;
+    const int headingOffset = replacement.size();
+    replacement.append(heading);
+    if (paragraphEnd < text.size()) {
+        Block after;
+        after.text = text.mid(paragraphEnd + 2);
+        replacement.append(after);
+    }
+
+    beginResetModel();
+    blocks_.removeAt(row);
+    for (int i = 0; i < replacement.size(); ++i)
+        blocks_.insert(row + i, replacement[i]);
+    endResetModel();
+    emit contentsChanged();
+    return row + headingOffset;
+}
+
 void NoteBlockModel::removeBlock(int row)
 {
     if (row < 0 || row >= blocks_.size())
@@ -517,6 +597,7 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
     const auto                      lines = document.toMarkdown(QTextDocument::MarkdownDialectGitHub).split('\n');
     QList<Block>                    result;
     static const QRegularExpression image(QStringLiteral(R"(^\s*!\[([^\]]*)\]\((\S+?)(?:\s+"[^"]*")?\)\s*$)"));
+    static const QRegularExpression heading(QStringLiteral(R"(^\s*(#{1,6})\s+(.+?)\s*#*\s*$)"));
     int                             canonicalListItems = 0;
     for (const auto &line : lines)
         if (task.match(line).hasMatch() || bullet.match(line).hasMatch() || numbered.match(line).hasMatch())
@@ -526,6 +607,16 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
 
     for (int i = 0; i < lines.size();) {
         if (lines[i].trimmed().isEmpty()) {
+            ++i;
+            continue;
+        }
+        const auto headingMatch = heading.match(lines[i]);
+        if (headingMatch.hasMatch()) {
+            Block block;
+            block.type         = Heading;
+            block.text         = headingMatch.captured(2);
+            block.headingLevel = headingMatch.capturedLength(1);
+            result.append(block);
             ++i;
             continue;
         }
@@ -632,7 +723,7 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
         QStringList paragraph;
         while (i < lines.size() && !lines[i].trimmed().isEmpty() && !task.match(lines[i]).hasMatch()
                && !bullet.match(lines[i]).hasMatch() && !numbered.match(lines[i]).hasMatch()
-               && !image.match(lines[i]).hasMatch()
+               && !image.match(lines[i]).hasMatch() && !heading.match(lines[i]).hasMatch()
                && !(i + 1 < lines.size() && lines[i].contains('|') && isTableSeparator(lines[i + 1])))
             paragraph.append(lines[i++]);
         const QString text = paragraph.join('\n');
@@ -661,6 +752,9 @@ QString NoteBlockModel::writeMarkdown(const QList<Block> &blocks)
         case Text:
             value = block.text;
             break;
+        case Heading:
+            value = QString(qBound(1, block.headingLevel, 6), QLatin1Char('#')) + QLatin1Char(' ') + block.text;
+            break;
         case BulletList:
         case CheckList:
         case NumberedList:
@@ -671,9 +765,19 @@ QString NoteBlockModel::writeMarkdown(const QList<Block> &blocks)
                 if (type == CheckList)
                     value += QStringLiteral("- [%1] %2\n")
                                  .arg(block.checked.value(i).toBool() ? "x" : " ", encodeListItem(block.items[i]));
-                else if (type == NumberedList)
-                    value += QStringLiteral("1. %1\n").arg(encodeListItem(block.items[i]));
-                else
+                else if (type == NumberedList) {
+                    const int level  = block.indents.value(i).toInt();
+                    int       number = 1;
+                    for (int previous = i - 1; previous >= 0; --previous) {
+                        const int previousLevel = block.indents.value(previous).toInt();
+                        if (previousLevel < level)
+                            break;
+                        const auto previousType = BlockType(block.itemTypes.value(previous, block.type).toInt());
+                        if (previousLevel == level && previousType == NumberedList)
+                            ++number;
+                    }
+                    value += QStringLiteral("%1. %2\n").arg(number).arg(encodeListItem(block.items[i]));
+                } else
                     value += QStringLiteral("- %1\n").arg(encodeListItem(block.items[i]));
             }
             value.chop(value.endsWith('\n') ? 1 : 0);

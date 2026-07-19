@@ -13,7 +13,7 @@ class QTNOTE_EXPORT NoteBlockModel : public QAbstractListModel {
     Q_PROPERTY(QString contents READ contents WRITE setContents NOTIFY contentsChanged)
 
 public:
-    enum BlockType { Text, BulletList, CheckList, Table, Image, NumberedList };
+    enum BlockType { Text, BulletList, CheckList, Table, Image, NumberedList, Heading };
     Q_ENUM(BlockType)
     enum Role {
         TypeRole = Qt::UserRole + 1,
@@ -25,7 +25,8 @@ public:
         AltRole,
         PreviewUrlRole,
         IndentsRole,
-        ItemTypesRole
+        ItemTypesRole,
+        HeadingLevelRole
     };
 
     explicit NoteBlockModel(QObject *parent = nullptr);
@@ -64,6 +65,7 @@ public:
     Q_INVOKABLE void insertTable(int row);
     Q_INVOKABLE void insertList(int row, BlockType type);
     Q_INVOKABLE bool convertListLevel(int row, int item, BlockType type);
+    Q_INVOKABLE int  convertTextBlockToHeading(int row, int position, int level);
     Q_INVOKABLE void removeBlock(int row);
     void             setPreviewUrls(const QHash<QString, QString> &urls);
 
@@ -83,6 +85,7 @@ private:
         int          columns = 0;
         QString      url;
         QString      alt;
+        int          headingLevel = 0;
     };
 
     static QList<Block> parseMarkdown(const QString &source);

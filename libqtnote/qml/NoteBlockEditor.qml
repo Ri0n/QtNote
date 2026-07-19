@@ -449,12 +449,19 @@ ListView {
 
     function handleBlockBoundaryNavigation(event, editor) {
         const modifiers = event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-        if (modifiers || event.key !== Qt.Key_Up || editor.blockIndex <= 0)
+        if (modifiers || (event.key !== Qt.Key_Up && event.key !== Qt.Key_Down))
             return false
         const rectangle = editor.positionToRectangle(editor.cursorPosition)
-        if (rectangle.y > editor.positionToRectangle(0).y + 0.5)
-            return false
-        focusPrecedingBlock(editor.blockIndex)
+        if (event.key === Qt.Key_Up) {
+            if (editor.blockIndex <= 0 || rectangle.y > editor.positionToRectangle(0).y + 0.5)
+                return false
+            focusPrecedingBlock(editor.blockIndex)
+        } else {
+            const last = editor.positionToRectangle(editor.length)
+            if (rectangle.y < last.y - 0.5)
+                return false
+            focusFollowingBlock(editor.blockIndex)
+        }
         return true
     }
 
@@ -482,6 +489,61 @@ ListView {
         focusBlock(row)
     }
 
+    function handleHeadingShortcut(event, editor) {
+        const modifiers = event.modifiers
+        if (!(modifiers & Qt.ControlModifier) || modifiers & (Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)
+                || event.key < Qt.Key_0 || event.key > Qt.Key_6)
+            return false
+        const level = event.key - Qt.Key_0
+        const row = blockModel.convertTextBlockToHeading(editor.blockIndex, editor.cursorPosition, level)
+        if (row < 0)
+            return false
+        focusBlock(row)
+        return true
+    }
+
+    function inlineMarkers(event) {
+        const primary = event.modifiers & (Qt.ControlModifier | Qt.MetaModifier)
+        if (!primary || event.modifiers & Qt.AltModifier)
+            return null
+        if (event.key === Qt.Key_B && !(event.modifiers & Qt.ShiftModifier))
+            return "bold"
+        if (event.key === Qt.Key_I && !(event.modifiers & Qt.ShiftModifier))
+            return "italic"
+        if (event.key === Qt.Key_S && event.modifiers & Qt.ShiftModifier)
+            return "strike"
+        if (event.key === Qt.Key_QuoteLeft && !(event.modifiers & Qt.ShiftModifier))
+            return "code"
+        if (event.key === Qt.Key_K && !(event.modifiers & Qt.ShiftModifier))
+            return "link"
+        return null
+    }
+
+    function applyInlineStyle(editor, style) {
+        const start = editor.selectionStart
+        const end = editor.selectionEnd
+        const formattedEnd = qmlNoteEditor.applyInlineFormat(editor.textDocument, start, end, style)
+        if (formattedEnd < 0)
+            return
+        editor.select(start, formattedEnd)
+        editor.commitText()
+    }
+
+    function handleInlineFormatting(event, editor) {
+        const style = inlineMarkers(event)
+        if (!style)
+            return false
+        const selected = orderedEditors().filter(candidate => candidate.selectionStart !== candidate.selectionEnd)
+        if (selected.length > 1) {
+            for (const candidate of selected)
+                applyInlineStyle(candidate, style)
+            refreshSelectionState()
+        } else {
+            applyInlineStyle(editor, style)
+        }
+        return true
+    }
+
     delegate: Loader {
         id: blockLoader
         required property int index
@@ -491,6 +553,7 @@ ListView {
         required property var checkedItems
         required property var itemIndents
         required property var itemTypes
+        required property int headingLevel
         required property var table
         required property string url
         required property string alt
@@ -512,7 +575,8 @@ ListView {
         }
         sourceComponent: blockType === 1 || blockType === 2 || blockType === 5 ? listEditor
                        : blockType === 3 ? tableEditor
-                       : blockType === 4 ? imageEditor : textEditor
+                       : blockType === 4 ? imageEditor
+                       : blockType === 6 ? headingEditor : textEditor
     }
 
     component BlockTextArea: TextArea {
@@ -576,6 +640,8 @@ ListView {
         Keys.onPressed: function(event) {
             if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
                     && root.deleteStructuredSelection()) {
+                event.accepted = true
+            } else if (root.handleInlineFormatting(event, blockArea)) {
                 event.accepted = true
             } else if (root.handleKeyboardSelection(event, blockArea)) {
                 event.accepted = true
@@ -752,13 +818,37 @@ ListView {
     Component {
         id: textEditor
         BlockTextArea {
+            id: textCell
             property var block: parent
             titleDocument: block.index === 0
             blockIndex: block.index
             width: block.width
             text: block.blockText
+            keyHandler: function(event) { return root.handleHeadingShortcut(event, textCell) }
             commitText: function() { root.blockModel.setBlockText(block.index, text) }
             textFormat: root.blockModel && root.blockModel.markdown ? TextEdit.MarkdownText : TextEdit.PlainText
+            onTextChanged: if (activeFocus) root.blockModel.setBlockText(block.index, text)
+            onLinkActivated: link => Qt.openUrlExternally(link)
+        }
+    }
+
+    Component {
+        id: headingEditor
+        BlockTextArea {
+            id: headingCell
+            property var block: parent
+            blockIndex: block.index
+            width: block.width
+            text: block.blockText
+            font.bold: true
+            font.pointSize: Application.font.pointSize * (block.headingLevel === 1 ? 1.7
+                            : block.headingLevel === 2 ? 1.5
+                            : block.headingLevel === 3 ? 1.3
+                            : block.headingLevel === 4 ? 1.15
+                            : block.headingLevel === 5 ? 1.0 : 0.9)
+            keyHandler: function(event) { return root.handleHeadingShortcut(event, headingCell) }
+            commitText: function() { root.blockModel.setBlockText(block.index, text) }
+            textFormat: TextEdit.MarkdownText
             onTextChanged: if (activeFocus) root.blockModel.setBlockText(block.index, text)
             onLinkActivated: link => Qt.openUrlExternally(link)
         }

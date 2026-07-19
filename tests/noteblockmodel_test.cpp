@@ -88,6 +88,14 @@ private slots:
         QCOMPARE(model.contents(), QStringLiteral("- [x] changed"));
     }
 
+    void coalescesAdjacentLinksCreatedAcrossFormatRuns()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("text"), true);
+        model.setBlockText(0, QStringLiteral("[Надежду ](url)[*Л*](url)[ебедев](url)[*у*](url)"));
+        QCOMPARE(model.contents(), QStringLiteral("[Надежду *Л*ебедев*у*](url)"));
+    }
+
     void editsTableStructure()
     {
         NoteBlockModel model;
@@ -182,7 +190,25 @@ private slots:
         QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList(),
                  QVariantList({ int(NoteBlockModel::NumberedList), int(NoteBlockModel::NumberedList),
                                 int(NoteBlockModel::NumberedList) }));
-        QCOMPARE(model.contents(), QStringLiteral("1. first\n1. child\n1. third"));
+        QCOMPARE(model.contents(), QStringLiteral("1. first\n2. child\n3. third"));
+    }
+
+    void reindentedListItemRestoresNestedListType()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] parent\n- [ ] first\n- [ ] second\n- [ ] tail"), true);
+        model.indentListItems(0, 1, 2, 1);
+        QVERIFY(model.convertListLevel(0, 1, NoteBlockModel::BulletList));
+
+        model.indentListItems(0, 1, 1, -1);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList().value(1).toInt(),
+                 int(NoteBlockModel::CheckList));
+        model.indentListItems(0, 1, 1, 1);
+
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 1, 0 }));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList(),
+                 QVariantList({ int(NoteBlockModel::CheckList), int(NoteBlockModel::BulletList),
+                                int(NoteBlockModel::BulletList), int(NoteBlockModel::CheckList) }));
     }
 
     void taskListSurroundingNestedNumberedItemsStaysOneBlock()
@@ -194,7 +220,7 @@ private slots:
         model.insertListItem(0, 2, QStringLiteral("new child"));
 
         const QString markdown = model.contents();
-        QCOMPARE(markdown, QStringLiteral("- [ ] first\n    1. child\n    1. new child\n- [ ] third"));
+        QCOMPARE(markdown, QStringLiteral("- [ ] first\n    1. child\n    2. new child\n- [ ] third"));
 
         NoteBlockModel restored;
         restored.load(markdown, true);
@@ -213,7 +239,7 @@ private slots:
         const QString  markdown = QStringLiteral("- [ ] 111\n"
                                                   "    1. ds\n"
                                                   "        - aaa bbb\n"
-                                                  "    1. dsfgdg\n"
+                                                  "    2. dsfgdg\n"
                                                   "- [ ] 32");
         NoteBlockModel model;
         model.load(markdown, true);
@@ -223,6 +249,27 @@ private slots:
                  QStringList({ "111", "ds", "aaa bbb", "dsfgdg", "32" }));
         QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 2, 1, 0 }));
         QCOMPARE(model.contents(), markdown);
+    }
+
+    void parsesSerializesAndSplitsHeadingBlocks()
+    {
+        NoteBlockModel parsed;
+        parsed.load(QStringLiteral("# First\n\ntext\n\n### Third"), true);
+        QCOMPARE(parsed.rowCount(), 3);
+        QCOMPARE(parsed.data(parsed.index(0), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Heading));
+        QCOMPARE(parsed.data(parsed.index(0), NoteBlockModel::HeadingLevelRole).toInt(), 1);
+        QCOMPARE(parsed.data(parsed.index(2), NoteBlockModel::HeadingLevelRole).toInt(), 3);
+        QCOMPARE(parsed.contents(), QStringLiteral("# First\n\ntext\n\n### Third"));
+
+        NoteBlockModel converted;
+        converted.load(QStringLiteral("before\n\ntarget\n\nafter"), true);
+        QCOMPARE(converted.convertTextBlockToHeading(0, 10, 2), 1);
+        QCOMPARE(converted.rowCount(), 3);
+        QCOMPARE(converted.data(converted.index(1), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Heading));
+        QCOMPARE(converted.data(converted.index(1), NoteBlockModel::TextRole).toString(), QStringLiteral("target"));
+        QCOMPARE(converted.contents(), QStringLiteral("before\n\n## target\n\nafter"));
+        QCOMPARE(converted.convertTextBlockToHeading(1, 0, 0), 1);
+        QCOMPARE(converted.data(converted.index(1), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Text));
     }
 
     void insertsMinimalStructuredBlocks()
