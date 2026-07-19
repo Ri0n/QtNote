@@ -62,6 +62,23 @@ private slots:
                  QStringLiteral("after one\n\nafter two"));
     }
 
+    void textAfterBlankLineDoesNotJoinChecklistItem()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] task\n\nplain text"), true);
+        QCOMPARE(model.rowCount(), 2);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::CheckList));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemsRole).toStringList(), QStringList { "task" });
+        QCOMPARE(model.data(model.index(1), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Text));
+        QCOMPARE(model.data(model.index(1), NoteBlockModel::TextRole).toString(), QStringLiteral("plain text"));
+
+        model.load(QStringLiteral("- [ ] task<br><br>\n\nplain text"), true);
+        QCOMPARE(model.rowCount(), 2);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemsRole).toStringList(), QStringList { "task" });
+        QCOMPARE(model.data(model.index(1), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Text));
+        QCOMPARE(model.data(model.index(1), NoteBlockModel::TextRole).toString(), QStringLiteral("plain text"));
+    }
+
     void editsAreSerialized()
     {
         NoteBlockModel model;
@@ -115,6 +132,142 @@ private slots:
                  QStringLiteral("first"));
         model.setListItem(0, 0, QStringLiteral("first\nsecond\n\n"));
         QCOMPARE(model.contents(), QStringLiteral("- [ ] first<br>second"));
+    }
+
+    void supportsNumberedAndIndentedLists()
+    {
+        NoteBlockModel numbered;
+        numbered.load(QStringLiteral("1. one\n2. two"), true);
+        QCOMPARE(numbered.data(numbered.index(0), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::NumberedList));
+
+        NoteBlockModel tasks;
+        tasks.load(QStringLiteral("- [ ] one\n- [ ] two"), true);
+        tasks.indentListItems(0, 0, 1, 1);
+        QCOMPARE(tasks.data(tasks.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1 }));
+        QVERIFY(tasks.contents().contains(QStringLiteral("  - [ ] two")));
+        tasks.indentListItems(0, 0, 1, -1);
+        QCOMPARE(tasks.data(tasks.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 0 }));
+    }
+
+    void nestedTaskListSurvivesMarkdownRoundTrip()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] first\n- [ ] second\n- [ ] third"), true);
+        model.indentListItems(0, 1, 1, 1);
+
+        const QString  markdown = model.contents();
+        NoteBlockModel restored;
+        restored.load(markdown, true);
+
+        QCOMPARE(restored.contents(), markdown);
+        QCOMPARE(restored.rowCount(), 1);
+        QCOMPARE(restored.data(restored.index(0), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "first", "second", "third" }));
+        QCOMPARE(restored.data(restored.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 0 }));
+    }
+
+    void outdentedListItemAdoptsParentListType()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("1. first\n2. child\n3. third"), true);
+        model.indentListItems(0, 1, 1, 1);
+        QVERIFY(model.convertListLevel(0, 1, NoteBlockModel::BulletList));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList(),
+                 QVariantList({ int(NoteBlockModel::NumberedList), int(NoteBlockModel::BulletList),
+                                int(NoteBlockModel::NumberedList) }));
+
+        model.indentListItems(0, 1, 1, -1);
+
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 0, 0 }));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList(),
+                 QVariantList({ int(NoteBlockModel::NumberedList), int(NoteBlockModel::NumberedList),
+                                int(NoteBlockModel::NumberedList) }));
+        QCOMPARE(model.contents(), QStringLiteral("1. first\n1. child\n1. third"));
+    }
+
+    void taskListSurroundingNestedNumberedItemsStaysOneBlock()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] first\n- [ ] child\n- [ ] third"), true);
+        model.indentListItems(0, 1, 1, 1);
+        QVERIFY(model.convertListLevel(0, 1, NoteBlockModel::NumberedList));
+        model.insertListItem(0, 2, QStringLiteral("new child"));
+
+        const QString markdown = model.contents();
+        QCOMPARE(markdown, QStringLiteral("- [ ] first\n    1. child\n    1. new child\n- [ ] third"));
+
+        NoteBlockModel restored;
+        restored.load(markdown, true);
+        QCOMPARE(restored.rowCount(), 1);
+        QCOMPARE(restored.data(restored.index(0), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "first", "child", "new child", "third" }));
+        QCOMPARE(restored.data(restored.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 1, 0 }));
+        QCOMPARE(restored.data(restored.index(0), NoteBlockModel::ItemTypesRole).toList(),
+                 QVariantList({ int(NoteBlockModel::CheckList), int(NoteBlockModel::NumberedList),
+                                int(NoteBlockModel::NumberedList), int(NoteBlockModel::CheckList) }));
+        QCOMPARE(restored.contents(), markdown);
+    }
+
+    void preservesThreeLevelMixedListIndentation()
+    {
+        const QString  markdown = QStringLiteral("- [ ] 111\n"
+                                                  "    1. ds\n"
+                                                  "        - aaa bbb\n"
+                                                  "    1. dsfgdg\n"
+                                                  "- [ ] 32");
+        NoteBlockModel model;
+        model.load(markdown, true);
+
+        QCOMPARE(model.rowCount(), 1);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "111", "ds", "aaa bbb", "dsfgdg", "32" }));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 2, 1, 0 }));
+        QCOMPARE(model.contents(), markdown);
+    }
+
+    void insertsMinimalStructuredBlocks()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("text"), true);
+        model.insertTable(1);
+        model.insertList(2, NoteBlockModel::CheckList);
+        QCOMPARE(model.rowCount(), 3);
+        const auto table = model.data(model.index(1), NoteBlockModel::CellsRole).toMap();
+        QCOMPARE(table[QStringLiteral("columns")].toInt(), 2);
+        QCOMPARE(table[QStringLiteral("values")].toStringList().size(), 4);
+        QCOMPARE(model.data(model.index(2), NoteBlockModel::ItemsRole).toStringList(), QStringList { QString() });
+    }
+
+    void insertingAndConvertingListsPreservesIndentation()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] parent\n  - [ ] first\n  - [ ] second"), true);
+        model.insertListItem(0, 2, QStringLiteral("new"));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 1, 1 }));
+
+        QVERIFY(model.convertListLevel(0, 1, NoteBlockModel::NumberedList));
+        QCOMPARE(model.rowCount(), 1);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "parent", "first", "new", "second" }));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::IndentsRole).toList(), QVariantList({ 0, 1, 1, 1 }));
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::ItemTypesRole).toList(),
+                 QVariantList({ int(NoteBlockModel::CheckList), int(NoteBlockModel::NumberedList),
+                                int(NoteBlockModel::NumberedList), int(NoteBlockModel::NumberedList) }));
+        QVERIFY(model.contents().contains(QStringLiteral("1. first")));
+    }
+
+    void removesStructuredRangesAtomically()
+    {
+        NoteBlockModel list;
+        list.load(QStringLiteral("- one\n- two\n- three"), true);
+        list.removeListItems(0, 0, 1);
+        QCOMPARE(list.data(list.index(0), NoteBlockModel::ItemsRole).toStringList(), QStringList { "three" });
+
+        NoteBlockModel table;
+        table.load(QStringLiteral("| A | B |\n| --- | --- |\n| one | two |\n| three | four |"), true);
+        table.removeTableRows(0, 0, 1);
+        const auto cells = table.data(table.index(0), NoteBlockModel::CellsRole).toMap();
+        QCOMPARE(cells[QStringLiteral("values")].toStringList(), QStringList({ "three", "four" }));
     }
 
     void previewUrlDoesNotChangeMarkdown()

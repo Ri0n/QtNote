@@ -244,6 +244,42 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     tbar->addAction(insertImageAction);
     connect(insertImageAction, &QAction::triggered, this, &NoteWidget::insertImage);
 
+    auto *insertTableAction = initAction(nullptr, tr("Insert table"), tr("Insert a 2 by 2 table"), "");
+    insertTableAction->setIcon(QIcon::fromTheme(QStringLiteral("insert-table")));
+    tbar->addAction(insertTableAction);
+    connect(insertTableAction, &QAction::triggered, this, [this]() {
+        if (!qmlEditor->isMarkdown())
+            switchToMarkdown();
+        qmlEditor->insertTable();
+    });
+
+    auto *listButton = new QToolButton(tbar);
+    listButton->setIcon(QIcon::fromTheme(QStringLiteral("format-list-unordered")));
+    listButton->setToolTip(tr("Insert list"));
+    listButton->setPopupMode(QToolButton::InstantPopup);
+    listButton->setAutoRaise(true);
+    auto *listMenu           = new QMenu(listButton);
+    auto *taskListAction     = listMenu->addAction(tr("Task list"));
+    auto *numberedListAction = listMenu->addAction(tr("Numbered list"));
+    auto *bulletListAction   = listMenu->addAction(tr("Bullet list"));
+    connect(taskListAction, &QAction::triggered, this, [this]() {
+        if (!qmlEditor->isMarkdown())
+            switchToMarkdown();
+        qmlEditor->insertList(NoteBlockModel::CheckList);
+    });
+    connect(numberedListAction, &QAction::triggered, this, [this]() {
+        if (!qmlEditor->isMarkdown())
+            switchToMarkdown();
+        qmlEditor->insertList(NoteBlockModel::NumberedList);
+    });
+    connect(bulletListAction, &QAction::triggered, this, [this]() {
+        if (!qmlEditor->isMarkdown())
+            switchToMarkdown();
+        qmlEditor->insertList(NoteBlockModel::BulletList);
+    });
+    listButton->setMenu(listMenu);
+    tbar->addWidget(listButton);
+
     speechRecorder  = new SpeechAudioRecorder(this);
     auto speechIcon = QIcon::fromTheme(QLatin1String("audio-input-microphone"));
     if (speechIcon.isNull()) {
@@ -265,6 +301,8 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     connect(speechRecorder, &SpeechAudioRecorder::failed, this,
             [this](const QString &error) { showSpeechRecognitionError(error); });
 
+    tbar->addSeparator();
+
     mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
     tbar->addAction(mdModeAct);
     connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
@@ -279,8 +317,6 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onCopyClicked()));
 
-    tbar->addSeparator();
-
     act = initAction(":/icons/find", tr("Find"), tr("Find text in note"), "Ctrl+F");
     tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onFindTriggered()));
@@ -292,8 +328,6 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
     // tbar->addAction(act);
     connect(act, SIGNAL(triggered()), SLOT(onReplaceTriggered()));
     findButton->addAction(act);
-
-    tbar->addSeparator();
 
     auto pinIcon = QIcon::fromTheme(QLatin1String("view-pin-symbolic"));
     if (pinIcon.isNull())

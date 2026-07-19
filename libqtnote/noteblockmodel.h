@@ -13,7 +13,7 @@ class QTNOTE_EXPORT NoteBlockModel : public QAbstractListModel {
     Q_PROPERTY(QString contents READ contents WRITE setContents NOTIFY contentsChanged)
 
 public:
-    enum BlockType { Text, BulletList, CheckList, Table, Image };
+    enum BlockType { Text, BulletList, CheckList, Table, Image, NumberedList };
     Q_ENUM(BlockType)
     enum Role {
         TypeRole = Qt::UserRole + 1,
@@ -23,7 +23,9 @@ public:
         CellsRole,
         UrlRole,
         AltRole,
-        PreviewUrlRole
+        PreviewUrlRole,
+        IndentsRole,
+        ItemTypesRole
     };
 
     explicit NoteBlockModel(QObject *parent = nullptr);
@@ -42,12 +44,16 @@ public:
     Q_INVOKABLE void setBlockText(int row, const QString &text);
     Q_INVOKABLE void setListItem(int row, int item, const QString &text);
     Q_INVOKABLE void insertListItem(int row, int item, const QString &text);
+    Q_INVOKABLE void mergeListItemWithNext(int row, int item);
     Q_INVOKABLE void removeListItem(int row, int item);
+    Q_INVOKABLE void removeListItems(int row, int firstItem, int lastItem);
     Q_INVOKABLE void convertListToText(int row);
+    Q_INVOKABLE void indentListItems(int row, int firstItem, int lastItem, int delta);
     Q_INVOKABLE void setChecked(int row, int item, bool checked);
     Q_INVOKABLE void setTableCell(int row, int cell, const QString &text);
     Q_INVOKABLE void insertTableRow(int row, int tableRow);
     Q_INVOKABLE void removeTableRow(int row, int tableRow);
+    Q_INVOKABLE void removeTableRows(int row, int firstRow, int lastRow);
     Q_INVOKABLE void insertTableColumn(int row, int column);
     Q_INVOKABLE void removeTableColumn(int row, int column);
     Q_INVOKABLE void setImageUrl(int row, const QString &url);
@@ -55,6 +61,9 @@ public:
     Q_INVOKABLE void appendTextBlock();
     Q_INVOKABLE void appendText(const QString &text);
     Q_INVOKABLE void appendImage(const QString &url, const QString &alt);
+    Q_INVOKABLE void insertTable(int row);
+    Q_INVOKABLE void insertList(int row, BlockType type);
+    Q_INVOKABLE bool convertListLevel(int row, int item, BlockType type);
     Q_INVOKABLE void removeBlock(int row);
     void             setPreviewUrls(const QHash<QString, QString> &urls);
 
@@ -67,6 +76,8 @@ private:
         BlockType    type = Text;
         QString      text;
         QStringList  items;
+        QVariantList indents;
+        QVariantList itemTypes;
         QVariantList checked;
         QStringList  cells;
         int          columns = 0;

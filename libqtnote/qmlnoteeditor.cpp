@@ -99,6 +99,18 @@ void QmlNoteEditor::focusEditor()
         QMetaObject::invokeMethod(quick_->rootObject(), "focusInitialEditor");
 }
 
+void QmlNoteEditor::insertTable()
+{
+    if (quick_->rootObject())
+        QMetaObject::invokeMethod(quick_->rootObject(), "insertTableBlock");
+}
+
+void QmlNoteEditor::insertList(int type)
+{
+    if (quick_->rootObject())
+        QMetaObject::invokeMethod(quick_->rootObject(), "insertListBlock", Q_ARG(QVariant, type));
+}
+
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
 {
     if (!document || !document->textDocument())

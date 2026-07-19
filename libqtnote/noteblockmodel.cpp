@@ -7,6 +7,12 @@ namespace QtNote {
 namespace {
     const QString TableLineBreakMarker = QStringLiteral("QTNOTE_TABLE_LINE_BREAK_7F3A");
 
+    bool isListType(NoteBlockModel::BlockType type)
+    {
+        return type == NoteBlockModel::BulletList || type == NoteBlockModel::CheckList
+            || type == NoteBlockModel::NumberedList;
+    }
+
     QStringList tableCells(QString line)
     {
         line = line.trimmed();
@@ -90,6 +96,10 @@ QVariant NoteBlockModel::data(const QModelIndex &index, int role) const
         return block.alt;
     case PreviewUrlRole:
         return previewUrls_.value(block.url, block.url);
+    case IndentsRole:
+        return block.indents;
+    case ItemTypesRole:
+        return block.itemTypes;
     default:
         return {};
     }
@@ -130,16 +140,26 @@ Qt::ItemFlags NoteBlockModel::flags(const QModelIndex &index) const
 
 QHash<int, QByteArray> NoteBlockModel::roleNames() const
 {
-    return { { TypeRole, "blockType" }, { TextRole, "blockText" },
-             { ItemsRole, "items" },    { CheckedRole, "checkedItems" },
-             { CellsRole, "table" },    { UrlRole, "url" },
-             { AltRole, "alt" },        { PreviewUrlRole, "previewUrl" } };
+    return { { TypeRole, "blockType" },
+             { TextRole, "blockText" },
+             { ItemsRole, "items" },
+             { CheckedRole, "checkedItems" },
+             { CellsRole, "table" },
+             { UrlRole, "url" },
+             { AltRole, "alt" },
+             { PreviewUrlRole, "previewUrl" },
+             { IndentsRole, "itemIndents" },
+             { ItemTypesRole, "itemTypes" } };
 }
 
 QString NoteBlockModel::contents() const
 {
-    if (markdown_)
-        return writeMarkdown(blocks_).trimmed();
+    if (markdown_) {
+        auto result = writeMarkdown(blocks_);
+        while (result.endsWith(QLatin1Char('\n')) || result.endsWith(QLatin1Char('\r')))
+            result.chop(1);
+        return result;
+    }
     return blocks_.isEmpty() ? QString() : blocks_.constFirst().text;
 }
 
@@ -167,35 +187,106 @@ void NoteBlockModel::setListItem(int row, int item, const QString &text)
 
 void NoteBlockModel::insertListItem(int row, int item, const QString &text)
 {
-    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+    if (row < 0 || row >= blocks_.size() || !isListType(blocks_[row].type))
+        return;
+    auto &block        = blocks_[row];
+    item               = qBound(0, item, block.items.size());
+    const int indent   = item > 0 ? block.indents.value(item - 1).toInt() : 0;
+    const int itemType = item > 0 ? block.itemTypes.value(item - 1, block.type).toInt() : block.type;
+    block.items.insert(item, decodeListItem(text));
+    block.indents.insert(item, indent);
+    block.itemTypes.insert(item, itemType);
+    block.checked.insert(item, false);
+    changed(row, { ItemsRole, IndentsRole, ItemTypesRole, CheckedRole });
+}
+
+void NoteBlockModel::mergeListItemWithNext(int row, int item)
+{
+    if (row < 0 || row >= blocks_.size() || !isListType(blocks_[row].type))
         return;
     auto &block = blocks_[row];
-    item        = qBound(0, item, block.items.size());
-    block.items.insert(item, text);
-    if (block.type == CheckList)
-        block.checked.insert(item, false);
-    changed(row, { ItemsRole, CheckedRole });
+    if (item < 0 || item + 1 >= block.items.size())
+        return;
+    block.items[item] += block.items[item + 1];
+    block.items.removeAt(item + 1);
+    if (item + 1 < block.indents.size())
+        block.indents.removeAt(item + 1);
+    if (item + 1 < block.itemTypes.size())
+        block.itemTypes.removeAt(item + 1);
+    if (item + 1 < block.checked.size())
+        block.checked.removeAt(item + 1);
+    changed(row, { ItemsRole, IndentsRole, ItemTypesRole, CheckedRole });
 }
 
 void NoteBlockModel::removeListItem(int row, int item)
 {
-    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+    if (row < 0 || row >= blocks_.size() || !isListType(blocks_[row].type))
+        return;
+    if (blocks_[row].items.size() <= 1 || item < 0 || item >= blocks_[row].items.size())
+        return;
+    removeListItems(row, item, item);
+}
+
+void NoteBlockModel::removeListItems(int row, int firstItem, int lastItem)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].items.isEmpty())
         return;
     auto &block = blocks_[row];
-    if (block.items.size() <= 1 || item < 0 || item >= block.items.size())
+    firstItem   = qBound(0, firstItem, block.items.size() - 1);
+    lastItem    = qBound(firstItem, lastItem, block.items.size() - 1);
+    if (firstItem == 0 && lastItem == block.items.size() - 1) {
+        block = Block {};
+        changed(row, { TypeRole, TextRole, ItemsRole, IndentsRole, ItemTypesRole, CheckedRole });
         return;
-    block.items.removeAt(item);
-    if (block.type == CheckList)
-        block.checked.removeAt(item);
-    changed(row, { ItemsRole, CheckedRole });
+    }
+    for (int item = lastItem; item >= firstItem; --item) {
+        block.items.removeAt(item);
+        if (item < block.indents.size())
+            block.indents.removeAt(item);
+        if (item < block.itemTypes.size())
+            block.itemTypes.removeAt(item);
+        if (item < block.checked.size())
+            block.checked.removeAt(item);
+    }
+    changed(row, { ItemsRole, IndentsRole, ItemTypesRole, CheckedRole });
 }
 
 void NoteBlockModel::convertListToText(int row)
 {
-    if (row < 0 || row >= blocks_.size() || (blocks_[row].type != BulletList && blocks_[row].type != CheckList))
+    if (row < 0 || row >= blocks_.size() || !isListType(blocks_[row].type))
         return;
     blocks_[row] = Block {};
     changed(row, { TypeRole, TextRole, ItemsRole, CheckedRole });
+}
+
+void NoteBlockModel::indentListItems(int row, int firstItem, int lastItem, int delta)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].items.isEmpty())
+        return;
+    auto &block = blocks_[row];
+    firstItem   = qBound(0, firstItem, block.items.size() - 1);
+    lastItem    = qBound(firstItem, lastItem, block.items.size() - 1);
+    while (block.indents.size() < block.items.size())
+        block.indents.append(0);
+    while (block.itemTypes.size() < block.items.size())
+        block.itemTypes.append(block.type);
+    for (int item = firstItem; item <= lastItem; ++item) {
+        const int oldIndent = block.indents[item].toInt();
+        int       indent    = qMax(0, oldIndent + delta);
+        const int maximum   = item == 0 ? 0 : block.indents[item - 1].toInt() + 1;
+        indent              = qMin(indent, maximum);
+        block.indents[item] = indent;
+
+        if (indent < oldIndent) {
+            for (int ancestor = item - 1; ancestor >= 0; --ancestor) {
+                if (block.indents[ancestor].toInt() == indent) {
+                    block.itemTypes[item] = block.itemTypes[ancestor];
+                    break;
+                }
+            }
+        }
+    }
+    changed(row, { IndentsRole, ItemTypesRole });
 }
 
 void NoteBlockModel::setChecked(int row, int item, bool checked)
@@ -230,12 +321,26 @@ void NoteBlockModel::removeTableRow(int row, int tableRow)
 {
     if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
         return;
-    auto     &block = blocks_[row];
-    const int rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
+    const auto &block = blocks_[row];
+    const int   rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
     if (rows <= 1 || tableRow < 0 || tableRow >= rows)
         return;
-    for (int column = 0; column < block.columns; ++column)
-        block.cells.removeAt(tableRow * block.columns);
+    removeTableRows(row, tableRow, tableRow);
+}
+
+void NoteBlockModel::removeTableRows(int row, int firstRow, int lastRow)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_[row].type != Table)
+        return;
+    auto     &block = blocks_[row];
+    const int rows  = block.columns > 0 ? block.cells.size() / block.columns : 0;
+    if (rows <= 1)
+        return;
+    firstRow              = qBound(0, firstRow, rows - 1);
+    lastRow               = qBound(firstRow, lastRow, rows - 1);
+    const int removeCount = qMin(lastRow - firstRow + 1, rows - 1);
+    for (int cell = 0; cell < removeCount * block.columns; ++cell)
+        block.cells.removeAt(firstRow * block.columns);
     changed(row, { CellsRole });
 }
 
@@ -310,6 +415,61 @@ void NoteBlockModel::appendImage(const QString &url, const QString &alt)
     emit contentsChanged();
 }
 
+void NoteBlockModel::insertTable(int row)
+{
+    row = qBound(0, row, blocks_.size());
+    beginInsertRows({}, row, row);
+    Block block;
+    block.type    = Table;
+    block.columns = 2;
+    block.cells   = { QString(), QString(), QString(), QString() };
+    blocks_.insert(row, block);
+    endInsertRows();
+    emit contentsChanged();
+}
+
+void NoteBlockModel::insertList(int row, BlockType type)
+{
+    if (!isListType(type))
+        return;
+    row = qBound(0, row, blocks_.size());
+    beginInsertRows({}, row, row);
+    Block block;
+    block.type      = type;
+    block.items     = { QString() };
+    block.indents   = { 0 };
+    block.itemTypes = { type };
+    block.checked   = { false };
+    blocks_.insert(row, block);
+    endInsertRows();
+    emit contentsChanged();
+}
+
+bool NoteBlockModel::convertListLevel(int row, int item, BlockType type)
+{
+    if (row < 0 || row >= blocks_.size() || item < 0 || !isListType(type))
+        return false;
+    auto &block = blocks_[row];
+    if (!isListType(block.type) || item >= block.items.size())
+        return false;
+    while (block.itemTypes.size() < block.items.size())
+        block.itemTypes.append(block.type);
+    while (block.checked.size() < block.items.size())
+        block.checked.append(false);
+    const int level = block.indents.value(item).toInt();
+    int       begin = item;
+    while (begin > 0 && block.indents.value(begin - 1).toInt() >= level)
+        --begin;
+    int end = item + 1;
+    while (end < block.items.size() && block.indents.value(end).toInt() >= level)
+        ++end;
+    for (int i = begin; i < end; ++i)
+        if (block.indents.value(i).toInt() == level)
+            block.itemTypes[i] = type;
+    changed(row, { ItemTypesRole, CheckedRole });
+    return true;
+}
+
 void NoteBlockModel::removeBlock(int row)
 {
     if (row < 0 || row >= blocks_.size())
@@ -334,41 +494,110 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
     QTextDocument                   document;
     QString                         protectedSource = source;
     static const QRegularExpression lineBreak(QStringLiteral("<br\\s*/?>"), QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression trailingListBreaks(QStringLiteral("(?:<br\\s*/?>\\s*)+(?=\\n|$)"),
+    static const QRegularExpression trailingListBreaks(QStringLiteral("(?:<br\\s*/?>[ \\t]*)+(?=\\r?\\n|$)"),
                                                        QRegularExpression::CaseInsensitiveOption);
     protectedSource.replace(trailingListBreaks, QString());
     protectedSource.replace(lineBreak, TableLineBreakMarker);
+    static const QRegularExpression task(QStringLiteral(R"(^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$)"));
+    static const QRegularExpression bullet(QStringLiteral(R"(^(\s*)[-*+]\s+(.*)$)"));
+    static const QRegularExpression numbered(QStringLiteral(R"(^(\s*)\d+[.)]\s+(.*)$)"));
+    QList<int>                      sourceListIndents;
+    for (const auto &line : protectedSource.split('\n')) {
+        const auto taskItem     = task.match(line);
+        const auto bulletItem   = bullet.match(line);
+        const auto numberedItem = numbered.match(line);
+        if (taskItem.hasMatch())
+            sourceListIndents.append(taskItem.capturedLength(1));
+        else if (bulletItem.hasMatch())
+            sourceListIndents.append(bulletItem.capturedLength(1));
+        else if (numberedItem.hasMatch())
+            sourceListIndents.append(numberedItem.capturedLength(1));
+    }
     document.setMarkdown(protectedSource, QTextDocument::MarkdownDialectGitHub);
     const auto                      lines = document.toMarkdown(QTextDocument::MarkdownDialectGitHub).split('\n');
     QList<Block>                    result;
-    static const QRegularExpression task(QStringLiteral(R"(^\s*[-*+]\s+\[([ xX])\]\s+(.*)$)"));
-    static const QRegularExpression bullet(QStringLiteral(R"(^\s*[-*+]\s+(.*)$)"));
     static const QRegularExpression image(QStringLiteral(R"(^\s*!\[([^\]]*)\]\((\S+?)(?:\s+"[^"]*")?\)\s*$)"));
+    int                             canonicalListItems = 0;
+    for (const auto &line : lines)
+        if (task.match(line).hasMatch() || bullet.match(line).hasMatch() || numbered.match(line).hasMatch())
+            ++canonicalListItems;
+    const bool preserveSourceListIndents = canonicalListItems == sourceListIndents.size();
+    int        sourceListItem            = 0;
 
     for (int i = 0; i < lines.size();) {
         if (lines[i].trimmed().isEmpty()) {
             ++i;
             continue;
         }
-        auto match = task.match(lines[i]);
-        if (match.hasMatch()) {
-            Block block;
-            block.type = CheckList;
-            while (i < lines.size() && (match = task.match(lines[i])).hasMatch()) {
-                block.checked.append(match.captured(1).compare(QStringLiteral("x"), Qt::CaseInsensitive) == 0);
-                block.items.append(decodeListItem(match.captured(2)));
-                ++i;
-            }
-            result.append(block);
-            continue;
-        }
-        match = bullet.match(lines[i]);
-        if (match.hasMatch()) {
-            Block block;
-            block.type = BulletList;
-            while (i < lines.size() && !task.match(lines[i]).hasMatch()
-                   && (match = bullet.match(lines[i])).hasMatch()) {
-                block.items.append(decodeListItem(match.captured(1)));
+        auto       match         = task.match(lines[i]);
+        const auto bulletMatch   = bullet.match(lines[i]);
+        const auto numberedMatch = numbered.match(lines[i]);
+        if (match.hasMatch() || bulletMatch.hasMatch() || numberedMatch.hasMatch()) {
+            Block      block;
+            QList<int> indentColumns;
+            while (i < lines.size()) {
+                if (lines[i].trimmed().isEmpty()) {
+                    int next = i + 1;
+                    while (next < lines.size() && lines[next].trimmed().isEmpty())
+                        ++next;
+                    if (next >= lines.size())
+                        break;
+                    const auto    nextTask     = task.match(lines[next]);
+                    const auto    nextBullet   = bullet.match(lines[next]);
+                    const auto    nextNumbered = numbered.match(lines[next]);
+                    const QString nextIndent   = nextTask.hasMatch() ? nextTask.captured(1)
+                          : nextBullet.hasMatch()                    ? nextBullet.captured(1)
+                          : nextNumbered.hasMatch()                  ? nextNumbered.captured(1)
+                                                                     : QString();
+                    if (nextIndent.isEmpty())
+                        break;
+                    i = next;
+                }
+                const auto      taskItem     = task.match(lines[i]);
+                const auto      bulletItem   = bullet.match(lines[i]);
+                const auto      numberedItem = numbered.match(lines[i]);
+                BlockType       itemType;
+                const BlockType candidateType     = taskItem.hasMatch() ? CheckList
+                        : numberedItem.hasMatch()                       ? NumberedList
+                                                                        : BulletList;
+                const QString   candidateIndent   = taskItem.hasMatch() ? taskItem.captured(1)
+                        : bulletItem.hasMatch()                         ? bulletItem.captured(1)
+                        : numberedItem.hasMatch()                       ? numberedItem.captured(1)
+                                                                        : QString();
+                const int       rawIndent         = preserveSourceListIndents
+                                  ? sourceListIndents.value(sourceListItem, candidateIndent.size())
+                                  : candidateIndent.size();
+                const bool returnsFromNestedLevel = !block.indents.isEmpty() && block.indents.constLast().toInt() > 0;
+                if (!block.itemTypes.isEmpty() && rawIndent == 0 && !returnsFromNestedLevel
+                    && candidateType != BlockType(block.itemTypes.constLast().toInt()))
+                    break;
+                ++sourceListItem;
+                while (!indentColumns.isEmpty() && indentColumns.constLast() > rawIndent)
+                    indentColumns.removeLast();
+                if (indentColumns.isEmpty() || indentColumns.constLast() < rawIndent)
+                    indentColumns.append(rawIndent);
+                const int level = indentColumns.size() - 1;
+                if (taskItem.hasMatch()) {
+                    itemType = CheckList;
+                    block.indents.append(level);
+                    block.checked.append(taskItem.captured(2).compare(QStringLiteral("x"), Qt::CaseInsensitive) == 0);
+                    block.items.append(decodeListItem(taskItem.captured(3)));
+                } else if (bulletItem.hasMatch()) {
+                    itemType = BulletList;
+                    block.indents.append(level);
+                    block.checked.append(false);
+                    block.items.append(decodeListItem(bulletItem.captured(2)));
+                } else if (numberedItem.hasMatch()) {
+                    itemType = NumberedList;
+                    block.indents.append(level);
+                    block.checked.append(false);
+                    block.items.append(decodeListItem(numberedItem.captured(2)));
+                } else {
+                    break;
+                }
+                if (block.itemTypes.isEmpty())
+                    block.type = itemType;
+                block.itemTypes.append(itemType);
                 ++i;
             }
             result.append(block);
@@ -402,7 +631,8 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
         }
         QStringList paragraph;
         while (i < lines.size() && !lines[i].trimmed().isEmpty() && !task.match(lines[i]).hasMatch()
-               && !bullet.match(lines[i]).hasMatch() && !image.match(lines[i]).hasMatch()
+               && !bullet.match(lines[i]).hasMatch() && !numbered.match(lines[i]).hasMatch()
+               && !image.match(lines[i]).hasMatch()
                && !(i + 1 < lines.size() && lines[i].contains('|') && isTableSeparator(lines[i + 1])))
             paragraph.append(lines[i++]);
         const QString text = paragraph.join('\n');
@@ -432,14 +662,20 @@ QString NoteBlockModel::writeMarkdown(const QList<Block> &blocks)
             value = block.text;
             break;
         case BulletList:
-            for (const auto &item : block.items)
-                value += QStringLiteral("- %1\n").arg(encodeListItem(item));
-            value.chop(value.endsWith('\n') ? 1 : 0);
-            break;
         case CheckList:
-            for (int i = 0; i < block.items.size(); ++i)
-                value += QStringLiteral("- [%1] %2\n")
-                             .arg(block.checked.value(i).toBool() ? "x" : " ", encodeListItem(block.items[i]));
+        case NumberedList:
+            for (int i = 0; i < block.items.size(); ++i) {
+                const auto type    = BlockType(block.itemTypes.value(i, block.type).toInt());
+                const int  columns = qMax(0, block.indents.value(i).toInt()) * 4;
+                value += QString(columns, QLatin1Char(' '));
+                if (type == CheckList)
+                    value += QStringLiteral("- [%1] %2\n")
+                                 .arg(block.checked.value(i).toBool() ? "x" : " ", encodeListItem(block.items[i]));
+                else if (type == NumberedList)
+                    value += QStringLiteral("1. %1\n").arg(encodeListItem(block.items[i]));
+                else
+                    value += QStringLiteral("- %1\n").arg(encodeListItem(block.items[i]));
+            }
             value.chop(value.endsWith('\n') ? 1 : 0);
             break;
         case Table:

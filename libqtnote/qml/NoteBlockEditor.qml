@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "ListBlockBehavior.js" as ListBlockBehavior
+import "TableBlockBehavior.js" as TableBlockBehavior
 
 ListView {
     id: root
     property var blockModel: noteBlockModel
     property var activeEditor: null
+    property int pendingFocusBlock: -1
     property var editors: []
     property var selectionAnchorEditor: null
     property int selectionAnchorPosition: 0
@@ -16,17 +19,31 @@ ListView {
     property bool documentSelectionAvailable: false
     property var contextEditor: null
     property bool mouseSelectionActive: false
+    property var keyboardSelectionAnchorEditor: null
+    property int keyboardSelectionAnchorPosition: 0
+    readonly property int blockSpacing: Math.max(1, Math.round(editorFontMetrics.height * 3 / 5))
     model: blockModel
-    spacing: 0
+    spacing: blockSpacing
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     activeFocusOnTab: true
     focus: true
 
+    FontMetrics {
+        id: editorFontMetrics
+        font: Application.font
+    }
+
     function registerEditor(editor) {
         if (editors.indexOf(editor) < 0) {
             editors = editors.concat([editor])
             ++editorRegistrations
+        }
+        if (editor.blockIndex === pendingFocusBlock) {
+            editor.forceActiveFocus()
+            editor.cursorPosition = 0
+            activeEditor = editor
+            pendingFocusBlock = -1
         }
     }
 
@@ -55,118 +72,17 @@ ListView {
         onTriggered: root.refreshSelectionState()
     }
 
-    Menu {
+    Timer {
+        id: pendingFocusRetry
+        interval: 10
+        repeat: true
+        onTriggered: if (root.focusPendingBlock()) stop()
+    }
+
+    EditorContextMenu {
         id: sharedContextMenu
-        Instantiator {
-            model: root.contextEditor ? root.contextEditor.contextSuggestions : []
-            delegate: MenuItem {
-                required property string modelData
-                text: modelData
-                onTriggered: if (root.contextEditor) root.contextEditor.replaceContextWord(modelData)
-            }
-            onObjectAdded: function(index, object) { sharedContextMenu.insertItem(index, object) }
-            onObjectRemoved: function(index, object) { sharedContextMenu.removeItem(object) }
-        }
-        MenuSeparator { visible: root.contextEditor && root.contextEditor.contextWord.length > 0 }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Insert row above")
-            onTriggered: root.contextEditor.insertRowAbove()
-        }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Insert row below")
-            onTriggered: root.contextEditor.insertRowBelow()
-        }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Delete row")
-            enabled: root.contextEditor && root.contextEditor.canRemoveTableRow
-            onTriggered: root.contextEditor.removeRow()
-        }
-        MenuSeparator { visible: root.contextEditor && root.contextEditor.tableCell }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Insert column left")
-            onTriggered: root.contextEditor.insertColumnLeft()
-        }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Insert column right")
-            onTriggered: root.contextEditor.insertColumnRight()
-        }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.tableCell
-            text: qsTr("Delete column")
-            enabled: root.contextEditor && root.contextEditor.canRemoveTableColumn
-            onTriggered: root.contextEditor.removeColumn()
-        }
-        MenuSeparator { visible: root.contextEditor && root.contextEditor.tableCell }
-        MenuItem {
-            visible: root.contextEditor && root.contextEditor.contextWord.length > 0
-            text: qsTr("Add to dictionary")
-            onTriggered: {
-                qmlNoteEditor.addToSpellingDictionary(root.contextEditor.contextWord)
-                root.contextEditor.refreshSpelling()
-            }
-        }
-        MenuSeparator { visible: root.contextEditor && root.contextEditor.contextWord.length > 0 }
-        MenuItem {
-            text: qsTr("Spell Check")
-            checkable: true
-            checked: qmlNoteEditor ? qmlNoteEditor.spellCheckEnabled : false
-            onToggled: if (qmlNoteEditor) qmlNoteEditor.spellCheckEnabled = checked
-        }
-        MenuSeparator {}
-        MenuItem {
-            action: Action {
-                text: qsTr("Undo")
-                shortcut: StandardKey.Undo
-                enabled: root.contextEditor ? root.contextEditor.canUndo : false
-                onTriggered: if (root.contextEditor) root.contextEditor.undo()
-            }
-        }
-        MenuItem {
-            action: Action {
-                text: qsTr("Redo")
-                shortcut: StandardKey.Redo
-                enabled: root.contextEditor ? root.contextEditor.canRedo : false
-                onTriggered: if (root.contextEditor) root.contextEditor.redo()
-            }
-        }
-        MenuSeparator {}
-        MenuItem {
-            action: Action {
-                text: qsTr("Cut")
-                shortcut: StandardKey.Cut
-                enabled: root.documentSelectionAvailable
-                onTriggered: root.cutDocumentSelection()
-            }
-        }
-        MenuItem {
-            action: Action {
-                text: qsTr("Copy")
-                shortcut: StandardKey.Copy
-                enabled: root.documentSelectionAvailable
-                onTriggered: root.copyDocumentSelection()
-            }
-        }
-        MenuItem {
-            action: Action {
-                text: qsTr("Paste")
-                shortcut: StandardKey.Paste
-                enabled: root.contextEditor ? root.contextEditor.canPaste : false
-                onTriggered: if (root.contextEditor) root.contextEditor.paste()
-            }
-        }
-        MenuSeparator {}
-        MenuItem {
-            action: Action {
-                text: qsTr("Select All")
-                shortcut: StandardKey.SelectAll
-                onTriggered: root.selectAllDocument()
-            }
-        }
+        controller: root
+        editorBackend: qmlNoteEditor
     }
 
     function orderedEditors() {
@@ -250,6 +166,48 @@ ListView {
         if (editor.selectionStart === selectionStart && editor.selectionEnd === selectionEnd)
             return
         editor.select(start, end)
+    }
+
+    function handleKeyboardSelection(event, editor) {
+        const arrow = event.key === Qt.Key_Left || event.key === Qt.Key_Right
+                   || event.key === Qt.Key_Up || event.key === Qt.Key_Down
+        if (!(event.modifiers & Qt.ShiftModifier) || !arrow) {
+            if (!(event.modifiers & Qt.ShiftModifier))
+                keyboardSelectionAnchorEditor = null
+            return false
+        }
+        if (!keyboardSelectionAnchorEditor) {
+            keyboardSelectionAnchorEditor = editor
+            keyboardSelectionAnchorPosition = editor.selectionStart !== editor.selectionEnd
+                ? (editor.cursorPosition === editor.selectionStart ? editor.selectionEnd : editor.selectionStart)
+                : editor.cursorPosition
+        }
+        let direction = 0
+        if (event.key === Qt.Key_Left && editor.cursorPosition === 0)
+            direction = -1
+        else if (event.key === Qt.Key_Right && editor.cursorPosition === editor.length)
+            direction = 1
+        else if (event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
+            const rectangle = editor.positionToRectangle(editor.cursorPosition)
+            const probeY = event.key === Qt.Key_Up ? rectangle.y - rectangle.height
+                                                   : rectangle.y + rectangle.height + 1
+            const probe = editor.positionToRectangle(editor.positionAt(rectangle.x, probeY))
+            const boundary = event.key === Qt.Key_Up ? probe.y >= rectangle.y - 0.5
+                                                     : probe.y <= rectangle.y + 0.5
+            if (boundary)
+                direction = event.key === Qt.Key_Up ? -1 : 1
+        }
+        if (direction === 0)
+            return false
+        const ordered = orderedEditors()
+        const index = ordered.indexOf(editor)
+        const targetIndex = index + direction
+        if (targetIndex < 0 || targetIndex >= ordered.length)
+            return true
+        const target = ordered[targetIndex]
+        const position = direction < 0 ? target.length : 0
+        applyDocumentSelection(keyboardSelectionAnchorEditor, keyboardSelectionAnchorPosition, target, position)
+        return true
     }
 
     function applyDocumentSelection(anchorEditor, anchorPosition, focusEditor, focusPosition) {
@@ -342,6 +300,34 @@ ListView {
         }
     }
 
+    function deleteStructuredSelection() {
+        const selected = orderedEditors().filter(editor => editor.selectionStart !== editor.selectionEnd)
+        if (selected.length < 2)
+            return false
+        const block = selected[0].blockIndex
+        if (block < 0 || selected.some(editor => editor.blockIndex !== block))
+            return false
+        const listItems = selected.filter(editor => editor.listItemIndex >= 0)
+        if (listItems.length === selected.length) {
+            const indexes = listItems.map(editor => editor.listItemIndex)
+            blockModel.removeListItems(block, Math.min(...indexes), Math.max(...indexes))
+            clearDocumentSelection()
+            focusBlock(block)
+            return true
+        }
+        const tableCells = selected.filter(editor => editor.tableRow >= 0)
+        if (tableCells.length === selected.length) {
+            const rows = tableCells.map(editor => editor.tableRow)
+            if (Math.min(...rows) === Math.max(...rows))
+                return false
+            blockModel.removeTableRows(block, Math.min(...rows), Math.max(...rows))
+            clearDocumentSelection()
+            focusBlock(block)
+            return true
+        }
+        return false
+    }
+
     function selectAllDocument() {
         wholeDocumentSelected = true
         documentSelectionAvailable = true
@@ -371,13 +357,129 @@ ListView {
     }
 
     function focusBlock(blockIndex) {
+        pendingFocusBlock = blockIndex
+        positionViewAtIndex(blockIndex, ListView.Contain)
+        pendingFocusRetry.restart()
         Qt.callLater(function() {
+            for (const editor of editors) {
+                if (editor && editor.blockIndex === blockIndex) {
+                    editor.forceActiveFocus()
+                    editor.cursorPosition = 0
+                    root.activeEditor = editor
+                    root.pendingFocusBlock = -1
+                    return
+                }
+            }
             const loader = root.itemAtIndex(blockIndex)
-            if (!loader || !loader.item)
-                return
-            loader.item.forceActiveFocus()
-            root.activeEditor = loader.item
+            const directEditor = loader ? loader.item : null
+            if (directEditor && directEditor.cursorPosition !== undefined) {
+                directEditor.blockIndex = blockIndex
+                directEditor.forceActiveFocus()
+                directEditor.cursorPosition = 0
+                root.activeEditor = directEditor
+                root.pendingFocusBlock = -1
+            }
         })
+    }
+
+    function firstEditorIn(item) {
+        if (!item)
+            return null
+        if (item.objectName === "noteBlockTextArea")
+            return item
+        for (const child of item.children || []) {
+            const editor = firstEditorIn(child)
+            if (editor)
+                return editor
+        }
+        return null
+    }
+
+    function focusPendingBlock() {
+        if (pendingFocusBlock < 0)
+            return true
+        const loader = itemAtIndex(pendingFocusBlock)
+        const editor = firstEditorIn(loader ? loader.item : null)
+        if (!editor)
+            return false
+        editor.blockIndex = pendingFocusBlock
+        editor.forceActiveFocus()
+        editor.cursorPosition = 0
+        activeEditor = editor
+        pendingFocusBlock = -1
+        return true
+    }
+
+    function focusFollowingBlock(blockIndex) {
+        const next = blockIndex + 1
+        if (next < count) {
+            const ordered = orderedEditors()
+            const activeIndex = ordered.indexOf(activeEditor)
+            if (activeIndex >= 0 && activeIndex + 1 < ordered.length) {
+                const editor = ordered[activeIndex + 1]
+                editor.blockIndex = next
+                editor.forceActiveFocus()
+                editor.cursorPosition = 0
+                activeEditor = editor
+                return
+            }
+            focusBlock(next)
+            return
+        }
+        pendingFocusBlock = next
+        blockModel.appendTextBlock()
+        focusBlock(next)
+    }
+
+    function focusPrecedingBlock(blockIndex) {
+        if (blockIndex <= 0)
+            return
+        const ordered = orderedEditors()
+        const activeIndex = ordered.indexOf(activeEditor)
+        if (activeIndex > 0) {
+            const editor = ordered[activeIndex - 1]
+            editor.blockIndex = blockIndex - 1
+            editor.forceActiveFocus()
+            editor.cursorPosition = editor.length
+            activeEditor = editor
+            return
+        }
+        focusBlock(blockIndex - 1)
+    }
+
+    function handleBlockBoundaryNavigation(event, editor) {
+        const modifiers = event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
+        if (modifiers || event.key !== Qt.Key_Up || editor.blockIndex <= 0)
+            return false
+        const rectangle = editor.positionToRectangle(editor.cursorPosition)
+        if (rectangle.y > editor.positionToRectangle(0).y + 0.5)
+            return false
+        focusPrecedingBlock(editor.blockIndex)
+        return true
+    }
+
+    function insertionBlockIndex() {
+        if (pendingFocusBlock >= 0)
+            return pendingFocusBlock + 1
+        return activeEditor && activeEditor.blockIndex >= 0 ? activeEditor.blockIndex + 1 : count
+    }
+
+    function insertTableBlock() {
+        const row = insertionBlockIndex()
+        blockModel.insertTable(row)
+        focusBlock(row)
+    }
+
+    function insertListBlock(type) {
+        if (activeEditor && activeEditor.blockIndex >= 0) {
+            const activeBlock = activeEditor.blockIndex
+            if (blockModel.convertListLevel(activeBlock, activeEditor.listItemIndex, type)) {
+                return
+            }
+        }
+        const row = insertionBlockIndex()
+        blockModel.insertList(row, type)
+        focusBlock(row)
     }
 
     delegate: Loader {
@@ -387,6 +489,8 @@ ListView {
         required property string blockText
         required property var items
         required property var checkedItems
+        required property var itemIndents
+        required property var itemTypes
         required property var table
         required property string url
         required property string alt
@@ -395,11 +499,18 @@ ListView {
         height: Math.max(item ? item.implicitHeight : 0,
                          blockType === 0 && index === root.count - 1 ? root.height - y : 0)
         onLoaded: {
+            if (item && item.blockIndex !== undefined)
+                item.blockIndex = index
+            if (item && item.blockIndex === root.pendingFocusBlock) {
+                item.forceActiveFocus()
+                item.cursorPosition = 0
+                root.activeEditor = item
+                root.pendingFocusBlock = -1
+            }
             if (blockType === 0 && index === 0 && blockText.trim().length === 0)
                 item.forceActiveFocus()
         }
-        sourceComponent: blockType === 1 ? bulletEditor
-                       : blockType === 2 ? checkEditor
+        sourceComponent: blockType === 1 || blockType === 2 || blockType === 5 ? listEditor
                        : blockType === 3 ? tableEditor
                        : blockType === 4 ? imageEditor : textEditor
     }
@@ -415,6 +526,9 @@ ListView {
         property var contextSuggestions: []
         property var commitText: function() {}
         property var keyHandler: null
+        property int blockIndex: -1
+        property int listItemIndex: -1
+        property int tableRow: -1
         property bool tableCell: false
         property bool canRemoveTableRow: false
         property bool canRemoveTableColumn: false
@@ -460,7 +574,14 @@ ListView {
         }
 
         Keys.onPressed: function(event) {
-            if (keyHandler && keyHandler(event)) {
+            if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
+                    && root.deleteStructuredSelection()) {
+                event.accepted = true
+            } else if (root.handleKeyboardSelection(event, blockArea)) {
+                event.accepted = true
+            } else if (keyHandler && keyHandler(event)) {
+                event.accepted = true
+            } else if (root.handleBlockBoundaryNavigation(event, blockArea)) {
                 event.accepted = true
             } else if (event.matches(StandardKey.SelectAll)) {
                 root.selectAllDocument()
@@ -633,6 +754,7 @@ ListView {
         BlockTextArea {
             property var block: parent
             titleDocument: block.index === 0
+            blockIndex: block.index
             width: block.width
             text: block.blockText
             commitText: function() { root.blockModel.setBlockText(block.index, text) }
@@ -643,147 +765,42 @@ ListView {
     }
 
     Component {
-        id: bulletEditor
-        ColumnLayout {
-            id: bulletRoot
-            property var block: parent
-            property var itemData: block.items
-            width: block.width
-            onItemDataChanged: syncItems()
-            Component.onCompleted: syncItems()
-            function syncItems() {
-                const values = itemData || []
-                while (bulletModel.count > values.length)
-                    bulletModel.remove(bulletModel.count - 1)
-                while (bulletModel.count < values.length)
-                    bulletModel.append({ itemText: "" })
-                for (let index = 0; index < values.length; ++index) {
-                    if (bulletModel.get(index).itemText !== values[index])
-                        bulletModel.setProperty(index, "itemText", values[index])
-                }
-            }
-            ListModel { id: bulletModel }
-            function focusItem(itemIndex, position) {
-                Qt.callLater(function() {
-                    const row = bulletRepeater.itemAt(itemIndex)
-                    const cell = row ? row.listEditor : null
-                    if (!cell)
-                        return
-                    cell.forceActiveFocus()
-                    cell.cursorPosition = Math.max(0, Math.min(cell.length, position))
-                    root.activeEditor = cell
-                })
-            }
-            function focusItemVertically(itemIndex, x, atBottom) {
-                Qt.callLater(function() {
-                    const row = bulletRepeater.itemAt(itemIndex)
-                    const cell = row ? row.listEditor : null
-                    if (!cell)
-                        return
-                    cell.forceActiveFocus()
-                    const y = atBottom ? Math.max(0, cell.height - cell.bottomPadding - 1)
-                                       : cell.topPadding + 1
-                    cell.cursorPosition = cell.positionAt(x, y)
-                    root.activeEditor = cell
-                })
-            }
-            function handleItemKey(event, cell, itemIndex) {
-                const blockedModifiers = event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-                if (!blockedModifiers && !(event.modifiers & Qt.ShiftModifier)
-                        && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
-                    const cursorRectangle = cell.positionToRectangle(cell.cursorPosition)
-                    const probeY = event.key === Qt.Key_Up
-                        ? cursorRectangle.y - cursorRectangle.height
-                        : cursorRectangle.y + cursorRectangle.height + 1
-                    const probePosition = cell.positionAt(cursorRectangle.x, probeY)
-                    const probeRectangle = cell.positionToRectangle(probePosition)
-                    const atVisualBoundary = event.key === Qt.Key_Up
-                        ? probeRectangle.y >= cursorRectangle.y - 0.5
-                        : probeRectangle.y <= cursorRectangle.y + 0.5
-                    if (event.key === Qt.Key_Up && atVisualBoundary) {
-                        if (itemIndex > 0)
-                            focusItemVertically(itemIndex - 1, cursorRectangle.x, true)
-                        return true
-                    }
-                    if (event.key === Qt.Key_Down && atVisualBoundary) {
-                        if (itemIndex + 1 < bulletModel.count)
-                            focusItemVertically(itemIndex + 1, cursorRectangle.x, false)
-                        return true
-                    }
-                }
-                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                        && !blockedModifiers && !(event.modifiers & Qt.ShiftModifier)) {
-                    const position = cell.cursorPosition
-                    const right = cell.text.substring(position)
-                    root.blockModel.setListItem(block.index, itemIndex, cell.text.substring(0, position))
-                    root.blockModel.insertListItem(block.index, itemIndex + 1, right)
-                    focusItem(itemIndex + 1, 0)
-                    return true
-                }
-                if (event.key === Qt.Key_Backspace && !blockedModifiers && cell.length === 0
-                        && cell.cursorPosition === 0 && bulletModel.count === 1) {
-                    root.blockModel.convertListToText(block.index)
-                    root.focusBlock(block.index)
-                    return true
-                }
-                if (event.key === Qt.Key_Backspace && !blockedModifiers && cell.length === 0
-                        && cell.cursorPosition === 0 && bulletModel.count > 1) {
-                    const target = itemIndex > 0 ? itemIndex - 1 : 0
-                    const targetLength = itemIndex > 0 ? bulletModel.get(target).itemText.length : 0
-                    root.blockModel.removeListItem(block.index, itemIndex)
-                    focusItem(target, targetLength)
-                    return true
-                }
-                return false
-            }
-            Repeater {
-                id: bulletRepeater
-                model: bulletModel
-                RowLayout {
-                    id: bulletRow
-                    required property int index
-                    required property string itemText
-                    property alias listEditor: bulletCell
-                    Label { text: "•"; Layout.alignment: Qt.AlignTop }
-                    BlockTextArea {
-                        id: bulletCell
-                        Layout.fillWidth: true
-                        text: itemText
-                        keyHandler: function(event) { return bulletRoot.handleItemKey(event, bulletCell, bulletRow.index) }
-                        commitText: function() { root.blockModel.setListItem(bulletRoot.block.index, index, text) }
-                        textFormat: TextEdit.MarkdownText
-                        onTextChanged: if (activeFocus) root.blockModel.setListItem(bulletRoot.block.index, index, text)
-                        onLinkActivated: link => Qt.openUrlExternally(link)
-                    }
-                }
-            }
-        }
-    }
-
-    Component {
-        id: checkEditor
+        id: listEditor
         ColumnLayout {
             id: checkRoot
             property var block: parent
             property var itemData: block.items
             property var checkedData: block.checkedItems
+            property var indentData: block.itemIndents
+            property var typeData: block.itemTypes
+            property bool syncingItems: false
             width: block.width
             onItemDataChanged: syncItems()
             onCheckedDataChanged: syncItems()
+            onIndentDataChanged: syncItems()
+            onTypeDataChanged: syncItems()
             Component.onCompleted: syncItems()
             function syncItems() {
+                syncingItems = true
                 const values = itemData || []
                 while (checkModel.count > values.length)
                     checkModel.remove(checkModel.count - 1)
                 while (checkModel.count < values.length)
-                    checkModel.append({ itemText: "", itemChecked: false })
+                    checkModel.append({ itemText: "", itemChecked: false, itemIndent: 0, itemType: 2 })
                 for (let index = 0; index < values.length; ++index) {
                     if (checkModel.get(index).itemText !== values[index])
                         checkModel.setProperty(index, "itemText", values[index])
                     const checked = Boolean(checkedData[index])
                     if (checkModel.get(index).itemChecked !== checked)
                         checkModel.setProperty(index, "itemChecked", checked)
+                    const indent = Number(indentData[index] || 0)
+                    if (checkModel.get(index).itemIndent !== indent)
+                        checkModel.setProperty(index, "itemIndent", indent)
+                    const type = Number(typeData[index] === undefined ? block.blockType : typeData[index])
+                    if (checkModel.get(index).itemType !== type)
+                        checkModel.setProperty(index, "itemType", type)
                 }
+                syncingItems = false
             }
             ListModel { id: checkModel }
             function focusItem(itemIndex, position) {
@@ -810,54 +827,35 @@ ListView {
                     root.activeEditor = cell
                 })
             }
+            function itemCount() { return checkModel.count }
+            function itemText(index) { return checkModel.get(index).itemText }
+            function itemNumber(index) {
+                const level = checkModel.get(index).itemIndent
+                let number = 1
+                for (let previous = index - 1; previous >= 0; --previous) {
+                    const item = checkModel.get(previous)
+                    if (item.itemIndent < level)
+                        break
+                    if (item.itemIndent === level && item.itemType === 5)
+                        ++number
+                }
+                return number
+            }
+            function selectedItemRange() {
+                let first = -1
+                let last = -1
+                for (let index = 0; index < checkModel.count; ++index) {
+                    const row = checkRepeater.itemAt(index)
+                    if (row && row.listEditor.selectionStart !== row.listEditor.selectionEnd) {
+                        if (first < 0)
+                            first = index
+                        last = index
+                    }
+                }
+                return { first: first, last: last }
+            }
             function handleItemKey(event, cell, itemIndex) {
-                const blockedModifiers = event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-                if (!blockedModifiers && !(event.modifiers & Qt.ShiftModifier)
-                        && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
-                    const cursorRectangle = cell.positionToRectangle(cell.cursorPosition)
-                    const probeY = event.key === Qt.Key_Up
-                        ? cursorRectangle.y - cursorRectangle.height
-                        : cursorRectangle.y + cursorRectangle.height + 1
-                    const probePosition = cell.positionAt(cursorRectangle.x, probeY)
-                    const probeRectangle = cell.positionToRectangle(probePosition)
-                    const atVisualBoundary = event.key === Qt.Key_Up
-                        ? probeRectangle.y >= cursorRectangle.y - 0.5
-                        : probeRectangle.y <= cursorRectangle.y + 0.5
-                    if (event.key === Qt.Key_Up && atVisualBoundary) {
-                        if (itemIndex > 0)
-                            focusItemVertically(itemIndex - 1, cursorRectangle.x, true)
-                        return true
-                    }
-                    if (event.key === Qt.Key_Down && atVisualBoundary) {
-                        if (itemIndex + 1 < checkModel.count)
-                            focusItemVertically(itemIndex + 1, cursorRectangle.x, false)
-                        return true
-                    }
-                }
-                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                        && !blockedModifiers && !(event.modifiers & Qt.ShiftModifier)) {
-                    const position = cell.cursorPosition
-                    const right = cell.text.substring(position)
-                    root.blockModel.setListItem(block.index, itemIndex, cell.text.substring(0, position))
-                    root.blockModel.insertListItem(block.index, itemIndex + 1, right)
-                    focusItem(itemIndex + 1, 0)
-                    return true
-                }
-                if (event.key === Qt.Key_Backspace && !blockedModifiers && cell.length === 0
-                        && cell.cursorPosition === 0 && checkModel.count === 1) {
-                    root.blockModel.convertListToText(block.index)
-                    root.focusBlock(block.index)
-                    return true
-                }
-                if (event.key === Qt.Key_Backspace && !blockedModifiers && cell.length === 0
-                        && cell.cursorPosition === 0 && checkModel.count > 1) {
-                    const target = itemIndex > 0 ? itemIndex - 1 : 0
-                    const targetLength = itemIndex > 0 ? checkModel.get(target).itemText.length : 0
-                    root.blockModel.removeListItem(block.index, itemIndex)
-                    focusItem(target, targetLength)
-                    return true
-                }
-                return false
+                return ListBlockBehavior.handleKey(checkRoot, root, event, cell, itemIndex)
             }
             Repeater {
                 id: checkRepeater
@@ -867,19 +865,31 @@ ListView {
                     required property int index
                     required property string itemText
                     required property bool itemChecked
+                    required property int itemIndent
+                    required property int itemType
                     property alias listEditor: checkCell
+                    Layout.leftMargin: itemIndent * 20
                     CheckBox {
+                        visible: itemType === 2
                         checked: itemChecked
                         onClicked: root.blockModel.setChecked(checkRoot.block.index, index, checked)
                     }
+                    Label {
+                        visible: itemType !== 2
+                        text: itemType === 5 ? checkRoot.itemNumber(index) + "." : "•"
+                        Layout.alignment: Qt.AlignTop
+                    }
                     BlockTextArea {
                         id: checkCell
+                        blockIndex: checkRoot.block.index
+                        listItemIndex: checkRow.index
                         Layout.fillWidth: true
                         text: itemText
                         keyHandler: function(event) { return checkRoot.handleItemKey(event, checkCell, checkRow.index) }
                         commitText: function() { root.blockModel.setListItem(checkRoot.block.index, index, text) }
                         textFormat: TextEdit.MarkdownText
-                        onTextChanged: if (activeFocus) root.blockModel.setListItem(checkRoot.block.index, index, text)
+                        onTextChanged: if (activeFocus && !checkRoot.syncingItems)
+                                           root.blockModel.setListItem(checkRoot.block.index, index, text)
                         onLinkActivated: link => Qt.openUrlExternally(link)
                     }
                 }
@@ -938,66 +948,27 @@ ListView {
                 root.blockModel.insertTableRow(block.index, tableRow)
                 focusCell(tableRow * columns + focusColumn, 0)
             }
-            function handleCellKey(event, cell) {
-                const tableRow = Math.floor(cell.index / columns)
-                const column = cell.index % columns
-                const navigationModifiers = event.modifiers
-                    & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-                if (!navigationModifiers && event.key === Qt.Key_Left && cell.cursorPosition === 0) {
-                    if (cell.index > 0) {
-                        const previous = cellRepeater.itemAt(cell.index - 1)
-                        focusCell(cell.index - 1, previous ? previous.length : 0)
-                    }
-                    return true
-                }
-                if (!navigationModifiers && event.key === Qt.Key_Right && cell.cursorPosition === cell.length) {
-                    if (cell.index + 1 < cellModel.count)
-                        focusCell(cell.index + 1, 0)
-                    return true
-                }
-                if (!navigationModifiers && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
-                    const cursorRectangle = cell.positionToRectangle(cell.cursorPosition)
-                    const firstRectangle = cell.positionToRectangle(0)
-                    const lastRectangle = cell.positionToRectangle(cell.length)
-                    if (event.key === Qt.Key_Up && cursorRectangle.y <= firstRectangle.y + 0.5) {
-                        if (tableRow > 0)
-                            focusCellVertically(cell.index - columns, cursorRectangle.x, true)
-                        return true
-                    }
-                    if (event.key === Qt.Key_Down && cursorRectangle.y >= lastRectangle.y - 0.5) {
-                        if (cell.index + columns < cellModel.count)
-                            focusCellVertically(cell.index + columns, cursorRectangle.x, false)
-                        return true
-                    }
-                }
-                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
-                        && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
-                    if (event.modifiers & Qt.ShiftModifier)
+            function cellCount() { return cellModel.count }
+            function rowCount() { return cellModel.count / columns }
+            function cellLength(index) {
+                const cell = cellRepeater.itemAt(index)
+                return cell ? cell.length : 0
+            }
+            function rowEmpty(row) {
+                for (let column = 0; column < columns; ++column)
+                    if (String(tableData.values[row * columns + column] || "").trim().length > 0)
                         return false
-                    if (cell.cursorPosition === cell.length) {
-                        insertRow(tableRow + 1, column)
-                        return true
-                    }
-                }
-                if (event.key === Qt.Key_Tab
-                        && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
-                    if (event.modifiers & Qt.ShiftModifier) {
-                        if (cell.index > 0)
-                            focusCell(cell.index - 1, 0)
-                    } else if (cell.index + 1 < cellModel.count) {
-                        focusCell(cell.index + 1, 0)
-                    } else {
-                        insertRow(tableRow + 1, 0)
-                    }
-                    return true
-                }
-                return false
+                return true
+            }
+            function handleCellKey(event, cell) {
+                return TableBlockBehavior.handleKey(tableRoot, root, event, cell)
             }
             Repeater {
                 id: cellRepeater
                 model: cellModel
                 BlockTextArea {
                     id: tableCell
+                    blockIndex: tableRoot.block.index
                     required property int index
                     required property string cellText
                     Layout.fillWidth: true
@@ -1005,6 +976,7 @@ ListView {
                     font.bold: index < tableRoot.columns
                     text: cellText
                     tableCell: true
+                    tableRow: Math.floor(index / tableRoot.columns)
                     canRemoveTableRow: cellModel.count / tableRoot.columns > 1
                     canRemoveTableColumn: tableRoot.columns > 1
                     keyHandler: function(event) { return tableRoot.handleCellKey(event, tableCell) }
@@ -1071,6 +1043,7 @@ ListView {
             }
             RowLayout {
                 BlockTextArea {
+                    blockIndex: imageRoot.block.index
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image description")
                     text: imageRoot.block.alt
@@ -1078,6 +1051,7 @@ ListView {
                     onTextChanged: if (activeFocus) root.blockModel.setImageAlt(imageRoot.block.index, text)
                 }
                 BlockTextArea {
+                    blockIndex: imageRoot.block.index
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image URL")
                     text: imageRoot.block.url

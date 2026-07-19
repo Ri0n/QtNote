@@ -24,5 +24,8 @@
     </qresource>
     <qresource prefix="/qml">
         <file alias="NoteBlockEditor.qml">qml/NoteBlockEditor.qml</file>
+        <file alias="ListBlockBehavior.js">qml/ListBlockBehavior.js</file>
+        <file alias="TableBlockBehavior.js">qml/TableBlockBehavior.js</file>
+        <file alias="EditorContextMenu.qml">qml/EditorContextMenu.qml</file>
     </qresource>
 </RCC>

@@ -31,6 +31,8 @@ public:
     bool                     isMarkdown() const;
     void                     insertText(const QString &text);
     void                     focusEditor();
+    void                     insertTable();
+    void                     insertList(int type);
     Q_INVOKABLE void         registerTextDocument(QQuickTextDocument *document, bool titleDocument);
     Q_INVOKABLE QVariantList spellCheckRanges(QQuickTextDocument *document);
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
