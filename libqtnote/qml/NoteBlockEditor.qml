@@ -858,24 +858,39 @@ ListView {
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             preventStealing: true
-            cursorShape: !blockArea.renderedMarkdown && blockArea.primaryModifierDown
-                         && hoveredPlainLinkInfo !== null
+            cursorShape: (blockArea.renderedMarkdown && hoveredRenderedLink.length > 0)
+                         || (!blockArea.renderedMarkdown && blockArea.primaryModifierDown
+                             && hoveredPlainLinkInfo !== null)
                          ? Qt.PointingHandCursor : Qt.IBeamCursor
             property bool selecting: false
             property bool selectionMoved: false
             property real hoverX: -1
             property real hoverY: -1
+            property string hoveredRenderedLink: ""
             property var hoveredPlainLinkInfo: null
 
             function clearPlainLinkHover() {
+                hoveredRenderedLink = ""
                 hoveredPlainLinkInfo = null
                 plainLinkHoverCanvas.requestPaint()
             }
 
             function refreshPlainLinkHover(modifiers) {
+                if (hoverX < 0 || hoverY < 0) {
+                    clearPlainLinkHover()
+                    return
+                }
+                if (blockArea.renderedMarkdown) {
+                    hoveredPlainLinkInfo = null
+                    hoveredRenderedLink = blockArea.linkAt(hoverX, hoverY)
+                    plainLinkHoverCanvas.requestPaint()
+                    return
+                }
+
+                hoveredRenderedLink = ""
                 const primaryModifier = blockArea.primaryModifierDown
                         || Boolean(modifiers & (Qt.ControlModifier | Qt.MetaModifier))
-                if (blockArea.renderedMarkdown || !primaryModifier || hoverX < 0 || hoverY < 0) {
+                if (!primaryModifier) {
                     clearPlainLinkHover()
                     return
                 }

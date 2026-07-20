@@ -338,14 +338,57 @@ QVariantList QmlNoteEditor::spellCheckRanges(QQuickTextDocument *document)
     QVariantList result;
     if (!spellCheckEnabled_ || !document || !document->textDocument())
         return result;
-    for (auto block = document->textDocument()->begin(); block.isValid(); block = block.next()) {
+
+    auto      *textDocument      = document->textDocument();
+    const auto visibleTextIsHref = [textDocument](int position) {
+        const int limit = documentEnd(textDocument);
+        if (position < 0 || position >= limit)
+            return false;
+
+        const QTextCharFormat format = formatAt(textDocument, position);
+        const QString         href   = format.anchorHref().trimmed();
+        if (!format.isAnchor() || href.isEmpty())
+            return false;
+
+        int start = position;
+        while (start > 0) {
+            const QTextCharFormat previous = formatAt(textDocument, start - 1);
+            if (!previous.isAnchor() || previous.anchorHref() != href)
+                break;
+            --start;
+        }
+
+        int end = position + 1;
+        while (end < limit) {
+            const QTextCharFormat next = formatAt(textDocument, end);
+            if (!next.isAnchor() || next.anchorHref() != href)
+                break;
+            ++end;
+        }
+
+        QTextCursor cursor(textDocument);
+        cursor.setPosition(start);
+        cursor.setPosition(end, QTextCursor::KeepAnchor);
+        QString visible = cursor.selectedText().trimmed();
+        visible.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+
+        return visible == href || (href.startsWith(QStringLiteral("mailto:")) && visible == href.mid(7))
+            || (visible.startsWith(QStringLiteral("www.")) && href == QStringLiteral("https://") + visible);
+    };
+
+    for (auto block = textDocument->begin(); block.isValid(); block = block.next()) {
         if (!block.layout())
             continue;
         for (const auto &range : block.layout()->formats()) {
             if (!range.format.property(SpellCheckFormatProperty).toBool())
                 continue;
+
+            const int start = block.position() + range.start;
+            if (visibleTextIsHref(start))
+                continue;
+
             QVariantMap value;
-            value.insert(QStringLiteral("start"), block.position() + range.start);
+            value.insert(QStringLiteral("start"), start);
             value.insert(QStringLiteral("length"), range.length);
             result.append(value);
         }
