@@ -577,7 +577,7 @@ ListView {
         id: linkEditor
         parent: Overlay.overlay
         modal: false
-        focus: true
+        focus: !hoverMode
         padding: 8
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         width: Math.min(420, Math.max(240, parent ? parent.width - 16 : 420))
@@ -586,22 +586,45 @@ ListView {
         property int selectionStart: 0
         property int selectionEnd: 0
         property bool hadLink: false
+        property bool hoverMode: false
+        property bool pointerInside: false
 
-        function openFor(target, start, end, href) {
+        Timer {
+            id: hoverLinkCloseTimer
+            interval: 250
+            onTriggered: {
+                if (!linkEditor.hoverMode || linkEditor.pointerInside)
+                    return
+                if (linkEditor.editor && linkEditor.editor.linkHoverActive)
+                    return
+                linkEditor.close()
+            }
+        }
+
+        function openFor(target, start, end, href, activate) {
+            hoverLinkCloseTimer.stop()
             editor = target
             selectionStart = start
             selectionEnd = end
             urlField.text = href || ""
             hadLink = urlField.text.length > 0
+            hoverMode = activate === false
             const rectangle = target.positionToRectangle(start)
             const point = target.mapToItem(Overlay.overlay, rectangle.x, rectangle.y)
             x = Math.max(8, Math.min(Overlay.overlay.width - width - 8, point.x))
             y = Math.max(8, point.y - implicitHeight - 6)
             open()
-            Qt.callLater(function() {
-                urlField.forceActiveFocus()
-                urlField.selectAll()
-            })
+            if (!hoverMode) {
+                Qt.callLater(function() {
+                    urlField.forceActiveFocus()
+                    urlField.selectAll()
+                })
+            }
+        }
+
+        function scheduleHoverClose(target) {
+            if (hoverMode && editor === target)
+                hoverLinkCloseTimer.restart()
         }
 
         function applyLink(href) {
@@ -619,15 +642,38 @@ ListView {
             editor.forceActiveFocus()
         }
 
-        onClosed: if (editor) editor.forceActiveFocus()
+        onClosed: {
+            hoverLinkCloseTimer.stop()
+            pointerInside = false
+            if (!hoverMode && editor)
+                editor.forceActiveFocus()
+            hoverMode = false
+        }
 
         contentItem: RowLayout {
             spacing: 6
+
+            HoverHandler {
+                onHoveredChanged: {
+                    linkEditor.pointerInside = hovered
+                    if (hovered)
+                        hoverLinkCloseTimer.stop()
+                    else if (linkEditor.hoverMode)
+                        hoverLinkCloseTimer.restart()
+                }
+            }
+
             TextField {
                 id: urlField
                 Layout.fillWidth: true
                 placeholderText: qsTr("Paste or type a link")
                 selectByMouse: true
+                onActiveFocusChanged: {
+                    if (activeFocus) {
+                        linkEditor.hoverMode = false
+                        hoverLinkCloseTimer.stop()
+                    }
+                }
                 onAccepted: linkEditor.applyLink(text)
             }
             Button {
@@ -720,6 +766,8 @@ ListView {
         property var insertColumnRight: null
         property var removeColumn: null
         readonly property bool renderedMarkdown: textFormat === TextEdit.MarkdownText
+        readonly property bool linkHoverActive: editorMouseArea.containsMouse
+                                                && editorMouseArea.hoveredRenderedLinkInfo !== null
         property bool primaryModifierDown: false
         wrapMode: TextEdit.Wrap
         verticalAlignment: TextEdit.AlignTop
@@ -868,6 +916,19 @@ ListView {
         }
 
         Timer {
+            id: renderedLinkHoverTimer
+            interval: 700
+            onTriggered: {
+                const info = editorMouseArea.hoveredRenderedLinkInfo
+                if (!blockArea.renderedMarkdown || !editorMouseArea.containsMouse || !info)
+                    return
+                if (linkEditor.visible && !linkEditor.hoverMode)
+                    return
+                linkEditor.openFor(blockArea, info.start, info.end, info.href, false)
+            }
+        }
+
+        Timer {
             id: modifierStatePoll
             interval: 50
             repeat: true
@@ -898,10 +959,13 @@ ListView {
             property real hoverX: -1
             property real hoverY: -1
             property string hoveredRenderedLink: ""
+            property var hoveredRenderedLinkInfo: null
             property var hoveredPlainLinkInfo: null
 
             function clearPlainLinkHover() {
+                renderedLinkHoverTimer.stop()
                 hoveredRenderedLink = ""
+                hoveredRenderedLinkInfo = null
                 hoveredPlainLinkInfo = null
                 plainLinkHoverCanvas.requestPaint()
             }
@@ -913,12 +977,28 @@ ListView {
                 }
                 if (blockArea.renderedMarkdown) {
                     hoveredPlainLinkInfo = null
-                    hoveredRenderedLink = blockArea.linkAt(hoverX, hoverY)
+                    const href = blockArea.linkAt(hoverX, hoverY)
+                    const position = blockArea.positionAt(hoverX, hoverY)
+                    const info = href.length > 0
+                            ? qmlNoteEditor.linkInfo(blockArea.textDocument, position, position)
+                            : null
+                    const changed = !hoveredRenderedLinkInfo || !info
+                            || hoveredRenderedLinkInfo.start !== info.start
+                            || hoveredRenderedLinkInfo.end !== info.end
+                            || hoveredRenderedLinkInfo.href !== info.href
+                    hoveredRenderedLink = href
+                    hoveredRenderedLinkInfo = info && info.valid ? info : null
+                    if (hoveredRenderedLinkInfo && changed)
+                        renderedLinkHoverTimer.restart()
+                    else if (!hoveredRenderedLinkInfo)
+                        renderedLinkHoverTimer.stop()
                     plainLinkHoverCanvas.requestPaint()
                     return
                 }
 
+                renderedLinkHoverTimer.stop()
                 hoveredRenderedLink = ""
+                hoveredRenderedLinkInfo = null
                 const primaryModifier = blockArea.primaryModifierDown
                         || Boolean(modifiers & (Qt.ControlModifier | Qt.MetaModifier))
                 if (!primaryModifier) {
@@ -1016,6 +1096,7 @@ ListView {
                 hoverX = -1
                 hoverY = -1
                 clearPlainLinkHover()
+                linkEditor.scheduleHoverClose(blockArea)
             }
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.LeftButton)
