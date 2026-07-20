@@ -49,6 +49,16 @@ function handleKey(host, controller, event, cell, itemIndex) {
     if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
             && !blocked && !(event.modifiers & Qt.ShiftModifier)) {
         const position = cell.cursorPosition
+        if (cell.length === 0 && position === 0 && itemIndex + 1 === host.itemCount()) {
+            if (host.itemCount() === 1) {
+                controller.blockModel.convertListToText(host.block.index)
+                controller.focusBlock(host.block.index)
+            } else {
+                controller.blockModel.removeListItem(host.block.index, itemIndex)
+                controller.focusFollowingBlock(host.block.index)
+            }
+            return true
+        }
         const right = cell.text.substring(position)
         controller.blockModel.setListItem(host.block.index, itemIndex, cell.text.substring(0, position))
         controller.blockModel.insertListItem(host.block.index, itemIndex + 1, right)

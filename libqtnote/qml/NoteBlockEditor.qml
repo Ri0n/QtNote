@@ -23,6 +23,8 @@ ListView {
     property int keyboardSelectionAnchorPosition: 0
     readonly property int blockSpacing: Math.max(1, Math.round(editorFontMetrics.height * 3 / 5))
     readonly property int editorInset: Math.max(8, Math.round(editorFontMetrics.height * 2 / 3))
+    readonly property int scrollBarInset: verticalScrollBar.visible
+                                           ? Math.ceil(verticalScrollBar.width) : 0
     model: blockModel
     spacing: blockSpacing
     clip: true
@@ -31,6 +33,11 @@ ListView {
     boundsBehavior: Flickable.StopAtBounds
     activeFocusOnTab: true
     focus: true
+
+    ScrollBar.vertical: ScrollBar {
+        id: verticalScrollBar
+        policy: ScrollBar.AsNeeded
+    }
 
     FontMetrics {
         id: editorFontMetrics
@@ -650,7 +657,7 @@ ListView {
         required property string alt
         required property url previewUrl
         property alias item: blockLoader.item
-        width: root.width
+        width: Math.max(0, root.width - root.scrollBarInset)
         height: blockLoader.height
 
         Loader {
@@ -758,7 +765,9 @@ ListView {
                 editorMouseArea.refreshPlainLinkHover(event.modifiers)
                 plainLinkHoverCanvas.requestPaint()
             }
-            if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
+            if (blockArea.handleLinkSpaceExit(event)) {
+                event.accepted = true
+            } else if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
                     && root.deleteStructuredSelection()) {
                 event.accepted = true
             } else if (root.handleInlineFormatting(event, blockArea)) {
@@ -787,6 +796,28 @@ ListView {
                 editorMouseArea.refreshPlainLinkHover(event.modifiers)
                 plainLinkHoverCanvas.requestPaint()
             }
+        }
+
+        function handleLinkSpaceExit(event) {
+            if (!renderedMarkdown || event.key !== Qt.Key_Space
+                    || event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
+                    || selectionStart !== selectionEnd || cursorPosition <= 0
+                    || getText(cursorPosition - 1, cursorPosition) !== " ") {
+                return false
+            }
+
+            const position = cursorPosition
+            const info = qmlNoteEditor.linkInfo(textDocument, position - 1, position)
+            if (!info.valid || !info.href || info.end !== position)
+                return false
+
+            const result = qmlNoteEditor.setLink(textDocument, position - 1, position, "")
+            if (result < 0)
+                return false
+
+            cursorPosition = position
+            commitText()
+            return true
         }
 
         function isSpellingError(position) {

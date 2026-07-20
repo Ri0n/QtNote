@@ -45,6 +45,12 @@ function handleKey(host, controller, event, cell) {
             && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
         if (event.modifiers & Qt.ShiftModifier)
             return false
+        if (row + 1 === host.rowCount() && host.rowCount() > 1
+                && cell.length === 0 && cell.cursorPosition === 0 && host.rowEmpty(row)) {
+            controller.blockModel.removeTableRow(host.block.index, row)
+            controller.focusFollowingBlock(host.block.index)
+            return true
+        }
         if (cell.cursorPosition === cell.length) {
             host.insertRow(row + 1, column)
             return true
