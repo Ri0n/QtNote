@@ -44,6 +44,159 @@ ListView {
         font: Application.font
     }
 
+    function formattedLinkLabelRuns(label) {
+        const runs = []
+        let buffer = ""
+        let bold = false
+        let italic = false
+        let strike = false
+        let codeDelimiter = ""
+        let foundFormatting = false
+
+        function appendRun() {
+            if (buffer.length === 0)
+                return
+            runs.push({
+                text: buffer,
+                bold: bold,
+                italic: italic,
+                strike: strike,
+                code: codeDelimiter.length > 0
+            })
+            buffer = ""
+        }
+
+        function backtickRunAt(position) {
+            let end = position
+            while (end < label.length && label.charAt(end) === "`")
+                ++end
+            return label.substring(position, end)
+        }
+
+        function isWordCharacter(character) {
+            if (!character)
+                return false
+            return /[0-9A-Za-z]/.test(character)
+                    || character.toUpperCase() !== character.toLowerCase()
+        }
+
+        function underscoreIsIntraword(position, length) {
+            const previous = position > 0 ? label.charAt(position - 1) : ""
+            const next = position + length < label.length
+                       ? label.charAt(position + length) : ""
+            return isWordCharacter(previous) && isWordCharacter(next)
+        }
+
+        for (let index = 0; index < label.length;) {
+            const character = label.charAt(index)
+            if (character === "\\" && index + 1 < label.length) {
+                buffer += label.substring(index, index + 2)
+                index += 2
+                continue
+            }
+
+            if (character === "`") {
+                const delimiter = backtickRunAt(index)
+                if (codeDelimiter.length === 0 || codeDelimiter === delimiter) {
+                    appendRun()
+                    codeDelimiter = codeDelimiter.length === 0 ? delimiter : ""
+                    foundFormatting = true
+                    index += delimiter.length
+                    continue
+                }
+            }
+
+            if (codeDelimiter.length === 0) {
+                const pair = label.substring(index, index + 2)
+                if (pair === "**" || (pair === "__" && !underscoreIsIntraword(index, 2))) {
+                    appendRun()
+                    bold = !bold
+                    foundFormatting = true
+                    index += 2
+                    continue
+                }
+                if (pair === "~~") {
+                    appendRun()
+                    strike = !strike
+                    foundFormatting = true
+                    index += 2
+                    continue
+                }
+                if (character === "*"
+                        || (character === "_" && !underscoreIsIntraword(index, 1))) {
+                    appendRun()
+                    italic = !italic
+                    foundFormatting = true
+                    ++index
+                    continue
+                }
+            }
+
+            buffer += character
+            ++index
+        }
+
+        appendRun()
+        if (!foundFormatting || bold || italic || strike || codeDelimiter.length > 0)
+            return null
+        return runs
+    }
+
+    function codeSpanForRendering(text) {
+        let maximumRun = 0
+        let currentRun = 0
+        for (let index = 0; index < text.length; ++index) {
+            if (text.charAt(index) === "`") {
+                ++currentRun
+                maximumRun = Math.max(maximumRun, currentRun)
+            } else {
+                currentRun = 0
+            }
+        }
+        let delimiter = ""
+        for (let index = 0; index <= maximumRun; ++index)
+            delimiter += "`"
+        return delimiter + text + delimiter
+    }
+
+    function renderFormattedLinkRun(run) {
+        let value = run.code ? codeSpanForRendering(run.text) : run.text
+        if (run.italic)
+            value = "*" + value + "*"
+        if (run.bold)
+            value = "**" + value + "**"
+        if (run.strike)
+            value = "~~" + value + "~~"
+        return value
+    }
+
+    function markdownForRendering(source) {
+        if (!source || (source.indexOf("*") < 0 && source.indexOf("_") < 0
+                        && source.indexOf("~") < 0 && source.indexOf("`") < 0))
+            return source
+
+        // QTextDocument can lose nested or intraword formatting inside a
+        // link label. Give every uniform style run its own adjacent link.
+        // The C++ serializer joins the runs back into one Markdown link.
+        const linkPattern = /\[((?:\\.|[^\]\\\n])*)\]\(([^)\n]+)\)/g
+        return source.replace(linkPattern, function(fullMatch, label, destination, offset, wholeText) {
+            if (offset > 0 && wholeText.charAt(offset - 1) === "!")
+                return fullMatch
+
+            const runs = formattedLinkLabelRuns(label)
+            if (runs === null)
+                return fullMatch
+
+            let result = ""
+            for (const run of runs) {
+                if (run.text.length === 0)
+                    continue
+                result += "[" + renderFormattedLinkRun(run) + "](" + destination + ")"
+            }
+            return result.length > 0 ? result : fullMatch
+        })
+    }
+
     function registerEditor(editor) {
         if (editors.indexOf(editor) < 0) {
             editors = editors.concat([editor])
@@ -536,7 +689,7 @@ ListView {
         if (formattedEnd < 0)
             return
         editor.select(start, formattedEnd)
-        editor.commitText()
+        editor.commitText(false)
     }
 
     function openLinkEditor(editor) {
@@ -636,7 +789,7 @@ ListView {
                                               href.trim())
             if (end >= 0) {
                 editor.select(selectionStart, end)
-                editor.commitText()
+                editor.commitText(false)
             }
             close()
             editor.forceActiveFocus()
@@ -769,6 +922,11 @@ ListView {
         readonly property bool linkHoverActive: editorMouseArea.containsMouse
                                                 && editorMouseArea.hoveredRenderedLinkInfo !== null
         property bool primaryModifierDown: false
+        property string sourceText: ""
+        property bool syncingSourceText: false
+        property bool sourceTextPending: false
+        property string observedPlainText: ""
+        property bool observedPlainTextInitialized: false
         wrapMode: TextEdit.Wrap
         verticalAlignment: TextEdit.AlignTop
         selectByMouse: true
@@ -778,10 +936,59 @@ ListView {
         rightPadding: 4
         topPadding: 0
         bottomPadding: 0
-        onActiveFocusChanged: if (activeFocus) root.activeEditor = this
+        function currentPlainText() {
+            return getText(0, length)
+        }
+
+        function rememberPlainText() {
+            observedPlainText = currentPlainText()
+            observedPlainTextInitialized = true
+        }
+
+        function synchronizeSourceText(force) {
+            if (activeFocus) {
+                sourceTextPending = true
+                return
+            }
+            sourceTextPending = false
+            if (!force && text === sourceText) {
+                rememberPlainText()
+                return
+            }
+            syncingSourceText = true
+            text = sourceText
+            syncingSourceText = false
+            rememberPlainText()
+        }
+
+        function shouldCommitTextChange(allowed) {
+            if (syncingSourceText)
+                return false
+            const current = currentPlainText()
+            if (!observedPlainTextInitialized) {
+                observedPlainText = current
+                observedPlainTextInitialized = true
+                return false
+            }
+            const contentChanged = current !== observedPlainText
+            observedPlainText = current
+            return Boolean(allowed) && contentChanged
+        }
+
+        onSourceTextChanged: synchronizeSourceText()
+        onActiveFocusChanged: {
+            if (activeFocus) {
+                root.activeEditor = this
+                rememberPlainText()
+            } else if (sourceTextPending) {
+                synchronizeSourceText()
+            }
+        }
         Component.onCompleted: {
+            synchronizeSourceText(true)
             root.registerEditor(blockArea)
             qmlNoteEditor.registerTextDocument(textDocument, titleDocument)
+            rememberPlainText()
             spellRefresh.restart()
         }
         Component.onDestruction: root.unregisterEditor(blockArea)
@@ -864,7 +1071,7 @@ ListView {
                 return false
 
             cursorPosition = position
-            commitText()
+            commitText(false)
             return true
         }
 
@@ -1205,11 +1412,16 @@ ListView {
             titleDocument: block.index === 0
             blockIndex: block.index
             width: block.width
-            text: block.blockText
+            sourceText: root.blockModel && root.blockModel.markdown
+                        ? root.markdownForRendering(block.blockText) : block.blockText
             keyHandler: function(event) { return root.handleHeadingShortcut(event, textCell) }
-            commitText: function() { root.blockModel.setBlockText(block.index, text) }
+            commitText: function() {
+                const value = root.blockModel && root.blockModel.markdown
+                    ? qmlNoteEditor.markdownText(textDocument) : text
+                root.blockModel.setBlockText(block.index, value)
+            }
             textFormat: root.blockModel && root.blockModel.markdown ? TextEdit.MarkdownText : TextEdit.PlainText
-            onTextChanged: if (activeFocus) root.blockModel.setBlockText(block.index, text)
+            onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
             onLinkActivated: link => Qt.openUrlExternally(link)
         }
     }
@@ -1221,7 +1433,7 @@ ListView {
             property var block: parent
             blockIndex: block.index
             width: block.width
-            text: block.blockText
+            sourceText: root.markdownForRendering(block.blockText)
             font.bold: true
             font.pointSize: Application.font.pointSize * (block.headingLevel === 1 ? 1.7
                             : block.headingLevel === 2 ? 1.5
@@ -1229,9 +1441,12 @@ ListView {
                             : block.headingLevel === 4 ? 1.15
                             : block.headingLevel === 5 ? 1.0 : 0.9)
             keyHandler: function(event) { return root.handleHeadingShortcut(event, headingCell) }
-            commitText: function() { root.blockModel.setBlockText(block.index, text) }
+            commitText: function() {
+                root.blockModel.setBlockText(
+                    block.index, qmlNoteEditor.markdownText(textDocument))
+            }
             textFormat: TextEdit.MarkdownText
-            onTextChanged: if (activeFocus) root.blockModel.setBlockText(block.index, text)
+            onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
             onLinkActivated: link => Qt.openUrlExternally(link)
         }
     }
@@ -1356,12 +1571,17 @@ ListView {
                         blockIndex: checkRoot.block.index
                         listItemIndex: checkRow.index
                         Layout.fillWidth: true
-                        text: itemText
+                        sourceText: root.markdownForRendering(itemText)
                         keyHandler: function(event) { return checkRoot.handleItemKey(event, checkCell, checkRow.index) }
-                        commitText: function() { root.blockModel.setListItem(checkRoot.block.index, index, text) }
+                        commitText: function() {
+                            root.blockModel.setListItem(
+                                checkRoot.block.index,
+                                index,
+                                qmlNoteEditor.markdownText(textDocument))
+                        }
                         textFormat: TextEdit.MarkdownText
-                        onTextChanged: if (activeFocus && !checkRoot.syncingItems)
-                                           root.blockModel.setListItem(checkRoot.block.index, index, text)
+                        onTextChanged: if (shouldCommitTextChange(activeFocus && !checkRoot.syncingItems))
+                                           commitText(true)
                         onLinkActivated: link => Qt.openUrlExternally(link)
                     }
                 }
@@ -1446,7 +1666,7 @@ ListView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     font.bold: index < tableRoot.columns
-                    text: cellText
+                    sourceText: cellText
                     tableCell: true
                     tableRow: Math.floor(index / tableRoot.columns)
                     canRemoveTableRow: cellModel.count / tableRoot.columns > 1
@@ -1495,8 +1715,10 @@ ListView {
                         border.width: 1
                         border.color: tableCell.palette.mid
                     }
-                    commitText: function() { root.blockModel.setTableCell(tableRoot.block.index, index, text) }
-                    onTextChanged: if (activeFocus) root.blockModel.setTableCell(tableRoot.block.index, index, text)
+                    commitText: function() {
+                        root.blockModel.setTableCell(tableRoot.block.index, index, text)
+                    }
+                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
                 }
             }
         }
@@ -1518,17 +1740,17 @@ ListView {
                     blockIndex: imageRoot.block.index
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image description")
-                    text: imageRoot.block.alt
+                    sourceText: imageRoot.block.alt
                     commitText: function() { root.blockModel.setImageAlt(imageRoot.block.index, text) }
-                    onTextChanged: if (activeFocus) root.blockModel.setImageAlt(imageRoot.block.index, text)
+                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
                 }
                 BlockTextArea {
                     blockIndex: imageRoot.block.index
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image URL")
-                    text: imageRoot.block.url
+                    sourceText: imageRoot.block.url
                     commitText: function() { root.blockModel.setImageUrl(imageRoot.block.index, text) }
-                    onTextChanged: if (activeFocus) root.blockModel.setImageUrl(imageRoot.block.index, text)
+                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
                 }
             }
         }

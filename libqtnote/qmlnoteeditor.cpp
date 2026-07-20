@@ -1,6 +1,7 @@
 #include "qmlnoteeditor.h"
 
 #include <QClipboard>
+#include <QFont>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QMimeData>
@@ -10,6 +11,8 @@
 #include <QQuickItem>
 #include <QQuickTextDocument>
 #include <QQuickWidget>
+#include <QRegularExpression>
+#include <QStringList>
 #include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -106,6 +109,305 @@ namespace {
             cursor.setCharFormat(range.format);
         }
     }
+
+    const QString LinkLabelMarkerPrefix = QStringLiteral("QTNOTELINKLABEL7F3A");
+    const QString LinkLabelMarkerSuffix = QStringLiteral("END7F3A");
+
+    QString protectLinkLabels(const QString &markdown)
+    {
+        if (!markdown.contains(QLatin1Char('[')))
+            return markdown;
+
+        // Keep the complete Markdown spelling of a link label opaque while
+        // NoteBlockModel canonicalizes the document through QTextDocument.
+        // QTextDocument otherwise drops or rearranges nested emphasis located
+        // in the middle of a word inside a link label.
+        static const QRegularExpression link(
+            QStringLiteral(R"((?<!!)\[((?:\\.|[^\]\\\n])*)\]\(((?:\\.|[^)\\\n])*)\))"));
+
+        QString result;
+        int     copiedUntil = 0;
+        auto    links       = link.globalMatch(markdown);
+        while (links.hasNext()) {
+            const auto       match   = links.next();
+            const QByteArray encoded = match.captured(1).toUtf8().toHex().toUpper();
+
+            result += markdown.mid(copiedUntil, match.capturedStart() - copiedUntil);
+            result += QLatin1Char('[') + LinkLabelMarkerPrefix + QString::fromLatin1(encoded) + LinkLabelMarkerSuffix
+                + QStringLiteral("](") + match.captured(2) + QLatin1Char(')');
+            copiedUntil = match.capturedEnd();
+        }
+
+        if (copiedUntil == 0)
+            return markdown;
+        result += markdown.mid(copiedUntil);
+        return result;
+    }
+
+    QString restoreLinkLabels(const QString &markdown)
+    {
+        static const QRegularExpression marker(LinkLabelMarkerPrefix + QStringLiteral("([0-9A-Fa-f]+)")
+                                               + LinkLabelMarkerSuffix);
+
+        QString result;
+        int     copiedUntil = 0;
+        auto    markers     = marker.globalMatch(markdown);
+        while (markers.hasNext()) {
+            const auto       match   = markers.next();
+            const QByteArray decoded = QByteArray::fromHex(match.captured(1).toLatin1());
+
+            result += markdown.mid(copiedUntil, match.capturedStart() - copiedUntil);
+            result += QString::fromUtf8(decoded);
+            copiedUntil = match.capturedEnd();
+        }
+
+        if (copiedUntil == 0)
+            return markdown;
+        result += markdown.mid(copiedUntil);
+        return result;
+    }
+
+    void restoreProtectedMarkdown(NoteBlockModel *model)
+    {
+        if (!model)
+            return;
+
+        for (int row = 0; row < model->rowCount(); ++row) {
+            const QModelIndex modelIndex = model->index(row);
+            const auto type = NoteBlockModel::BlockType(model->data(modelIndex, NoteBlockModel::TypeRole).toInt());
+
+            switch (type) {
+            case NoteBlockModel::Text:
+            case NoteBlockModel::Heading: {
+                const QString text     = model->data(modelIndex, NoteBlockModel::TextRole).toString();
+                const QString restored = restoreLinkLabels(text);
+                if (restored != text)
+                    model->setBlockText(row, restored);
+                break;
+            }
+            case NoteBlockModel::BulletList:
+            case NoteBlockModel::CheckList:
+            case NoteBlockModel::NumberedList: {
+                const QStringList items = model->data(modelIndex, NoteBlockModel::ItemsRole).toStringList();
+                for (int item = 0; item < items.size(); ++item) {
+                    const QString restored = restoreLinkLabels(items.at(item));
+                    if (restored != items.at(item))
+                        model->setListItem(row, item, restored);
+                }
+                break;
+            }
+            case NoteBlockModel::Table: {
+                const QVariantMap table = model->data(modelIndex, NoteBlockModel::CellsRole).toMap();
+                const QStringList cells = table.value(QStringLiteral("values")).toStringList();
+                for (int cell = 0; cell < cells.size(); ++cell) {
+                    const QString restored = restoreLinkLabels(cells.at(cell));
+                    if (restored != cells.at(cell))
+                        model->setTableCell(row, cell, restored);
+                }
+                break;
+            }
+            case NoteBlockModel::Image:
+                break;
+            }
+        }
+    }
+
+    struct InlineStyle {
+        bool bold   = false;
+        bool italic = false;
+        bool strike = false;
+        bool code   = false;
+
+        bool operator==(const InlineStyle &other) const
+        {
+            return bold == other.bold && italic == other.italic && strike == other.strike && code == other.code;
+        }
+    };
+
+    struct LinkGroup {
+        int                  start = 0;
+        int                  end   = 0;
+        QString              href;
+        QString              text;
+        QVector<InlineStyle> styles;
+    };
+
+    InlineStyle explicitInlineStyle(const QTextCharFormat &format)
+    {
+        InlineStyle style;
+        style.bold   = format.hasProperty(QTextFormat::FontWeight) && format.fontWeight() >= QFont::Bold;
+        style.italic = format.hasProperty(QTextFormat::FontItalic) && format.fontItalic();
+        style.strike = format.hasProperty(QTextFormat::FontStrikeOut) && format.fontStrikeOut();
+        style.code   = format.hasProperty(QTextFormat::FontFixedPitch) && format.fontFixedPitch();
+        return style;
+    }
+
+    QVector<LinkGroup> documentLinkGroups(const QTextDocument *document)
+    {
+        QVector<LinkGroup> groups;
+        if (!document)
+            return groups;
+
+        int     previousEnd = -1;
+        QString previousHref;
+        for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
+            for (auto it = block.begin(); !it.atEnd(); ++it) {
+                const QTextFragment fragment = it.fragment();
+                if (!fragment.isValid() || fragment.length() <= 0)
+                    continue;
+
+                const QTextCharFormat format = fragment.charFormat();
+                const QString         href   = format.isAnchor() ? format.anchorHref() : QString();
+                if (href.isEmpty()) {
+                    previousEnd = -1;
+                    previousHref.clear();
+                    continue;
+                }
+
+                const bool continuesGroup
+                    = !groups.isEmpty() && previousEnd == fragment.position() && previousHref == href;
+                if (!continuesGroup) {
+                    LinkGroup group;
+                    group.start = fragment.position();
+                    group.href  = href;
+                    groups.append(group);
+                }
+
+                auto             &group        = groups.last();
+                const QString     fragmentText = fragment.text();
+                const InlineStyle style        = explicitInlineStyle(format);
+                group.text += fragmentText;
+                for (qsizetype index = 0; index < fragmentText.size(); ++index)
+                    group.styles.append(style);
+
+                group.end    = fragment.position() + fragment.length();
+                previousEnd  = group.end;
+                previousHref = href;
+            }
+            previousEnd = -1;
+            previousHref.clear();
+        }
+        return groups;
+    }
+
+    QString escapeMarkdownLabelText(const QString &text)
+    {
+        QString escaped;
+        escaped.reserve(text.size() * 2);
+        static const QString special = QStringLiteral(R"(\\`*[]_~)");
+        for (const QChar character : text) {
+            if (character == QChar::ParagraphSeparator || character == QLatin1Char('\n')) {
+                escaped += QStringLiteral("<br>");
+                continue;
+            }
+            if (special.contains(character))
+                escaped += QLatin1Char('\\');
+            escaped += character;
+        }
+        return escaped;
+    }
+
+    QString codeSpan(const QString &text)
+    {
+        int maximumRun = 0;
+        int currentRun = 0;
+        for (const QChar character : text) {
+            if (character == QLatin1Char('`')) {
+                maximumRun = qMax(maximumRun, ++currentRun);
+            } else {
+                currentRun = 0;
+            }
+        }
+        const QString delimiter(maximumRun + 1, QLatin1Char('`'));
+        return delimiter + text + delimiter;
+    }
+
+    QVector<QString> inlineDelimiters(const InlineStyle &style)
+    {
+        QVector<QString> delimiters;
+        if (style.strike)
+            delimiters.append(QStringLiteral("~~"));
+        if (style.bold)
+            delimiters.append(QStringLiteral("**"));
+        if (style.italic)
+            delimiters.append(QStringLiteral("*"));
+        return delimiters;
+    }
+
+    QString formattedLinkRange(const LinkGroup &group, int start, int length)
+    {
+        const int        end = qMin(start + length, int(group.text.size()));
+        QString          result;
+        QVector<QString> activeDelimiters;
+
+        for (int position = qMax(0, start); position < end;) {
+            const InlineStyle style      = group.styles.value(position);
+            int               segmentEnd = position + 1;
+            while (segmentEnd < end && group.styles.value(segmentEnd) == style)
+                ++segmentEnd;
+
+            const QVector<QString> desiredDelimiters = inlineDelimiters(style);
+            int                    common            = 0;
+            while (common < activeDelimiters.size() && common < desiredDelimiters.size()
+                   && activeDelimiters.at(common) == desiredDelimiters.at(common)) {
+                ++common;
+            }
+            for (int index = activeDelimiters.size() - 1; index >= common; --index)
+                result += activeDelimiters.at(index);
+            for (int index = common; index < desiredDelimiters.size(); ++index)
+                result += desiredDelimiters.at(index);
+
+            const QString segment = group.text.mid(position, segmentEnd - position);
+            result += style.code ? codeSpan(segment) : escapeMarkdownLabelText(segment);
+            activeDelimiters = desiredDelimiters;
+            position         = segmentEnd;
+        }
+
+        for (int index = activeDelimiters.size() - 1; index >= 0; --index)
+            result += activeDelimiters.at(index);
+        return result;
+    }
+
+    QString markdownLinkDestination(QString href)
+    {
+        href.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+        href.replace(QLatin1Char('('), QStringLiteral("\\("));
+        href.replace(QLatin1Char(')'), QStringLiteral("\\)"));
+        return href;
+    }
+
+    QString serializedMarkdownLink(const LinkGroup &group)
+    {
+        return QLatin1Char('[') + formattedLinkRange(group, 0, group.text.size()) + QStringLiteral("](")
+            + markdownLinkDestination(group.href) + QLatin1Char(')');
+    }
+
+    QString markdownWithSerializedLinks(QTextDocument *document)
+    {
+        const QVector<LinkGroup> groups = documentLinkGroups(document);
+        if (groups.isEmpty())
+            return document->toMarkdown(QTextDocument::MarkdownDialectGitHub);
+
+        std::unique_ptr<QTextDocument> copy(document->clone());
+        QVector<QString>               markers;
+        markers.reserve(groups.size());
+        for (int index = 0; index < groups.size(); ++index) {
+            markers.append(QStringLiteral("QTNOTESERIALIZEDLINK7F3A%1END7F3A").arg(index));
+        }
+
+        for (int index = groups.size() - 1; index >= 0; --index) {
+            QTextCursor cursor(copy.get());
+            cursor.setPosition(groups.at(index).start);
+            cursor.setPosition(groups.at(index).end, QTextCursor::KeepAnchor);
+            cursor.insertText(markers.at(index), QTextCharFormat());
+        }
+
+        QString markdown = copy->toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        for (int index = 0; index < groups.size(); ++index)
+            markdown.replace(markers.at(index), serializedMarkdownLink(groups.at(index)));
+        return markdown;
+    }
+
 }
 
 QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new NoteBlockModel(this))
@@ -130,7 +432,10 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
 
 void QmlNoteEditor::load(const QString &contents, Note::Format format)
 {
-    model_->load(contents, format != Note::PlainText);
+    const bool markdown = format != Note::PlainText;
+    model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
+    if (markdown)
+        restoreProtectedMarkdown(model_);
 }
 
 void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
@@ -312,6 +617,18 @@ int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int star
     }
     cursor.mergeCharFormat(format);
     return end;
+}
+
+QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
+{
+    if (!quickDocument || !quickDocument->textDocument())
+        return {};
+
+    auto   *document = quickDocument->textDocument();
+    QString markdown = markdownWithSerializedLinks(document);
+    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+        markdown.chop(1);
+    return markdown;
 }
 
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)

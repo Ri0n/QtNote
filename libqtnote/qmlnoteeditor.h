@@ -43,6 +43,7 @@ public:
     Q_INVOKABLE int          setLink(QQuickTextDocument *document, int start, int end, const QString &href);
     Q_INVOKABLE bool         primaryModifierPressed() const;
     Q_INVOKABLE int          applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
+    Q_INVOKABLE QString      markdownText(QQuickTextDocument *document) const;
     bool                     spellCheckEnabled() const { return spellCheckEnabled_; }
     void                     setSpellCheckEnabled(bool enabled);
     void                     addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
