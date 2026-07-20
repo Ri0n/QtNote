@@ -4,7 +4,8 @@ function handleKey(host, controller, event, cell) {
     const row = Math.floor(cell.index / host.columns)
     const column = cell.index % host.columns
     const modifiers = event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
-    if (!modifiers && event.key === Qt.Key_Backspace && cell.length === 0 && cell.cursorPosition === 0
+    if (!modifiers && (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete)
+            && cell.length === 0 && cell.cursorPosition === 0
             && host.rowCount() > 1 && host.rowEmpty(row)) {
         controller.blockModel.removeTableRow(host.block.index, row)
         host.focusCell(Math.max(0, row - 1) * host.columns + Math.min(column, host.columns - 1), 0)

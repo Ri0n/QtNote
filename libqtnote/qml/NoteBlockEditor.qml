@@ -22,9 +22,12 @@ ListView {
     property var keyboardSelectionAnchorEditor: null
     property int keyboardSelectionAnchorPosition: 0
     readonly property int blockSpacing: Math.max(1, Math.round(editorFontMetrics.height * 3 / 5))
+    readonly property int editorInset: Math.max(8, Math.round(editorFontMetrics.height * 2 / 3))
     model: blockModel
     spacing: blockSpacing
     clip: true
+    topMargin: editorInset
+    bottomMargin: editorInset
     boundsBehavior: Flickable.StopAtBounds
     activeFocusOnTab: true
     focus: true
@@ -529,10 +532,29 @@ ListView {
         editor.commitText()
     }
 
+    function openLinkEditor(editor) {
+        if (!editor || editor.textFormat !== TextEdit.MarkdownText)
+            return
+        const info = qmlNoteEditor.linkInfo(editor.textDocument,
+                                            editor.selectionStart,
+                                            editor.selectionEnd)
+        if (!info.valid)
+            return
+        editor.select(info.start, info.end)
+        linkEditor.openFor(editor, info.start, info.end, info.href)
+    }
+
     function handleInlineFormatting(event, editor) {
         const style = inlineMarkers(event)
         if (!style)
             return false
+        if (style === "link") {
+            if (!editor || editor.textFormat !== TextEdit.MarkdownText)
+                return false
+            const selected = orderedEditors().filter(candidate => candidate.selectionStart !== candidate.selectionEnd)
+            openLinkEditor(selected.length === 1 ? selected[0] : editor)
+            return true
+        }
         const selected = orderedEditors().filter(candidate => candidate.selectionStart !== candidate.selectionEnd)
         if (selected.length > 1) {
             for (const candidate of selected)
@@ -544,8 +566,77 @@ ListView {
         return true
     }
 
-    delegate: Loader {
-        id: blockLoader
+    Popup {
+        id: linkEditor
+        parent: Overlay.overlay
+        modal: false
+        focus: true
+        padding: 8
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        width: Math.min(420, Math.max(240, parent ? parent.width - 16 : 420))
+
+        property var editor: null
+        property int selectionStart: 0
+        property int selectionEnd: 0
+        property bool hadLink: false
+
+        function openFor(target, start, end, href) {
+            editor = target
+            selectionStart = start
+            selectionEnd = end
+            urlField.text = href || ""
+            hadLink = urlField.text.length > 0
+            const rectangle = target.positionToRectangle(start)
+            const point = target.mapToItem(Overlay.overlay, rectangle.x, rectangle.y)
+            x = Math.max(8, Math.min(Overlay.overlay.width - width - 8, point.x))
+            y = Math.max(8, point.y - implicitHeight - 6)
+            open()
+            Qt.callLater(function() {
+                urlField.forceActiveFocus()
+                urlField.selectAll()
+            })
+        }
+
+        function applyLink(href) {
+            if (!editor)
+                return
+            const end = qmlNoteEditor.setLink(editor.textDocument,
+                                              selectionStart,
+                                              selectionEnd,
+                                              href.trim())
+            if (end >= 0) {
+                editor.select(selectionStart, end)
+                editor.commitText()
+            }
+            close()
+            editor.forceActiveFocus()
+        }
+
+        onClosed: if (editor) editor.forceActiveFocus()
+
+        contentItem: RowLayout {
+            spacing: 6
+            TextField {
+                id: urlField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Paste or type a link")
+                selectByMouse: true
+                onAccepted: linkEditor.applyLink(text)
+            }
+            Button {
+                text: qsTr("Apply")
+                onClicked: linkEditor.applyLink(urlField.text)
+            }
+            ToolButton {
+                text: qsTr("Remove")
+                enabled: linkEditor.hadLink
+                onClicked: linkEditor.applyLink("")
+            }
+        }
+    }
+
+    delegate: Item {
+        id: blockDelegate
         required property int index
         required property int blockType
         required property string blockText
@@ -558,25 +649,44 @@ ListView {
         required property string url
         required property string alt
         required property url previewUrl
+        property alias item: blockLoader.item
         width: root.width
-        height: Math.max(item ? item.implicitHeight : 0,
-                         blockType === 0 && index === root.count - 1 ? root.height - y : 0)
-        onLoaded: {
-            if (item && item.blockIndex !== undefined)
-                item.blockIndex = index
-            if (item && item.blockIndex === root.pendingFocusBlock) {
-                item.forceActiveFocus()
-                item.cursorPosition = 0
-                root.activeEditor = item
-                root.pendingFocusBlock = -1
+        height: blockLoader.height
+
+        Loader {
+            id: blockLoader
+            property int index: blockDelegate.index
+            property int blockType: blockDelegate.blockType
+            property string blockText: blockDelegate.blockText
+            property var items: blockDelegate.items
+            property var checkedItems: blockDelegate.checkedItems
+            property var itemIndents: blockDelegate.itemIndents
+            property var itemTypes: blockDelegate.itemTypes
+            property int headingLevel: blockDelegate.headingLevel
+            property var table: blockDelegate.table
+            property string url: blockDelegate.url
+            property string alt: blockDelegate.alt
+            property url previewUrl: blockDelegate.previewUrl
+            x: root.editorInset
+            width: Math.max(0, blockDelegate.width - 2 * root.editorInset)
+            height: item ? item.implicitHeight : 0
+            onLoaded: {
+                if (item && item.blockIndex !== undefined)
+                    item.blockIndex = index
+                if (item && item.blockIndex === root.pendingFocusBlock) {
+                    item.forceActiveFocus()
+                    item.cursorPosition = 0
+                    root.activeEditor = item
+                    root.pendingFocusBlock = -1
+                }
+                if (blockType === 0 && index === 0 && blockText.trim().length === 0)
+                    item.forceActiveFocus()
             }
-            if (blockType === 0 && index === 0 && blockText.trim().length === 0)
-                item.forceActiveFocus()
+            sourceComponent: blockType === 1 || blockType === 2 || blockType === 5 ? listEditor
+                           : blockType === 3 ? tableEditor
+                           : blockType === 4 ? imageEditor
+                           : blockType === 6 ? headingEditor : textEditor
         }
-        sourceComponent: blockType === 1 || blockType === 2 || blockType === 5 ? listEditor
-                       : blockType === 3 ? tableEditor
-                       : blockType === 4 ? imageEditor
-                       : blockType === 6 ? headingEditor : textEditor
     }
 
     component BlockTextArea: TextArea {
@@ -602,6 +712,7 @@ ListView {
         property var insertColumnLeft: null
         property var insertColumnRight: null
         property var removeColumn: null
+        readonly property bool renderedMarkdown: textFormat === TextEdit.MarkdownText
         wrapMode: TextEdit.Wrap
         verticalAlignment: TextEdit.AlignTop
         selectByMouse: true
@@ -677,6 +788,25 @@ ListView {
 
         function refreshSpelling() { spellRefresh.restart() }
 
+        function plainLinkAtPosition(position) {
+            const source = text
+            let match
+            const markdownLink = /\[[^\]]*\]\(([^)\s]+)\)/g
+            while ((match = markdownLink.exec(source)) !== null) {
+                if (position >= match.index && position <= match.index + match[0].length)
+                    return match[1]
+            }
+            const rawUrl = /(?:(?:https?|ftp):\/\/|www\.)[^\s<>{}\[\]"']+/gi
+            while ((match = rawUrl.exec(source)) !== null) {
+                let href = match[0]
+                while (href.length > 0 && ".,;:!?".indexOf(href[href.length - 1]) >= 0)
+                    href = href.slice(0, -1)
+                if (position >= match.index && position <= match.index + href.length)
+                    return href.indexOf("www.") === 0 ? "https://" + href : href
+            }
+            return ""
+        }
+
         MouseArea {
             id: editorMouseArea
             anchors.fill: parent
@@ -747,9 +877,16 @@ ListView {
             onReleased: function(mouse) {
                 if (mouse.button === Qt.LeftButton) {
                     if (!selectionMoved) {
-                        const link = blockArea.linkAt(mouse.x, mouse.y)
-                        if (link.length > 0)
-                            Qt.openUrlExternally(link)
+                        const position = blockArea.positionAt(mouse.x, mouse.y)
+                        if (blockArea.renderedMarkdown) {
+                            const link = blockArea.linkAt(mouse.x, mouse.y)
+                            if (link.length > 0)
+                                Qt.openUrlExternally(link)
+                        } else if (mouse.modifiers & (Qt.ControlModifier | Qt.MetaModifier)) {
+                            const link = blockArea.plainLinkAtPosition(position)
+                            if (link.length > 0)
+                                Qt.openUrlExternally(link)
+                        }
                     }
                     selecting = false
                     root.mouseSelectionActive = false
