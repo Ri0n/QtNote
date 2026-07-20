@@ -89,9 +89,11 @@ namespace {
                     format.setAnchor(false);
                     format.clearProperty(QTextFormat::AnchorHref);
                     format.clearProperty(QTextFormat::AnchorName);
+                    format.clearProperty(QTextFormat::ForegroundBrush);
                 } else {
                     format.setAnchor(true);
                     format.setAnchorHref(href);
+                    format.setForeground(QGuiApplication::palette().link());
                 }
                 ranges.append({ rangeStart, rangeEnd, format });
             }
@@ -175,6 +177,12 @@ void QmlNoteEditor::insertList(int type)
 {
     if (quick_->rootObject())
         QMetaObject::invokeMethod(quick_->rootObject(), "insertListBlock", Q_ARG(QVariant, type));
+}
+
+bool QmlNoteEditor::primaryModifierPressed() const
+{
+    const auto modifiers = QGuiApplication::keyboardModifiers();
+    return modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier);
 }
 
 QVariantMap QmlNoteEditor::linkInfo(QQuickTextDocument *quickDocument, int start, int end) const

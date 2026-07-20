@@ -41,6 +41,7 @@ public:
     Q_INVOKABLE void         copyToClipboard(const QString &text);
     Q_INVOKABLE QVariantMap  linkInfo(QQuickTextDocument *document, int start, int end) const;
     Q_INVOKABLE int          setLink(QQuickTextDocument *document, int start, int end, const QString &href);
+    Q_INVOKABLE bool         primaryModifierPressed() const;
     Q_INVOKABLE int          applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
     bool                     spellCheckEnabled() const { return spellCheckEnabled_; }
     void                     setSpellCheckEnabled(bool enabled);

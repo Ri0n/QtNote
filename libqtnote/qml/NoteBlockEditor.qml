@@ -713,6 +713,7 @@ ListView {
         property var insertColumnRight: null
         property var removeColumn: null
         readonly property bool renderedMarkdown: textFormat === TextEdit.MarkdownText
+        property bool primaryModifierDown: false
         wrapMode: TextEdit.Wrap
         verticalAlignment: TextEdit.AlignTop
         selectByMouse: true
@@ -741,7 +742,10 @@ ListView {
 
         Connections {
             target: blockArea
-            function onTextChanged() { spellRefresh.restart() }
+            function onTextChanged() {
+                spellRefresh.restart()
+                plainLinkHoverCanvas.requestPaint()
+            }
             function onSelectedTextChanged() {
                 if (!root.mouseSelectionActive)
                     selectionStateRefresh.restart()
@@ -749,6 +753,11 @@ ListView {
         }
 
         Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Control || event.key === Qt.Key_Meta) {
+                primaryModifierDown = true
+                editorMouseArea.refreshPlainLinkHover(event.modifiers)
+                plainLinkHoverCanvas.requestPaint()
+            }
             if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
                     && root.deleteStructuredSelection()) {
                 event.accepted = true
@@ -772,6 +781,14 @@ ListView {
             }
         }
 
+        Keys.onReleased: function(event) {
+            if (event.key === Qt.Key_Control || event.key === Qt.Key_Meta) {
+                primaryModifierDown = false
+                editorMouseArea.refreshPlainLinkHover(event.modifiers)
+                plainLinkHoverCanvas.requestPaint()
+            }
+        }
+
         function isSpellingError(position) {
             for (const range of spellingRanges) {
                 if (position >= range.start && position < range.start + range.length)
@@ -788,23 +805,50 @@ ListView {
 
         function refreshSpelling() { spellRefresh.restart() }
 
-        function plainLinkAtPosition(position) {
+        function plainLinkInfoAtPosition(position) {
             const source = text
             let match
             const markdownLink = /\[[^\]]*\]\(([^)\s]+)\)/g
             while ((match = markdownLink.exec(source)) !== null) {
-                if (position >= match.index && position <= match.index + match[0].length)
-                    return match[1]
+                const end = match.index + match[0].length
+                if (position >= match.index && position < end)
+                    return { href: match[1], start: match.index, end: end }
             }
             const rawUrl = /(?:(?:https?|ftp):\/\/|www\.)[^\s<>{}\[\]"']+/gi
             while ((match = rawUrl.exec(source)) !== null) {
-                let href = match[0]
-                while (href.length > 0 && ".,;:!?".indexOf(href[href.length - 1]) >= 0)
-                    href = href.slice(0, -1)
-                if (position >= match.index && position <= match.index + href.length)
-                    return href.indexOf("www.") === 0 ? "https://" + href : href
+                let visibleUrl = match[0]
+                while (visibleUrl.length > 0 && ".,;:!?".indexOf(visibleUrl[visibleUrl.length - 1]) >= 0)
+                    visibleUrl = visibleUrl.slice(0, -1)
+                const end = match.index + visibleUrl.length
+                if (position >= match.index && position < end) {
+                    return {
+                        href: visibleUrl.indexOf("www.") === 0 ? "https://" + visibleUrl : visibleUrl,
+                        start: match.index,
+                        end: end
+                    }
+                }
             }
-            return ""
+            return null
+        }
+
+        function plainLinkAtPosition(position) {
+            const info = plainLinkInfoAtPosition(position)
+            return info ? info.href : ""
+        }
+
+        Timer {
+            id: modifierStatePoll
+            interval: 50
+            repeat: true
+            running: editorMouseArea.containsMouse && !blockArea.renderedMarkdown
+            onTriggered: {
+                const pressed = qmlNoteEditor.primaryModifierPressed()
+                if (blockArea.primaryModifierDown === pressed)
+                    return
+                blockArea.primaryModifierDown = pressed
+                editorMouseArea.refreshPlainLinkHover(pressed ? Qt.ControlModifier : Qt.NoModifier)
+                plainLinkHoverCanvas.requestPaint()
+            }
         }
 
         MouseArea {
@@ -812,9 +856,33 @@ ListView {
             anchors.fill: parent
             z: 20
             acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
             preventStealing: true
+            cursorShape: !blockArea.renderedMarkdown && blockArea.primaryModifierDown
+                         && hoveredPlainLinkInfo !== null
+                         ? Qt.PointingHandCursor : Qt.IBeamCursor
             property bool selecting: false
             property bool selectionMoved: false
+            property real hoverX: -1
+            property real hoverY: -1
+            property var hoveredPlainLinkInfo: null
+
+            function clearPlainLinkHover() {
+                hoveredPlainLinkInfo = null
+                plainLinkHoverCanvas.requestPaint()
+            }
+
+            function refreshPlainLinkHover(modifiers) {
+                const primaryModifier = blockArea.primaryModifierDown
+                        || Boolean(modifiers & (Qt.ControlModifier | Qt.MetaModifier))
+                if (blockArea.renderedMarkdown || !primaryModifier || hoverX < 0 || hoverY < 0) {
+                    clearPlainLinkHover()
+                    return
+                }
+                const position = blockArea.positionAt(hoverX, hoverY)
+                hoveredPlainLinkInfo = blockArea.plainLinkInfoAtPosition(position)
+                plainLinkHoverCanvas.requestPaint()
+            }
             onPressed: function(mouse) {
                 const position = blockArea.positionAt(mouse.x, mouse.y)
                 if (mouse.button === Qt.LeftButton) {
@@ -851,6 +919,10 @@ ListView {
                 mouse.accepted = true
             }
             onPositionChanged: function(mouse) {
+                hoverX = mouse.x
+                hoverY = mouse.y
+                if (mouse.buttons === Qt.NoButton)
+                    refreshPlainLinkHover(mouse.modifiers)
                 if (!selecting || !(mouse.buttons & Qt.LeftButton))
                     return
                 const started = Date.now()
@@ -894,12 +966,58 @@ ListView {
                     root.selectionAnchorEditor = null
                 }
             }
+            onExited: {
+                hoverX = -1
+                hoverY = -1
+                clearPlainLinkHover()
+            }
             onDoubleClicked: function(mouse) {
                 if (mouse.button !== Qt.LeftButton)
                     return
                 blockArea.cursorPosition = blockArea.positionAt(mouse.x, mouse.y)
                 blockArea.selectWord()
                 root.wholeDocumentSelected = false
+            }
+        }
+
+        Canvas {
+            id: plainLinkHoverCanvas
+            anchors.fill: parent
+            z: 15
+            visible: !blockArea.renderedMarkdown && blockArea.primaryModifierDown
+                     && editorMouseArea.hoveredPlainLinkInfo !== null
+            onVisibleChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                if (!visible || !editorMouseArea.hoveredPlainLinkInfo)
+                    return
+
+                const info = editorMouseArea.hoveredPlainLinkInfo
+                ctx.strokeStyle = blockArea.palette.link
+                ctx.lineWidth = 1.5
+                let segmentLeft = -1
+                let segmentY = 0
+                for (let position = info.start; position < info.end; ++position) {
+                    const current = blockArea.positionToRectangle(position)
+                    const next = blockArea.positionToRectangle(position + 1)
+                    let right = next.y === current.y && next.x > current.x
+                            ? next.x
+                            : current.x + Math.max(current.width, editorFontMetrics.averageCharacterWidth)
+                    if (segmentLeft < 0) {
+                        segmentLeft = current.x
+                        segmentY = current.y + current.height - 1
+                    }
+                    if (next.y !== current.y || position === info.end - 1) {
+                        ctx.beginPath()
+                        ctx.moveTo(segmentLeft, segmentY)
+                        ctx.lineTo(right, segmentY)
+                        ctx.stroke()
+                        segmentLeft = -1
+                    }
+                }
             }
         }
 
