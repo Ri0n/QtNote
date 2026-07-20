@@ -22,7 +22,7 @@ function handleKey(host, controller, event, cell) {
         return true
     }
     if (!modifiers && event.key === Qt.Key_Down && row + 1 >= host.rowCount()) {
-        controller.focusFollowingBlock(host.block.index)
+        controller.focusFollowingBlock(host.block.index, !event.isAutoRepeat)
         return true
     }
     if (!modifiers && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
@@ -37,7 +37,7 @@ function handleKey(host, controller, event, cell) {
             else if (event.key === Qt.Key_Up)
                 controller.focusPrecedingBlock(host.block.index)
             else if (event.key === Qt.Key_Down)
-                controller.focusFollowingBlock(host.block.index)
+                controller.focusFollowingBlock(host.block.index, !event.isAutoRepeat)
             return true
         }
     }
@@ -48,7 +48,7 @@ function handleKey(host, controller, event, cell) {
         if (row + 1 === host.rowCount() && host.rowCount() > 1
                 && cell.length === 0 && cell.cursorPosition === 0 && host.rowEmpty(row)) {
             controller.blockModel.removeTableRow(host.block.index, row)
-            controller.focusFollowingBlock(host.block.index)
+            controller.focusFollowingBlock(host.block.index, true)
             return true
         }
         if (cell.cursorPosition === cell.length) {

@@ -573,7 +573,7 @@ ListView {
         return true
     }
 
-    function focusFollowingBlock(blockIndex) {
+    function focusFollowingBlock(blockIndex, appendIfMissing) {
         const next = blockIndex + 1
         if (next < count) {
             const ordered = orderedEditors()
@@ -589,6 +589,8 @@ ListView {
             focusBlock(next)
             return
         }
+        if (!appendIfMissing)
+            return
         pendingFocusBlock = next
         blockModel.appendTextBlock()
         focusBlock(next)
@@ -623,7 +625,7 @@ ListView {
             const last = editor.positionToRectangle(editor.length)
             if (rectangle.y < last.y - 0.5)
                 return false
-            focusFollowingBlock(editor.blockIndex)
+            focusFollowingBlock(editor.blockIndex, false)
         }
         return true
     }
@@ -818,6 +820,7 @@ ListView {
 
             TextField {
                 id: urlField
+                objectName: "noteLinkUrlField"
                 Layout.fillWidth: true
                 placeholderText: qsTr("Paste or type a link")
                 selectByMouse: true
@@ -841,7 +844,7 @@ ListView {
         }
     }
 
-    delegate: Item {
+    delegate: FocusScope {
         id: blockDelegate
         required property int index
         required property int blockType

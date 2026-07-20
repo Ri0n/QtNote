@@ -463,10 +463,13 @@ private slots:
         QMetaObject::invokeMethod(text, "select", Q_ARG(int, 5), Q_ARG(int, 9));
         QTest::keyClick(quick, Qt::Key_I, Qt::ControlModifier);
         QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 9));
+        auto *urlField = root->findChild<QObject *>(QStringLiteral("noteLinkUrlField"));
+        QVERIFY(urlField);
         QTest::keyClick(quick, Qt::Key_K, Qt::ControlModifier);
-        QTRY_COMPARE(editor.contents().count(QStringLiteral("(url)")), 1);
-        QVERIFY(editor.contents().startsWith(QLatin1Char('[')));
-        QVERIFY(editor.contents().endsWith(QStringLiteral("](url)")));
+        QTRY_VERIFY(urlField->property("activeFocus").toBool());
+        QTest::keyClicks(quick, QStringLiteral("url"));
+        QTest::keyClick(quick, Qt::Key_Return);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("[**bold** *text*](url)"));
     }
 
     void downLeavesHeadingForFollowingTextBlock()
@@ -490,7 +493,7 @@ private slots:
         QCOMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 0);
     }
 
-    void downFromLastHeadingCreatesTextBlock()
+    void downFromLastHeadingDoesNotCreateTextBlock()
     {
         QmlNoteEditor editor;
         editor.resize(500, 300);
@@ -507,10 +510,30 @@ private slots:
 
         QTest::keyClick(quick, Qt::Key_Down);
 
-        QTRY_COMPARE(editor.model()->rowCount(), 2);
-        QCOMPARE(editor.model()->data(editor.model()->index(1), NoteBlockModel::TypeRole).toInt(),
-                 int(NoteBlockModel::Text));
-        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 1);
+        QTest::qWait(20);
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QCOMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 0);
+    }
+
+    void downAtDocumentEndDoesNotAppendBlocks()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("last"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+        text->setProperty("cursorPosition", text->property("length"));
+
+        for (int press = 0; press < 6; ++press)
+            QTest::keyClick(quick, Qt::Key_Down);
+        QTest::qWait(20);
+        QCOMPARE(editor.model()->rowCount(), 1);
     }
 
     void shiftSelectsAcrossEditors()
@@ -587,6 +610,9 @@ private slots:
         QTRY_COMPARE(listRoot->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 1);
         QCOMPARE(listEditor.model()->data(listEditor.model()->index(1), NoteBlockModel::TypeRole).toInt(),
                  int(NoteBlockModel::Text));
+        auto *listActive = listRoot->property("activeEditor").value<QObject *>();
+        QVERIFY(listActive);
+        QTRY_VERIFY(listActive->property("activeFocus").toBool());
         QTest::keyClick(listQuick, Qt::Key_Up);
         QTRY_COMPARE(listRoot->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 0);
     }
@@ -621,6 +647,9 @@ private slots:
         QTest::keyClick(tableQuick, Qt::Key_Down);
         QTRY_COMPARE(tableRoot->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 1);
         QTRY_COMPARE(tableEditor.model()->rowCount(), 2);
+        auto *tableActive = tableRoot->property("activeEditor").value<QObject *>();
+        QVERIFY(tableActive);
+        QTRY_VERIFY(tableActive->property("activeFocus").toBool());
         QTest::keyClick(tableQuick, Qt::Key_Up);
         QTRY_COMPARE(tableRoot->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 0);
     }

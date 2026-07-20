@@ -26,7 +26,7 @@ function handleKey(host, controller, event, cell, itemIndex) {
     if (!blocked && !(event.modifiers & Qt.ShiftModifier)
             && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
         if (event.key === Qt.Key_Down && itemIndex + 1 >= host.itemCount()) {
-            controller.focusFollowingBlock(host.block.index)
+            controller.focusFollowingBlock(host.block.index, !event.isAutoRepeat)
             return true
         }
         const rectangle = cell.positionToRectangle(cell.cursorPosition)
@@ -42,7 +42,7 @@ function handleKey(host, controller, event, cell, itemIndex) {
             else if (event.key === Qt.Key_Up)
                 controller.focusPrecedingBlock(host.block.index)
             else if (event.key === Qt.Key_Down)
-                controller.focusFollowingBlock(host.block.index)
+                controller.focusFollowingBlock(host.block.index, !event.isAutoRepeat)
             return true
         }
     }
@@ -55,7 +55,7 @@ function handleKey(host, controller, event, cell, itemIndex) {
                 controller.focusBlock(host.block.index)
             } else {
                 controller.blockModel.removeListItem(host.block.index, itemIndex)
-                controller.focusFollowingBlock(host.block.index)
+                controller.focusFollowingBlock(host.block.index, true)
             }
             return true
         }
