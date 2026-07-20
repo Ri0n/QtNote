@@ -19,6 +19,7 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
+#include <QCloseEvent>
 #include <QItemSelection>
 #include <QPropertyAnimation>
 #include <QSettings>
@@ -148,6 +149,18 @@ void NoteManagerDlg::changeEvent(QEvent *e)
     }
 }
 
+void NoteManagerDlg::closeEvent(QCloseEvent *event)
+{
+    if (ui->splitter->count() > 1) {
+        auto *editor = qobject_cast<NoteWidget *>(ui->splitter->widget(ui->splitter->count() - 1));
+        if (editor && !editor->prepareToClose()) {
+            event->ignore();
+            return;
+        }
+    }
+    QDialog::closeEvent(event);
+}
+
 void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 {
     auto    srcIndex = searchModel->mapToSource(index);
@@ -185,9 +198,14 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
                 auto *nw = qtnote->noteWidget(job->result());
                 if (highlightMatch)
                     nw->findText(searchText, false);
-                if (ui->splitter->count() > 1)
+                if (ui->splitter->count() > 1) {
+                    auto *previous = qobject_cast<NoteWidget *>(ui->splitter->widget(ui->splitter->count() - 1));
+                    if (previous && !previous->prepareToClose()) {
+                        delete nw;
+                        return;
+                    }
                     delete ui->splitter->widget(ui->splitter->count() - 1);
-                else
+                } else
                     resize(700, 400);
                 ui->splitter->addWidget(nw);
                 ui->splitter->setStretchFactor(0, 0);

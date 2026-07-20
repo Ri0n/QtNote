@@ -29,6 +29,7 @@ class SpeechAudioRecorder;
 class SpeechRecognitionJob;
 class NoteSaveJob;
 class SpeechRecognitionProviderInterface;
+struct DraftRecord;
 
 class QTNOTE_EXPORT NoteWidget : public QWidget {
     Q_OBJECT
@@ -85,6 +86,7 @@ private:
     void     setContents(const QString &title, const QString &body, Note::Format format);
     void     loadMediaResources();
     void     resizeMediaToViewport();
+    void     adoptEditingDraft(const DraftRecord &draft);
     QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 
 public slots:
@@ -141,6 +143,7 @@ private:
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
     Note                                  _note;
     QUuid                                 _draftId;
+    quint64                               _draftRevision = 0;
     QString                               _baselineText;
     Note::Format                          _baselineFormat = Note::PlainText;
     QString                               _firstLine;
@@ -153,7 +156,7 @@ private:
     bool                                  _trashRequested       = false;
     bool                                  _changed              = false;
     bool                                  _draftPersisted       = false;
-    bool                                  _draftWasRecovered    = false;
+    bool                                  _sessionReleased      = false;
     bool                                  speechRecognitionBusy = false;
 };
 

@@ -199,11 +199,15 @@ public:
     }
 };
 
-NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
-    ui(new Ui::NoteWidget), _note(note), _draftId(draftId.isNull() ? QUuid::createUuid() : draftId),
-    _draftPersisted(!draftId.isNull()), _draftWasRecovered(!draftId.isNull())
+NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::NoteWidget), _note(note)
 {
     ui->setupUi(this);
+
+    auto *drafts     = DraftManager::instance();
+    _draftId         = drafts->acquireEditingSession(_note, draftId);
+    const auto draft = drafts->editingDraft(_draftId);
+    if (draft)
+        adoptEditingDraft(draft.value);
 
     qmlEditor = new QmlNoteEditor(this);
     ui->noteLayout->insertWidget(1, qmlEditor);
@@ -391,6 +395,8 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) :
 NoteWidget::~NoteWidget()
 {
     _autosaveTimer.stop();
+    if (!_sessionReleased)
+        DraftManager::instance()->releaseEditingSession(_draftId);
     delete ui;
 }
 
@@ -445,16 +451,19 @@ void NoteWidget::save()
         return;
     }
 
-    auto txt    = text();
-    auto format = isMarkdown() ? Note::Markdown : Note::PlainText;
+    auto  txt    = text();
+    auto  format = isMarkdown() ? Note::Markdown : Note::PlainText;
+    auto *drafts = DraftManager::instance();
 
     // QTextDocument may report changes caused by programmatic formatting or
-    // highlighting. Do not publish a note unless its canonical contents really
-    // differ from what was loaded. A draft recovered from an earlier process is
-    // intentionally kept even when it matches its recovery snapshot.
-    if (txt == _baselineText && format == _baselineFormat) {
-        if (_draftPersisted && !_draftWasRecovered)
-            discardDraft();
+    // highlighting. Do not create the first draft unless its canonical contents
+    // really differ from what was loaded. Once a draft exists we must still
+    // checkpoint a return to the baseline: it may replace an older checkpoint
+    // written by this or another editor of the same draft session.
+    // Another editor can have created the shared checkpoint after this widget
+    // was opened, so do not rely solely on its local _draftPersisted flag.
+    const bool hasEditingDraft = _draftPersisted || bool(drafts->editingDraft(_draftId));
+    if (txt == _baselineText && format == _baselineFormat && !hasEditingDraft) {
         _changed = false;
         _autosaveTimer.stop();
         return;
@@ -468,29 +477,42 @@ void NoteWidget::save()
         return !txt.contains(reference.id.toString(QUuid::WithoutBraces), Qt::CaseInsensitive);
     });
     _note.setMedia(media);
-    const auto result = DraftManager::instance()->saveEditing(_draftId, _note, title, body, format);
+    const auto result = drafts->saveEditing(_draftId, _note, title, body, format);
     if (result) {
         qWarning() << "Failed to checkpoint draft:" << result.message;
         return;
     }
     _changed        = false;
     _draftPersisted = true;
+    if (const auto draft = drafts->editingDraft(_draftId); draft)
+        _draftRevision = draft.value.revision;
     _lastChangeElapsed.restart();
 }
 
 bool NoteWidget::prepareToClose()
 {
+    if (_sessionReleased)
+        return true;
     if (_changed)
         save();
     if (_changed)
         return false;
-    if (!_draftPersisted)
-        return true;
-    const auto result = DraftManager::instance()->markReady(_draftId);
-    if (result) {
-        qWarning() << "Failed to queue draft for publishing:" << result.message;
-        return false;
+    auto *drafts = DraftManager::instance();
+    if (drafts->isLastEditingSession(_draftId)) {
+        const auto draft = drafts->editingDraft(_draftId);
+        if (draft) {
+            const auto result = drafts->markReady(_draftId);
+            if (result) {
+                qWarning() << "Failed to queue draft for publishing:" << result.message;
+                return false;
+            }
+        } else if (draft.error.code != DraftStoreError::NotFound) {
+            qWarning() << "Failed to inspect draft before closing:" << draft.error.message;
+            return false;
+        }
     }
+    drafts->releaseEditingSession(_draftId);
+    _sessionReleased = true;
     return true;
 }
 
@@ -512,10 +534,23 @@ void NoteWidget::autosave()
 
 void NoteWidget::focusReceived()
 {
-    if (!_trashRequested && !_note.isUpdated()) {
-        _note.load();
-        initFromNote();
-    }
+    if (_trashRequested || _changed)
+        return;
+    const auto draft = DraftManager::instance()->editingDraft(_draftId);
+    if (!draft || draft.value.state != DraftRecord::Editing || draft.value.revision <= _draftRevision)
+        return;
+    adoptEditingDraft(draft.value);
+    setContents(draft.value.title, draft.value.body, draft.value.format);
+}
+
+void NoteWidget::adoptEditingDraft(const DraftRecord &draft)
+{
+    _note.setTitle(draft.title);
+    _note.setText(draft.body, draft.format);
+    _note.setMedia(draft.media);
+    _note.setBackendData(draft.backendData);
+    _draftPersisted = true;
+    _draftRevision  = draft.revision;
 }
 
 void NoteWidget::textChanged()

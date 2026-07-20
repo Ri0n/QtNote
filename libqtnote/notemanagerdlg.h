@@ -31,6 +31,7 @@ class NoteManagerDlg;
 }
 
 class QItemSelection;
+class QCloseEvent;
 
 namespace QtNote {
 
@@ -51,6 +52,7 @@ signals:
 
 protected:
     void changeEvent(QEvent *e);
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void itemDoubleClicked(const QModelIndex &index);

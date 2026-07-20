@@ -163,7 +163,11 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         if (!storage)
             return;
         for (const auto &draft : DraftManager::instance()->recoverableDrafts()) {
-            if (draft.storageId != storage->systemName() || d->recoveredDraftIds.contains(draft.id))
+            // An unassigned draft is opened through the first ready storage only
+            // to obtain an editable Note shell. Its empty origin is preserved in
+            // DraftStore and it will still go through routing on publication.
+            if ((!draft.storageId.isEmpty() && draft.storageId != storage->systemName())
+                || d->recoveredDraftIds.contains(draft.id))
                 continue;
             auto note = draft.remoteNoteId.isEmpty() ? storage->createNote() : storage->note(draft.remoteNoteId);
             if (note.isNull())
@@ -171,6 +175,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
             note.setTitle(draft.title);
             note.setText(draft.body, draft.format);
             note.setMedia(draft.media);
+            note.setBackendData(draft.backendData);
             auto *widget = noteWidget(note, draft.id);
             auto *dialog = new NoteDialog(widget, this);
             dialog->setWindowIcon(storage->noteIcon());
@@ -242,9 +247,10 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
 
     connect(qApp, &QCoreApplication::aboutToQuit, this, []() {
         // Covers SIGTERM/session shutdown paths which bypass Main::exitQtNote().
-        // NoteDialog::done() performs the final synchronous checkpoint and marks it Ready.
+        // NoteDialog and NoteManagerDlg perform the final synchronous checkpoint
+        // and mark the last editor's draft Ready.
         for (auto *widget : QApplication::topLevelWidgets()) {
-            if (widget->objectName() == QLatin1String("noteDlg"))
+            if (widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
                 widget->close();
         }
     });
@@ -288,11 +294,12 @@ void Main::parseAppArguments(const QStringList &args)
 void Main::exitQtNote()
 {
     for (auto *widget : QApplication::topLevelWidgets()) {
-        if (widget->objectName() == QLatin1String("noteDlg"))
+        if (widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
             widget->close();
     }
     for (auto *widget : QApplication::topLevelWidgets()) {
-        if (widget->objectName() == QLatin1String("noteDlg") && widget->isVisible())
+        if ((widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
+            && widget->isVisible())
             return; // A draft checkpoint failed; keep the application alive.
     }
 

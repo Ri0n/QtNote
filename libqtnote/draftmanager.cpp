@@ -39,6 +39,26 @@ namespace {
         }
         return parts.isEmpty() ? QStringLiteral("<none>") : parts.join(QLatin1Char(' '));
     }
+
+    bool sameMediaReference(const MediaReference &left, const MediaReference &right)
+    {
+        return left.id == right.id && left.blobId == right.blobId && left.originalName == right.originalName
+            && left.portableName == right.portableName && left.mediaType == right.mediaType && left.size == right.size
+            && left.checksum == right.checksum && left.remoteData == right.remoteData;
+    }
+
+    bool hasSamePublishedContents(const DraftRecord &draft, const Note &note)
+    {
+        if (draft.title != note.title() || draft.body != note.text() || draft.format != note.format()
+            || draft.media.size() != note.media().size())
+            return false;
+        const auto media = note.media();
+        for (qsizetype i = 0; i < draft.media.size(); ++i) {
+            if (!sameMediaReference(draft.media.at(i), media.at(i)))
+                return false;
+        }
+        return true;
+    }
 } // namespace
 
 DraftManager::DraftManager(QObject *parent) :
@@ -46,6 +66,13 @@ DraftManager::DraftManager(QObject *parent) :
 {
 }
 DraftManager::~DraftManager() = default;
+
+QString DraftManager::sourceKey(const Note &note)
+{
+    if (note.storageId().isEmpty() || note.id().isEmpty())
+        return {};
+    return note.storageId() + QChar(0x1f) + note.id();
+}
 
 DraftManager *DraftManager::instance()
 {
@@ -88,22 +115,86 @@ DraftStoreError DraftManager::saveEditing(const QUuid &draftId, const Note &note
 {
     if (!store_)
         return { DraftStoreError::Locked, lastError_.isEmpty() ? tr("Draft store is locked") : lastError_ };
-    DraftRecord record;
-    record.id           = draftId;
-    record.state        = DraftRecord::Editing;
-    record.storageId    = note.storageId();
-    record.remoteNoteId = note.id();
-    record.title        = title;
-    record.body         = body;
-    record.format       = format;
-    record.tags         = NoteData::tagsFromText(body);
-    record.backendData  = note.backendData();
-    record.media        = note.media();
-    record.updatedAt    = QDateTime::currentDateTimeUtc();
+    auto        existing = store_->load(draftId);
+    DraftRecord record   = existing ? existing.value : DraftRecord {};
+    record.id            = draftId;
+    record.state         = DraftRecord::Editing;
+    if (!existing) {
+        record.storageId    = note.storageId();
+        record.remoteNoteId = note.id();
+        record.backendData  = note.backendData();
+    }
+    record.title     = title;
+    record.body      = body;
+    record.format    = format;
+    record.tags      = NoteData::tagsFromText(body);
+    record.media     = note.media();
+    record.revision  = existing ? existing.value.revision + 1 : 1;
+    record.updatedAt = QDateTime::currentDateTimeUtc();
     CONFLICT_TRACE << "Conflict trace: draft captured id=" << draftId.toString(QUuid::WithoutBraces)
                    << "storage=" << record.storageId << "note=" << record.remoteNoteId
                    << "base=" << concurrencySummary(record.backendData);
     return store_->write(record);
+}
+
+QUuid DraftManager::acquireEditingSession(const Note &note, const QUuid &knownDraftId)
+{
+    QUuid      id  = knownDraftId;
+    const auto key = sourceKey(note);
+    if (id.isNull() && !key.isEmpty())
+        id = sourceSessions_.value(key);
+    if (id.isNull() && store_ && !key.isEmpty()) {
+        const auto records = store_->records();
+        if (records) {
+            QDateTime latest;
+            for (const auto &record : records.value) {
+                if (record.operation != DraftRecord::Publish || record.state != DraftRecord::Editing
+                    || record.storageId != note.storageId() || record.remoteNoteId != note.id())
+                    continue;
+                if (id.isNull() || record.updatedAt > latest) {
+                    id     = record.id;
+                    latest = record.updatedAt;
+                }
+            }
+        }
+    }
+    if (id.isNull())
+        id = QUuid::createUuid();
+    ++editingSessions_[id];
+    if (!key.isEmpty())
+        sourceSessions_[key] = id;
+    return id;
+}
+
+bool DraftManager::isLastEditingSession(const QUuid &draftId) const { return editingSessions_.value(draftId, 1) <= 1; }
+
+bool DraftManager::releaseEditingSession(const QUuid &draftId)
+{
+    auto it = editingSessions_.find(draftId);
+    if (it == editingSessions_.end())
+        return true;
+    if (--it.value() > 0)
+        return false;
+    editingSessions_.erase(it);
+    for (auto source = sourceSessions_.begin(); source != sourceSessions_.end();) {
+        if (source.value() == draftId)
+            source = sourceSessions_.erase(source);
+        else
+            ++source;
+    }
+    return true;
+}
+
+DraftStoreResult<DraftRecord> DraftManager::editingDraft(const QUuid &draftId) const
+{
+    if (!store_)
+        return { {}, { DraftStoreError::Locked, lastError_.isEmpty() ? tr("Draft store is locked") : lastError_ } };
+    auto draft = store_->load(draftId);
+    if (!draft)
+        return draft;
+    if (draft.value.operation != DraftRecord::Publish || draft.value.state != DraftRecord::Editing)
+        return { {}, { DraftStoreError::NotFound, tr("No active editing draft was found") } };
+    return draft;
 }
 
 void DraftManager::setConflictResolver(std::unique_ptr<ConflictResolver> resolver)
@@ -417,6 +508,24 @@ void DraftManager::publish(const DraftRecord &record)
         publishJobs_.remove(record.id);
         if (job->state() == StorageJob::Succeeded) {
             auto note = job->result();
+            // A return to the original contents needs no publication. This is
+            // deliberately compared with the storage's current/cached note,
+            // not with a full second snapshot in every DraftRecord. It is also
+            // safe when the remote changed concurrently but now has identical
+            // contents: keeping that remote version is the desired no-op.
+            if (hasSamePublishedContents(record, note)) {
+                publishing_.remove(record.id);
+                const auto removeError = store_->remove(record.id);
+                if (removeError) {
+                    retry(record, removeError.message, true);
+                } else {
+                    emit draftPublished(record.id, note);
+                }
+                job->deleteLater();
+                if (publishing_.isEmpty())
+                    emit publishingIdle();
+                return;
+            }
             CONFLICT_TRACE << "Conflict trace: remote loaded draft=" << record.id.toString(QUuid::WithoutBraces)
                            << "note=" << record.remoteNoteId << "remote=" << concurrencySummary(note.backendData())
                            << "restoring-base=" << concurrencySummary(record.backendData);

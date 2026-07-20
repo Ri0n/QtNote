@@ -144,6 +144,24 @@ namespace {
         return result;
     }
 
+    QString normalizedNoteSource(QString text, bool markdown)
+    {
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        text = text.trimmed();
+
+        // NoteWidget separates the title from a Markdown body with two line
+        // breaks and from a plain-text body with one. Remove only that known
+        // extra separator; preserve intentional blank lines in the body.
+        if (markdown) {
+            const int firstBreak = text.indexOf(QLatin1Char('\n'));
+            if (firstBreak >= 0 && firstBreak + 1 < text.size() && text.at(firstBreak + 1) == QLatin1Char('\n')) {
+                text.remove(firstBreak + 1, 1);
+            }
+        }
+        return text;
+    }
+
     QString restoreLinkLabels(const QString &markdown)
     {
         static const QRegularExpression marker(LinkLabelMarkerPrefix + QStringLiteral("([0-9A-Fa-f]+)")
@@ -428,14 +446,67 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     layout->addWidget(quick_);
 
     connect(model_, &NoteBlockModel::contentsChanged, this, &QmlNoteEditor::contentsChanged);
+    updateFocusWindow();
+}
+
+void QmlNoteEditor::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    updateFocusWindow();
+}
+
+void QmlNoteEditor::updateFocusWindow()
+{
+    QWidget *current = window();
+    if (focusWindow_ == current)
+        return;
+    if (focusWindow_)
+        focusWindow_->removeEventFilter(this);
+    focusWindow_ = current;
+    if (focusWindow_ && focusWindow_ != this)
+        focusWindow_->installEventFilter(this);
 }
 
 void QmlNoteEditor::load(const QString &contents, Note::Format format)
 {
-    const bool markdown = format != Note::PlainText;
+    const bool    markdown         = format != Note::PlainText;
+    const QString previousContents = model_->contents();
+    const bool    previousMarkdown = model_->markdown();
+    const bool    modeSwitch       = hasLoaded_ && previousMarkdown != markdown
+        && normalizedNoteSource(previousContents, previousMarkdown) == normalizedNoteSource(contents, markdown);
+    const quint64 generation = ++loadGeneration_;
+
+    if (modeSwitch) {
+        baselineOverrideContents_ = previousContents;
+        baselineOverrideMarkdown_ = previousMarkdown;
+        baselineOverrideActive_   = true;
+        suppressNextFocusRefresh_ = true;
+    } else {
+        baselineOverrideActive_ = false;
+        baselineOverrideContents_.clear();
+        suppressNextFocusRefresh_ = false;
+    }
+
     model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
     if (markdown)
         restoreProtectedMarkdown(model_);
+    hasLoaded_ = true;
+
+    if (!modeSwitch)
+        return;
+
+    // NoteWidget::setContents() deliberately blocks editor signals and records
+    // a new baseline after load(). During a user-requested mode switch, expose
+    // the old state until that function finishes. On the next event-loop turn,
+    // reveal the converted model, mark it dirty, and checkpoint it immediately.
+    QTimer::singleShot(0, this, [this, generation] {
+        if (generation != loadGeneration_ || !baselineOverrideActive_)
+            return;
+        baselineOverrideActive_ = false;
+        baselineOverrideContents_.clear();
+        emit contentsChanged();
+        emit focusLost();
+    });
 }
 
 void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
@@ -450,8 +521,15 @@ void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
     model_->setPreviewUrls(urls);
 }
 
-QString QmlNoteEditor::contents() const { return model_->contents(); }
-bool    QmlNoteEditor::isMarkdown() const { return model_->markdown(); }
+QString QmlNoteEditor::contents() const
+{
+    return baselineOverrideActive_ ? baselineOverrideContents_ : model_->contents();
+}
+
+bool QmlNoteEditor::isMarkdown() const
+{
+    return baselineOverrideActive_ ? baselineOverrideMarkdown_ : model_->markdown();
+}
 
 void QmlNoteEditor::insertText(const QString &text)
 {
@@ -783,6 +861,9 @@ void QmlNoteEditor::rehighlight()
 
 bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == focusWindow_ && event->type() == QEvent::WindowDeactivate)
+        emit focusLost();
+
     if (watched == quick_) {
         if (event->type() == QEvent::KeyPress) {
             auto keyEvent = static_cast<QKeyEvent *>(event);
@@ -798,7 +879,13 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
             }
         }
         if (event->type() == QEvent::FocusIn) {
-            emit focusReceived();
+            // Retry a pending checkpoint before NoteWidget checks whether an
+            // externally stored version should replace the editor contents.
+            emit focusLost();
+            if (suppressNextFocusRefresh_)
+                suppressNextFocusRefresh_ = false;
+            else
+                emit focusReceived();
             QTimer::singleShot(0, this, &QmlNoteEditor::focusEditor);
         } else if (event->type() == QEvent::FocusOut)
             emit focusLost();

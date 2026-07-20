@@ -34,6 +34,7 @@ static DraftRecord sampleRecord()
     record.tags         = QStringList { QStringLiteral("private"), QStringLiteral("work") };
     record.backendData.insert(QStringLiteral("etag"), QStringLiteral("base-etag"));
     record.backendData.insert(QStringLiteral("revision"), QStringLiteral("base-revision"));
+    record.revision = 7;
     MediaReference media;
     media.id           = QUuid::createUuid();
     media.blobId       = QByteArray::fromHex("00112233");
@@ -78,6 +79,7 @@ void FileDraftStoreTest::roundTrip()
     QCOMPARE(loaded.value.format, record.format);
     QCOMPARE(loaded.value.tags, record.tags);
     QCOMPARE(loaded.value.backendData, record.backendData);
+    QCOMPARE(loaded.value.revision, record.revision);
     QCOMPARE(loaded.value.media.size(), 1);
     QCOMPARE(loaded.value.media.first().id, record.media.first().id);
     QCOMPARE(loaded.value.media.first().originalName, record.media.first().originalName);

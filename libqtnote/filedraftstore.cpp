@@ -10,7 +10,7 @@
 namespace QtNote {
 namespace {
     constexpr quint32 PayloadMagic   = 0x514e4450; // QNDP
-    constexpr quint16 PayloadVersion = 4;
+    constexpr quint16 PayloadVersion = 5;
     // Consumer schema passed to SecureEnvelope::associatedData(); see AeadContext::schema.
     constexpr quint32 AeadContextSchema = 1;
 
@@ -49,7 +49,8 @@ namespace {
         out.setVersion(QDataStream::Qt_5_10);
         out << PayloadMagic << PayloadVersion << record.id << quint8(record.state) << record.storageId
             << record.remoteNoteId << record.title << record.body << quint8(record.format) << record.tags
-            << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation) << record.backendData;
+            << record.revision << record.updatedAt << record.lastError << record.retryAt << quint8(record.operation)
+            << record.backendData;
         writeMedia(out, record.media);
         return bytes;
     }
@@ -65,10 +66,15 @@ namespace {
         QDataStream in(bytes);
         in.setVersion(QDataStream::Qt_5_10);
         in >> magic >> version;
-        if (magic != PayloadMagic || version != PayloadVersion)
+        if (magic != PayloadMagic || (version != 4 && version != PayloadVersion))
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Unsupported draft payload")) };
         in >> record.id >> state >> record.storageId >> record.remoteNoteId >> record.title >> record.body >> format
-            >> record.tags >> record.updatedAt >> record.lastError >> record.retryAt >> operation >> record.backendData;
+            >> record.tags;
+        if (version >= 5)
+            in >> record.revision;
+        in >> record.updatedAt >> record.lastError >> record.retryAt >> operation >> record.backendData;
+        if (version == 4)
+            record.revision = 1;
         if (!readMedia(in, record.media))
             return { {}, error(DraftStoreError::Corrupt, QStringLiteral("Invalid draft media manifest")) };
         if (in.status() != QDataStream::Ok || record.id.isNull() || state > DraftRecord::NeedsRouting

@@ -177,6 +177,10 @@ physical `LocalMediaStore` object.
 
 ## Editing, publication, and rerouting
 
+The note-level state machine, multi-editor lease rules, publication retries, and
+conflict handling are defined in
+[Note lifecycle architecture](note-lifecycle-architecture.md).
+
 Blob bytes are written before the new manifest is committed. A crash can therefore
 leave an unreferenced blob, which is safe and can be collected later. A manifest
 must never reference a blob that has not been durably committed.

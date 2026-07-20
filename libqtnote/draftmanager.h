@@ -28,14 +28,18 @@ public:
     bool    isReady() const { return bool(store_); }
     QString lastError() const { return lastError_; }
 
-    DraftStoreError    saveEditing(const QUuid &draftId, const Note &note, const QString &title, const QString &body,
-                                   Note::Format format);
-    DraftStoreError    markReady(const QUuid &draftId);
-    DraftStoreError    discard(const QUuid &draftId);
-    DraftStoreError    queueRemoval(const QString &storageId, const QString &noteId);
-    void               publishPending();
-    QList<DraftRecord> recoverableDrafts() const;
-    void               setConflictResolver(std::unique_ptr<ConflictResolver> resolver);
+    DraftStoreError saveEditing(const QUuid &draftId, const Note &note, const QString &title, const QString &body,
+                                Note::Format format);
+    QUuid           acquireEditingSession(const Note &note, const QUuid &knownDraftId = {});
+    bool            isLastEditingSession(const QUuid &draftId) const;
+    bool            releaseEditingSession(const QUuid &draftId);
+    DraftStoreResult<DraftRecord> editingDraft(const QUuid &draftId) const;
+    DraftStoreError               markReady(const QUuid &draftId);
+    DraftStoreError               discard(const QUuid &draftId);
+    DraftStoreError               queueRemoval(const QString &storageId, const QString &noteId);
+    void                          publishPending();
+    QList<DraftRecord>            recoverableDrafts() const;
+    void                          setConflictResolver(std::unique_ptr<ConflictResolver> resolver);
     /// Resolves a conflict discovered after a storage operation was acknowledged.
     void resolveConcurrentEdit(const Note &localVersion, const Note &remoteVersion, const QString &message);
 
@@ -48,16 +52,19 @@ signals:
 
 private:
     explicit DraftManager(QObject *parent = nullptr);
-    void process(const DraftRecord &record);
-    void publish(const DraftRecord &record);
-    void remove(const DraftRecord &record);
-    void retry(const DraftRecord &record, const QString &message, bool retryable = true);
-    void resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote = {});
-    void storageAboutToBeRemoved(NoteStorage *storage);
+    void           process(const DraftRecord &record);
+    void           publish(const DraftRecord &record);
+    void           remove(const DraftRecord &record);
+    void           retry(const DraftRecord &record, const QString &message, bool retryable = true);
+    void           resolveConflict(const DraftRecord &record, const StorageError &error, const Note &remoteNote = {});
+    void           storageAboutToBeRemoved(NoteStorage *storage);
+    static QString sourceKey(const Note &note);
 
     std::unique_ptr<FileDraftStore>    store_;
     QSet<QUuid>                        publishing_;
     QHash<QUuid, QPointer<StorageJob>> publishJobs_;
+    QHash<QUuid, int>                  editingSessions_;
+    QHash<QString, QUuid>              sourceSessions_;
     QString                            lastError_;
     std::unique_ptr<ConflictResolver>  conflictResolver_;
 };

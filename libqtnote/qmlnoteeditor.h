@@ -12,6 +12,7 @@
 class QQuickWidget;
 class QQuickTextDocument;
 class QImage;
+class QShowEvent;
 
 namespace QtNote {
 class NoteBlockModel;
@@ -58,8 +59,10 @@ signals:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
+    void            updateFocusWindow();
     NoteBlockModel *model_ = nullptr;
     QQuickWidget   *quick_ = nullptr;
     struct HighlightExtension {
@@ -72,7 +75,14 @@ private:
     };
     QList<HighlightExtension>    extensions_;
     QList<RegisteredHighlighter> highlighters_;
-    bool                         spellCheckEnabled_ = true;
+    QPointer<QWidget>            focusWindow_;
+    QString                      baselineOverrideContents_;
+    quint64                      loadGeneration_           = 0;
+    bool                         baselineOverrideMarkdown_ = false;
+    bool                         baselineOverrideActive_   = false;
+    bool                         suppressNextFocusRefresh_ = false;
+    bool                         hasLoaded_                = false;
+    bool                         spellCheckEnabled_        = true;
 };
 } // namespace QtNote
 

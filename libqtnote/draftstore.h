@@ -25,9 +25,11 @@ struct QTNOTE_EXPORT DraftRecord {
         NeedsRouting // Finished, but no longer assigned to a storage; publish as a new note after routing.
     };
 
-    QUuid        id;
-    Operation    operation { Publish };
-    State        state { Editing };
+    QUuid     id;
+    Operation operation { Publish };
+    State     state { Editing };
+    // Origin of the edit. They are empty for a note which has not yet been
+    // assigned by routing; they are not a user-selected publication target.
     QString      storageId;
     QString      remoteNoteId;
     QString      title;
@@ -38,6 +40,7 @@ struct QTNOTE_EXPORT DraftRecord {
     // version, ...), captured when editing starts and restored before save.
     QVariantMap           backendData;
     QList<MediaReference> media;
+    quint64               revision { 0 }; // Monotonic checkpoint sequence within this draft session.
     QDateTime             updatedAt;
     QString               lastError;
     QDateTime             retryAt;
