@@ -1,10 +1,13 @@
 #include "qmlnoteeditor.h"
 
 #include <QClipboard>
+#include <QDir>
+#include <QFileDialog>
 #include <QFont>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QKeySequence>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -13,6 +16,8 @@
 #include <QQuickTextDocument>
 #include <QQuickWidget>
 #include <QRegularExpression>
+#include <QSaveFile>
+#include <QStandardPaths>
 #include <QStringList>
 #include <QTextBlock>
 #include <QTextCharFormat>
@@ -699,6 +704,40 @@ void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
     }
     model_->setPreviewUrls(urls);
     emit mediaChanged(media_);
+}
+
+void QmlNoteEditor::saveImageAs(const QString &url)
+{
+    const MediaReference *reference = nullptr;
+    for (const auto &candidate : std::as_const(media_)) {
+        if (candidate.uri() == url) {
+            reference = &candidate;
+            break;
+        }
+    }
+    if (!reference) {
+        QMessageBox::warning(this, tr("Save Image As"), tr("The image data is not available locally."));
+        return;
+    }
+
+    const auto loaded = LocalMediaStore::instance()->data(reference->blobId);
+    if (!loaded) {
+        QMessageBox::warning(this, tr("Save Image As"), tr("Could not read the image: %1").arg(loaded.error));
+        return;
+    }
+
+    const QString name        = reference->portableName.isEmpty() ? reference->originalName : reference->portableName;
+    const QString initialPath = QDir(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)).filePath(name);
+    const QString fileName
+        = QFileDialog::getSaveFileName(this, tr("Save Image As"), initialPath,
+                                       tr("Images (*.png *.jpg *.jpeg *.gif *.webp *.bmp *.svg);;All files (*)"));
+    if (fileName.isEmpty())
+        return;
+
+    QSaveFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly) || file.write(loaded.value) != loaded.value.size() || !file.commit()) {
+        QMessageBox::warning(this, tr("Save Image As"), tr("Could not save the image: %1").arg(file.errorString()));
+    }
 }
 
 QString QmlNoteEditor::contents() const

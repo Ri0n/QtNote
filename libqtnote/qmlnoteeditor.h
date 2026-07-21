@@ -63,6 +63,7 @@ public:
     Q_INVOKABLE void         addToSpellingDictionary(const QString &word);
     Q_INVOKABLE void         copyToClipboard(const QString &text);
     Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
+    Q_INVOKABLE void         saveImageAs(const QString &url);
     Q_INVOKABLE void         copyDocumentToClipboard();
     Q_INVOKABLE bool         copySelectionToClipboard(const QVariantList &ranges);
     Q_INVOKABLE QVariantMap  deleteSelection(const QVariantList &ranges);

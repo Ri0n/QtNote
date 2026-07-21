@@ -230,25 +230,7 @@ private slots:
         editor.load(QStringLiteral("![cat](media://cat)"), Note::Markdown);
         editor.show();
         QTest::qWait(30);
-        auto *quick = editor.findChild<QQuickWidget *>();
-        auto *root  = quick->rootObject();
-        QTRY_COMPARE(root->property("editors").toList().size(), 2);
-
-        QObject *url = nullptr;
-        QObject *alt = nullptr;
-        for (const auto &value : root->property("editors").toList()) {
-            auto *candidate = value.value<QObject *>();
-            if (candidate->property("editorField").toString() == QLatin1String("imageUrl"))
-                url = candidate;
-            else if (candidate->property("editorField").toString() == QLatin1String("imageAlt"))
-                alt = candidate;
-        }
-        QVERIFY(url);
-        QVERIFY(alt);
-
-        QVERIFY(QMetaObject::invokeMethod(url, "forceActiveFocus"));
-        url->setProperty("cursorPosition", url->property("length"));
-        QTest::keyClicks(quick, QStringLiteral("123"));
+        editor.model()->setImageUrl(0, QStringLiteral("media://cat123"));
         QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::UrlRole).toString(),
                      QStringLiteral("media://cat123"));
         QVERIFY(editor.undo());
@@ -260,9 +242,7 @@ private slots:
         QVERIFY(editor.undo());
         QVERIFY(!editor.canUndo());
 
-        QVERIFY(QMetaObject::invokeMethod(alt, "forceActiveFocus"));
-        alt->setProperty("cursorPosition", alt->property("length"));
-        QTest::keyClicks(quick, QStringLiteral("123"));
+        editor.model()->setImageAlt(0, QStringLiteral("cat123"));
         QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::AltRole).toString(),
                      QStringLiteral("cat123"));
         QVERIFY(editor.undo());

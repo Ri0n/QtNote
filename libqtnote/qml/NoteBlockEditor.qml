@@ -2338,25 +2338,30 @@ ListView {
                 Layout.fillWidth: true
                 source: imageRoot.block.previewUrl
                 fillMode: Image.PreserveAspectFit
-            }
-            RowLayout {
-                BlockTextArea {
-                    blockIndex: imageRoot.block.index
-                    editorField: "imageAlt"
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Image description")
-                    sourceText: imageRoot.block.alt
-                    commitText: function() { root.blockModel.setImageAlt(imageRoot.block.index, text) }
-                    onTextChanged: commitChangedText(activeFocus)
+                ToolTip.visible: imageDescriptionHover.hovered && imageRoot.block.alt.length > 0
+                ToolTip.text: imageRoot.block.alt
+                HoverHandler { id: imageDescriptionHover }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    gesturePolicy: TapHandler.DragThreshold
+                    onTapped: imageContextMenu.popup()
                 }
-                BlockTextArea {
-                    blockIndex: imageRoot.block.index
-                    editorField: "imageUrl"
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Image URL")
-                    sourceText: imageRoot.block.url
-                    commitText: function() { root.blockModel.setImageUrl(imageRoot.block.index, text) }
-                    onTextChanged: commitChangedText(activeFocus)
+                // Layout.fillWidth gives Image a viewport-wide box, but its
+                // implicit height is still the source's native height. For a
+                // large image that left a tall empty area above/below the
+                // fitted pixels. Keep small images at native height and make
+                // a downscaled image's layout height equal to its painted
+                // aspect-ratio height.
+                Layout.preferredHeight: implicitWidth > 0
+                                        ? Math.min(implicitHeight, width * implicitHeight / implicitWidth)
+                                        : implicitHeight
+            }
+            Menu {
+                id: imageContextMenu
+                MenuItem {
+                    text: qsTr("Save Image As…")
+                    enabled: imageRoot.block.url.startsWith("qtnote-media:/")
+                    onTriggered: qmlNoteEditor.saveImageAs(imageRoot.block.url)
                 }
             }
         }
