@@ -7,8 +7,10 @@ function handleKey(host, controller, event, cell, itemIndex) {
                          && !(event.modifiers & Qt.AltModifier)
     if (listShortcut && (event.key === Qt.Key_7 || event.key === Qt.Key_8 || event.key === Qt.Key_9)) {
         const type = event.key === Qt.Key_7 ? 5 : event.key === Qt.Key_8 ? 1 : 2
-        controller.blockModel.convertListLevel(host.block.index, itemIndex, type)
-        return true
+        return controller.runEditTransaction("convert-list-level", function() {
+            controller.blockModel.convertListLevel(host.block.index, itemIndex, type)
+            return true
+        })
     }
     if ((event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) && !blocked) {
         let first = controller.wholeDocumentSelected ? 0 : itemIndex
@@ -18,10 +20,12 @@ function handleKey(host, controller, event, cell, itemIndex) {
             first = Math.min(first, selected.first)
             last = Math.max(last, selected.last)
         }
-        controller.blockModel.indentListItems(host.block.index, first, last,
-                                              event.key === Qt.Key_Backtab
-                                              || event.modifiers & Qt.ShiftModifier ? -1 : 1)
-        return true
+        return controller.runEditTransaction("indent-list-items", function() {
+            controller.blockModel.indentListItems(host.block.index, first, last,
+                                                  event.key === Qt.Key_Backtab
+                                                  || event.modifiers & Qt.ShiftModifier ? -1 : 1)
+            return true
+        })
     }
     if (!blocked && !(event.modifiers & Qt.ShiftModifier)
             && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)) {
@@ -48,43 +52,49 @@ function handleKey(host, controller, event, cell, itemIndex) {
     }
     if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
             && !blocked && !(event.modifiers & Qt.ShiftModifier)) {
-        const position = cell.cursorPosition
-        if (cell.length === 0 && position === 0 && itemIndex + 1 === host.itemCount()) {
-            if (host.itemCount() === 1) {
-                controller.blockModel.convertListToText(host.block.index)
-                controller.focusBlock(host.block.index)
-            } else {
-                controller.blockModel.removeListItem(host.block.index, itemIndex)
-                controller.focusFollowingBlock(host.block.index, true)
+        return controller.runEditTransaction("split-list-item", function() {
+            const position = cell.cursorPosition
+            if (cell.length === 0 && position === 0 && itemIndex + 1 === host.itemCount()) {
+                if (host.itemCount() === 1) {
+                    controller.blockModel.convertListToText(host.block.index)
+                    controller.focusBlock(host.block.index)
+                } else {
+                    controller.blockModel.removeListItem(host.block.index, itemIndex)
+                    controller.focusFollowingBlock(host.block.index, true)
+                }
+                return true
             }
+            const left = cell.markdownRange(0, position)
+            const right = cell.markdownRange(position, cell.length)
+            controller.blockModel.setListItem(host.block.index, itemIndex, left)
+            controller.blockModel.insertListItem(host.block.index, itemIndex + 1, right)
+            host.focusItem(itemIndex + 1, 0)
             return true
-        }
-        const left = cell.markdownRange(0, position)
-        const right = cell.markdownRange(position, cell.length)
-        controller.blockModel.setListItem(host.block.index, itemIndex, left)
-        controller.blockModel.insertListItem(host.block.index, itemIndex + 1, right)
-        host.focusItem(itemIndex + 1, 0)
-        return true
+        })
     }
     if (event.key === Qt.Key_Delete && !blocked && !(event.modifiers & Qt.ShiftModifier)
             && cell.selectionStart === cell.selectionEnd && cell.cursorPosition === cell.length
             && itemIndex + 1 < host.itemCount()) {
-        const position = cell.cursorPosition
-        controller.blockModel.mergeListItemWithNext(host.block.index, itemIndex)
-        host.focusItem(itemIndex, position)
-        return true
+        return controller.runEditTransaction("merge-list-items", function() {
+            const position = cell.cursorPosition
+            controller.blockModel.mergeListItemWithNext(host.block.index, itemIndex)
+            host.focusItem(itemIndex, position)
+            return true
+        })
     }
     if (event.key === Qt.Key_Backspace && !blocked && cell.length === 0 && cell.cursorPosition === 0) {
-        if (host.itemCount() === 1) {
-            controller.blockModel.convertListToText(host.block.index)
-            controller.focusBlock(host.block.index)
-        } else {
-            const target = itemIndex > 0 ? itemIndex - 1 : 0
-            const targetLength = itemIndex > 0 ? host.itemText(target).length : 0
-            controller.blockModel.removeListItem(host.block.index, itemIndex)
-            host.focusItem(target, targetLength)
-        }
-        return true
+        return controller.runEditTransaction("remove-list-item", function() {
+            if (host.itemCount() === 1) {
+                controller.blockModel.convertListToText(host.block.index)
+                controller.focusBlock(host.block.index)
+            } else {
+                const target = itemIndex > 0 ? itemIndex - 1 : 0
+                const targetLength = itemIndex > 0 ? host.itemText(target).length : 0
+                controller.blockModel.removeListItem(host.block.index, itemIndex)
+                host.focusItem(target, targetLength)
+            }
+            return true
+        })
     }
     return false
 }

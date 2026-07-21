@@ -54,6 +54,89 @@ private slots:
         QVERIFY(editor.isMarkdown());
     }
 
+    void loadPolicyDistinguishesReplacementFromFormatConversion()
+    {
+        QmlNoteEditor editor;
+        QSignalSpy    checkpoint(&editor, &QmlNoteEditor::focusLost);
+
+        editor.load(QStringLiteral("title\nbody"), Note::PlainText, QmlNoteEditor::LoadPolicy::ResetHistory);
+        QCoreApplication::processEvents();
+        QCOMPARE(checkpoint.size(), 0);
+
+        editor.load(editor.contents(), Note::Markdown, QmlNoteEditor::LoadPolicy::ResetHistory);
+        QCoreApplication::processEvents();
+        QCOMPARE(checkpoint.size(), 0);
+
+        editor.load(editor.contents(), Note::PlainText, QmlNoteEditor::LoadPolicy::RecordFormatConversion);
+        QTRY_COMPARE(checkpoint.size(), 1);
+
+        checkpoint.clear();
+        editor.load(editor.contents(), Note::Markdown, QmlNoteEditor::LoadPolicy::HistoryRestore);
+        QTest::qWait(10);
+        QCOMPARE(checkpoint.size(), 0);
+    }
+
+    void capturesAndRestoresLogicalEditorAddress()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 500);
+        editor.load(QStringLiteral("- first\n- second\n\n"
+                                   "| A | B |\n| --- | --- |\n| C | D |"),
+                    Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QTRY_COMPARE(root->property("editors").toList().size(), 6);
+
+        QObject *secondListItem = nullptr;
+        QObject *lastTableCell  = nullptr;
+        for (const auto &value : root->property("editors").toList()) {
+            auto *candidate = value.value<QObject *>();
+            if (!candidate)
+                continue;
+            if (candidate->property("blockIndex").toInt() == 0 && candidate->property("listItemIndex").toInt() == 1) {
+                secondListItem = candidate;
+            }
+            if (candidate->property("blockIndex").toInt() == 1 && candidate->property("tableCellIndex").toInt() == 3) {
+                lastTableCell = candidate;
+            }
+        }
+        QVERIFY(secondListItem);
+        QVERIFY(lastTableCell);
+        QVERIFY(QMetaObject::invokeMethod(secondListItem, "forceActiveFocus"));
+        QVERIFY(QMetaObject::invokeMethod(secondListItem, "select", Q_ARG(int, 1), Q_ARG(int, 4)));
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>(), secondListItem);
+
+        QVariant savedState;
+        QVERIFY(QMetaObject::invokeMethod(root, "captureEditorState", Q_RETURN_ARG(QVariant, savedState)));
+        QVERIFY(savedState.toMap().value(QStringLiteral("active")).toMap().value(QStringLiteral("field")).toString()
+                == QStringLiteral("listItem"));
+
+        const QVariant tableAddress = QVariantMap {
+            { QStringLiteral("blockIndex"), 1 },     { QStringLiteral("listItemIndex"), -1 },
+            { QStringLiteral("tableCellIndex"), 3 }, { QStringLiteral("field"), QStringLiteral("tableCell") },
+            { QStringLiteral("cursorPosition"), 1 },
+        };
+        QVariant focused;
+        QVERIFY(QMetaObject::invokeMethod(root, "focusEditorAddress", Q_RETURN_ARG(QVariant, focused),
+                                          Q_ARG(QVariant, tableAddress)));
+        QVERIFY(focused.toBool());
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>(), lastTableCell);
+        QCOMPARE(lastTableCell->property("cursorPosition").toInt(), 1);
+
+        QVariant restored;
+        QVERIFY(QMetaObject::invokeMethod(root, "restoreEditorState", Q_RETURN_ARG(QVariant, restored),
+                                          Q_ARG(QVariant, savedState)));
+        QVERIFY(restored.toBool());
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>(), secondListItem);
+        QCOMPARE(secondListItem->property("selectionStart").toInt(), 1);
+        QCOMPARE(secondListItem->property("selectionEnd").toInt(), 4);
+    }
+
     void routesClipboardImages()
     {
         QmlNoteEditor editor;

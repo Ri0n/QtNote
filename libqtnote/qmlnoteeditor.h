@@ -25,18 +25,25 @@ class QTNOTE_EXPORT QmlNoteEditor : public QWidget {
     Q_PROPERTY(bool spellCheckEnabled READ spellCheckEnabled WRITE setSpellCheckEnabled NOTIFY spellCheckEnabledChanged)
 
 public:
+    enum class LoadPolicy {
+        ResetHistory,
+        RecordFormatConversion,
+        HistoryRestore,
+    };
+    Q_ENUM(LoadPolicy)
+
     explicit QmlNoteEditor(QWidget *parent = nullptr);
 
-    NoteBlockModel          *model() const { return model_; }
-    void                     load(const QString &contents, Note::Format format);
-    void                     setMedia(const QList<MediaReference> &media);
-    QString                  contents() const;
-    bool                     isMarkdown() const;
-    void                     insertText(const QString &text);
-    void                     focusEditor();
-    void                     insertTable();
-    void                     insertList(int type);
-    Q_INVOKABLE void         registerTextDocument(QQuickTextDocument *document, bool titleDocument);
+    NoteBlockModel  *model() const { return model_; }
+    void             load(const QString &contents, Note::Format format, LoadPolicy policy = LoadPolicy::ResetHistory);
+    void             setMedia(const QList<MediaReference> &media);
+    QString          contents() const;
+    bool             isMarkdown() const;
+    void             insertText(const QString &text);
+    void             focusEditor();
+    void             insertTable();
+    void             insertList(int type);
+    Q_INVOKABLE void registerTextDocument(QQuickTextDocument *document, bool titleDocument);
     Q_INVOKABLE QVariantList spellCheckRanges(QQuickTextDocument *document);
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
     Q_INVOKABLE void         addToSpellingDictionary(const QString &word);

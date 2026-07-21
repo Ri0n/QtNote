@@ -8,11 +8,9 @@ ListView {
     id: root
     property var blockModel: noteBlockModel
     property var activeEditor: null
-    property int pendingFocusBlock: -1
-    property bool pendingFocusAtEnd: false
-    property int pendingFocusPosition: -1
-    property int pendingListFocusBlock: -1
-    property int pendingFocusListItem: -1
+    property var pendingFocusAddress: null
+    property var pendingEditorState: null
+    property int focusRequestGeneration: 0
     property var editors: []
     property var selectionAnchorEditor: null
     property int selectionAnchorPosition: 0
@@ -29,6 +27,7 @@ ListView {
     property bool mouseSelectionActive: false
     property var keyboardSelectionAnchorEditor: null
     property int keyboardSelectionAnchorPosition: 0
+    property int editTransactionDepth: 0
     readonly property int blockSpacing: Math.max(1, Math.round(editorFontMetrics.height * 3 / 5))
     readonly property int editorInset: Math.max(8, Math.round(editorFontMetrics.height * 2 / 3))
     readonly property int scrollBarInset: verticalScrollBar.visible
@@ -210,16 +209,7 @@ ListView {
             editors = editors.concat([editor])
             ++editorRegistrations
         }
-        if (editor.blockIndex === pendingFocusBlock) {
-            editor.forceActiveFocus()
-            const position = pendingFocusPosition >= 0
-                ? pendingFocusPosition : (pendingFocusAtEnd ? editor.length : 0)
-            editor.cursorPosition = Math.max(0, Math.min(editor.length, position))
-            activeEditor = editor
-            pendingFocusBlock = -1
-            pendingFocusAtEnd = false
-            pendingFocusPosition = -1
-        }
+        tryPendingEditorFocus(editor)
     }
 
     function unregisterEditor(editor) {
@@ -251,7 +241,7 @@ ListView {
         id: pendingFocusRetry
         interval: 10
         repeat: true
-        onTriggered: if (root.focusPendingBlock()) stop()
+        onTriggered: if (root.tryPendingEditorFocus()) stop()
     }
 
     EditorContextMenu {
@@ -268,6 +258,177 @@ ListView {
                 return lp.y - rp.y
             return lp.x - rp.x
         })
+    }
+
+    function editorAddress(editor, position) {
+        if (!editor)
+            return null
+        const cursor = position === undefined ? editor.cursorPosition : position
+        return {
+            blockIndex: Number(editor.blockIndex),
+            listItemIndex: Number(editor.listItemIndex),
+            tableCellIndex: Number(editor.tableCellIndex),
+            field: String(editor.editorField || "text"),
+            cursorPosition: Number(cursor),
+            selectionStart: Number(editor.selectionStart),
+            selectionEnd: Number(editor.selectionEnd),
+            atEnd: false
+        }
+    }
+
+    function captureEditorState() {
+        const state = {
+            active: editorAddress(activeEditor),
+            wholeDocumentSelected: wholeDocumentSelected,
+            selectionSpansEditors: selectionSpansEditors,
+            selectionStart: null,
+            selectionEnd: null,
+            contentY: contentY
+        }
+        if (selectionSpansEditors && documentSelectionStartEditor && documentSelectionEndEditor) {
+            state.selectionStart = editorAddress(documentSelectionStartEditor,
+                                                 documentSelectionStartPosition)
+            state.selectionEnd = editorAddress(documentSelectionEndEditor,
+                                               documentSelectionEndPosition)
+        }
+        return state
+    }
+
+    function addressMatchesEditor(address, editor, exact) {
+        if (!address || !editor || Number(address.blockIndex) !== editor.blockIndex)
+            return false
+        const listItem = Number(address.listItemIndex === undefined ? -1 : address.listItemIndex)
+        const tableCell = Number(address.tableCellIndex === undefined ? -1 : address.tableCellIndex)
+        if (listItem >= 0 && listItem !== editor.listItemIndex)
+            return false
+        if (tableCell >= 0 && tableCell !== editor.tableCellIndex)
+            return false
+        if (exact && address.field && String(address.field) !== String(editor.editorField || "text"))
+            return false
+        return listItem >= 0 || tableCell >= 0 || !exact
+                || !address.field || String(address.field) === String(editor.editorField || "text")
+    }
+
+    function editorForAddress(address, candidate) {
+        if (candidate && addressMatchesEditor(address, candidate, true))
+            return candidate
+        const ordered = orderedEditors()
+        for (const editor of ordered)
+            if (addressMatchesEditor(address, editor, true))
+                return editor
+        // A generic block request deliberately selects its first editor.
+        const hasSpecificTarget = Number(address && address.listItemIndex) >= 0
+                || Number(address && address.tableCellIndex) >= 0
+                || Boolean(address && address.field)
+        if (!hasSpecificTarget) {
+            for (const editor of ordered)
+                if (addressMatchesEditor(address, editor, false))
+                    return editor
+        }
+        return null
+    }
+
+    function applyEditorAddress(editor, address) {
+        if (!editor || !address)
+            return false
+        editor.forceActiveFocus()
+        const requested = Number(address.cursorPosition === undefined ? -1 : address.cursorPosition)
+        const position = requested >= 0 ? requested : (Boolean(address.atEnd) ? editor.length : 0)
+        const cursor = Math.max(0, Math.min(editor.length, position))
+        const selectionStart = Number(address.selectionStart === undefined ? cursor : address.selectionStart)
+        const selectionEnd = Number(address.selectionEnd === undefined ? cursor : address.selectionEnd)
+        if (selectionStart !== selectionEnd)
+            setEditorSelection(editor, Math.max(0, Math.min(editor.length, selectionStart)),
+                               Math.max(0, Math.min(editor.length, selectionEnd)))
+        else
+            editor.cursorPosition = cursor
+        activeEditor = editor
+        pendingFocusAddress = null
+        return true
+    }
+
+    function tryRestorePendingEditorState() {
+        const state = pendingEditorState
+        if (!state)
+            return false
+        if (state.wholeDocumentSelected) {
+            pendingEditorState = null
+            selectAllDocument()
+            if (state.active)
+                focusEditorAddress(state.active)
+            return true
+        }
+        if (state.selectionSpansEditors && state.selectionStart && state.selectionEnd) {
+            const first = editorForAddress(state.selectionStart)
+            const last = editorForAddress(state.selectionEnd)
+            if (!first || !last)
+                return false
+            pendingEditorState = null
+            applyDocumentSelection(first, Number(state.selectionStart.cursorPosition),
+                                   last, Number(state.selectionEnd.cursorPosition))
+            if (state.active) {
+                const editor = editorForAddress(state.active)
+                if (editor)
+                    applyEditorAddress(editor, state.active)
+            }
+            return true
+        }
+        pendingEditorState = null
+        if (state.active)
+            focusEditorAddress(state.active)
+        return true
+    }
+
+    function tryPendingEditorFocus(candidate) {
+        if (pendingEditorState && tryRestorePendingEditorState())
+            return pendingFocusAddress === null && pendingEditorState === null
+        if (!pendingFocusAddress)
+            return pendingEditorState === null
+        const editor = editorForAddress(pendingFocusAddress, candidate)
+        return editor ? applyEditorAddress(editor, pendingFocusAddress) : false
+    }
+
+    function focusEditorAddress(address) {
+        if (!address || Number(address.blockIndex) < 0)
+            return false
+        const generation = ++focusRequestGeneration
+        pendingFocusAddress = address
+        positionViewAtIndex(Number(address.blockIndex), ListView.Contain)
+        if (!tryPendingEditorFocus())
+            pendingFocusRetry.restart()
+        Qt.callLater(function() {
+            if (generation !== root.focusRequestGeneration)
+                return
+            const editor = root.editorForAddress(address)
+            if (editor)
+                root.applyEditorAddress(editor, address)
+            else {
+                root.pendingFocusAddress = address
+                pendingFocusRetry.restart()
+            }
+        })
+        return true
+    }
+
+    function restoreEditorState(state) {
+        clearDocumentSelection()
+        pendingEditorState = state || null
+        if (!pendingEditorState)
+            return false
+        const target = state.active || state.selectionStart || state.selectionEnd
+        if (target && Number(target.blockIndex) >= 0)
+            positionViewAtIndex(Number(target.blockIndex), ListView.Contain)
+        if (!tryRestorePendingEditorState())
+            pendingFocusRetry.restart()
+        if (state.contentY !== undefined) {
+            const requestedY = Number(state.contentY)
+            Qt.callLater(function() {
+                root.contentY = Math.max(root.originY,
+                                         Math.min(root.originY + Math.max(0, root.contentHeight - root.height),
+                                                  requestedY))
+            })
+        }
+        return true
     }
 
     function editorGeometry(index) {
@@ -339,11 +500,63 @@ ListView {
         }
     }
 
+    function flushPendingEditorChanges() {
+        const candidates = []
+        if (activeEditor)
+            candidates.push(activeEditor)
+        if (contextEditor && candidates.indexOf(contextEditor) < 0)
+            candidates.push(contextEditor)
+        for (const editor of candidates) {
+            if (editor && editor.flushToModel)
+                editor.flushToModel()
+        }
+    }
+
+    function beginEditTransaction(kind) {
+        if (editTransactionDepth === 0)
+            flushPendingEditorChanges()
+        ++editTransactionDepth
+    }
+
+    function endEditTransaction() {
+        if (editTransactionDepth <= 0)
+            return
+        --editTransactionDepth
+    }
+
+    function runEditTransaction(kind, callback) {
+        beginEditTransaction(kind)
+        try {
+            return callback()
+        } finally {
+            endEditTransaction()
+        }
+    }
+
     function prepareForStructuralMutation() {
         // A focused delegate may defer applying a changed sourceText until it
         // loses focus. Make that happen while its list/table indexes still
         // refer to the old model, then mutate the structure.
+        flushPendingEditorChanges()
         clearDocumentSelection()
+        forceActiveFocus()
+        activeEditor = null
+    }
+
+    function prepareForHistoryRestore() {
+        // History restore replaces model state and may destroy every current
+        // delegate. Commit once while addresses still refer to the old state,
+        // then make it impossible for a delayed focus request or selection
+        // callback to write through a stale delegate.
+        flushPendingEditorChanges()
+        ++focusRequestGeneration
+        pendingFocusRetry.stop()
+        pendingFocusAddress = null
+        pendingEditorState = null
+        clearDocumentSelection()
+        keyboardSelectionAnchorEditor = null
+        selectionAnchorEditor = null
+        contextEditor = null
         forceActiveFocus()
         activeEditor = null
     }
@@ -585,8 +798,13 @@ ListView {
             if (!listPasted.handled)
                 return false
             clearDocumentSelection()
-            pendingListFocusBlock = editor.blockIndex
-            pendingFocusListItem = listPasted.focusItem
+            focusEditorAddress({
+                blockIndex: editor.blockIndex,
+                listItemIndex: listPasted.focusItem,
+                tableCellIndex: -1,
+                field: "listItem",
+                cursorPosition: 0
+            })
             return true
         }
         if (editor.tableCell) {
@@ -598,34 +816,38 @@ ListView {
         if (!pasted.handled)
             return false
         clearDocumentSelection()
-        pendingFocusBlock = pasted.focusRow
-        pendingFocusAtEnd = false
+        focusBlock(pasted.focusRow)
         return true
     }
 
     function pasteClipboard() {
         if (!activeEditor)
             return false
-        if (!pasteStructuredSelection(activeEditor))
-            activeEditor.paste()
-        return true
+        return runEditTransaction("paste", function() {
+            if (!pasteStructuredSelection(activeEditor))
+                activeEditor.paste()
+            return true
+        })
     }
 
     function cutDocumentSelection() {
         if (!hasDocumentSelection())
             return
-        copyDocumentSelection()
-        if (deleteStructuredSelection())
-            return
-        for (const editor of orderedEditors()) {
-            if (editor.selectionStart === editor.selectionEnd)
-                continue
-            const start = editor.selectionStart
-            const end = editor.selectionEnd
-            editor.remove(start, end)
-            editor.cursorPosition = start
-            editor.commitText()
-        }
+        return runEditTransaction("cut", function() {
+            copyDocumentSelection()
+            if (deleteStructuredSelection())
+                return true
+            for (const editor of orderedEditors()) {
+                if (editor.selectionStart === editor.selectionEnd)
+                    continue
+                const start = editor.selectionStart
+                const end = editor.selectionEnd
+                editor.remove(start, end)
+                editor.cursorPosition = start
+                editor.commitText()
+            }
+            return true
+        })
     }
 
     function cutActiveSelection() {
@@ -636,6 +858,12 @@ ListView {
     }
 
     function deleteStructuredSelection() {
+        return runEditTransaction("delete-selection", function() {
+            return deleteStructuredSelectionImpl()
+        })
+    }
+
+    function deleteStructuredSelectionImpl() {
         if (wholeDocumentSelected) {
             wholeDocumentSelected = false
             selectionSpansEditors = false
@@ -680,14 +908,17 @@ ListView {
                         focusPosition = previous ? previous.length : 0
                     }
                     prepareForStructuralMutation()
-                    if (!removesWholeList) {
-                        pendingListFocusBlock = block
-                        pendingFocusListItem = focusItem
-                        pendingFocusPosition = focusPosition
-                    }
                     blockModel.removeListItems(block, firstItem, lastItem)
                     if (removesWholeList)
                         focusBlock(block)
+                    else
+                        focusEditorAddress({
+                            blockIndex: block,
+                            listItemIndex: focusItem,
+                            tableCellIndex: -1,
+                            field: "listItem",
+                            cursorPosition: focusPosition
+                        })
                     return true
                 }
             }
@@ -735,10 +966,12 @@ ListView {
     function insertTextAtCursor(value) {
         if (!activeEditor)
             return false
-        const position = activeEditor.cursorPosition
-        activeEditor.insert(position, value)
-        activeEditor.cursorPosition = position + value.length
-        return true
+        return runEditTransaction("insert-text", function() {
+            const position = activeEditor.cursorPosition
+            activeEditor.insert(position, value)
+            activeEditor.cursorPosition = position + value.length
+            return true
+        })
     }
 
     function focusInitialEditor() {
@@ -754,38 +987,14 @@ ListView {
     }
 
     function focusBlock(blockIndex, atEnd, position) {
-        pendingFocusBlock = blockIndex
-        pendingFocusAtEnd = Boolean(atEnd)
-        pendingFocusPosition = position === undefined ? -1 : position
-        positionViewAtIndex(blockIndex, ListView.Contain)
-        pendingFocusRetry.restart()
-        Qt.callLater(function() {
-            for (const editor of editors) {
-                if (editor && editor.blockIndex === blockIndex) {
-                    editor.forceActiveFocus()
-                    const cursor = root.pendingFocusPosition >= 0
-                        ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? editor.length : 0)
-                    editor.cursorPosition = Math.max(0, Math.min(editor.length, cursor))
-                    root.activeEditor = editor
-                    root.pendingFocusBlock = -1
-                    root.pendingFocusAtEnd = false
-                    root.pendingFocusPosition = -1
-                    return
-                }
-            }
-            const loader = root.itemAtIndex(blockIndex)
-            const directEditor = loader ? loader.item : null
-            if (directEditor && directEditor.cursorPosition !== undefined) {
-                directEditor.blockIndex = blockIndex
-                directEditor.forceActiveFocus()
-                const cursor = root.pendingFocusPosition >= 0
-                    ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? directEditor.length : 0)
-                directEditor.cursorPosition = Math.max(0, Math.min(directEditor.length, cursor))
-                root.activeEditor = directEditor
-                root.pendingFocusBlock = -1
-                root.pendingFocusAtEnd = false
-                root.pendingFocusPosition = -1
-            }
+        return focusEditorAddress({
+            blockIndex: blockIndex,
+            listItemIndex: -1,
+            tableCellIndex: -1,
+            cursorPosition: position === undefined ? -1 : position,
+            selectionStart: position === undefined ? -1 : position,
+            selectionEnd: position === undefined ? -1 : position,
+            atEnd: Boolean(atEnd)
         })
     }
 
@@ -803,22 +1012,7 @@ ListView {
     }
 
     function focusPendingBlock() {
-        if (pendingFocusBlock < 0)
-            return true
-        const loader = itemAtIndex(pendingFocusBlock)
-        const editor = firstEditorIn(loader ? loader.item : null)
-        if (!editor)
-            return false
-        editor.blockIndex = pendingFocusBlock
-        editor.forceActiveFocus()
-        const position = pendingFocusPosition >= 0
-            ? pendingFocusPosition : (pendingFocusAtEnd ? editor.length : 0)
-        editor.cursorPosition = Math.max(0, Math.min(editor.length, position))
-        activeEditor = editor
-        pendingFocusBlock = -1
-        pendingFocusAtEnd = false
-        pendingFocusPosition = -1
-        return true
+        return tryPendingEditorFocus()
     }
 
     function focusDocumentEnd() {
@@ -834,16 +1028,19 @@ ListView {
     }
 
     function removeTableBlock(blockIndex, backwards) {
-        const oldCount = count
-        blockModel.removeBlock(blockIndex)
-        if (oldCount === 1) {
-            blockModel.appendTextBlock()
-            focusBlock(0)
-            return
-        }
-        const target = backwards ? Math.max(0, blockIndex - 1)
-                                 : Math.min(blockIndex, oldCount - 2)
-        focusBlock(target, backwards)
+        return runEditTransaction("remove-table", function() {
+            const oldCount = count
+            blockModel.removeBlock(blockIndex)
+            if (oldCount === 1) {
+                blockModel.appendTextBlock()
+                focusBlock(0)
+                return true
+            }
+            const target = backwards ? Math.max(0, blockIndex - 1)
+                                     : Math.min(blockIndex, oldCount - 2)
+            focusBlock(target, backwards)
+            return true
+        })
     }
 
     function focusFollowingBlock(blockIndex, appendIfMissing) {
@@ -864,9 +1061,10 @@ ListView {
         }
         if (!appendIfMissing)
             return
-        pendingFocusBlock = next
-        blockModel.appendTextBlock()
-        focusBlock(next)
+        runEditTransaction("append-following-text-block", function() {
+            blockModel.appendTextBlock()
+            focusBlock(next)
+        })
     }
 
     function focusPrecedingBlock(blockIndex) {
@@ -904,27 +1102,32 @@ ListView {
     }
 
     function insertionBlockIndex() {
-        if (pendingFocusBlock >= 0)
-            return pendingFocusBlock + 1
+        if (pendingFocusAddress && Number(pendingFocusAddress.blockIndex) >= 0)
+            return Number(pendingFocusAddress.blockIndex) + 1
         return activeEditor && activeEditor.blockIndex >= 0 ? activeEditor.blockIndex + 1 : count
     }
 
     function insertTableBlock() {
-        const row = insertionBlockIndex()
-        blockModel.insertTable(row)
-        focusBlock(row)
+        return runEditTransaction("insert-table", function() {
+            const row = insertionBlockIndex()
+            blockModel.insertTable(row)
+            focusBlock(row)
+            return true
+        })
     }
 
     function insertListBlock(type) {
-        if (activeEditor && activeEditor.blockIndex >= 0) {
-            const activeBlock = activeEditor.blockIndex
-            if (blockModel.convertListLevel(activeBlock, activeEditor.listItemIndex, type)) {
-                return
+        return runEditTransaction("insert-or-convert-list", function() {
+            if (activeEditor && activeEditor.blockIndex >= 0) {
+                const activeBlock = activeEditor.blockIndex
+                if (blockModel.convertListLevel(activeBlock, activeEditor.listItemIndex, type))
+                    return true
             }
-        }
-        const row = insertionBlockIndex()
-        blockModel.insertList(row, type)
-        focusBlock(row)
+            const row = insertionBlockIndex()
+            blockModel.insertList(row, type)
+            focusBlock(row)
+            return true
+        })
     }
 
     function handleHeadingShortcut(event, editor) {
@@ -932,12 +1135,14 @@ ListView {
         if (!(modifiers & Qt.ControlModifier) || modifiers & (Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)
                 || event.key < Qt.Key_0 || event.key > Qt.Key_6)
             return false
-        const level = event.key - Qt.Key_0
-        const row = blockModel.convertTextBlockToHeading(editor.blockIndex, editor.cursorPosition, level)
-        if (row < 0)
-            return false
-        focusBlock(row)
-        return true
+        return runEditTransaction("convert-heading", function() {
+            const level = event.key - Qt.Key_0
+            const row = blockModel.convertTextBlockToHeading(editor.blockIndex, editor.cursorPosition, level)
+            if (row < 0)
+                return false
+            focusBlock(row)
+            return true
+        })
     }
 
     function inlineMarkers(event) {
@@ -991,13 +1196,15 @@ ListView {
             return true
         }
         const selected = orderedEditors().filter(candidate => candidate.selectionStart !== candidate.selectionEnd)
-        if (selected.length > 1) {
-            for (const candidate of selected)
-                applyInlineStyle(candidate, style)
-            refreshSelectionState()
-        } else {
-            applyInlineStyle(editor, style)
-        }
+        runEditTransaction("inline-format", function() {
+            if (selected.length > 1) {
+                for (const candidate of selected)
+                    applyInlineStyle(candidate, style)
+                refreshSelectionState()
+            } else {
+                applyInlineStyle(editor, style)
+            }
+        })
         return true
     }
 
@@ -1058,14 +1265,16 @@ ListView {
         function applyLink(href) {
             if (!editor)
                 return
-            const end = qmlNoteEditor.setLink(editor.textDocument,
-                                              selectionStart,
-                                              selectionEnd,
-                                              href.trim())
-            if (end >= 0) {
-                editor.select(selectionStart, end)
-                editor.commitText(false)
-            }
+            root.runEditTransaction("set-link", function() {
+                const end = qmlNoteEditor.setLink(editor.textDocument,
+                                                  selectionStart,
+                                                  selectionEnd,
+                                                  href.trim())
+                if (end >= 0) {
+                    editor.select(selectionStart, end)
+                    editor.commitText(false)
+                }
+            })
             close()
             editor.forceActiveFocus()
         }
@@ -1172,16 +1381,6 @@ ListView {
             onLoaded: {
                 if (item && item.blockIndex !== undefined)
                     item.blockIndex = index
-                if (item && item.blockIndex === root.pendingFocusBlock) {
-                    item.forceActiveFocus()
-                    const cursor = root.pendingFocusPosition >= 0
-                        ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? item.length : 0)
-                    item.cursorPosition = Math.max(0, Math.min(item.length, cursor))
-                    root.activeEditor = item
-                    root.pendingFocusBlock = -1
-                    root.pendingFocusAtEnd = false
-                    root.pendingFocusPosition = -1
-                }
                 if (blockType === 0 && index === 0 && blockText.trim().length === 0)
                     item.forceActiveFocus()
             }
@@ -1207,6 +1406,7 @@ ListView {
         property int listItemIndex: -1
         property int tableRow: -1
         property int tableCellIndex: -1
+        property string editorField: "text"
         property bool tableCell: false
         property bool canRemoveTableRow: false
         property bool canRemoveTableColumn: false
@@ -1247,6 +1447,17 @@ ListView {
             observedPlainTextInitialized = true
         }
 
+        function flushToModel() {
+            if (syncingSourceText || sourceTextPending)
+                return false
+            const current = currentPlainText()
+            if (observedPlainTextInitialized && current === observedPlainText)
+                return false
+            commitText(false)
+            rememberPlainText()
+            return true
+        }
+
         function synchronizeSourceText(force) {
             if (activeFocus) {
                 sourceTextPending = true
@@ -1272,9 +1483,15 @@ ListView {
                 observedPlainTextInitialized = true
                 return false
             }
-            const contentChanged = current !== observedPlainText
-            observedPlainText = current
-            return Boolean(allowed) && contentChanged
+            return Boolean(allowed) && current !== observedPlainText
+        }
+
+        function commitChangedText(allowed) {
+            if (!shouldCommitTextChange(allowed))
+                return false
+            commitText(true)
+            rememberPlainText()
+            return true
         }
 
         onSourceTextChanged: synchronizeSourceText()
@@ -1372,13 +1589,15 @@ ListView {
             if (!info.valid || !info.href || info.end !== position)
                 return false
 
-            const result = qmlNoteEditor.setLink(textDocument, position - 1, position, "")
-            if (result < 0)
-                return false
+            return root.runEditTransaction("leave-link", function() {
+                const result = qmlNoteEditor.setLink(textDocument, position - 1, position, "")
+                if (result < 0)
+                    return false
 
-            cursorPosition = position
-            commitText(false)
-            return true
+                cursorPosition = position
+                commitText(false)
+                return true
+            })
         }
 
         function isSpellingError(position) {
@@ -1390,9 +1609,12 @@ ListView {
         }
 
         function replaceContextWord(replacement) {
-            remove(contextStart, contextEnd)
-            insert(contextStart, replacement)
-            cursorPosition = contextStart + replacement.length
+            root.runEditTransaction("spell-replace", function() {
+                remove(contextStart, contextEnd)
+                insert(contextStart, replacement)
+                cursorPosition = contextStart + replacement.length
+                commitText(false)
+            })
         }
 
         function refreshSpelling() { spellRefresh.restart() }
@@ -1727,7 +1949,7 @@ ListView {
                 root.blockModel.setBlockText(block.index, value)
             }
             textFormat: root.blockModel && root.blockModel.markdown ? TextEdit.MarkdownText : TextEdit.PlainText
-            onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
+            onTextChanged: commitChangedText(activeFocus)
             onLinkActivated: link => Qt.openUrlExternally(link)
         }
     }
@@ -1738,6 +1960,7 @@ ListView {
             id: headingCell
             property var block: parent
             blockIndex: block.index
+            editorField: "heading"
             width: block.width
             sourceText: root.markdownForRendering(block.blockText)
             font.bold: true
@@ -1752,7 +1975,7 @@ ListView {
                     block.index, qmlNoteEditor.markdownText(textDocument))
             }
             textFormat: TextEdit.MarkdownText
-            onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
+            onTextChanged: commitChangedText(activeFocus)
             onLinkActivated: link => Qt.openUrlExternally(link)
         }
     }
@@ -1794,25 +2017,15 @@ ListView {
                         checkModel.setProperty(index, "itemType", type)
                 }
                 syncingItems = false
-                if (root.pendingListFocusBlock === block.index && root.pendingFocusListItem >= 0) {
-                    const focusItemIndex = root.pendingFocusListItem
-                    const focusPosition = root.pendingFocusPosition >= 0 ? root.pendingFocusPosition : 0
-                    root.pendingListFocusBlock = -1
-                    root.pendingFocusListItem = -1
-                    root.pendingFocusPosition = -1
-                    focusItem(focusItemIndex, focusPosition)
-                }
             }
             ListModel { id: checkModel }
             function focusItem(itemIndex, position) {
-                Qt.callLater(function() {
-                    const row = checkRepeater.itemAt(itemIndex)
-                    const cell = row ? row.listEditor : null
-                    if (!cell)
-                        return
-                    cell.forceActiveFocus()
-                    cell.cursorPosition = Math.max(0, Math.min(cell.length, position))
-                    root.activeEditor = cell
+                root.focusEditorAddress({
+                    blockIndex: block.index,
+                    listItemIndex: itemIndex,
+                    tableCellIndex: -1,
+                    field: "listItem",
+                    cursorPosition: position
                 })
             }
             function focusItemVertically(itemIndex, x, atBottom) {
@@ -1876,7 +2089,9 @@ ListView {
                     CheckBox {
                         visible: itemType === 2
                         checked: itemChecked
-                        onClicked: root.blockModel.setChecked(checkRoot.block.index, index, checked)
+                        onClicked: root.runEditTransaction("toggle-task", function() {
+                            root.blockModel.setChecked(checkRoot.block.index, index, checked)
+                        })
                     }
                     Label {
                         visible: itemType !== 2
@@ -1887,6 +2102,7 @@ ListView {
                         id: checkCell
                         blockIndex: checkRoot.block.index
                         listItemIndex: checkRow.index
+                        editorField: "listItem"
                         Layout.fillWidth: true
                         sourceText: root.markdownForRendering(itemText)
                         keyHandler: function(event) { return checkRoot.handleItemKey(event, checkCell, checkRow.index) }
@@ -1897,8 +2113,7 @@ ListView {
                                 qmlNoteEditor.markdownText(textDocument))
                         }
                         textFormat: TextEdit.MarkdownText
-                        onTextChanged: if (shouldCommitTextChange(activeFocus && !checkRoot.syncingItems))
-                                           commitText(true)
+                        onTextChanged: commitChangedText(activeFocus && !checkRoot.syncingItems)
                         onLinkActivated: link => Qt.openUrlExternally(link)
                     }
                 }
@@ -1932,13 +2147,12 @@ ListView {
             }
             ListModel { id: cellModel }
             function focusCell(cellIndex, position) {
-                Qt.callLater(function() {
-                    const cell = cellRepeater.itemAt(cellIndex)
-                    if (!cell)
-                        return
-                    cell.forceActiveFocus()
-                    cell.cursorPosition = Math.max(0, Math.min(cell.length, position || 0))
-                    root.activeEditor = cell
+                root.focusEditorAddress({
+                    blockIndex: block.index,
+                    listItemIndex: -1,
+                    tableCellIndex: cellIndex,
+                    field: "tableCell",
+                    cursorPosition: position === undefined ? 0 : position
                 })
             }
             function focusCellVertically(cellIndex, x, atBottom) {
@@ -1954,8 +2168,11 @@ ListView {
                 })
             }
             function insertRow(tableRow, focusColumn) {
-                root.blockModel.insertTableRow(block.index, tableRow)
-                focusCell(tableRow * columns + focusColumn, 0)
+                return root.runEditTransaction("insert-table-row", function() {
+                    root.blockModel.insertTableRow(block.index, tableRow)
+                    focusCell(tableRow * columns + focusColumn, 0)
+                    return true
+                })
             }
             function cellCount() { return cellModel.count }
             function rowCount() { return cellModel.count / columns }
@@ -1992,6 +2209,7 @@ ListView {
                     sourceText: cellText
                     tableCell: true
                     tableCellIndex: index
+                    editorField: "tableCell"
                     tableRow: Math.floor(index / tableRoot.columns)
                     canRemoveTableRow: cellModel.count / tableRoot.columns > 1
                     canRemoveTableColumn: tableRoot.columns > 1
@@ -2003,32 +2221,41 @@ ListView {
                         tableRoot.insertRow(Math.floor(index / tableRoot.columns) + 1, index % tableRoot.columns)
                     }
                     removeRow: function() {
-                        const tableRow = Math.floor(index / tableRoot.columns)
-                        const targetRow = Math.min(tableRow, cellModel.count / tableRoot.columns - 2)
-                        const target = targetRow * tableRoot.columns + index % tableRoot.columns
-                        root.blockModel.removeTableRow(tableRoot.block.index, tableRow)
-                        tableRoot.focusCell(target, 0)
+                        root.runEditTransaction("remove-table-row", function() {
+                            const tableRow = Math.floor(index / tableRoot.columns)
+                            const targetRow = Math.min(tableRow, cellModel.count / tableRoot.columns - 2)
+                            const target = targetRow * tableRoot.columns + index % tableRoot.columns
+                            root.blockModel.removeTableRow(tableRoot.block.index, tableRow)
+                            tableRoot.focusCell(target, 0)
+                        })
                     }
                     insertColumnLeft: function() {
-                        const oldColumns = tableRoot.columns
-                        const tableRow = Math.floor(index / oldColumns)
-                        const column = index % oldColumns
-                        root.blockModel.insertTableColumn(tableRoot.block.index, column)
-                        tableRoot.focusCell(tableRow * (oldColumns + 1) + column, 0)
+                        root.runEditTransaction("insert-table-column", function() {
+                            const oldColumns = tableRoot.columns
+                            const tableRow = Math.floor(index / oldColumns)
+                            const column = index % oldColumns
+                            root.blockModel.insertTableColumn(tableRoot.block.index, column)
+                            tableRoot.focusCell(tableRow * (oldColumns + 1) + column, 0)
+                        })
                     }
                     insertColumnRight: function() {
-                        const oldColumns = tableRoot.columns
-                        const tableRow = Math.floor(index / oldColumns)
-                        const column = index % oldColumns
-                        root.blockModel.insertTableColumn(tableRoot.block.index, column + 1)
-                        tableRoot.focusCell(tableRow * (oldColumns + 1) + column + 1, 0)
+                        root.runEditTransaction("insert-table-column", function() {
+                            const oldColumns = tableRoot.columns
+                            const tableRow = Math.floor(index / oldColumns)
+                            const column = index % oldColumns
+                            root.blockModel.insertTableColumn(tableRoot.block.index, column + 1)
+                            tableRoot.focusCell(tableRow * (oldColumns + 1) + column + 1, 0)
+                        })
                     }
                     removeColumn: function() {
-                        const oldColumns = tableRoot.columns
-                        const tableRow = Math.floor(index / oldColumns)
-                        const column = index % oldColumns
-                        root.blockModel.removeTableColumn(tableRoot.block.index, column)
-                        tableRoot.focusCell(tableRow * (oldColumns - 1) + Math.min(column, oldColumns - 2), 0)
+                        root.runEditTransaction("remove-table-column", function() {
+                            const oldColumns = tableRoot.columns
+                            const tableRow = Math.floor(index / oldColumns)
+                            const column = index % oldColumns
+                            root.blockModel.removeTableColumn(tableRoot.block.index, column)
+                            tableRoot.focusCell(tableRow * (oldColumns - 1)
+                                                + Math.min(column, oldColumns - 2), 0)
+                        })
                     }
                     leftPadding: 6
                     rightPadding: 6
@@ -2042,7 +2269,7 @@ ListView {
                     commitText: function() {
                         root.blockModel.setTableCell(tableRoot.block.index, index, text)
                     }
-                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
+                    onTextChanged: commitChangedText(activeFocus)
                 }
             }
         }
@@ -2062,19 +2289,21 @@ ListView {
             RowLayout {
                 BlockTextArea {
                     blockIndex: imageRoot.block.index
+                    editorField: "imageAlt"
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image description")
                     sourceText: imageRoot.block.alt
                     commitText: function() { root.blockModel.setImageAlt(imageRoot.block.index, text) }
-                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
+                    onTextChanged: commitChangedText(activeFocus)
                 }
                 BlockTextArea {
                     blockIndex: imageRoot.block.index
+                    editorField: "imageUrl"
                     Layout.fillWidth: true
                     placeholderText: qsTr("Image URL")
                     sourceText: imageRoot.block.url
                     commitText: function() { root.blockModel.setImageUrl(imageRoot.block.index, text) }
-                    onTextChanged: if (shouldCommitTextChange(activeFocus)) commitText(true)
+                    onTextChanged: commitChangedText(activeFocus)
                 }
             }
         }

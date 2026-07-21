@@ -261,6 +261,30 @@ private slots:
         QCOMPARE(model.contents(), QStringLiteral("- [x] changed"));
     }
 
+    void equalScalarWritesAreNoOps()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- [ ] first"), true);
+        QSignalSpy changed(&model, &NoteBlockModel::contentsChanged);
+
+        model.setListItem(0, 0, QStringLiteral("first"));
+        model.setChecked(0, 0, false);
+        QVERIFY(!model.setData(model.index(0), QStringList { QStringLiteral("first") }, NoteBlockModel::ItemsRole));
+        QCOMPARE(changed.size(), 0);
+
+        model.load(QStringLiteral("| A | B |\n| --- | --- |\n| C | D |"), true);
+        changed.clear();
+        model.setTableCell(0, 2, QStringLiteral("C"));
+        QCOMPARE(changed.size(), 0);
+
+        model.load(QStringLiteral("![cat](media://cat)"), true);
+        changed.clear();
+        const auto image = model.index(0);
+        QVERIFY(!model.setData(image, model.data(image, NoteBlockModel::UrlRole), NoteBlockModel::UrlRole));
+        QVERIFY(!model.setData(image, model.data(image, NoteBlockModel::AltRole), NoteBlockModel::AltRole));
+        QCOMPARE(changed.size(), 0);
+    }
+
     void coalescesAdjacentLinksCreatedAcrossFormatRuns()
     {
         NoteBlockModel model;

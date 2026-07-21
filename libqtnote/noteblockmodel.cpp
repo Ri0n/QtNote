@@ -153,18 +153,28 @@ bool NoteBlockModel::setData(const QModelIndex &index, const QVariant &value, in
     auto &block = blocks_[index.row()];
     switch (role) {
     case TextRole:
+        if (block.text == value.toString())
+            return false;
         block.text = value.toString();
         break;
     case ItemsRole:
+        if (block.items == value.toStringList())
+            return false;
         block.items = value.toStringList();
         break;
     case CheckedRole:
+        if (block.checked == value.toList())
+            return false;
         block.checked = value.toList();
         break;
     case UrlRole:
+        if (block.url == value.toString())
+            return false;
         block.url = value.toString();
         break;
     case AltRole:
+        if (block.alt == value.toString())
+            return false;
         block.alt = value.toString();
         break;
     default:
@@ -226,7 +236,10 @@ void NoteBlockModel::setListItem(int row, int item, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || item < 0 || item >= blocks_[row].items.size())
         return;
-    blocks_[row].items[item] = coalesceAdjacentMarkdownLinks(text);
+    const QString value = coalesceAdjacentMarkdownLinks(text);
+    if (blocks_[row].items[item] == value)
+        return;
+    blocks_[row].items[item] = value;
     changed(row, { ItemsRole });
 }
 
@@ -354,6 +367,8 @@ void NoteBlockModel::setChecked(int row, int item, bool checked)
 {
     if (row < 0 || row >= blocks_.size() || item < 0 || item >= blocks_[row].checked.size())
         return;
+    if (blocks_[row].checked[item].toBool() == checked)
+        return;
     blocks_[row].checked[item] = checked;
     changed(row, { CheckedRole });
 }
@@ -362,7 +377,10 @@ void NoteBlockModel::setTableCell(int row, int cell, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || cell < 0 || cell >= blocks_[row].cells.size())
         return;
-    blocks_[row].cells[cell] = coalesceAdjacentMarkdownLinks(text);
+    const QString value = coalesceAdjacentMarkdownLinks(text);
+    if (blocks_[row].cells[cell] == value)
+        return;
+    blocks_[row].cells[cell] = value;
     changed(row, { CellsRole });
 }
 

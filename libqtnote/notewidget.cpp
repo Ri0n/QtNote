@@ -577,7 +577,7 @@ void NoteWidget::textChanged()
 
 void NoteWidget::setText(QString text)
 {
-    qmlEditor->load(text, isMarkdown() ? Note::Markdown : Note::PlainText);
+    qmlEditor->load(text, isMarkdown() ? Note::Markdown : Note::PlainText, QmlNoteEditor::LoadPolicy::ResetHistory);
     _changed = _note.id().isEmpty(); // force saving note if noteId is not set.
     _autosaveTimer.stop();           // timer not required atm
     _lastChangeElapsed.restart();
@@ -595,7 +595,7 @@ void NoteWidget::initFromNote()
     setContents(_note.title(), _note.text(), _note.format());
 }
 
-void NoteWidget::setContents(const QString &title, const QString &body, Note::Format format)
+void NoteWidget::setContents(const QString &title, const QString &body, Note::Format format, ContentLoadPolicy policy)
 {
     ui->noteEdit->blockSignals(true);
     const QSignalBlocker qmlBlocker(qmlEditor);
@@ -607,11 +607,15 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
     cursor.setPosition(0);
     ui->noteEdit->setTextCursor(cursor);
 
+    const auto editorLoadPolicy = policy == ContentLoadPolicy::RecordFormatConversion
+        ? QmlNoteEditor::LoadPolicy::RecordFormatConversion
+        : QmlNoteEditor::LoadPolicy::ResetHistory;
+
     switch (format) {
     case Note::Html:
         ui->noteEdit->setHtml(title + QLatin1String("<br/>") + body);
         ui->noteEdit->setMarkdown(ui->noteEdit->toMarkdown()); // to cleanup html
-        qmlEditor->load(ui->noteEdit->toMarkdown(), Note::Markdown);
+        qmlEditor->load(ui->noteEdit->toMarkdown(), Note::Markdown, editorLoadPolicy);
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
         ui->noteEdit->setAcceptRichText(true);
@@ -619,7 +623,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         break;
     case Note::Markdown:
         ui->noteEdit->setMarkdown(title + QLatin1String("\n\n") + body);
-        qmlEditor->load(title + QLatin1String("\n\n") + body, Note::Markdown);
+        qmlEditor->load(title + QLatin1String("\n\n") + body, Note::Markdown, editorLoadPolicy);
         mdModeAct->setVisible(false);
         txtModeAct->setVisible(true);
         ui->noteEdit->setAcceptRichText(true);
@@ -627,7 +631,7 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         break;
     case Note::PlainText:
         ui->noteEdit->setPlainText(title + QLatin1Char('\n') + body);
-        qmlEditor->load(title + QLatin1Char('\n') + body, Note::PlainText);
+        qmlEditor->load(title + QLatin1Char('\n') + body, Note::PlainText, editorLoadPolicy);
         mdModeAct->setVisible(true);
         txtModeAct->setVisible(false);
         ui->noteEdit->setAcceptRichText(false);
@@ -957,13 +961,13 @@ void NoteWidget::showSpeechRecognitionError(const QString &error)
 void NoteWidget::switchToMarkdown()
 {
     auto const &[title, body] = Utils::splitTitle(text());
-    setContents(title, body, Note::Markdown);
+    setContents(title, body, Note::Markdown, ContentLoadPolicy::RecordFormatConversion);
 }
 
 void NoteWidget::switchToText()
 {
     auto const &[title, body] = Utils::splitTitle(text());
-    setContents(title, body, Note::PlainText);
+    setContents(title, body, Note::PlainText, ContentLoadPolicy::RecordFormatConversion);
 }
 
 void NoteWidget::onCopyClicked()

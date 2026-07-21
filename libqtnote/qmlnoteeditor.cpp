@@ -206,24 +206,6 @@ namespace {
         return result;
     }
 
-    QString normalizedNoteSource(QString text, bool markdown)
-    {
-        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-        text = text.trimmed();
-
-        // NoteWidget separates the title from a Markdown body with two line
-        // breaks and from a plain-text body with one. Remove only that known
-        // extra separator; preserve intentional blank lines in the body.
-        if (markdown) {
-            const int firstBreak = text.indexOf(QLatin1Char('\n'));
-            if (firstBreak >= 0 && firstBreak + 1 < text.size() && text.at(firstBreak + 1) == QLatin1Char('\n')) {
-                text.remove(firstBreak + 1, 1);
-            }
-        }
-        return text;
-    }
-
     QString restoreLinkLabels(const QString &markdown)
     {
         static const QRegularExpression marker(LinkLabelMarkerPrefix + QStringLiteral("([0-9A-Fa-f]+)")
@@ -548,13 +530,12 @@ void QmlNoteEditor::updateFocusWindow()
         focusWindow_->installEventFilter(this);
 }
 
-void QmlNoteEditor::load(const QString &contents, Note::Format format)
+void QmlNoteEditor::load(const QString &contents, Note::Format format, LoadPolicy policy)
 {
     const bool    markdown         = format != Note::PlainText;
     const QString previousContents = model_->contents();
     const bool    previousMarkdown = model_->markdown();
-    const bool    modeSwitch       = hasLoaded_ && previousMarkdown != markdown
-        && normalizedNoteSource(previousContents, previousMarkdown) == normalizedNoteSource(contents, markdown);
+    const bool modeSwitch = policy == LoadPolicy::RecordFormatConversion && hasLoaded_ && previousMarkdown != markdown;
     const quint64 generation = ++loadGeneration_;
 
     if (modeSwitch) {

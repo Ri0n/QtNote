@@ -82,8 +82,11 @@ protected:
 #endif
 
 private:
+    enum class ContentLoadPolicy { ResetHistory, RecordFormatConversion };
+
     void     initFromNote();
-    void     setContents(const QString &title, const QString &body, Note::Format format);
+    void     setContents(const QString &title, const QString &body, Note::Format format,
+                         ContentLoadPolicy policy = ContentLoadPolicy::ResetHistory);
     void     loadMediaResources();
     void     resizeMediaToViewport();
     void     adoptEditingDraft(const DraftRecord &draft);

@@ -7,25 +7,31 @@ function handleKey(host, controller, event, cell) {
     const emptyCell = cell.length === 0 && cell.cursorPosition === 0
     if (!modifiers && host.tableEmpty()) {
         if (event.key === Qt.Key_Backspace && cell.index === 0) {
-            controller.removeTableBlock(host.block.index, true)
-            return true
+            return controller.runEditTransaction("remove-table", function() {
+                controller.removeTableBlock(host.block.index, true)
+                return true
+            })
         }
         if (event.key === Qt.Key_Delete && cell.index + 1 === host.cellCount()) {
-            controller.removeTableBlock(host.block.index, false)
-            return true
+            return controller.runEditTransaction("remove-table", function() {
+                controller.removeTableBlock(host.block.index, false)
+                return true
+            })
         }
     }
     if (!modifiers && (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete)
             && emptyCell
             && host.rowCount() > 1 && host.rowEmpty(row)) {
-        const previousRowLastCell = row > 0 ? row * host.columns - 1 : -1
-        const previousRowEnd = previousRowLastCell >= 0 ? host.cellLength(previousRowLastCell) : 0
-        controller.blockModel.removeTableRow(host.block.index, row)
-        if (event.key === Qt.Key_Backspace && column === 0 && previousRowLastCell >= 0)
-            host.focusCell(previousRowLastCell, previousRowEnd)
-        else
-            host.focusCell(Math.max(0, row - 1) * host.columns + Math.min(column, host.columns - 1), 0)
-        return true
+        return controller.runEditTransaction("remove-table-row", function() {
+            const previousRowLastCell = row > 0 ? row * host.columns - 1 : -1
+            const previousRowEnd = previousRowLastCell >= 0 ? host.cellLength(previousRowLastCell) : 0
+            controller.blockModel.removeTableRow(host.block.index, row)
+            if (event.key === Qt.Key_Backspace && column === 0 && previousRowLastCell >= 0)
+                host.focusCell(previousRowLastCell, previousRowEnd)
+            else
+                host.focusCell(Math.max(0, row - 1) * host.columns + Math.min(column, host.columns - 1), 0)
+            return true
+        })
     }
     if (!modifiers && event.key === Qt.Key_Backspace && emptyCell) {
         if (cell.index > 0)
@@ -70,9 +76,11 @@ function handleKey(host, controller, event, cell) {
             return false
         if (row + 1 === host.rowCount() && host.rowCount() > 1
                 && cell.length === 0 && cell.cursorPosition === 0 && host.rowEmpty(row)) {
-            controller.blockModel.removeTableRow(host.block.index, row)
-            controller.focusFollowingBlock(host.block.index, true)
-            return true
+            return controller.runEditTransaction("leave-table", function() {
+                controller.blockModel.removeTableRow(host.block.index, row)
+                controller.focusFollowingBlock(host.block.index, true)
+                return true
+            })
         }
         if (cell.cursorPosition === cell.length) {
             host.insertRow(row + 1, column)

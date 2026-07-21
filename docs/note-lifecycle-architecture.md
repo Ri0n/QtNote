@@ -106,6 +106,10 @@ process-wide draft lease count and all persistent publication transitions.
 `NoteStorage` plugins own remote protocols, local file formats, and interpretation
 of their opaque `backendData` concurrency tokens.
 
+The transient editor history and its relationship to checkpoints and external
+draft reloads are specified in
+[Note editor undo and redo architecture](note-editor-undo-redo.md).
+
 ## Persistent draft model
 
 The relevant `DraftRecord` fields are:
