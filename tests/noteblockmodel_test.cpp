@@ -37,6 +37,51 @@ private slots:
         QVERIFY(model.contents().contains(QStringLiteral("[link](https://example.org)")));
     }
 
+    void extractsAndInsertsWholeBlockFragments()
+    {
+        NoteBlockModel source;
+        source.load(QStringLiteral("# Title\n\n- [x] done"), true);
+
+        const NoteFragment fragment = source.extractBlockFragment(0, 2);
+        QCOMPARE(fragment.kind, NoteFragmentKind::BlockSequence);
+        QCOMPARE(fragment.sourceFormat, NoteFragmentSourceFormat::Markdown);
+        QCOMPARE(fragment.blocks.size(), 2);
+        QCOMPARE(fragment.blocks.at(0).type, NoteFragmentBlockType::Heading);
+        QCOMPARE(fragment.blocks.at(1).listItems.at(0).kind, NoteFragmentListKind::Check);
+
+        NoteBlockModel destination;
+        destination.load(QStringLiteral("before"), true);
+        QString error;
+        QVERIFY2(destination.insertBlockFragment(1, fragment, &error), qPrintable(error));
+        QCOMPARE(destination.rowCount(), 3);
+        QCOMPARE(destination.contents(), QStringLiteral("before\n\n# Title\n\n- [x] done"));
+
+        NoteBlockModel tableSource;
+        tableSource.load(QStringLiteral("A [link](https://example.org)\n\n"
+                                        "- one\n- two\n\n"
+                                        "- [ ] todo\n- [x] done\n\n"
+                                        "| Name | Value |\n| --- | --- |\n| a | b |\n\n"
+                                        "![cat](media://cat)"),
+                         true);
+        const NoteFragment tableFragment = tableSource.extractBlockFragment(3, 3);
+        QCOMPARE(tableFragment.blocks.at(0).table.markdownCells, QStringList({ "Name", "Value", "a", "b" }));
+        QVERIFY2(destination.insertBlockFragment(3, tableFragment, &error), qPrintable(error));
+        QCOMPARE(destination.contents(),
+                 QStringLiteral("before\n\n# Title\n\n- [x] done\n\n| Name | Value |\n| --- | --- |\n| a | b |"));
+    }
+
+    void rejectsNonBlockFragmentInsertion()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("unchanged"), true);
+        NoteFragment inlineFragment;
+        inlineFragment.kind = NoteFragmentKind::Inline;
+        QString error;
+        QVERIFY(!model.insertBlockFragment(0, inlineFragment, &error));
+        QCOMPARE(error, QStringLiteral("fragment is not a block sequence"));
+        QCOMPARE(model.contents(), QStringLiteral("unchanged"));
+    }
+
     void mergesAdjacentMarkdownParagraphs()
     {
         NoteBlockModel model;

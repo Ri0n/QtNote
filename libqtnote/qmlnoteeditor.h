@@ -8,6 +8,7 @@
 
 #include "mediareference.h"
 #include "note.h"
+#include "notefragment.h"
 
 class QQuickWidget;
 class QQuickTextDocument;
@@ -40,11 +41,14 @@ public:
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
     Q_INVOKABLE void         addToSpellingDictionary(const QString &word);
     Q_INVOKABLE void         copyToClipboard(const QString &text);
+    Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
+    Q_INVOKABLE void         copyDocumentToClipboard();
     Q_INVOKABLE QVariantMap  linkInfo(QQuickTextDocument *document, int start, int end) const;
     Q_INVOKABLE int          setLink(QQuickTextDocument *document, int start, int end, const QString &href);
     Q_INVOKABLE bool         primaryModifierPressed() const;
     Q_INVOKABLE int          applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
     Q_INVOKABLE QString      markdownText(QQuickTextDocument *document) const;
+    Q_INVOKABLE QString      markdownSelection(QQuickTextDocument *document, int start, int end) const;
     bool                     spellCheckEnabled() const { return spellCheckEnabled_; }
     void                     setSpellCheckEnabled(bool enabled);
     void                     addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
@@ -63,6 +67,7 @@ protected:
 
 private:
     void            updateFocusWindow();
+    NoteFragment    documentFragment() const;
     NoteBlockModel *model_ = nullptr;
     QQuickWidget   *quick_ = nullptr;
     struct HighlightExtension {
@@ -83,6 +88,7 @@ private:
     bool                         suppressNextFocusRefresh_ = false;
     bool                         hasLoaded_                = false;
     bool                         spellCheckEnabled_        = true;
+    QList<MediaReference>        media_;
 };
 } // namespace QtNote
 

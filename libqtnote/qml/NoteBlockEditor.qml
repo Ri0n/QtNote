@@ -437,10 +437,26 @@ ListView {
         return parts.join("\n")
     }
 
+    function selectedDocumentMarkdown() {
+        if (wholeDocumentSelected)
+            return blockModel ? blockModel.contents : ""
+        const parts = []
+        for (const editor of orderedEditors()) {
+            if (editor.selectionStart !== editor.selectionEnd)
+                parts.push(qmlNoteEditor.markdownSelection(editor.textDocument,
+                                                            editor.selectionStart, editor.selectionEnd))
+        }
+        return parts.join("\n")
+    }
+
     function copyDocumentSelection() {
-        const value = selectedDocumentText()
-        if (value.length > 0)
-            qmlNoteEditor.copyToClipboard(value)
+        if (wholeDocumentSelected) {
+            qmlNoteEditor.copyDocumentToClipboard()
+            return
+        }
+        const markdown = selectedDocumentMarkdown()
+        if (markdown.length > 0)
+            qmlNoteEditor.copyMarkdownToClipboard(markdown)
     }
 
     function cutDocumentSelection() {

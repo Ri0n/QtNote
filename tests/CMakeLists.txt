@@ -5,6 +5,19 @@ target_link_libraries(noteblockmodel_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::
 add_test(NAME noteblockmodel_test COMMAND noteblockmodel_test)
 set_tests_properties(noteblockmodel_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(notefragment_test notefragment_test.cpp)
+target_link_libraries(notefragment_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME notefragment_test COMMAND notefragment_test)
+
+add_executable(notetransfercontroller_test notetransfercontroller_test.cpp)
+target_link_libraries(notetransfercontroller_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME notetransfercontroller_test COMMAND notetransfercontroller_test)
+set_tests_properties(notetransfercontroller_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(notefragmentmediatransfer_test notefragmentmediatransfer_test.cpp)
+target_link_libraries(notefragmentmediatransfer_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME notefragmentmediatransfer_test COMMAND notefragmentmediatransfer_test)
+
 add_executable(qmlnoteeditor_test qmlnoteeditor_test.cpp)
 target_link_libraries(qmlnoteeditor_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::QuickWidgets)
 add_test(NAME qmlnoteeditor_test COMMAND qmlnoteeditor_test)

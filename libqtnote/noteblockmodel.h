@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 
 #include "note.h"
+#include "notefragment.h"
 
 namespace QtNote {
 
@@ -68,6 +69,12 @@ public:
     Q_INVOKABLE int  convertTextBlockToHeading(int row, int position, int level);
     Q_INVOKABLE void removeBlock(int row);
     void             setPreviewUrls(const QHash<QString, QString> &urls);
+
+    // C++ transfer boundary.  These operations deal in whole structural
+    // blocks; precise text and table-cell selections will be layered on top
+    // of them by NoteTransferController.
+    NoteFragment extractBlockFragment(int firstRow, int lastRow) const;
+    bool         insertBlockFragment(int row, const NoteFragment &fragment, QString *error = nullptr);
 
 signals:
     void markdownChanged();

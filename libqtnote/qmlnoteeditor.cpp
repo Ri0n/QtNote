@@ -17,6 +17,7 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QTextDocumentFragment>
 #include <QTextFragment>
 #include <QTextLayout>
 #include <QTimer>
@@ -26,6 +27,7 @@
 #include "localmediastore.h"
 #include "noteblockmodel.h"
 #include "notehighlighter.h"
+#include "notetransfercontroller.h"
 
 namespace QtNote {
 namespace {
@@ -511,6 +513,7 @@ void QmlNoteEditor::load(const QString &contents, Note::Format format)
 
 void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
 {
+    media_ = media;
     QHash<QString, QString> urls;
     for (const auto &reference : media) {
         if (reference.isValid() && reference.mediaType.startsWith(QLatin1String("image/"))) {
@@ -709,6 +712,24 @@ QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
     return markdown;
 }
 
+QString QmlNoteEditor::markdownSelection(QQuickTextDocument *quickDocument, int start, int end) const
+{
+    if (!quickDocument || !quickDocument->textDocument())
+        return {};
+    QTextDocument *document = quickDocument->textDocument();
+    start                   = qBound(0, start, documentEnd(document));
+    end                     = qBound(start, end, documentEnd(document));
+    if (start == end)
+        return {};
+    QTextCursor cursor(document);
+    cursor.setPosition(start);
+    cursor.setPosition(end, QTextCursor::KeepAnchor);
+    QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+        markdown.chop(1);
+    return markdown;
+}
+
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
 {
     if (!document || !document->textDocument())
@@ -804,7 +825,78 @@ QStringList QmlNoteEditor::spellingSuggestions(const QString &word) const
     return {};
 }
 
-void QmlNoteEditor::copyToClipboard(const QString &text) { QGuiApplication::clipboard()->setText(text); }
+NoteFragment QmlNoteEditor::documentFragment() const
+{
+    NoteFragment fragment = model_->extractBlockFragment(0, model_->rowCount() - 1);
+    for (const NoteFragmentBlock &block : std::as_const(fragment.blocks)) {
+        if (block.type != NoteFragmentBlockType::Image)
+            continue;
+        for (const MediaReference &reference : media_) {
+            if (reference.isValid() && reference.uri() == block.image.sourceUri) {
+                NoteFragmentMedia media;
+                media.sourceUri = block.image.sourceUri;
+                media.reference = reference;
+                fragment.media.append(media);
+                break;
+            }
+        }
+    }
+
+    // A single copied image is also useful outside QtNote.  Keep its PNG data
+    // reasonably bounded; larger images retain their internal blob reference.
+    if (fragment.blocks.size() == 1 && fragment.blocks.constFirst().type == NoteFragmentBlockType::Image
+        && fragment.media.size() == 1
+        && fragment.media.constFirst().reference.size <= NoteTransferController::PortableImageDataLimit) {
+        const auto data = LocalMediaStore::instance()->data(fragment.media.constFirst().reference.blobId);
+        if (data)
+            fragment.media.first().data = data.value;
+    }
+    return fragment;
+}
+
+void QmlNoteEditor::copyToClipboard(const QString &text)
+{
+    NoteFragment fragment;
+    fragment.sourceFormat = NoteFragmentSourceFormat::PlainText;
+    NoteFragmentBlock block;
+    block.type     = NoteFragmentBlockType::Text;
+    block.markdown = text;
+    fragment.blocks.append(block);
+
+    NoteTransferController controller;
+    auto                   exported = controller.createMimeData(fragment);
+    if (exported)
+        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
+    else
+        QGuiApplication::clipboard()->setText(text);
+}
+
+void QmlNoteEditor::copyMarkdownToClipboard(const QString &markdown)
+{
+    NoteFragment fragment;
+    fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
+    NoteFragmentBlock block;
+    block.type     = NoteFragmentBlockType::Text;
+    block.markdown = markdown;
+    fragment.blocks.append(block);
+
+    NoteTransferController controller;
+    auto                   exported = controller.createMimeData(fragment);
+    if (exported)
+        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
+    else
+        QGuiApplication::clipboard()->setText(markdown);
+}
+
+void QmlNoteEditor::copyDocumentToClipboard()
+{
+    NoteTransferController controller;
+    auto                   exported = controller.createMimeData(documentFragment());
+    if (exported)
+        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
+    else
+        QGuiApplication::clipboard()->setText(contents());
+}
 
 void QmlNoteEditor::setSpellCheckEnabled(bool enabled)
 {

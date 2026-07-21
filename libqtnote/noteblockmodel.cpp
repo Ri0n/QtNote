@@ -75,6 +75,30 @@ namespace {
         } while (text != previous);
         return text;
     }
+
+    NoteFragmentListKind fragmentListKind(NoteBlockModel::BlockType type)
+    {
+        switch (type) {
+        case NoteBlockModel::CheckList:
+            return NoteFragmentListKind::Check;
+        case NoteBlockModel::NumberedList:
+            return NoteFragmentListKind::Numbered;
+        default:
+            return NoteFragmentListKind::Bullet;
+        }
+    }
+
+    NoteBlockModel::BlockType modelListKind(NoteFragmentListKind kind)
+    {
+        switch (kind) {
+        case NoteFragmentListKind::Check:
+            return NoteBlockModel::CheckList;
+        case NoteFragmentListKind::Numbered:
+            return NoteBlockModel::NumberedList;
+        default:
+            return NoteBlockModel::BulletList;
+        }
+    }
 }
 
 NoteBlockModel::NoteBlockModel(QObject *parent) : QAbstractListModel(parent) { }
@@ -565,6 +589,141 @@ void NoteBlockModel::setPreviewUrls(const QHash<QString, QString> &urls)
     previewUrls_ = urls;
     if (!blocks_.isEmpty())
         emit dataChanged(index(0), index(blocks_.size() - 1), { PreviewUrlRole });
+}
+
+NoteFragment NoteBlockModel::extractBlockFragment(int firstRow, int lastRow) const
+{
+    NoteFragment fragment;
+    fragment.sourceFormat = markdown_ ? NoteFragmentSourceFormat::Markdown : NoteFragmentSourceFormat::PlainText;
+    if (blocks_.isEmpty() || lastRow < 0 || firstRow >= blocks_.size())
+        return fragment;
+
+    firstRow = qBound(0, firstRow, blocks_.size() - 1);
+    lastRow  = qBound(firstRow, lastRow, blocks_.size() - 1);
+    for (int row = firstRow; row <= lastRow; ++row) {
+        const Block      &source = blocks_.at(row);
+        NoteFragmentBlock destination;
+        switch (source.type) {
+        case Text:
+            destination.type     = NoteFragmentBlockType::Text;
+            destination.markdown = source.text;
+            break;
+        case Heading:
+            destination.type         = NoteFragmentBlockType::Heading;
+            destination.markdown     = source.text;
+            destination.headingLevel = source.headingLevel;
+            break;
+        case BulletList:
+        case CheckList:
+        case NumberedList:
+            destination.type = NoteFragmentBlockType::List;
+            for (int item = 0; item < source.items.size(); ++item) {
+                NoteFragmentListItem value;
+                value.markdown = source.items.at(item);
+                value.indent   = qMax(0, source.indents.value(item).toInt());
+                value.kind     = fragmentListKind(BlockType(source.itemTypes.value(item, source.type).toInt()));
+                value.checked  = source.checked.value(item).toBool();
+                destination.listItems.append(value);
+            }
+            break;
+        case Table:
+            destination.type                = NoteFragmentBlockType::Table;
+            destination.table.columns       = source.columns;
+            destination.table.rows          = source.columns > 0 ? source.cells.size() / source.columns : 0;
+            destination.table.headerRows    = destination.table.rows > 0 ? 1 : 0;
+            destination.table.markdownCells = source.cells;
+            break;
+        case Image:
+            destination.type            = NoteFragmentBlockType::Image;
+            destination.image.sourceUri = source.url;
+            destination.image.alt       = source.alt;
+            break;
+        }
+        fragment.blocks.append(destination);
+    }
+    return fragment;
+}
+
+bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, QString *error)
+{
+    if (fragment.kind != NoteFragmentKind::BlockSequence) {
+        if (error)
+            *error = QStringLiteral("fragment is not a block sequence");
+        return false;
+    }
+
+    QList<Block> replacement;
+    replacement.reserve(fragment.blocks.size());
+    for (const NoteFragmentBlock &source : fragment.blocks) {
+        Block destination;
+        switch (source.type) {
+        case NoteFragmentBlockType::Text:
+            destination.type = Text;
+            destination.text = source.markdown;
+            break;
+        case NoteFragmentBlockType::Heading:
+            if (source.headingLevel < 1 || source.headingLevel > 6) {
+                if (error)
+                    *error = QStringLiteral("heading has invalid level");
+                return false;
+            }
+            destination.type         = Heading;
+            destination.text         = source.markdown;
+            destination.headingLevel = source.headingLevel;
+            break;
+        case NoteFragmentBlockType::List:
+            if (source.listItems.isEmpty()) {
+                if (error)
+                    *error = QStringLiteral("list fragment has no items");
+                return false;
+            }
+            destination.type = modelListKind(source.listItems.constFirst().kind);
+            for (const NoteFragmentListItem &item : source.listItems) {
+                if (item.indent < 0 || item.indent > 128) {
+                    if (error)
+                        *error = QStringLiteral("list item has invalid indentation");
+                    return false;
+                }
+                destination.items.append(item.markdown);
+                destination.indents.append(item.indent);
+                destination.itemTypes.append(modelListKind(item.kind));
+                destination.checked.append(item.checked);
+            }
+            break;
+        case NoteFragmentBlockType::Table:
+            if (source.table.rows < 1 || source.table.columns < 1
+                || qint64(source.table.rows) * source.table.columns != source.table.markdownCells.size()) {
+                if (error)
+                    *error = QStringLiteral("table fragment has invalid geometry");
+                return false;
+            }
+            destination.type    = Table;
+            destination.columns = source.table.columns;
+            destination.cells   = source.table.markdownCells;
+            break;
+        case NoteFragmentBlockType::Image:
+            if (source.image.sourceUri.isEmpty()) {
+                if (error)
+                    *error = QStringLiteral("image fragment has no source URI");
+                return false;
+            }
+            destination.type = Image;
+            destination.url  = source.image.sourceUri;
+            destination.alt  = source.image.alt;
+            break;
+        }
+        replacement.append(destination);
+    }
+
+    if (replacement.isEmpty())
+        return true;
+    row = qBound(0, row, blocks_.size());
+    beginInsertRows({}, row, row + replacement.size() - 1);
+    for (int index = 0; index < replacement.size(); ++index)
+        blocks_.insert(row + index, replacement.at(index));
+    endInsertRows();
+    emit contentsChanged();
+    return true;
 }
 
 QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source)

@@ -7,6 +7,7 @@
 #include "highlighterext.h"
 #include "noteblockmodel.h"
 #include "notehighlighter.h"
+#include "notetransfercontroller.h"
 #include "qmlnoteeditor.h"
 
 using namespace QtNote;
@@ -139,9 +140,34 @@ private slots:
 
         QVERIFY(QMetaObject::invokeMethod(root, "copyDocumentSelection"));
         QCOMPARE(QGuiApplication::clipboard()->text(), editor.contents());
+        QVERIFY(QGuiApplication::clipboard()->mimeData()->hasFormat(
+            QString::fromLatin1(NoteTransferController::FragmentMimeType)));
 
         QVERIFY(QMetaObject::invokeMethod(root, "cutDocumentSelection"));
         QTRY_COMPARE(editor.contents(), QString());
+    }
+
+    void partialCopyPreservesMarkdownFormatting()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("**bold** text"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        auto *document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+
+        const QString markdown = editor.markdownSelection(document, 0, 4);
+        QCOMPARE(markdown, QStringLiteral("**bold**"));
+        editor.copyMarkdownToClipboard(markdown);
+        QCOMPARE(QString::fromUtf8(QGuiApplication::clipboard()->mimeData()->data(
+                     QString::fromLatin1(NoteTransferController::MarkdownMimeType))),
+                 QStringLiteral("**bold**"));
+        QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("bold"));
     }
 
     void adjacentParagraphsUseOneTextEditor()
