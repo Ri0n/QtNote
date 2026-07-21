@@ -61,6 +61,9 @@ cmake --build build -j
 cmake --install build
 ```
 
+For the experimental Qt Quick Android application and Qt Creator kit setup,
+see [Android build](docs/android-build.md).
+
 The install step is optional. Its default prefix is normally `/usr/local`; set
 another one during configuration with, for example,
 `-DCMAKE_INSTALL_PREFIX=/usr`.

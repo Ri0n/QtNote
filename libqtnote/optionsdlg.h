@@ -35,6 +35,7 @@ class QModelIndex;
 namespace QtNote {
 
 class Main;
+class StoragePriorityModel;
 
 class OptionsDlg : public QDialog {
     Q_OBJECT
@@ -53,11 +54,10 @@ private slots:
     void on_pbDefaultFontAdv_clicked();
 
 private:
-    Ui::OptionsDlg *ui;
-    Main           *qtnote;
-    class PriorityModel;
-    PriorityModel *priorityModel;
-    QFont          defaultFont;
+    Ui::OptionsDlg       *ui;
+    Main                 *qtnote;
+    StoragePriorityModel *priorityModel;
+    QFont                 defaultFont;
 };
 
 } // namespace QtNote

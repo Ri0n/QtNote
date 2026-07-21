@@ -9,6 +9,7 @@
 namespace QtNote {
 
 class NoteDocumentHistory;
+class NoteEditor;
 class QmlNoteEditor;
 
 struct QTNOTE_EXPORT NoteBlockSelectionRange {
@@ -105,6 +106,7 @@ signals:
 
 private:
     friend class NoteDocumentHistory;
+    friend class NoteEditor;
     friend class QmlNoteEditor;
 
     // Internal document representation used by editor history. It preserves

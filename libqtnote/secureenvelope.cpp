@@ -4,6 +4,11 @@
 
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QtPlugin>
+
+#ifdef QCA_STATIC
+Q_IMPORT_PLUGIN(qca_ossl)
+#endif
 
 namespace QtNote {
 namespace {

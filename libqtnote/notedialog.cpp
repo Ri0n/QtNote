@@ -107,11 +107,6 @@ NoteDialog::NoteDialog(NoteWidget *noteWidget, Main *main) :
         pinning = true;
         close();
     });
-    connect(noteWidget, &NoteWidget::noteIdChanged, this, [this](const QString &oldId, const QString &newId) {
-        if (oldId.isEmpty() && !newId.isEmpty()) {
-            NoteDialog::dialogs.insert(QPair<QString, QString>(this->noteWidget->note().storageId(), newId), this);
-        }
-    });
     connect(noteWidget, &NoteWidget::firstLineChanged, this, &NoteDialog::firstLineChanged);
 
     firstLineChanged();

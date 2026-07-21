@@ -1,29 +1,42 @@
+#ifdef QTNOTE_EDITOR_CORE
+#include "noteeditor.h"
+#else
 #include "qmlnoteeditor.h"
+#endif
 
 #include <QClipboard>
+#ifndef QTNOTE_EDITOR_CORE
 #include <QDir>
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#endif
 #include <QFont>
 #include <QGuiApplication>
+#ifndef QTNOTE_EDITOR_CORE
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QMessageBox>
+#endif
 #include <QMimeData>
+#include <QPalette>
+#ifndef QTNOTE_EDITOR_CORE
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
 #include <QQuickItem>
+#endif
 #include <QQuickTextDocument>
-#include <QQuickWidget>
 #include <QRegularExpression>
+#ifndef QTNOTE_EDITOR_CORE
+#include <QQuickWidget>
 #include <QSaveFile>
 #include <QStandardPaths>
+#endif
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextBlock>
@@ -33,20 +46,25 @@
 #include <QTextDocumentFragment>
 #include <QTextFragment>
 #include <QTextLayout>
+#ifndef QTNOTE_EDITOR_CORE
 #include <QTimer>
 #include <QVBoxLayout>
+#endif
 #include <QVector>
 #include <algorithm>
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
-#include "notedocumenthistory.h"
 #include "notefragmentmediatransfer.h"
+#ifndef QTNOTE_EDITOR_CORE
+#include "noteeditor.h"
 #include "notehighlighter.h"
+#endif
 #include "notetransfercontroller.h"
 
 namespace QtNote {
 namespace {
+#ifndef QTNOTE_EDITOR_CORE
     class LocalMediaImageProvider : public QQuickImageProvider {
     public:
         LocalMediaImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) { }
@@ -64,9 +82,11 @@ namespace {
             return image;
         }
     };
+#endif
 
     int documentEnd(const QTextDocument *document) { return document ? qMax(0, document->characterCount() - 1) : 0; }
 
+#ifndef QTNOTE_EDITOR_CORE
     bool isUsableImageFragment(const NoteFragment &fragment)
     {
         if (fragment.blocks.isEmpty())
@@ -102,6 +122,7 @@ namespace {
         }
         return result;
     }
+#endif
 
     QString unwrapMarkdownWriterLines(const QString &markdown);
     QString markdownWithSerializedInlineFormats(QTextDocument *document);
@@ -157,6 +178,7 @@ namespace {
         return result;
     }
 
+#ifndef QTNOTE_EDITOR_CORE
     bool invokeQmlBoolean(QObject *object, const char *method)
     {
         if (!object)
@@ -174,6 +196,7 @@ namespace {
             return {};
         return result.toMap();
     }
+#endif
 
     QTextCharFormat formatAt(QTextDocument *document, int position)
     {
@@ -337,7 +360,6 @@ namespace {
             }
         }
     }
-
     struct InlineStyle {
         bool bold      = false;
         bool italic    = false;
@@ -703,8 +725,15 @@ namespace {
 
 }
 
-QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new NoteBlockModel(this))
+#ifndef QTNOTE_EDITOR_CORE
+QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QmlNoteEditor(nullptr, parent) { }
+
+QmlNoteEditor::QmlNoteEditor(NoteEditor *editor, QWidget *parent) : QWidget(parent), editor_(editor)
 {
+    if (!editor_)
+        editor_ = new NoteEditor({}, {}, this);
+    model_ = editor_->model();
+
     auto layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     quick_ = new QQuickWidget(this);
@@ -716,47 +745,36 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     quick_->setClearColor(palette().color(QPalette::Base));
     quick_->engine()->addImageProvider(QStringLiteral("qtnote-media"), new LocalMediaImageProvider);
     quick_->rootContext()->setContextProperty(QStringLiteral("noteBlockModel"), model_);
+    quick_->rootContext()->setContextProperty(QStringLiteral("noteEditor"), editor_);
     quick_->rootContext()->setContextProperty(QStringLiteral("qmlNoteEditor"), this);
     quick_->setSource(QUrl(QStringLiteral("qrc:/qml/NoteBlockEditor.qml")));
     quick_->installEventFilter(this);
     layout->addWidget(quick_);
 
-    history_ = std::make_unique<NoteDocumentHistory>();
-    history_->setRestoreHandler([this](const NoteDocumentHistory::DocumentState &state, const QVariantMap &viewState) {
-        prepareForHistoryRestore();
-        if (media_ != state.media)
-            setMedia(state.media);
-        const bool modeChanged = model_->markdown() != state.model.markdown;
-        model_->restoreState(state.model);
+    editor_->registerEditorView(quick_->rootObject());
+    connect(editor_, &NoteEditor::undoStateChanged, this, &QmlNoteEditor::undoStateChanged);
+    connect(editor_, &NoteEditor::mediaChanged, this, &QmlNoteEditor::mediaChanged);
+    connect(editor_, &NoteEditor::mediaInserted, this, &QmlNoteEditor::mediaInserted);
+    connect(editor_, &NoteEditor::documentLoaded, this, [this](bool modeChanged, bool formatConversion) {
+        const quint64 generation  = ++loadGeneration_;
+        suppressNextFocusRefresh_ = formatConversion;
+        QTimer::singleShot(0, this, [this, generation, modeChanged, formatConversion] {
+            if (generation != loadGeneration_)
+                return;
+            // A containing NoteWidget can suppress signals while loading. Emit
+            // the derived UI state after that synchronous scope has ended.
+            emit undoStateChanged();
+            if (modeChanged)
+                emit formatChanged(model_->markdown());
+            if (formatConversion) {
+                emit contentsChanged();
+                emit focusLost();
+            }
+        });
+    });
+    connect(editor_, &NoteEditor::historyDocumentRestored, this, [this](bool modeChanged) {
         if (modeChanged)
             emit formatChanged(model_->markdown());
-        scheduleHistoryViewRestore(viewState);
-    });
-    history_->setScalarRestoreHandler(
-        [this](const NoteDocumentHistory::ScalarAddress &address, const QString &value, const QVariantMap &viewState) {
-            prepareForHistoryRestore();
-            restoreScalarField(address.blockIndex, address.role, address.fieldIndex, value);
-            scheduleHistoryViewRestore(viewState);
-        });
-    history_->setChangedHandler([this] { emit undoStateChanged(); });
-    history_->reset({ model_->state(), media_ });
-
-    connect(model_, &NoteBlockModel::scalarEdited, this,
-            [this](int row, int role, int fieldIndex, const QString &before, const QString &after) {
-                scalarHistoryChangePending_ = true;
-                if (history_ && !history_->isRestoring() && !history_->inTransaction()) {
-                    history_->observeScalar({ row, role, fieldIndex }, before, after,
-                                            captureQmlEditorState(quick_->rootObject()));
-                }
-            });
-    connect(model_, &NoteBlockModel::contentsChanged, this, [this] {
-        if (scalarHistoryChangePending_) {
-            scalarHistoryChangePending_ = false;
-            return;
-        }
-        if (!history_ || history_->isRestoring() || history_->inTransaction())
-            return;
-        history_->observeChange({ model_->state(), media_ }, captureQmlEditorState(quick_->rootObject()));
     });
     connect(model_, &NoteBlockModel::contentsChanged, this, &QmlNoteEditor::contentsChanged);
     updateFocusWindow();
@@ -771,45 +789,10 @@ QmlNoteEditor::~QmlNoteEditor()
         quick_->setSource(QUrl());
 }
 
-void QmlNoteEditor::prepareForHistoryRestore()
-{
-    if (quick_ && quick_->rootObject())
-        QMetaObject::invokeMethod(quick_->rootObject(), "prepareForHistoryRestore");
-}
-
 void QmlNoteEditor::flushPendingEditorChanges()
 {
     if (quick_ && quick_->rootObject())
         QMetaObject::invokeMethod(quick_->rootObject(), "flushPendingEditorChanges");
-}
-
-void QmlNoteEditor::scheduleHistoryViewRestore(const QVariantMap &viewState)
-{
-    QTimer::singleShot(0, this, [this, viewState] {
-        if (quick_ && quick_->rootObject())
-            QMetaObject::invokeMethod(quick_->rootObject(), "restoreEditorState", Q_ARG(QVariant, viewState));
-    });
-}
-
-void QmlNoteEditor::restoreScalarField(int blockIndex, int role, int fieldIndex, const QString &value)
-{
-    switch (role) {
-    case NoteBlockModel::TextRole:
-        model_->setBlockText(blockIndex, value);
-        break;
-    case NoteBlockModel::ItemsRole:
-        model_->setListItem(blockIndex, fieldIndex, value);
-        break;
-    case NoteBlockModel::CellsRole:
-        model_->setTableCell(blockIndex, fieldIndex, value);
-        break;
-    case NoteBlockModel::UrlRole:
-        model_->setImageUrl(blockIndex, value);
-        break;
-    case NoteBlockModel::AltRole:
-        model_->setImageAlt(blockIndex, value);
-        break;
-    }
 }
 
 void QmlNoteEditor::showEvent(QShowEvent *event)
@@ -830,89 +813,20 @@ void QmlNoteEditor::updateFocusWindow()
         focusWindow_->installEventFilter(this);
 }
 
-void QmlNoteEditor::load(const QString &contents, Note::Format format, LoadPolicy policy)
+void QmlNoteEditor::load(const QString &contents, Note::Format format, NoteEditor::LoadPolicy policy)
 {
-    const bool    markdown         = format != Note::PlainText;
-    const QString previousContents = model_->contents();
-    const bool    previousMarkdown = model_->markdown();
-    const bool    modeChanged      = previousMarkdown != markdown;
-    const bool modeSwitch = policy == LoadPolicy::RecordFormatConversion && hasLoaded_ && previousMarkdown != markdown;
-    const quint64     generation               = ++loadGeneration_;
-    const QVariantMap beforeView               = captureQmlEditorState(quick_->rootObject());
-    const bool        nestedHistoryTransaction = history_ && history_->inTransaction();
-
-    if (modeSwitch) {
-        baselineOverrideContents_ = previousContents;
-        baselineOverrideMarkdown_ = previousMarkdown;
-        baselineOverrideActive_   = true;
-        suppressNextFocusRefresh_ = true;
-    } else {
-        baselineOverrideActive_ = false;
-        baselineOverrideContents_.clear();
-        suppressNextFocusRefresh_ = false;
-    }
-
-    if (history_) {
-        history_->beginTransaction(modeSwitch ? QStringLiteral("format-conversion") : QStringLiteral("load"),
-                                   { model_->state(), media_ }, beforeView);
-    }
-
-    model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
-    if (markdown)
-        restoreProtectedMarkdown(model_);
-    hasLoaded_ = true;
-
-    if (history_) {
-        const NoteDocumentHistory::DocumentState after { model_->state(), media_ };
-        if (modeSwitch)
-            history_->endTransaction(after, beforeView);
-        else
-            history_->reset(after);
-    }
-
-    if (modeSwitch && !nestedHistoryTransaction)
-        scheduleHistoryViewRestore(beforeView);
-
-    QTimer::singleShot(0, this, [this, generation, modeChanged] {
-        if (generation != loadGeneration_)
-            return;
-        const bool revealConversion = baselineOverrideActive_;
-        if (revealConversion) {
-            baselineOverrideActive_ = false;
-            baselineOverrideContents_.clear();
-        }
-        // A containing NoteWidget can suppress signals while loading. Emit the
-        // derived UI state after that synchronous scope has ended.
-        emit undoStateChanged();
-        if (modeChanged)
-            emit formatChanged(model_->markdown());
-        if (revealConversion) {
-            emit contentsChanged();
-            emit focusLost();
-        }
-    });
+    editor_->loadDocument(contents, format, policy);
 }
 
-void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
-{
-    if (media_ == media)
-        return;
-    media_ = media;
-    QHash<QString, QString> urls;
-    for (const auto &reference : media) {
-        if (reference.isValid() && reference.mediaType.startsWith(QLatin1String("image/"))) {
-            urls.insert(reference.uri(),
-                        QStringLiteral("image://qtnote-media/%1").arg(QString::fromLatin1(reference.blobId.toHex())));
-        }
-    }
-    model_->setPreviewUrls(urls);
-    emit mediaChanged(media_);
-}
+void QmlNoteEditor::setMedia(const QList<MediaReference> &media) { editor_->setMedia(media); }
+
+QList<MediaReference> QmlNoteEditor::media() const { return editor_->media(); }
 
 void QmlNoteEditor::saveImageAs(const QString &url)
 {
     const MediaReference *reference = nullptr;
-    for (const auto &candidate : std::as_const(media_)) {
+    const auto            media     = editor_->media();
+    for (const auto &candidate : media) {
         if (candidate.uri() == url) {
             reference = &candidate;
             break;
@@ -1080,8 +994,12 @@ bool QmlNoteEditor::handleImageDrop(const QMimeData *mimeData, int row)
         beginHistoryTransaction(QStringLiteral("drop-image"), beforeView);
         QString    error;
         const bool inserted = model_->insertBlockFragment(qBound(0, row, model_->rowCount()), fragment, &error);
-        if (inserted && !insertedMedia.isEmpty())
+        if (inserted && !insertedMedia.isEmpty()) {
+            auto manifest = media();
+            manifest.append(insertedMedia);
+            setMedia(manifest);
             emit mediaInserted(insertedMedia);
+        }
         endHistoryTransaction(captureQmlEditorState(quick_->rootObject()));
         if (!inserted)
             qWarning() << "QML image drop insertion failed:" << error;
@@ -1101,23 +1019,17 @@ bool QmlNoteEditor::handleImageDrop(const QMimeData *mimeData, int row)
     return false;
 }
 
-QString QmlNoteEditor::contents() const
-{
-    return baselineOverrideActive_ ? baselineOverrideContents_ : model_->contents();
-}
+QString QmlNoteEditor::contents() const { return model_->contents(); }
 
-bool QmlNoteEditor::isMarkdown() const
-{
-    return baselineOverrideActive_ ? baselineOverrideMarkdown_ : model_->markdown();
-}
+bool QmlNoteEditor::isMarkdown() const { return model_->markdown(); }
 
-bool QmlNoteEditor::canUndo() const { return history_ && history_->canUndo(); }
+bool QmlNoteEditor::canUndo() const { return editor_->canUndo(); }
 
-bool QmlNoteEditor::canRedo() const { return history_ && history_->canRedo(); }
+bool QmlNoteEditor::canRedo() const { return editor_->canRedo(); }
 
-QString QmlNoteEditor::undoText() const { return history_ ? history_->undoText() : QString(); }
+QString QmlNoteEditor::undoText() const { return editor_->undoText(); }
 
-QString QmlNoteEditor::redoText() const { return history_ ? history_->redoText() : QString(); }
+QString QmlNoteEditor::redoText() const { return editor_->redoText(); }
 
 void QmlNoteEditor::insertText(const QString &text)
 {
@@ -1164,55 +1076,69 @@ void QmlNoteEditor::endExternalHistoryTransaction()
     endHistoryTransaction(captureQmlEditorState(quick_->rootObject()));
 }
 
-void QmlNoteEditor::breakHistoryMerge()
-{
-    if (history_)
-        history_->breakMerge();
-}
+void QmlNoteEditor::breakHistoryMerge() { editor_->breakHistoryMerge(); }
+
+void QmlNoteEditor::registerEditorView(QObject *view) { editor_->registerEditorView(view); }
 
 void QmlNoteEditor::beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView)
 {
-    if (history_)
-        history_->beginTransaction(kind, { model_->state(), media_ }, beforeView);
+    editor_->beginHistoryTransaction(kind, beforeView);
 }
 
-void QmlNoteEditor::endHistoryTransaction(const QVariantMap &afterView)
-{
-    if (history_)
-        history_->endTransaction({ model_->state(), media_ }, afterView);
-}
+void QmlNoteEditor::endHistoryTransaction(const QVariantMap &afterView) { editor_->endHistoryTransaction(afterView); }
 
 void QmlNoteEditor::updateHistoryViewState(const QVariantMap &viewState, bool breakMerge)
 {
-    if (history_)
-        history_->updateViewState(viewState, breakMerge);
+    editor_->updateHistoryViewState(viewState, breakMerge);
 }
 
-bool QmlNoteEditor::undo()
+bool QmlNoteEditor::undo() { return editor_->undo(); }
+
+bool QmlNoteEditor::redo() { return editor_->redo(); }
+
+#endif
+
+#ifdef QTNOTE_EDITOR_CORE
+#define QTNOTE_SHARED_EDITOR NoteEditor
+#else
+#define QTNOTE_SHARED_EDITOR QmlNoteEditor
+#endif
+
+#ifdef QTNOTE_EDITOR_CORE
+void NoteEditor::loadDocument(const QString &contents, Note::Format format, LoadPolicy policy)
 {
-    flushPendingEditorChanges();
-    if (!canUndo())
-        return false;
-    history_->undo();
-    return true;
-}
+    const bool        markdown                 = format != Note::PlainText;
+    const bool        modeChanged              = model_->markdown() != markdown;
+    const bool        formatConversion         = policy == LoadPolicy::RecordFormatConversion && modeChanged;
+    const QVariantMap beforeView               = captureEditorViewState();
+    const bool        nestedHistoryTransaction = historyInTransaction();
 
-bool QmlNoteEditor::redo()
-{
-    flushPendingEditorChanges();
-    if (!canRedo())
-        return false;
-    history_->redo();
-    return true;
-}
+    beginHistoryTransaction(formatConversion ? QStringLiteral("format-conversion") : QStringLiteral("load"),
+                            beforeView);
+    model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
+    if (markdown)
+        restoreProtectedMarkdown(model_);
 
-bool QmlNoteEditor::primaryModifierPressed() const
+    if (formatConversion)
+        endHistoryTransaction(beforeView);
+    else {
+        resetContent(model_->contents(), markdown ? Note::Markdown : Note::PlainText);
+        resetHistory();
+    }
+
+    if (formatConversion && !nestedHistoryTransaction)
+        scheduleEditorViewRestore(beforeView);
+    emit documentLoaded(modeChanged, formatConversion);
+}
+#endif
+
+bool QTNOTE_SHARED_EDITOR::primaryModifierPressed() const
 {
     const auto modifiers = QGuiApplication::keyboardModifiers();
     return modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier);
 }
 
-QVariantMap QmlNoteEditor::linkInfo(QQuickTextDocument *quickDocument, int start, int end) const
+QVariantMap QTNOTE_SHARED_EDITOR::linkInfo(QQuickTextDocument *quickDocument, int start, int end) const
 {
     QVariantMap result;
     result.insert(QStringLiteral("valid"), false);
@@ -1273,7 +1199,7 @@ QVariantMap QmlNoteEditor::linkInfo(QQuickTextDocument *quickDocument, int start
     return result;
 }
 
-int QmlNoteEditor::setLink(QQuickTextDocument *quickDocument, int start, int end, const QString &href)
+int QTNOTE_SHARED_EDITOR::setLink(QQuickTextDocument *quickDocument, int start, int end, const QString &href)
 {
     if (!quickDocument || !quickDocument->textDocument())
         return -1;
@@ -1297,7 +1223,7 @@ int QmlNoteEditor::setLink(QQuickTextDocument *quickDocument, int start, int end
     return end;
 }
 
-int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int start, int end, const QString &style)
+int QTNOTE_SHARED_EDITOR::applyInlineFormat(QQuickTextDocument *quickDocument, int start, int end, const QString &style)
 {
     if (!quickDocument || !quickDocument->textDocument())
         return -1;
@@ -1346,7 +1272,7 @@ int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int star
     return end;
 }
 
-void QmlNoteEditor::applyInlineHtmlFormatting(QQuickTextDocument *quickDocument) const
+void QTNOTE_SHARED_EDITOR::applyInlineHtmlFormatting(QQuickTextDocument *quickDocument) const
 {
     if (!quickDocument || !quickDocument->textDocument())
         return;
@@ -1378,7 +1304,7 @@ void QmlNoteEditor::applyInlineHtmlFormatting(QQuickTextDocument *quickDocument)
     }
 }
 
-QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
+QString QTNOTE_SHARED_EDITOR::markdownText(QQuickTextDocument *quickDocument) const
 {
     if (!quickDocument || !quickDocument->textDocument())
         return {};
@@ -1390,7 +1316,7 @@ QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
     return markdown;
 }
 
-QString QmlNoteEditor::markdownTableCellText(QQuickTextDocument *quickDocument) const
+QString QTNOTE_SHARED_EDITOR::markdownTableCellText(QQuickTextDocument *quickDocument) const
 {
     if (!quickDocument || !quickDocument->textDocument())
         return {};
@@ -1419,13 +1345,14 @@ QString QmlNoteEditor::markdownTableCellText(QQuickTextDocument *quickDocument) 
     return markdown;
 }
 
-QString QmlNoteEditor::markdownSelection(QQuickTextDocument *quickDocument, int start, int end) const
+QString QTNOTE_SHARED_EDITOR::markdownSelection(QQuickTextDocument *quickDocument, int start, int end) const
 {
     if (!quickDocument || !quickDocument->textDocument())
         return {};
     return markdownRange(quickDocument->textDocument(), start, end);
 }
 
+#ifndef QTNOTE_EDITOR_CORE
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
 {
     if (!document || !document->textDocument())
@@ -1521,18 +1448,19 @@ QStringList QmlNoteEditor::spellingSuggestions(const QString &word) const
     }
     return {};
 }
+#endif
 
-NoteFragment QmlNoteEditor::documentFragment() const
+NoteFragment QTNOTE_SHARED_EDITOR::documentFragment() const
 {
     return withMedia(model_->extractBlockFragment(0, model_->rowCount() - 1));
 }
 
-NoteFragment QmlNoteEditor::withMedia(NoteFragment fragment) const
+NoteFragment QTNOTE_SHARED_EDITOR::withMedia(NoteFragment fragment) const
 {
     for (const NoteFragmentBlock &block : std::as_const(fragment.blocks)) {
         if (block.type != NoteFragmentBlockType::Image)
             continue;
-        for (const MediaReference &reference : media_) {
+        for (const MediaReference &reference : media()) {
             if (reference.isValid() && reference.uri() == block.image.sourceUri) {
                 NoteFragmentMedia media;
                 media.sourceUri = block.image.sourceUri;
@@ -1555,7 +1483,7 @@ NoteFragment QmlNoteEditor::withMedia(NoteFragment fragment) const
     return fragment;
 }
 
-void QmlNoteEditor::copyToClipboard(const QString &text)
+void QTNOTE_SHARED_EDITOR::copyToClipboard(const QString &text)
 {
     NoteFragment fragment;
     fragment.sourceFormat = NoteFragmentSourceFormat::PlainText;
@@ -1572,7 +1500,7 @@ void QmlNoteEditor::copyToClipboard(const QString &text)
         QGuiApplication::clipboard()->setText(text);
 }
 
-void QmlNoteEditor::copyMarkdownToClipboard(const QString &markdown)
+void QTNOTE_SHARED_EDITOR::copyMarkdownToClipboard(const QString &markdown)
 {
     // The visible selection is Markdown, not one literal text block.  Keeping
     // it as a Text block would make our private MIME format treat list/table
@@ -1596,7 +1524,7 @@ void QmlNoteEditor::copyMarkdownToClipboard(const QString &markdown)
     }
 }
 
-void QmlNoteEditor::copyDocumentToClipboard()
+void QTNOTE_SHARED_EDITOR::copyDocumentToClipboard()
 {
     NoteTransferController controller;
     const NoteFragment     fragment = documentFragment();
@@ -1606,12 +1534,12 @@ void QmlNoteEditor::copyDocumentToClipboard()
         qInfo() << "QML clipboard copy: whole document blocks=" << fragment.blocks.size()
                 << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
     } else {
-        QGuiApplication::clipboard()->setText(contents());
+        QGuiApplication::clipboard()->setText(model_->contents());
         qWarning() << "QML clipboard copy fell back to plain text:" << exported.error;
     }
 }
 
-bool QmlNoteEditor::copySelectionToClipboard(const QVariantList &encodedRanges)
+bool QTNOTE_SHARED_EDITOR::copySelectionToClipboard(const QVariantList &encodedRanges)
 {
     NoteFragment fragment = withMedia(model_->extractSelectionFragment(decodeSelectionRanges(encodedRanges)));
     if (fragment.blocks.isEmpty())
@@ -1629,7 +1557,7 @@ bool QmlNoteEditor::copySelectionToClipboard(const QVariantList &encodedRanges)
     return true;
 }
 
-QVariantMap QmlNoteEditor::deleteSelection(const QVariantList &encodedRanges)
+QVariantMap QTNOTE_SHARED_EDITOR::deleteSelection(const QVariantList &encodedRanges)
 {
     const QList<NoteBlockSelectionRange> ranges   = decodeSelectionRanges(encodedRanges);
     const int                            focusRow = model_->removeSelectionRanges(ranges);
@@ -1646,7 +1574,8 @@ QVariantMap QmlNoteEditor::deleteSelection(const QVariantList &encodedRanges)
     return result;
 }
 
-QVariantMap QmlNoteEditor::pasteStructuredFromClipboard(QQuickTextDocument *quickDocument, int row, int start, int end)
+QVariantMap QTNOTE_SHARED_EDITOR::pasteStructuredFromClipboard(QQuickTextDocument *quickDocument, int row, int start,
+                                                               int end)
 {
     QVariantMap result;
     if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
@@ -1684,12 +1613,16 @@ QVariantMap QmlNoteEditor::pasteStructuredFromClipboard(QQuickTextDocument *quic
     }
     result.insert(QStringLiteral("handled"), true);
     result.insert(QStringLiteral("focusRow"), insertedRow);
-    if (!insertedMedia.isEmpty())
+    if (!insertedMedia.isEmpty()) {
+        auto manifest = media();
+        manifest.append(insertedMedia);
+        setMedia(manifest);
         emit mediaInserted(insertedMedia);
+    }
     return result;
 }
 
-QVariantMap QmlNoteEditor::pasteTableFromClipboard(int row, int cell)
+QVariantMap QTNOTE_SHARED_EDITOR::pasteTableFromClipboard(int row, int cell)
 {
     QVariantMap result;
     if (!model_->markdown())
@@ -1711,8 +1644,8 @@ QVariantMap QmlNoteEditor::pasteTableFromClipboard(int row, int cell)
     return result;
 }
 
-QVariantMap QmlNoteEditor::pasteListFromClipboard(QQuickTextDocument *quickDocument, int row, int item, int start,
-                                                  int end)
+QVariantMap QTNOTE_SHARED_EDITOR::pasteListFromClipboard(QQuickTextDocument *quickDocument, int row, int item,
+                                                         int start, int end)
 {
     QVariantMap result;
     if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
@@ -1739,6 +1672,9 @@ QVariantMap QmlNoteEditor::pasteListFromClipboard(QQuickTextDocument *quickDocum
     return result;
 }
 
+#undef QTNOTE_SHARED_EDITOR
+
+#ifndef QTNOTE_EDITOR_CORE
 void QmlNoteEditor::setSpellCheckEnabled(bool enabled)
 {
     if (spellCheckEnabled_ == enabled)
@@ -1892,4 +1828,5 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
     }
     return QWidget::eventFilter(watched, event);
 }
+#endif
 } // namespace QtNote

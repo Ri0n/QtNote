@@ -24,7 +24,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QDropEvent>
 #include <QFile>
 #include <QImage>
-#include <QMenu>
 #include <QMimeData>
 #include <QRegularExpression>
 #include <QTextBlock>
@@ -48,11 +47,6 @@ void NoteEdit::insertFromMimeData(const QMimeData *source)
         }
     }
     QTextEdit::insertFromMimeData(source);
-}
-
-void NoteEdit::addContextMenuHandler(NoteContextMenuHandler *handler)
-{
-    menuHandlers.append(dynamic_cast<QObject *>(handler));
 }
 
 void NoteEdit::setLinkHighlightEnabled(bool state)
@@ -98,23 +92,6 @@ void NoteEdit::focusInEvent(QFocusEvent *e)
     setLinkHighlightEnabled(unconditionalLinks || qApp->keyboardModifiers() & Qt::ControlModifier);
     emit focusReceived();
     QTextEdit::focusInEvent(e);
-}
-
-void NoteEdit::contextMenuEvent(QContextMenuEvent *event)
-{
-    QMenu                                  *menu = createStandardContextMenu();
-    QMutableListIterator<QPointer<QObject>> it(menuHandlers);
-    while (it.hasNext()) {
-        auto p = dynamic_cast<NoteContextMenuHandler *>(it.next().data());
-        if (p) {
-            p->populateNoteContextMenu(this, event, menu);
-        } else {
-            it.remove();
-        }
-    }
-
-    menu->exec(event->globalPos());
-    delete menu;
 }
 
 void NoteEdit::focusOutEvent(QFocusEvent *e)

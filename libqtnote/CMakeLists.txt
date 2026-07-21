@@ -31,17 +31,122 @@ if(TARGET Qt${QT_VERSION_MAJOR}::DBus)
     list(APPEND libqtnote_HDRS qtnotedbus.h)
 endif()
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Multimedia QUIET)
-find_package(Qca-qt${QT_VERSION_MAJOR} REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR}Keychain REQUIRED)
+if(NOT TARGET qca-qt${QT_VERSION_MAJOR})
+    find_package(Qca-qt${QT_VERSION_MAJOR} REQUIRED)
+endif()
+if(NOT TARGET Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
+    find_package(Qt${QT_VERSION_MAJOR}Keychain REQUIRED)
+endif()
+
+set(qtnote_CORE_SRCS
+    conflictresolver.cpp
+    draftmanager.cpp
+    filedraftstore.cpp
+    fileremotecachestore.cpp
+    filestorage.cpp
+    localdatakeystore.cpp
+    localmediastore.cpp
+    mediareference.cpp
+    note.cpp
+    noteblockmodel.cpp
+    notedata.cpp
+    notedocumenthistory.cpp
+    noteeditor.cpp
+    notefragment.cpp
+    notefragmentmediatransfer.cpp
+    notemanager.cpp
+    notestorage.cpp
+    notetransfercontroller.cpp
+    ptfstorage.cpp
+    secureenvelope.cpp
+    securekeystore.cpp
+    storagejob.cpp
+    utils.cpp
+)
+set(qtnote_CORE_HDRS
+    conflictresolver.h
+    draftmanager.h
+    draftstore.h
+    filedraftstore.h
+    fileremotecachestore.h
+    filestorage.h
+    localdatakeystore.h
+    localmediastore.h
+    mediareference.h
+    note.h
+    noteblockmodel.h
+    notedata.h
+    noteeditor.h
+    notefragment.h
+    notefragmentmediatransfer.h
+    notemanager.h
+    notestorage.h
+    notetransfercontroller.h
+    ptfstorage.h
+    remotecachestore.h
+    secureenvelope.h
+    securekeystore.h
+    storagejob.h
+    utils.h
+)
+set(qtnote_CORE_UIS)
+
+set(qtnote_PUBLIC_HDRS ${libqtnote_HDRS})
+foreach(core_source IN LISTS qtnote_CORE_SRCS qtnote_CORE_UIS)
+    list(REMOVE_ITEM libqtnote_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/${core_source}" "${core_source}")
+    list(REMOVE_ITEM libqtnote_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/./${core_source}" "./${core_source}")
+    list(REMOVE_ITEM libqtnote_UIS "${CMAKE_CURRENT_SOURCE_DIR}/${core_source}" "${core_source}")
+    list(REMOVE_ITEM libqtnote_UIS "${CMAKE_CURRENT_SOURCE_DIR}/./${core_source}" "./${core_source}")
+endforeach()
+foreach(core_header IN LISTS qtnote_CORE_HDRS)
+    list(REMOVE_ITEM libqtnote_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/${core_header}" "${core_header}")
+    list(REMOVE_ITEM libqtnote_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/./${core_header}" "./${core_header}")
+endforeach()
 
 include(GenerateExportHeader)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+add_library(qtnote_core OBJECT
+    ${qtnote_CORE_HDRS}
+    ${qtnote_CORE_SRCS}
+    ${qtnote_CORE_UIS}
+)
+# Keep the tested Markdown/clipboard implementation single-sourced while the
+# desktop QmlNoteEditor forwarding API is being removed.  The core build of
+# this file selects NoteEditor and excludes every QWidget-only section.
+set_source_files_properties(qmlnoteeditor.cpp PROPERTIES SKIP_AUTOMOC ON)
+target_sources(qtnote_core PRIVATE qmlnoteeditor.cpp)
+target_compile_definitions(qtnote_core PRIVATE QTNOTE_EDITOR_CORE)
+target_include_directories(qtnote_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../plugins" "${CMAKE_BINARY_DIR}")
+target_include_directories(qtnote_core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include/qtnote>  # <prefix>/include/qnote
+    )
+set_target_properties(qtnote_core PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+target_link_libraries(qtnote_core PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Quick)
+target_link_libraries(qtnote_core PRIVATE qca-qt${QT_VERSION_MAJOR})
+target_link_libraries(qtnote_core PRIVATE Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
+foreach(qtnote_core_dependency qtnote_bundled_qca qtnote_bundled_qtkeychain)
+    if(TARGET ${qtnote_core_dependency})
+        add_dependencies(qtnote_core ${qtnote_core_dependency})
+    endif()
+endforeach()
+
+if(QTNOTE_CORE_ONLY)
+    generate_export_header(qtnote_core BASE_NAME qtnote)
+    set(qtnote_lib qtnote_core PARENT_SCOPE)
+    return()
+endif()
+
 add_library(qtnote SHARED
     ${libqtnote_HDRS}
     ${libqtnote_PRIVATE_HDRS}
     ${libqtnote_SRCS}
     ${libqtnote_UIS}
+    $<TARGET_OBJECTS:qtnote_core>
     main.qrc
 )
 generate_export_header(qtnote)
@@ -65,10 +170,10 @@ if(WIN32)
     )
 else()
     set_target_properties(qtnote PROPERTIES
-        PUBLIC_HEADER "${libqtnote_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
+        PUBLIC_HEADER "${qtnote_PUBLIC_HDRS};${PROJECT_BINARY_DIR}/qtnote_export.h"
     )
 endif()
-target_link_libraries(qtnote PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
+target_link_libraries(qtnote PUBLIC qtnote_core Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
 target_link_libraries(qtnote PRIVATE Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::QuickWidgets Qt${QT_VERSION_MAJOR}::Qml)
 target_link_libraries(qtnote PRIVATE qca-qt${QT_VERSION_MAJOR})
 target_link_libraries(qtnote PRIVATE Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)

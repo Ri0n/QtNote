@@ -30,17 +30,61 @@ option(QTNOTE_DEVEL "Enable development mode (adjusts some paths and output)" OF
 option(QTNOTE_BUILD_BUNDLED_QXMPP "Build bundled QXmpp when a suitable system QXmpp is unavailable" OFF)
 option(QTNOTE_ENABLE_X11 "Build QtNote components that use X11 directly" ON)
 
+if(ANDROID)
+    set(_qtnote_mobile_default ON)
+    set(_qtnote_bundled_qca_default ON)
+    set(_qtnote_bundled_qtkeychain_default ON)
+else()
+    set(_qtnote_mobile_default OFF)
+    set(_qtnote_bundled_qca_default OFF)
+    set(_qtnote_bundled_qtkeychain_default OFF)
+endif()
+option(QTNOTE_BUILD_MOBILE "Build the experimental Qt Quick mobile application" ${_qtnote_mobile_default})
+option(QTNOTE_BUILD_BUNDLED_QCA "Build bundled QCA when a suitable system QCA is unavailable" ${_qtnote_bundled_qca_default})
+option(QTNOTE_BUILD_BUNDLED_QTKEYCHAIN "Build bundled QtKeychain when a suitable system QtKeychain is unavailable" ${_qtnote_bundled_qtkeychain_default})
+unset(_qtnote_mobile_default)
+unset(_qtnote_bundled_qca_default)
+unset(_qtnote_bundled_qtkeychain_default)
+
 if("${QT_VERSION_MAJOR}" STREQUAL "")
     set(QT_VERSION_MAJOR 6)
 endif()
 
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Core Gui PrintSupport Quick QuickWidgets Qml REQUIRED)
-if (Qt${QT_VERSION_MAJOR}Widgets_VERSION VERSION_LESS 5.10.0)
-    message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")
+if(QTNOTE_BUILD_MOBILE)
+    if(NOT QT_VERSION_MAJOR EQUAL 6)
+        message(FATAL_ERROR "The mobile application requires Qt 6")
+    endif()
+    find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2)
+else()
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Core Gui PrintSupport Quick QuickWidgets Qml REQUIRED)
+    if (Qt${QT_VERSION_MAJOR}Widgets_VERSION VERSION_LESS 5.10.0)
+        message(FATAL_ERROR "Minimum supported Qt5 version is 5.10!")
+    endif()
 endif()
 set(QT_VERSION_MAJOR ${Qt${QT_VERSION_MAJOR}Core_VERSION_MAJOR})
 set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR} CACHE STRING "Default Qt major version" FORCE)
 include(GNUInstallDirs)
+
+# The Android application deliberately starts as a separate Qt Quick shell.
+# The desktop Main class and plugin settings API currently expose QWidget and
+# QDialog types throughout, so pulling libqtnote into an Android build would
+# hide those portability problems instead of defining a clean mobile boundary.
+if(QTNOTE_BUILD_MOBILE)
+    qt_standard_project_setup()
+    set(PLUGINSDIR "plugins")
+    set(TRANSLATIONSDIR "translations")
+    configure_file(qtnote_config.h.in qtnote_config.h)
+    if(QTNOTE_BUILD_BUNDLED_QCA)
+        include(BundledQca)
+    endif()
+    if(QTNOTE_BUILD_BUNDLED_QTKEYCHAIN)
+        include(BundledQtKeychain)
+    endif()
+    set(QTNOTE_CORE_ONLY ON)
+    add_subdirectory(libqtnote)
+    add_subdirectory(src/mobile)
+    return()
+endif()
 
 # The OMEMO package pulls in its matching QXmpp core package. Searching it
 # first also avoids creating a core-only imported target when OMEMO is absent,
@@ -67,7 +111,7 @@ function(qtnote_configure_qxmpp_target target)
     endif()
 endfunction()
 
-if(UNIX AND NOT (APPLE OR HAIKU))
+if(UNIX AND NOT (APPLE OR HAIKU OR ANDROID))
     set(UNIXLIKE ON)
 endif()
 

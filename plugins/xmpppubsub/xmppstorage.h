@@ -57,6 +57,7 @@ public:
     void                removeNote(const QString &noteId) override;
     NoteRemoveJob      *removeNoteAsync(const QString &noteId, QObject *owner = nullptr) override;
 
+    bool     hasSettingsWidget() const override { return true; }
     QWidget *settingsWidget() override;
     QString  tooltip() override;
 

@@ -9,6 +9,7 @@
 
 #include "mediareference.h"
 #include "note.h"
+#include "noteeditor.h"
 #include "notefragment.h"
 
 class QQuickWidget;
@@ -21,7 +22,7 @@ class QTemporaryDir;
 
 namespace QtNote {
 class NoteBlockModel;
-class NoteDocumentHistory;
+class NoteEditor;
 class NoteHighlighter;
 class HighlighterExtension;
 
@@ -35,34 +36,31 @@ class QTNOTE_EXPORT QmlNoteEditor : public QWidget {
     Q_PROPERTY(bool markdown READ isMarkdown NOTIFY formatChanged)
 
 public:
-    enum class LoadPolicy {
-        ResetHistory,
-        RecordFormatConversion,
-        HistoryRestore,
-    };
-    Q_ENUM(LoadPolicy)
-
     explicit QmlNoteEditor(QWidget *parent = nullptr);
+    QmlNoteEditor(NoteEditor *editor, QWidget *parent);
     ~QmlNoteEditor() override;
 
-    NoteBlockModel  *model() const { return model_; }
-    void             load(const QString &contents, Note::Format format, LoadPolicy policy = LoadPolicy::ResetHistory);
-    void             setMedia(const QList<MediaReference> &media);
-    void             setImageInsertionEnabled(bool enabled) { imageInsertionEnabled_ = enabled; }
-    QString          contents() const;
-    bool             isMarkdown() const;
-    bool             canUndo() const;
-    bool             canRedo() const;
-    QString          undoText() const;
-    QString          redoText() const;
-    void             insertText(const QString &text);
-    void             focusEditor();
-    void             insertTable();
-    void             insertList(int type);
-    void             beginExternalHistoryTransaction(const QString &kind);
-    void             endExternalHistoryTransaction();
-    void             breakHistoryMerge();
-    Q_INVOKABLE void registerTextDocument(QQuickTextDocument *document, bool titleDocument);
+    NoteBlockModel          *model() const { return model_; }
+    QList<MediaReference>    media() const;
+    void                     load(const QString &contents, Note::Format format,
+                                  NoteEditor::LoadPolicy policy = NoteEditor::LoadPolicy::ResetHistory);
+    void                     setMedia(const QList<MediaReference> &media);
+    void                     setImageInsertionEnabled(bool enabled) { imageInsertionEnabled_ = enabled; }
+    QString                  contents() const;
+    bool                     isMarkdown() const;
+    bool                     canUndo() const;
+    bool                     canRedo() const;
+    QString                  undoText() const;
+    QString                  redoText() const;
+    void                     insertText(const QString &text);
+    void                     focusEditor();
+    void                     insertTable();
+    void                     insertList(int type);
+    void                     beginExternalHistoryTransaction(const QString &kind);
+    void                     endExternalHistoryTransaction();
+    void                     breakHistoryMerge();
+    Q_INVOKABLE void         registerEditorView(QObject *view);
+    Q_INVOKABLE void         registerTextDocument(QQuickTextDocument *document, bool titleDocument);
     Q_INVOKABLE QVariantList spellCheckRanges(QQuickTextDocument *document);
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
     Q_INVOKABLE void         addToSpellingDictionary(const QString &word);
@@ -114,17 +112,15 @@ protected:
 private:
     void            updateFocusWindow();
     void            flushPendingEditorChanges();
-    void            prepareForHistoryRestore();
-    void            scheduleHistoryViewRestore(const QVariantMap &viewState);
-    void            restoreScalarField(int blockIndex, int role, int fieldIndex, const QString &value);
     NoteFragment    documentFragment() const;
     NoteFragment    withMedia(NoteFragment fragment) const;
     bool            canAcceptImageDrop(const QMimeData *mimeData) const;
     bool            handleImageDrop(const QMimeData *mimeData, int row);
     int             insertionRowAt(const QPointF &position) const;
     QString         materializeDragImage(const MediaReference &reference, const QByteArray &data);
-    NoteBlockModel *model_ = nullptr;
-    QQuickWidget   *quick_ = nullptr;
+    NoteEditor     *editor_ = nullptr;
+    NoteBlockModel *model_  = nullptr;
+    QQuickWidget   *quick_  = nullptr;
     struct HighlightExtension {
         std::shared_ptr<HighlighterExtension> extension;
         int                                   type;
@@ -133,22 +129,15 @@ private:
         QPointer<NoteHighlighter> highlighter;
         bool                      titleDocument;
     };
-    QList<HighlightExtension>            extensions_;
-    QList<RegisteredHighlighter>         highlighters_;
-    QPointer<QWidget>                    focusWindow_;
-    QString                              baselineOverrideContents_;
-    quint64                              loadGeneration_             = 0;
-    bool                                 baselineOverrideMarkdown_   = false;
-    bool                                 baselineOverrideActive_     = false;
-    bool                                 suppressNextFocusRefresh_   = false;
-    bool                                 hasLoaded_                  = false;
-    bool                                 spellCheckEnabled_          = true;
-    bool                                 scalarHistoryChangePending_ = false;
-    bool                                 imageInsertionEnabled_      = false;
-    bool                                 imageDragAccepted_          = false;
-    QList<MediaReference>                media_;
-    std::unique_ptr<NoteDocumentHistory> history_;
-    std::unique_ptr<QTemporaryDir>       dragExportDirectory_;
+    QList<HighlightExtension>      extensions_;
+    QList<RegisteredHighlighter>   highlighters_;
+    QPointer<QWidget>              focusWindow_;
+    quint64                        loadGeneration_           = 0;
+    bool                           suppressNextFocusRefresh_ = false;
+    bool                           spellCheckEnabled_        = true;
+    bool                           imageInsertionEnabled_    = false;
+    bool                           imageDragAccepted_        = false;
+    std::unique_ptr<QTemporaryDir> dragExportDirectory_;
 };
 } // namespace QtNote
 

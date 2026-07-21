@@ -6,7 +6,9 @@ import "TableBlockBehavior.js" as TableBlockBehavior
 
 ListView {
     id: root
-    property var blockModel: noteBlockModel
+    property var blockModel: typeof noteBlockModel !== "undefined" ? noteBlockModel : null
+    property var editorBackend: typeof noteEditor !== "undefined" ? noteEditor : null
+    property var platformBackend: typeof qmlNoteEditor !== "undefined" ? qmlNoteEditor : null
     property var activeEditor: null
     property var pendingFocusAddress: null
     property var pendingEditorState: null
@@ -28,27 +30,43 @@ ListView {
     property var keyboardSelectionAnchorEditor: null
     property int keyboardSelectionAnchorPosition: 0
     property int editTransactionDepth: 0
-    readonly property int blockSpacing: Math.max(1, Math.round(editorFontMetrics.height * 3 / 5))
-    readonly property int editorInset: Math.max(8, Math.round(editorFontMetrics.height * 2 / 3))
-    readonly property int scrollBarInset: verticalScrollBar.visible
+    readonly property bool touchMode: Qt.platform.os === "android" || Qt.platform.os === "ios"
+    readonly property real editorPointSize: typeof mobileApp !== "undefined"
+                                            ? mobileApp.editorFontSize : Application.font.pointSize
+    readonly property font editorFont: Qt.font({
+        family: Application.font.family,
+        pointSize: editorPointSize
+    })
+    readonly property int blockSpacing: Math.max(touchMode ? 8 : 1,
+                                                 Math.round(editorFontMetrics.height * (touchMode ? 0.8 : 0.6)))
+    readonly property int editorInset: Math.max(touchMode ? 14 : 8,
+                                                Math.round(editorFontMetrics.height * (touchMode ? 0.9 : 0.67)))
+    readonly property int listIndent: Math.max(touchMode ? 24 : 20,
+                                               Math.round(editorFontMetrics.averageCharacterWidth * 4))
+    readonly property int scrollBarInset: !touchMode && verticalScrollBar.visible
                                            ? Math.ceil(verticalScrollBar.width) : 0
     model: blockModel
     spacing: blockSpacing
     clip: true
     topMargin: editorInset
     bottomMargin: editorInset
-    boundsBehavior: Flickable.StopAtBounds
+    boundsBehavior: touchMode ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
     activeFocusOnTab: true
     focus: true
 
+    Component.onCompleted: {
+        if (editorBackend && typeof editorBackend.registerEditorView === "function")
+            editorBackend.registerEditorView(root)
+    }
+
     ScrollBar.vertical: ScrollBar {
         id: verticalScrollBar
-        policy: ScrollBar.AsNeeded
+        policy: root.touchMode ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
     }
 
     FontMetrics {
         id: editorFontMetrics
-        font: Application.font
+        font: root.editorFont
     }
 
     function formattedLinkLabelRuns(label) {
@@ -324,7 +342,8 @@ ListView {
     EditorContextMenu {
         id: sharedContextMenu
         controller: root
-        editorBackend: qmlNoteEditor
+        editorBackend: root.editorBackend
+        platformBackend: root.platformBackend
     }
 
     function orderedEditors() {
@@ -636,7 +655,7 @@ ListView {
     function beginEditTransaction(kind) {
         if (editTransactionDepth === 0) {
             flushPendingEditorChanges()
-            qmlNoteEditor.beginHistoryTransaction(kind, captureEditorState())
+            root.editorBackend.beginHistoryTransaction(kind, captureEditorState())
         }
         ++editTransactionDepth
     }
@@ -646,7 +665,7 @@ ListView {
             return
         --editTransactionDepth
         if (editTransactionDepth === 0)
-            qmlNoteEditor.endHistoryTransaction(captureEditorState())
+            root.editorBackend.endHistoryTransaction(captureEditorState())
     }
 
     function runEditTransaction(kind, callback) {
@@ -823,7 +842,7 @@ ListView {
         const parts = []
         for (const editor of orderedEditors()) {
             if (editor.selectionStart !== editor.selectionEnd)
-                parts.push(qmlNoteEditor.markdownSelection(editor.textDocument,
+                parts.push(root.editorBackend.markdownSelection(editor.textDocument,
                                                             editor.selectionStart, editor.selectionEnd))
         }
         return parts.join("\n")
@@ -874,19 +893,19 @@ ListView {
                 listItemIndex: editor.listItemIndex,
                 tableCellIndex: editor.tableCellIndex,
                 tableRow: editor.tableRow,
-                markdown: selected ? qmlNoteEditor.markdownSelection(
+                markdown: selected ? root.editorBackend.markdownSelection(
                                          editor.textDocument, rangeStart, rangeEnd) : "",
                 wholeEditor: !boundaryOnly && rangeStart === 0 && rangeEnd === editor.length,
                 boundaryOnly: boundaryOnly,
                 selectionStart: rangeStart,
-                before: selected ? qmlNoteEditor.markdownSelection(
+                before: selected ? root.editorBackend.markdownSelection(
                                        editor.textDocument, 0, rangeStart)
                                  : (boundaryOnly && rangeStart > 0
-                                    ? qmlNoteEditor.markdownSelection(editor.textDocument, 0, rangeStart) : ""),
-                after: selected ? qmlNoteEditor.markdownSelection(
+                                    ? root.editorBackend.markdownSelection(editor.textDocument, 0, rangeStart) : ""),
+                after: selected ? root.editorBackend.markdownSelection(
                                       editor.textDocument, rangeEnd, editor.length)
                                 : (boundaryOnly && rangeEnd < editor.length
-                                   ? qmlNoteEditor.markdownSelection(editor.textDocument,
+                                   ? root.editorBackend.markdownSelection(editor.textDocument,
                                                                      rangeEnd, editor.length) : "")
             })
         }
@@ -895,15 +914,15 @@ ListView {
 
     function copyDocumentSelection() {
         if (wholeDocumentSelected) {
-            qmlNoteEditor.copyDocumentToClipboard()
+            root.editorBackend.copyDocumentToClipboard()
             return
         }
         if (selectionSpansEditors
-                && qmlNoteEditor.copySelectionToClipboard(structuredSelectionRanges(false)))
+                && root.editorBackend.copySelectionToClipboard(structuredSelectionRanges(false)))
             return
         const markdown = selectedDocumentMarkdown()
         if (markdown.length > 0)
-            qmlNoteEditor.copyMarkdownToClipboard(markdown)
+            root.editorBackend.copyMarkdownToClipboard(markdown)
     }
 
     function copyActiveSelection() {
@@ -918,7 +937,7 @@ ListView {
             return false
         editor.commitText(false)
         if (editor.listItemIndex >= 0) {
-            const listPasted = qmlNoteEditor.pasteListFromClipboard(editor.textDocument, editor.blockIndex,
+            const listPasted = root.editorBackend.pasteListFromClipboard(editor.textDocument, editor.blockIndex,
                                                                       editor.listItemIndex, editor.selectionStart,
                                                                       editor.selectionEnd)
             if (!listPasted.handled)
@@ -934,10 +953,10 @@ ListView {
             return true
         }
         if (editor.tableCell) {
-            const tablePasted = qmlNoteEditor.pasteTableFromClipboard(editor.blockIndex, editor.tableCellIndex)
+            const tablePasted = root.editorBackend.pasteTableFromClipboard(editor.blockIndex, editor.tableCellIndex)
             return tablePasted.handled
         }
-        const pasted = qmlNoteEditor.pasteStructuredFromClipboard(editor.textDocument, editor.blockIndex,
+        const pasted = root.editorBackend.pasteStructuredFromClipboard(editor.textDocument, editor.blockIndex,
                                                                     editor.selectionStart, editor.selectionEnd)
         if (!pasted.handled)
             return false
@@ -1008,7 +1027,7 @@ ListView {
         if (ranges.length > 1
                 && ranges[0].blockIndex !== ranges[ranges.length - 1].blockIndex) {
             prepareForStructuralMutation()
-            const removed = qmlNoteEditor.deleteSelection(ranges)
+            const removed = root.editorBackend.deleteSelection(ranges)
             if (removed.handled) {
                 if (removed.focusPosition !== undefined) {
                     focusBlock(removed.focusRow, false, removed.focusPosition)
@@ -1422,7 +1441,7 @@ ListView {
     function applyInlineStyle(editor, style) {
         const start = editor.selectionStart
         const end = editor.selectionEnd
-        const formattedEnd = qmlNoteEditor.applyInlineFormat(editor.textDocument, start, end, style)
+        const formattedEnd = root.editorBackend.applyInlineFormat(editor.textDocument, start, end, style)
         if (formattedEnd < 0)
             return
         editor.select(start, formattedEnd)
@@ -1432,13 +1451,39 @@ ListView {
     function openLinkEditor(editor) {
         if (!editor || editor.textFormat !== TextEdit.MarkdownText)
             return
-        const info = qmlNoteEditor.linkInfo(editor.textDocument,
+        const info = root.editorBackend.linkInfo(editor.textDocument,
                                             editor.selectionStart,
                                             editor.selectionEnd)
         if (!info.valid)
             return
         editor.select(info.start, info.end)
         linkEditor.openFor(editor, info.start, info.end, info.href)
+    }
+
+    function openEditorContextMenu(editor, localX, localY) {
+        if (!editor)
+            return
+        editor.forceActiveFocus()
+        activeEditor = editor
+        const position = editor.positionAt(localX, localY)
+        editor.contextWord = ""
+        editor.contextSuggestions = []
+        if (editor.isSpellingError(position)) {
+            editor.cursorPosition = position
+            editor.selectWord()
+            editor.contextWord = editor.selectedText
+            editor.contextStart = editor.selectionStart
+            editor.contextEnd = editor.selectionEnd
+            editor.contextSuggestions = root.platformBackend
+                    ? root.platformBackend.spellingSuggestions(editor.contextWord) : []
+        } else if (editor.selectionStart === editor.selectionEnd
+                   || position < editor.selectionStart || position > editor.selectionEnd) {
+            clearDocumentSelection()
+            editor.cursorPosition = position
+        }
+        contextEditor = editor
+        const globalPosition = editor.mapToItem(root, localX, localY)
+        sharedContextMenu.popup(root, globalPosition.x, globalPosition.y)
     }
 
     function handleInlineFormatting(event, editor) {
@@ -1470,9 +1515,11 @@ ListView {
         parent: Overlay.overlay
         modal: false
         focus: !hoverMode
-        padding: 8
+        padding: root.touchMode ? 12 : 8
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        width: Math.min(420, Math.max(240, parent ? parent.width - 16 : 420))
+        width: root.touchMode
+               ? Math.max(160, parent ? parent.width - 24 : 360)
+               : Math.min(420, Math.max(240, parent ? parent.width - 16 : 420))
 
         property var editor: null
         property int selectionStart: 0
@@ -1503,8 +1550,9 @@ ListView {
             hoverMode = activate === false
             const rectangle = target.positionToRectangle(start)
             const point = target.mapToItem(Overlay.overlay, rectangle.x, rectangle.y)
-            x = Math.max(8, Math.min(Overlay.overlay.width - width - 8, point.x))
-            y = Math.max(8, point.y - implicitHeight - 6)
+            const inset = root.touchMode ? 12 : 8
+            x = Math.max(inset, Math.min(Overlay.overlay.width - width - inset, point.x))
+            y = Math.max(inset, point.y - implicitHeight - 6)
             open()
             if (!hoverMode) {
                 Qt.callLater(function() {
@@ -1523,7 +1571,7 @@ ListView {
             if (!editor)
                 return
             root.runEditTransaction("set-link", function() {
-                const end = qmlNoteEditor.setLink(editor.textDocument,
+                const end = root.editorBackend.setLink(editor.textDocument,
                                                   selectionStart,
                                                   selectionEnd,
                                                   href.trim())
@@ -1544,8 +1592,10 @@ ListView {
             hoverMode = false
         }
 
-        contentItem: RowLayout {
-            spacing: 6
+        contentItem: GridLayout {
+            columns: root.touchMode ? 2 : 3
+            columnSpacing: root.touchMode ? 8 : 6
+            rowSpacing: root.touchMode ? 8 : 6
 
             HoverHandler {
                 onHoveredChanged: {
@@ -1560,9 +1610,11 @@ ListView {
             TextField {
                 id: urlField
                 objectName: "noteLinkUrlField"
+                Layout.columnSpan: root.touchMode ? 2 : 1
                 Layout.fillWidth: true
                 placeholderText: qsTr("Paste or type a link")
                 selectByMouse: true
+                font: root.editorFont
                 onActiveFocusChanged: {
                     if (activeFocus) {
                         linkEditor.hoverMode = false
@@ -1573,10 +1625,14 @@ ListView {
             }
             Button {
                 text: qsTr("Apply")
+                Layout.fillWidth: root.touchMode
+                Layout.minimumHeight: root.touchMode ? 44 : 0
                 onClicked: linkEditor.applyLink(urlField.text)
             }
             ToolButton {
                 text: qsTr("Remove")
+                Layout.fillWidth: root.touchMode
+                Layout.minimumHeight: root.touchMode ? 44 : 0
                 enabled: linkEditor.hadLink
                 onClicked: linkEditor.applyLink("")
             }
@@ -1684,21 +1740,22 @@ ListView {
         property bool sourceTextPending: false
         property string observedPlainText: ""
         property bool observedPlainTextInitialized: false
+        font: root.editorFont
         wrapMode: TextEdit.Wrap
         verticalAlignment: TextEdit.AlignTop
-        selectByMouse: true
+        selectByMouse: !root.touchMode
         persistentSelection: true
         background: null
-        leftPadding: 4
-        rightPadding: 4
-        topPadding: 0
-        bottomPadding: 0
+        leftPadding: root.touchMode ? 2 : 4
+        rightPadding: root.touchMode ? 2 : 4
+        topPadding: root.touchMode ? 4 : 0
+        bottomPadding: root.touchMode ? 4 : 0
         function currentPlainText() {
             return getText(0, length)
         }
 
         function markdownRange(start, end) {
-            return qmlNoteEditor.markdownSelection(textDocument, start, end)
+            return root.editorBackend.markdownSelection(textDocument, start, end)
         }
 
         function rememberPlainText() {
@@ -1707,7 +1764,7 @@ ListView {
         }
 
         function flushToModel() {
-            if (syncingSourceText || sourceTextPending)
+            if (syncingSourceText)
                 return false
             const current = currentPlainText()
             if (observedPlainTextInitialized && current === observedPlainText)
@@ -1726,8 +1783,8 @@ ListView {
             syncingSourceText = true
             text = sourceText
             if (renderedMarkdown && sourceText.indexOf("QTNOTEINSOPEN7F3A") >= 0
-                    && typeof qmlNoteEditor !== "undefined" && qmlNoteEditor !== null)
-                qmlNoteEditor.applyInlineHtmlFormatting(textDocument)
+                    && typeof root.editorBackend !== "undefined" && root.editorBackend !== null)
+                root.editorBackend.applyInlineHtmlFormatting(textDocument)
             syncingSourceText = false
             rememberPlainText()
             return true
@@ -1781,7 +1838,8 @@ ListView {
         Component.onCompleted: {
             synchronizeSourceText(true)
             root.registerEditor(blockArea)
-            qmlNoteEditor.registerTextDocument(textDocument, titleDocument)
+            if (root.platformBackend)
+                root.platformBackend.registerTextDocument(textDocument, titleDocument)
             rememberPlainText()
             spellRefresh.restart()
         }
@@ -1791,7 +1849,8 @@ ListView {
             id: spellRefresh
             interval: 0
             onTriggered: {
-                blockArea.spellingRanges = qmlNoteEditor.spellCheckRanges(blockArea.textDocument)
+                blockArea.spellingRanges = root.platformBackend
+                        ? root.platformBackend.spellCheckRanges(blockArea.textDocument) : []
                 spellingCanvas.requestPaint()
             }
         }
@@ -1818,9 +1877,9 @@ ListView {
                 editorMouseArea.refreshPlainLinkHover(event.modifiers)
                 plainLinkHoverCanvas.requestPaint()
             }
-            if (event.matches(StandardKey.Undo) && qmlNoteEditor.undo()) {
+            if (event.matches(StandardKey.Undo) && root.editorBackend.undo()) {
                 event.accepted = true
-            } else if (event.matches(StandardKey.Redo) && qmlNoteEditor.redo()) {
+            } else if (event.matches(StandardKey.Redo) && root.editorBackend.redo()) {
                 event.accepted = true
             } else if (blockArea.handleLinkSpaceExit(event)) {
                 event.accepted = true
@@ -1868,12 +1927,12 @@ ListView {
             }
 
             const position = cursorPosition
-            const info = qmlNoteEditor.linkInfo(textDocument, position - 1, position)
+            const info = root.editorBackend.linkInfo(textDocument, position - 1, position)
             if (!info.valid || !info.href || info.end !== position)
                 return false
 
             return root.runEditTransaction("leave-link", function() {
-                const result = qmlNoteEditor.setLink(textDocument, position - 1, position, "")
+                const result = root.editorBackend.setLink(textDocument, position - 1, position, "")
                 if (result < 0)
                     return false
 
@@ -1952,7 +2011,7 @@ ListView {
             repeat: true
             running: editorMouseArea.containsMouse && !blockArea.renderedMarkdown
             onTriggered: {
-                const pressed = qmlNoteEditor.primaryModifierPressed()
+                const pressed = root.editorBackend.primaryModifierPressed()
                 if (blockArea.primaryModifierDown === pressed)
                     return
                 blockArea.primaryModifierDown = pressed
@@ -1965,6 +2024,7 @@ ListView {
             id: editorMouseArea
             anchors.fill: parent
             z: 20
+            enabled: !root.touchMode
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             preventStealing: true
@@ -1998,7 +2058,7 @@ ListView {
                     const href = blockArea.linkAt(hoverX, hoverY)
                     const position = blockArea.positionAt(hoverX, hoverY)
                     const info = href.length > 0
-                            ? qmlNoteEditor.linkInfo(blockArea.textDocument, position, position)
+                            ? root.editorBackend.linkInfo(blockArea.textDocument, position, position)
                             : null
                     const changed = !hoveredRenderedLinkInfo || !info
                             || hoveredRenderedLinkInfo.start !== info.start
@@ -2028,7 +2088,7 @@ ListView {
                 plainLinkHoverCanvas.requestPaint()
             }
             onPressed: function(mouse) {
-                qmlNoteEditor.updateHistoryViewState(root.captureEditorState(), true)
+                root.editorBackend.updateHistoryViewState(root.captureEditorState(), true)
                 const position = blockArea.positionAt(mouse.x, mouse.y)
                 if (mouse.button === Qt.LeftButton) {
                     blockArea.forceActiveFocus()
@@ -2044,23 +2104,7 @@ ListView {
                     return
                 }
                 blockArea.forceActiveFocus()
-                root.activeEditor = blockArea
-                blockArea.contextWord = ""
-                blockArea.contextSuggestions = []
-                if (blockArea.isSpellingError(position)) {
-                    blockArea.cursorPosition = position
-                    blockArea.selectWord()
-                    blockArea.contextWord = blockArea.selectedText
-                    blockArea.contextStart = blockArea.selectionStart
-                    blockArea.contextEnd = blockArea.selectionEnd
-                    blockArea.contextSuggestions = qmlNoteEditor.spellingSuggestions(blockArea.contextWord)
-                } else if (blockArea.selectionStart === blockArea.selectionEnd
-                           || position < blockArea.selectionStart || position > blockArea.selectionEnd) {
-                    root.clearDocumentSelection()
-                    blockArea.cursorPosition = position
-                }
-                root.contextEditor = blockArea
-                sharedContextMenu.popup()
+                root.openEditorContextMenu(blockArea, mouse.x, mouse.y)
                 mouse.accepted = true
             }
             onPositionChanged: function(mouse) {
@@ -2123,6 +2167,16 @@ ListView {
                 blockArea.cursorPosition = blockArea.positionAt(mouse.x, mouse.y)
                 blockArea.selectWord()
                 root.wholeDocumentSelected = false
+            }
+        }
+
+        TapHandler {
+            id: touchContextHandler
+            enabled: root.touchMode
+            acceptedButtons: Qt.LeftButton
+            gesturePolicy: TapHandler.DragThreshold
+            onLongPressed: {
+                root.openEditorContextMenu(blockArea, point.position.x, point.position.y)
             }
         }
 
@@ -2229,7 +2283,7 @@ ListView {
             keyHandler: function(event) { return root.handleHeadingShortcut(event, textCell) }
             commitText: function() {
                 const value = root.blockModel && root.blockModel.markdown
-                    ? qmlNoteEditor.markdownText(textDocument) : text
+                    ? root.editorBackend.markdownText(textDocument) : text
                 root.blockModel.setBlockText(block.index, value)
             }
             textFormat: root.blockModel && root.blockModel.markdown ? TextEdit.MarkdownText : TextEdit.PlainText
@@ -2248,7 +2302,7 @@ ListView {
             width: block.width
             sourceText: root.markdownForRendering(block.blockText)
             font.bold: true
-            font.pointSize: Application.font.pointSize * (block.headingLevel === 1 ? 1.7
+            font.pointSize: root.editorPointSize * (block.headingLevel === 1 ? 1.7
                             : block.headingLevel === 2 ? 1.5
                             : block.headingLevel === 3 ? 1.3
                             : block.headingLevel === 4 ? 1.15
@@ -2256,7 +2310,7 @@ ListView {
             keyHandler: function(event) { return root.handleHeadingShortcut(event, headingCell) }
             commitText: function() {
                 root.blockModel.setBlockText(
-                    block.index, qmlNoteEditor.markdownText(textDocument))
+                    block.index, root.editorBackend.markdownText(textDocument))
             }
             textFormat: TextEdit.MarkdownText
             onTextChanged: commitChangedText(activeFocus)
@@ -2369,10 +2423,12 @@ ListView {
                     required property int itemIndent
                     required property int itemType
                     property alias listEditor: checkCell
-                    Layout.leftMargin: itemIndent * 20
+                    Layout.leftMargin: itemIndent * root.listIndent
                     CheckBox {
                         visible: itemType === 2
                         checked: itemChecked
+                        Layout.minimumWidth: root.touchMode ? 44 : 0
+                        Layout.minimumHeight: root.touchMode ? 44 : 0
                         onClicked: root.runEditTransaction("toggle-task", function() {
                             root.blockModel.setChecked(checkRoot.block.index, index, checked)
                         })
@@ -2381,6 +2437,8 @@ ListView {
                         visible: itemType !== 2
                         text: itemType === 5 ? checkRoot.itemNumber(index) + "." : "•"
                         Layout.alignment: Qt.AlignTop
+                        Layout.minimumWidth: root.touchMode ? 32 : 0
+                        topPadding: root.touchMode ? 8 : 0
                     }
                     BlockTextArea {
                         id: checkCell
@@ -2394,7 +2452,7 @@ ListView {
                             root.blockModel.setListItem(
                                 checkRoot.block.index,
                                 index,
-                                qmlNoteEditor.markdownText(textDocument))
+                                root.editorBackend.markdownText(textDocument))
                         }
                         textFormat: TextEdit.MarkdownText
                         onTextChanged: commitChangedText(activeFocus && !checkRoot.syncingItems)
@@ -2542,10 +2600,10 @@ ListView {
                                                 + Math.min(column, oldColumns - 2), 0)
                         })
                     }
-                    leftPadding: 6
-                    rightPadding: 6
-                    topPadding: 3
-                    bottomPadding: 3
+                    leftPadding: root.touchMode ? 8 : 6
+                    rightPadding: root.touchMode ? 8 : 6
+                    topPadding: root.touchMode ? 8 : 3
+                    bottomPadding: root.touchMode ? 8 : 3
                     background: Rectangle {
                         color: "transparent"
                         border.width: 1
@@ -2553,7 +2611,7 @@ ListView {
                     }
                     commitText: function() {
                         root.blockModel.setTableCell(
-                            tableRoot.block.index, index, qmlNoteEditor.markdownTableCellText(textDocument))
+                            tableRoot.block.index, index, root.editorBackend.markdownTableCellText(textDocument))
                         // setTableCell echoes the canonical value through
                         // sourceText. The current QTextDocument already owns
                         // that edit; applying the echo on focus loss would
@@ -2585,15 +2643,22 @@ ListView {
                     gesturePolicy: TapHandler.DragThreshold
                     onTapped: imageContextMenu.popup()
                 }
+                TapHandler {
+                    enabled: root.touchMode
+                    acceptedButtons: Qt.LeftButton
+                    gesturePolicy: TapHandler.DragThreshold
+                    onLongPressed: imageContextMenu.popup()
+                }
                 DragHandler {
                     id: imageDragHandler
                     target: null
+                    enabled: !root.touchMode && root.platformBackend !== null
                     acceptedButtons: Qt.LeftButton
                     property bool dragStarted: false
                     onActiveChanged: {
                         if (active && !dragStarted) {
                             dragStarted = true
-                            qmlNoteEditor.startImageDrag(imageRoot.block.index)
+                            root.platformBackend.startImageDrag(imageRoot.block.index)
                         } else if (!active) {
                             dragStarted = false
                         }
@@ -2613,8 +2678,9 @@ ListView {
                 id: imageContextMenu
                 MenuItem {
                     text: qsTr("Save Image As…")
-                    enabled: imageRoot.block.url.startsWith("qtnote-media:/")
-                    onTriggered: qmlNoteEditor.saveImageAs(imageRoot.block.url)
+                    visible: root.platformBackend !== null
+                    enabled: visible && imageRoot.block.url.startsWith("qtnote-media:/")
+                    onTriggered: root.platformBackend.saveImageAs(imageRoot.block.url)
                 }
                 MenuItem {
                     text: qsTr("Remove Image")

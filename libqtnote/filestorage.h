@@ -36,10 +36,11 @@ class QTNOTE_EXPORT FileStorage : public NoteStorage {
 public:
     FileStorage(QObject *parent);
     void            removeNote(const QString &noteId) override;
-    QWidget        *settingsWidget() override;
     QString         tooltip() override;
     QList<Note>     noteList(int limit = 0) override;
     virtual QString findStorageDir() const = 0;
+    QString         customStoragePath() const;
+    bool            setStoragePath(const QString &path);
 
 protected:
     virtual QList<Note> noteListFromInfoList(const QFileInfoList &) = 0;

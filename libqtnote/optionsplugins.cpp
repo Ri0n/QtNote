@@ -10,6 +10,7 @@
 #include <QTransform>
 
 #include "optionsplugins.h"
+#include "pluginlistmodel.h"
 #include "pluginmanager.h"
 #include "qtnote.h"
 #include "ui_optionsplugins.h"
@@ -85,14 +86,13 @@ class PluginsModel : public QAbstractTableModel {
 
     static constexpr auto MimeType = "application/qtnote.plugin.id";
 
-    Main       *qtnote;
-    QStringList pluginIds; // by priority
-    QIcon       settingIcon;
+    PluginListModel plugins;
+    QIcon           settingIcon;
 
 public:
-    PluginsModel(Main *qtnote, QObject *parent) : QAbstractTableModel(parent), qtnote(qtnote)
+    PluginsModel(PluginManager *pluginManager, QObject *parent) :
+        QAbstractTableModel(parent), plugins(pluginManager, this)
     {
-        pluginIds = qtnote->pluginManager()->pluginsIds();
         QPixmap pix(":/icons/options");
         settingIcon = QIcon(pix);
         QTransform transform;
@@ -104,10 +104,7 @@ public:
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override
     {
-        if (parent.isValid()) {
-            return 0;
-        }
-        return pluginIds.count();
+        return parent.isValid() ? 0 : plugins.rowCount();
     }
 
     int columnCount(const QModelIndex &parent = QModelIndex()) const override
@@ -120,92 +117,27 @@ public:
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
     {
-        QString pluginId = pluginIds[index.row()];
+        if (!index.isValid() || index.row() < 0 || index.row() >= plugins.rowCount())
+            return {};
+
+        const QModelIndex pluginIndex = plugins.index(index.row());
         if (index.column() == 0) {
             switch (role) {
-            case Qt::CheckStateRole: {
-                PluginManager::LoadPolicy lp = qtnote->pluginManager()->loadPolicy(pluginId);
-                switch (lp) {
-                case PluginManager::LP_Auto:
-                    return Qt::PartiallyChecked;
-                case PluginManager::LP_Disabled:
-                    return Qt::Unchecked;
-                case PluginManager::LP_Enabled:
-                    return Qt::Checked;
-                }
-                break;
-            }
-
             case Qt::DisplayRole:
-                return qtnote->pluginManager()->metadata(pluginId).name;
-
-            case Qt::DecorationRole: {
-                QIcon icon = qtnote->pluginManager()->metadata(pluginId).icon;
-                return icon.isNull() ? QIcon(":/icons/plugin") : icon;
-            }
-
-            case Qt::ToolTipRole: {
-                PluginManager::LoadStatus                       status = qtnote->pluginManager()->loadStatus(pluginId);
-                static QMap<PluginManager::LoadStatus, QString> strStatus;
-                if (strStatus.isEmpty()) {
-                    strStatus.insert(PluginManager::LS_ErrAbi, tr("ABI mismatch"));
-                    strStatus.insert(PluginManager::LS_ErrMetadata, tr("Incompatible metadata"));
-                    strStatus.insert(PluginManager::LS_ErrVersion, tr("Incompatible version"));
-                    strStatus.insert(PluginManager::LS_Loaded, tr("Loaded"));
-                    strStatus.insert(PluginManager::LS_Initialized, tr("Initialized"));
-                    strStatus.insert(PluginManager::LS_ErrNotPlugin, tr("Not a plugin"));
-                    strStatus.insert(PluginManager::LS_Undefined, tr("Not loaded"));
-                    strStatus.insert(PluginManager::LS_Unloaded, tr("Not loaded"));
-                }
-                QString ret = qtnote->pluginManager()->metadata(pluginId).description + QLatin1String("<br/><br/>")
-                    + tr("<b>Filename:</b> %1").arg(qtnote->pluginManager()->filename(pluginId)) + "<br/><br/>"
-                    + tr("<b>Status:</b> %1").arg(strStatus[status]);
-                if (status && status < PluginManager::LS_Errors) {
-                    QString tooltip = qtnote->pluginManager()->tooltip(pluginId);
-                    if (!tooltip.isEmpty()) {
-                        ret += QLatin1String("<br/><br/>");
-                        ret += tooltip;
-                    }
-                }
-                return ret;
-            }
-
-            case Qt::FontRole: {
-                QFont                     f; // application default font. may by not what we expect
-                PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
-                if (status == PluginManager::LS_Initialized) {
-                    f.setBold(true);
-                }
-                return f;
-            }
-
-            case Qt::ForegroundRole: {
-                QColor color = qApp->palette().color(QPalette::WindowText); // mey be not what we expect
-                PluginManager::LoadStatus status = qtnote->pluginManager()->loadStatus(pluginId);
-                if (!(status == PluginManager::LS_Initialized || status == PluginManager::LS_Initialized)) {
-                    color.setAlpha(128);
-                }
-                return color;
-            }
+            case Qt::DecorationRole:
+            case Qt::CheckStateRole:
+            case Qt::ToolTipRole:
+            case Qt::FontRole:
+            case Qt::ForegroundRole:
+                return plugins.data(pluginIndex, role);
             }
         } else if (index.column() == 1) { // version
-            if (role == Qt::DisplayRole) {
-                auto        version = qtnote->pluginManager()->metadata(pluginId).version;
-                QStringList ret;
-                while (version) {
-                    ret.append(QString::number((version & 0xff000000) >> 24));
-                    version <<= 8;
-                }
-                if (ret.count() < 2) {
-                    ret.append("0");
-                }
-                return ret.join(".");
-            }
+            if (role == Qt::DisplayRole)
+                return plugins.data(pluginIndex, PluginListModel::VersionTextRole);
         } else if (index.column() == 2) { // settings button
             // options button
-            if (role == Qt::DecorationRole && qtnote->pluginManager()->canOptionsDialog(pluginId)) {
+            if (role == Qt::DecorationRole && plugins.data(pluginIndex, PluginListModel::ConfigurableRole).toBool())
                 return settingIcon;
-            }
         }
         return QVariant();
     }
@@ -213,16 +145,9 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override
     {
         if (index.column() == 0 && role == Qt::CheckStateRole) {
-            Qt::CheckState cs = (Qt::CheckState)value.value<int>();
-            if (data(index, role) == Qt::Unchecked) {
-                cs = Qt::PartiallyChecked;
-            }
-            qtnote->pluginManager()->setLoadPolicy(
-                pluginIds[index.row()],
-                cs == Qt::PartiallyChecked
-                    ? PluginManager::LP_Auto
-                    : (cs == Qt::Checked ? PluginManager::LP_Enabled : PluginManager::LP_Disabled));
-            emit dataChanged(index, index);
+            if (!plugins.setData(plugins.index(index.row()), value, role))
+                return false;
+            emit dataChanged(this->index(index.row(), 0), this->index(index.row(), 2));
             return true;
         }
         return false;
@@ -237,14 +162,14 @@ public:
         }
 
         const auto row = indexes.first().row();
-        if (row < 0 || row >= pluginIds.size()) {
+        if (row < 0 || row >= plugins.rowCount()) {
             return nullptr;
         }
 
         auto        mimeData = new QMimeData();
         QByteArray  encodedData;
         QDataStream out(&encodedData, QIODevice::WriteOnly);
-        out << pluginIds.at(row);
+        out << plugins.pluginId(row);
         mimeData->setData(QLatin1String(MimeType), encodedData);
         return mimeData;
     }
@@ -266,14 +191,20 @@ public:
         QDataStream in(&encodedData, QIODevice::ReadOnly);
         in >> pluginId;
 
-        const auto sourceRow = pluginIds.indexOf(pluginId);
+        int sourceRow = -1;
+        for (int row = 0; row < plugins.rowCount(); ++row) {
+            if (plugins.pluginId(row) == pluginId) {
+                sourceRow = row;
+                break;
+            }
+        }
         if (sourceRow < 0) {
             return false;
         }
 
         int destinationRow = row;
         if (destinationRow < 0) {
-            destinationRow = parent.isValid() ? parent.row() : pluginIds.size();
+            destinationRow = parent.isValid() ? parent.row() : plugins.rowCount();
         }
         return moveRows(QModelIndex(), sourceRow, 1, QModelIndex(), destinationRow);
     }
@@ -282,17 +213,15 @@ public:
                   int destinationChild) override
     {
         if (sourceParent.isValid() || destinationParent.isValid() || count != 1 || sourceRow < 0
-            || sourceRow >= pluginIds.size() || destinationChild < 0 || destinationChild > pluginIds.size()
+            || sourceRow >= plugins.rowCount() || destinationChild < 0 || destinationChild > plugins.rowCount()
             || destinationChild == sourceRow || destinationChild == sourceRow + 1) {
             return false;
         }
 
         beginMoveRows(sourceParent, sourceRow, sourceRow, destinationParent, destinationChild);
-        pluginIds.move(sourceRow, destinationChild > sourceRow ? destinationChild - 1 : destinationChild);
+        const bool moved = plugins.moveRows({}, sourceRow, 1, {}, destinationChild);
         endMoveRows();
-
-        QSettings().setValue(QLatin1String("plugins-priority"), pluginIds);
-        return true;
+        return moved;
     }
 
     Qt::DropActions supportedDragActions() const override { return Qt::MoveAction; }
@@ -311,7 +240,7 @@ public:
         return flags;
     }
 
-    QString pluginId(int row) const { return pluginIds.at(row); }
+    QString pluginId(int row) const { return plugins.pluginId(row); }
 };
 
 class MouseDisabler : public QObject {
@@ -337,7 +266,7 @@ OptionsPlugins::OptionsPlugins(Main *qtnote, QWidget *parent) :
     ui->ckLegendDisabled->installEventFilter(md);
     ui->ckLegendAuto->setCheckState(Qt::PartiallyChecked);
 
-    pluginsModel = new PluginsModel(qtnote, this);
+    pluginsModel = new PluginsModel(qtnote->pluginManager(), this);
     ui->tblPlugins->setModel(pluginsModel);
     ui->tblPlugins->setDragDropMode(QAbstractItemView::InternalMove);
     ui->tblPlugins->setDefaultDropAction(Qt::MoveAction);

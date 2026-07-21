@@ -19,8 +19,6 @@ Contacts:
 E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
-#include <QApplication>
-#include <QDesktopServices>
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -28,7 +26,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QSettings>
-#include <QStyle>
 #include <QUrl>
 
 #include <algorithm>

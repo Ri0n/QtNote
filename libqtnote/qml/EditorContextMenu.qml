@@ -5,6 +5,7 @@ Menu {
     id: menu
     required property var controller
     required property var editorBackend
+    required property var platformBackend
     readonly property var editor: controller.contextEditor
 
     Instantiator {
@@ -37,21 +38,22 @@ Menu {
     }
     MenuSeparator { visible: menu.editor && menu.editor.tableCell }
     MenuItem {
-        visible: menu.editor && menu.editor.contextWord.length > 0
+        visible: menu.platformBackend && menu.editor && menu.editor.contextWord.length > 0
         text: qsTr("Add to dictionary")
         onTriggered: {
-            menu.editorBackend.addToSpellingDictionary(menu.editor.contextWord)
+            menu.platformBackend.addToSpellingDictionary(menu.editor.contextWord)
             menu.editor.refreshSpelling()
         }
     }
-    MenuSeparator { visible: menu.editor && menu.editor.contextWord.length > 0 }
+    MenuSeparator { visible: menu.platformBackend && menu.editor && menu.editor.contextWord.length > 0 }
     MenuItem {
         text: qsTr("Spell Check")
+        visible: menu.platformBackend !== null
         checkable: true
-        checked: menu.editorBackend ? menu.editorBackend.spellCheckEnabled : false
-        onToggled: if (menu.editorBackend) menu.editorBackend.spellCheckEnabled = checked
+        checked: menu.platformBackend ? menu.platformBackend.spellCheckEnabled : false
+        onToggled: if (menu.platformBackend) menu.platformBackend.spellCheckEnabled = checked
     }
-    MenuSeparator {}
+    MenuSeparator { visible: menu.platformBackend !== null }
     MenuItem {
         action: Action {
             text: menu.editorBackend && menu.editorBackend.undoText.length > 0

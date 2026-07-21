@@ -1,11 +1,9 @@
 #include <QSet>
 
-#include "noteedit.h"
 #include "notehighlighter.h"
 
 namespace QtNote {
 
-NoteHighlighter::NoteHighlighter(NoteEdit *nde) : QSyntaxHighlighter(nde) { }
 NoteHighlighter::NoteHighlighter(QTextDocument *document) : QSyntaxHighlighter(document) { }
 
 void NoteHighlighter::highlightBlock(const QString &text)

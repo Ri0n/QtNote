@@ -1,7 +1,7 @@
 # Note editor undo and redo architecture
 
-Status: the hybrid history core is implemented. `QmlNoteEditor` owns a private
-`NoteDocumentHistory` and one bounded `QUndoStack`; ordinary field edits use
+Status: the hybrid history core is implemented. The shared `NoteEditor` owns a
+private `NoteDocumentHistory` and one bounded `QUndoStack`; ordinary field edits use
 small value deltas, while structural and compound edits use exact internal
 snapshots. Keyboard and context-menu undo/redo operate on that document-wide
 stack rather than on an individual QML `TextArea`. Android/IME validation and
@@ -14,7 +14,7 @@ and multiple editor sessions.
 
 ## Goals and invariants
 
-1. One `QmlNoteEditor` owns one ordered history. Individual block delegates do
+1. One `NoteEditor` owns one ordered history. Individual block delegates do
    not own independent user-visible histories.
 2. `NoteBlockModel` remains the source of truth. A history entry is complete
    only after all visible editor changes have reached the model.
@@ -52,10 +52,10 @@ flowchart LR
     CHANGED --> DRAFT["Normal DraftStore checkpoint path"]
 ```
 
-`QmlNoteEditor` owns `NoteDocumentHistory`. The history may use
+`NoteEditor` owns `NoteDocumentHistory`. The history may use
 `NoteBlockModel`'s private mutation and snapshot API, but storage and draft
-classes do not participate in individual undo commands. `NoteWidget` remains
-responsible for checkpoint scheduling and publication lifecycle.
+classes do not participate in individual undo commands. Desktop and mobile
+shells schedule checkpoints; `NoteEditor` owns checkpoint and close semantics.
 
 ## Current implementation
 
@@ -76,9 +76,10 @@ user-visible history:
   actually newer than its observed model value;
 - scalar model setters ignore equal values and therefore do not emit false
   `contentsChanged()` signals;
-- `QmlNoteEditor::LoadPolicy` distinguishes document replacement, format
-  conversion, and non-user replacement; `NoteWidget` passes the
-  policy explicitly instead of relying on content comparison heuristics.
+- `NoteEditor::LoadPolicy` distinguishes document replacement, format
+  conversion, and non-user replacement; `NoteEditor::loadDocument()` owns
+  parsing, baseline updates, and history reset/recording without relying on
+  content comparison heuristics.
 
 The outer QML transaction starts and ends a matching C++ history transaction.
 String-valued setters report their exact old/new value and logical field to the
@@ -258,15 +259,16 @@ Undo and redo follow this sequence:
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant E as QmlNoteEditor
+    participant Q as QML root
+    participant E as NoteEditor
     participant H as NoteDocumentHistory
     participant M as NoteBlockModel
-    participant Q as QML root
 
-    U->>E: StandardKey.Undo
+    U->>Q: StandardKey.Undo
+    Q->>E: undo()
     E->>Q: flushPendingEditorChanges()
     E->>H: undo()
-    H->>E: restore callback (recording disabled)
+    H->>E: restore callback
     E->>Q: prepareForHistoryRestore()
     alt scalar command
         E->>M: apply old field value
@@ -292,7 +294,7 @@ model while avoiding delegate recreation for ordinary typing undo.
 Registered block `QTextDocument` instances have their local undo stack disabled
 once the document history is active.
 
-The context menu binds to `QmlNoteEditor.canUndo`, `canRedo`, `undoText`, and
+The context menu binds to `NoteEditor.canUndo`, `canRedo`, `undoText`, and
 `redoText`, never to `TextArea.canUndo`. A temporary link URL `TextField` is an
 exception: while it has focus, standard undo/redo and copy/cut/paste remain
 local to that field because its value has not yet been applied to the note. The

@@ -1,5 +1,4 @@
 #include "pluginhost.h"
-#include "noteedit.h"
 #include "notehighlighter.h"
 #include "notemanager.h"
 #include "notewidget.h"
@@ -17,8 +16,6 @@ NoteManager *PluginHost::noteManager() { return NoteManager::instance(); }
 QString PluginHost::qtnoteDataDir() { return Utils::qtnoteDataDir(); }
 
 void PluginHost::rehighlight() { emit rehightlight_requested(); }
-
-NoteEdit *PluginHost::noteTextWidget(QWidget *w) { return qobject_cast<NoteWidget *>(w)->editWidget(); }
 
 void PluginHost::addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type)
 {

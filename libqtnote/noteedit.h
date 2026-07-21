@@ -22,11 +22,9 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #ifndef NOTEEDIT_H
 #define NOTEEDIT_H
 
-#include <QPointer>
 #include <QTextBlock>
 #include <QTextEdit>
 
-#include "notecontextmenuhandler.h"
 #include "qtnote_export.h"
 
 class QDropEvent;
@@ -46,13 +44,11 @@ public:
 private:
     Q_OBJECT
 
-    QList<QPointer<QObject>> menuHandlers;
-    HoveredLinkPosition      hlp;
-    bool                     unconditionalLinks = false;
+    HoveredLinkPosition hlp;
+    bool                unconditionalLinks = false;
 
 public:
     explicit NoteEdit(QWidget *parent = nullptr);
-    virtual void               addContextMenuHandler(NoteContextMenuHandler *handler);
     const HoveredLinkPosition &hoveredLinkPosition() const { return hlp; }
     void                       setUnconditionalLinks(bool enabled);
     void                       setImagePasteEnabled(bool enabled) { imagePasteEnabled = enabled; }
@@ -62,7 +58,6 @@ protected:
     void dropEvent(QDropEvent *e);
     void focusOutEvent(QFocusEvent *event);
     void focusInEvent(QFocusEvent *);
-    void contextMenuEvent(QContextMenuEvent *event);
     void mousePressEvent(QMouseEvent *e);
     void mouseMoveEvent(QMouseEvent *e);
     void keyPressEvent(QKeyEvent *e);

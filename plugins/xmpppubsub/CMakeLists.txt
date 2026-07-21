@@ -16,7 +16,7 @@ add_qtnote_plugin(
     xmpppubsub
     "Stores notes in a private persistent XMPP PEP node"
     ${_xmpppubsub_buildable}
-    unix macosx windows
+    unix macosx windows android
     SOURCES
         xmppbackend.h
         xmppdto.h

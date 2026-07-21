@@ -4,7 +4,7 @@ add_qtnote_plugin(
     nextcloud
     "Allows to load and save notes using Nextcloud Notes"
     ON
-    unix macosx windows
+    unix macosx windows android
     SOURCES
         nextclouddto.h
         nextcloudworker.cpp

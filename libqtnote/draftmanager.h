@@ -22,6 +22,7 @@ class QTNOTE_EXPORT DraftManager final : public QObject {
     Q_OBJECT
 public:
     static DraftManager *instance();
+    explicit DraftManager(std::unique_ptr<DraftStore> store, QObject *parent = nullptr);
     ~DraftManager() override;
 
     bool    initialize(QString *error = nullptr);
@@ -60,7 +61,7 @@ private:
     void           storageAboutToBeRemoved(NoteStorage *storage);
     static QString sourceKey(const Note &note);
 
-    std::unique_ptr<FileDraftStore>    store_;
+    std::unique_ptr<DraftStore>        store_;
     QSet<QUuid>                        publishing_;
     QHash<QUuid, QPointer<StorageJob>> publishJobs_;
     QHash<QUuid, int>                  editingSessions_;

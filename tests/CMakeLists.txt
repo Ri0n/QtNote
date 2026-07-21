@@ -5,6 +5,10 @@ target_link_libraries(noteblockmodel_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::
 add_test(NAME noteblockmodel_test COMMAND noteblockmodel_test)
 set_tests_properties(noteblockmodel_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(noteeditor_test noteeditor_test.cpp)
+target_link_libraries(noteeditor_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME noteeditor_test COMMAND noteeditor_test)
+
 add_executable(notefragment_test notefragment_test.cpp)
 target_link_libraries(notefragment_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME notefragment_test COMMAND notefragment_test)

@@ -36,6 +36,12 @@ namespace QtNote {
 class NoteStorage;
 class NoteFinder;
 
+} // namespace QtNote
+
+class QWidget;
+
+namespace QtNote {
+
 class QTNOTE_EXPORT NoteStorage : public QObject {
     Q_OBJECT
 public:
@@ -63,6 +69,7 @@ public:
     virtual bool saveNote(const Note &note)        = 0;
     virtual void removeNote(const QString &noteId) = 0;
 
+    virtual bool     hasSettingsWidget() const { return false; }
     virtual QWidget *settingsWidget() { return 0; }
     virtual QString  tooltip() { return QString(); }
 

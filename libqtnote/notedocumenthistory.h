@@ -13,7 +13,7 @@
 namespace QtNote {
 
 // Per-editor transient history. Persistence deliberately remains the
-// responsibility of NoteWidget and DraftManager.
+// responsibility of NoteEditor and DraftManager.
 class NoteDocumentHistory {
 public:
     struct DocumentState {

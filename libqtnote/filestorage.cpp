@@ -20,7 +20,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 */
 
 #include "filestorage.h"
-#include "filestoragesettingswidget.h"
 
 #include <QDebug>
 #include <QDir>
@@ -85,29 +84,29 @@ void FileStorage::putToCache(const Note &note, const QString &oldNoteId)
     }
 }
 
-QWidget *FileStorage::settingsWidget()
+QString FileStorage::customStoragePath() const
 {
-    FileStorageSettingsWidget *w = new FileStorageSettingsWidget(
-        QSettings().value(QString("storage.%1.path").arg(systemName())).toString(), this);
-    connect(w, &FileStorageSettingsWidget::apply, this, [this, w]() {
-        QString p = w->path();
-        if (p.isEmpty()) { /* just to be sure all native file dialogs work the same way */
-            return;
-        }
-        QFileInfo fi(p);
-        if (!fi.isDir() || !fi.isWritable()) {
-            return;
-        }
-        auto path = fi.absoluteFilePath();
-        notesDir.setPath(path);
-        QSettings().setValue(QString("storage.%1.path").arg(systemName()),
-                             notesDir.absolutePath() == findStorageDir() ? QString() : path);
-        cache.clear();
-        _cacheValid = false;
-        init();
-        emit invalidated();
-    });
-    return w;
+    return QSettings().value(QStringLiteral("storage.%1.path").arg(systemName())).toString();
+}
+
+bool FileStorage::setStoragePath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    QFileInfo fi(path);
+    if (!fi.isDir() || !fi.isWritable()) {
+        return false;
+    }
+    const auto absolutePath = fi.absoluteFilePath();
+    notesDir.setPath(absolutePath);
+    QSettings().setValue(QStringLiteral("storage.%1.path").arg(systemName()),
+                         notesDir.absolutePath() == findStorageDir() ? QString() : absolutePath);
+    cache.clear();
+    _cacheValid = false;
+    init();
+    emit invalidated();
+    return true;
 }
 
 QString FileStorage::tooltip() { return QString("<b>%1:</b> %2").arg(tr("Storage path"), notesDir.absolutePath()); }

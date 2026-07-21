@@ -36,7 +36,6 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "dictionarydownloader.h"
 #include "highlighterext.h"
 #include "hunspellengine.h"
-#include "noteedit.h"
 #include "notewidget.h"
 #include "qtnote.h"
 #include "qtnote_config.h"

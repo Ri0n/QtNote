@@ -1,4 +1,5 @@
 #include <QAction>
+#include <QApplication>
 #include <QClipboard>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -67,21 +68,45 @@ private slots:
         QmlNoteEditor editor;
         QSignalSpy    checkpoint(&editor, &QmlNoteEditor::focusLost);
 
-        editor.load(QStringLiteral("title\nbody"), Note::PlainText, QmlNoteEditor::LoadPolicy::ResetHistory);
+        editor.load(QStringLiteral("title\nbody"), Note::PlainText, NoteEditor::LoadPolicy::ResetHistory);
         QCoreApplication::processEvents();
         QCOMPARE(checkpoint.size(), 0);
 
-        editor.load(editor.contents(), Note::Markdown, QmlNoteEditor::LoadPolicy::ResetHistory);
+        editor.load(editor.contents(), Note::Markdown, NoteEditor::LoadPolicy::ResetHistory);
         QCoreApplication::processEvents();
         QCOMPARE(checkpoint.size(), 0);
 
-        editor.load(editor.contents(), Note::PlainText, QmlNoteEditor::LoadPolicy::RecordFormatConversion);
+        editor.load(editor.contents(), Note::PlainText, NoteEditor::LoadPolicy::RecordFormatConversion);
         QTRY_COMPARE(checkpoint.size(), 1);
 
         checkpoint.clear();
-        editor.load(editor.contents(), Note::Markdown, QmlNoteEditor::LoadPolicy::HistoryRestore);
+        editor.load(editor.contents(), Note::Markdown, NoteEditor::LoadPolicy::HistoryRestore);
         QTest::qWait(10);
         QCOMPARE(checkpoint.size(), 0);
+    }
+
+    void sharedControllerOwnsLoadAndFormatConversion()
+    {
+        QmlNoteEditor host;
+        auto         *editor = host.findChild<NoteEditor *>();
+        QVERIFY(editor);
+
+        editor->loadDocument(QStringLiteral("Title\nBody"), Note::PlainText, NoteEditor::LoadPolicy::ResetHistory);
+        QVERIFY(!editor->isDirty());
+        QVERIFY(!editor->canUndo());
+
+        editor->loadDocument(QStringLiteral("Title\n\nBody"), Note::Markdown,
+                             NoteEditor::LoadPolicy::RecordFormatConversion);
+        QVERIFY(editor->isMarkdown());
+        QVERIFY(editor->isDirty());
+        QVERIFY(editor->canUndo());
+
+        QVERIFY(editor->undo());
+        QVERIFY(!editor->isMarkdown());
+        QCOMPARE(editor->text(), QStringLiteral("Title\nBody"));
+        QVERIFY(editor->redo());
+        QVERIFY(editor->isMarkdown());
+        QCOMPARE(editor->text(), QStringLiteral("Title\n\nBody"));
     }
 
     void capturesAndRestoresLogicalEditorAddress()
@@ -337,7 +362,7 @@ private slots:
     {
         QmlNoteEditor editor;
         editor.load(QStringLiteral("- first\n- second"), Note::Markdown);
-        editor.load(editor.contents(), Note::PlainText, QmlNoteEditor::LoadPolicy::RecordFormatConversion);
+        editor.load(editor.contents(), Note::PlainText, NoteEditor::LoadPolicy::RecordFormatConversion);
         QTRY_VERIFY(!editor.isMarkdown());
         QVERIFY(editor.canUndo());
 
@@ -2410,5 +2435,16 @@ private slots:
     }
 };
 
-QTEST_MAIN(QmlNoteEditorTest)
+int main(int argc, char **argv)
+{
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+        qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
+    if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
+        qputenv("QSG_RHI_BACKEND", QByteArrayLiteral("software"));
+
+    QApplication      application(argc, argv);
+    QmlNoteEditorTest test;
+    return QTest::qExec(&test, argc, argv);
+}
+
 #include "qmlnoteeditor_test.moc"

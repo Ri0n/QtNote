@@ -24,13 +24,13 @@ class QImage;
 namespace QtNote {
 
 class NoteEdit;
+class NoteEditor;
 class NoteHighlighter;
 class QmlNoteEditor;
 class SpeechAudioRecorder;
 class SpeechRecognitionJob;
 class NoteSaveJob;
 class SpeechRecognitionProviderInterface;
-struct DraftRecord;
 
 class QTNOTE_EXPORT NoteWidget : public QWidget {
     Q_OBJECT
@@ -43,7 +43,6 @@ public:
     ~NoteWidget();
 
     void              setText(QString text);
-    void              setNote(const Note &note);
     QString           text();
     const Features   &features() const { return _features; }
     bool              isMarkdown() const; // current mode. may look a little ugly
@@ -52,14 +51,14 @@ public:
     NoteHighlighter  *highlighter() const { return _highlighter; }
     void              setAcceptRichText(bool state);
     void              setSpeechRecognitionProvider(SpeechRecognitionProviderInterface *provider);
-    Note              note() const { return _note; }
-    QString           storageId() const { return _note.storageId(); }
-    QString           noteId() const { return _note.id(); }
-    QUuid             draftId() const { return _draftId; }
+    Note              note() const;
+    QString           storageId() const;
+    QString           noteId() const;
+    QUuid             draftId() const;
     const QString    &firstLine() const { return _firstLine; }
     qint64            lastChangeElapsed() const { return _lastChangeElapsed.elapsed(); }
     bool              isTrashRequested() const { return _trashRequested; }
-    bool              hasPersistedDraft() const { return _draftPersisted; }
+    bool              hasPersistedDraft() const;
     void              setTrashRequested(bool state) { _trashRequested = state; }
     void              setStickyNotesAvailable(bool available);
     void              rehighlight();
@@ -71,7 +70,6 @@ public:
 signals:
     void firstLineChanged();
     void trashRequested();
-    void noteIdChanged(const QString &oldId, const QString &newId);
     void pinRequested();
 
 protected:
@@ -90,7 +88,6 @@ private:
                          ContentLoadPolicy policy = ContentLoadPolicy::ResetHistory);
     void     loadMediaResources();
     void     resizeMediaToViewport();
-    void     adoptEditingDraft(const DraftRecord &draft);
     QAction *initAction(const char *icon, const QString &title, const QString &toolTip, const char *hotkey);
 
 public slots:
@@ -136,6 +133,7 @@ private:
     bool    insertImportedImages(const QList<MediaReference> &references, int row, const QString &historyKind);
 
     Ui::NoteWidget *ui        = nullptr;
+    NoteEditor     *editor    = nullptr;
     QmlNoteEditor  *qmlEditor = nullptr;
 
     QAction                              *mdModeAct;
@@ -152,11 +150,6 @@ private:
     TypeAheadFindBar                     *findBar      = nullptr;
     NoteHighlighter                      *_highlighter = nullptr;
     std::shared_ptr<HighlighterExtension> _linkHighlighter;
-    Note                                  _note;
-    QUuid                                 _draftId;
-    quint64                               _draftRevision = 0;
-    QString                               _baselineText;
-    Note::Format                          _baselineFormat = Note::PlainText;
     QString                               _firstLine;
     QString                               _extFileName;
     QString                               _extSelecteFilter;
@@ -165,9 +158,6 @@ private:
     QElapsedTimer                         _lastChangeElapsed;
     Features                              _features;
     bool                                  _trashRequested       = false;
-    bool                                  _changed              = false;
-    bool                                  _draftPersisted       = false;
-    bool                                  _sessionReleased      = false;
     bool                                  speechRecognitionBusy = false;
 };
 

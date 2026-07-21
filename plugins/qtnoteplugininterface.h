@@ -10,7 +10,7 @@
 
 namespace QtNote {
 
-#define MetadataVersion 2
+#define MetadataVersion 3
 
 struct PluginMetadata {
     QIcon        icon;
@@ -45,7 +45,7 @@ public:
 
 } // namespace QtNote
 
-Q_DECLARE_INTERFACE(QtNote::PluginInterface, "com.rion-soft.QtNote.PluginInterface/2.0")
+Q_DECLARE_INTERFACE(QtNote::PluginInterface, "com.rion-soft.QtNote.PluginInterface/3.0")
 
 Q_DECLARE_INTERFACE(QtNote::RegularPluginInterface, "com.rion-soft.QtNote.RegularPluginInterface/1.0")
 

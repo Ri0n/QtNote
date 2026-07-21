@@ -10,7 +10,7 @@
 #include "storagejob.h"
 #include "utils.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QTimer>
 
@@ -65,6 +65,11 @@ DraftManager::DraftManager(QObject *parent) :
     QObject(parent), conflictResolver_(std::make_unique<CopyConflictResolver>())
 {
 }
+
+DraftManager::DraftManager(std::unique_ptr<DraftStore> store, QObject *parent) :
+    QObject(parent), store_(std::move(store)), conflictResolver_(std::make_unique<CopyConflictResolver>())
+{
+}
 DraftManager::~DraftManager() = default;
 
 QString DraftManager::sourceKey(const Note &note)
@@ -76,7 +81,7 @@ QString DraftManager::sourceKey(const Note &note)
 
 DraftManager *DraftManager::instance()
 {
-    static DraftManager *manager = new DraftManager(qApp);
+    static DraftManager *manager = new DraftManager(QCoreApplication::instance());
     return manager;
 }
 

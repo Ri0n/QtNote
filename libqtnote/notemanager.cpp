@@ -21,7 +21,7 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 
 #include "notemanager.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QSettings>
 #include <QStringList>
 
@@ -414,7 +414,7 @@ void NoteManager::setPriorities(const QStringList &storageCodes)
 NoteManager *NoteManager::instance()
 {
     if (!NoteManager::_instance) {
-        NoteManager::_instance = new NoteManager(QApplication::instance());
+        NoteManager::_instance = new NoteManager(QCoreApplication::instance());
     }
     return NoteManager::_instance;
 }

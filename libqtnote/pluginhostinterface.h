@@ -31,7 +31,6 @@ class QWidget;
 namespace QtNote {
 
 class NoteManager;
-class NoteEdit;
 class HighlighterExtension;
 class SpellCheckProvider;
 
@@ -41,7 +40,6 @@ public:
     virtual NoteManager *noteManager()                              = 0;
     virtual QString      qtnoteDataDir()                            = 0;
     virtual void         rehighlight()                              = 0; // invalide syntax highligh for all open notes
-    virtual NoteEdit    *noteTextWidget(QWidget *w)                 = 0;
     virtual void         addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type) = 0;
     virtual bool         offerSpellCheckProvider(std::shared_ptr<SpellCheckProvider> provider)                  = 0;
 };

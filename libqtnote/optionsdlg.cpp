@@ -24,9 +24,10 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include <QFileInfo>
 #include <QFontDialog>
 #include <QSettings>
-#include <QStringListModel>
 
 #include "defaults.h"
+#include "filestorage.h"
+#include "filestoragesettingswidget.h"
 #include "notemanager.h"
 #include "optionsdlg.h"
 #include "optionsplugins.h"
@@ -35,75 +36,11 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "qtnote_config.h"
 #include "shortcutedit.h"
 #include "shortcutsmanager.h"
+#include "storageprioritymodel.h"
 #include "ui_optionsdlg.h"
 #include "utils.h"
 
 namespace QtNote {
-
-class OptionsDlg::PriorityModel : public QStringListModel {
-private:
-    QMap<QString, QString> titleMap;
-
-public:
-    PriorityModel(QObject *parent) : QStringListModel(parent)
-    {
-        QStringList orderedNames;
-
-        foreach (NoteStorage::Ptr storage, NoteManager::instance()->prioritizedStorages(true)) {
-            titleMap[storage->systemName()] = storage->name();
-            orderedNames.append(storage->name());
-        }
-        setStringList(orderedNames);
-    }
-
-    QStringList priorityList() const
-    {
-        QStringList ret;
-        foreach (const QString &title, stringList()) {
-            ret.append(titleMap.key(title));
-        }
-        return ret;
-    }
-
-    QString storageId(const QModelIndex &index) const
-    {
-        QString storageId = titleMap.key(stringList()[index.row()]);
-        return storageId;
-    }
-
-    Qt::ItemFlags flags(const QModelIndex &index) const
-    {
-        Qt::ItemFlags defaultFlags = QStringListModel::flags(index);
-        defaultFlags ^= (Qt::ItemIsDropEnabled | Qt::ItemIsEditable);
-
-        if (index.isValid()) {
-            return Qt::ItemIsDragEnabled | defaultFlags;
-        } else {
-            return defaultFlags | Qt::ItemIsDropEnabled;
-        }
-    }
-
-    Qt::DropActions supportedDropActions() const { return Qt::MoveAction; }
-
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
-    {
-        QString storageId = index.isValid() ? titleMap.key(stringList()[index.row()]) : QString();
-        if (!storageId.isEmpty()) {
-            if (role == Qt::DecorationRole) {
-                return NoteManager::instance()->storage(storageId)->storageIcon();
-            } else if (role == Qt::ToolTipRole) {
-                return NoteManager::instance()->storage(storageId)->tooltip();
-            } else if (role == Qt::ForegroundRole) {
-                QColor color = qApp->palette().color(QPalette::WindowText); // mey be not what we expect
-                if (!NoteManager::instance()->storage(storageId)->isAccessible()) {
-                    color.setAlpha(128);
-                }
-                return color;
-            }
-        }
-        return QStringListModel::data(index, role);
-    }
-};
 
 OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnote(qtnote)
 {
@@ -114,7 +51,7 @@ OptionsDlg::OptionsDlg(Main *qtnote) : QDialog(0), ui(new Ui::OptionsDlg), qtnot
 #else
     ui->ckAutostart->setVisible(false);
 #endif
-    priorityModel = new PriorityModel(this);
+    priorityModel = new StoragePriorityModel(this);
     ui->priorityView->setModel(priorityModel);
     QSettings s;
     ui->ckAskDel->setChecked(s.value("ui.ask-on-delete", true).toBool());
@@ -209,17 +146,30 @@ void OptionsDlg::storage_doubleClicked(const QModelIndex &index)
     if (storageId.isEmpty()) {
         return;
     }
-    QWidget *w = NoteManager::instance()->storage(storageId)->settingsWidget();
+    auto storage = NoteManager::instance()->storage(storageId);
+    if (!storage) {
+        return;
+    }
+
+    auto fileStorage = qobject_cast<FileStorage *>(storage.data());
+    auto fileStorageSettings
+        = fileStorage ? new FileStorageSettingsWidget(fileStorage->customStoragePath(), fileStorage) : nullptr;
+    QWidget *w = fileStorageSettings ? static_cast<QWidget *>(fileStorageSettings) : storage->settingsWidget();
     if (!w) {
         return;
     }
     QDialog *dlg = new QDialog(this);
     dlg->setWindowIcon(QIcon(":/icons/options"));
-    dlg->setWindowTitle(NoteManager::instance()->storage(storageId)->name() + QStringLiteral(": ") + tr("Settings"));
+    dlg->setWindowTitle(storage->name() + QStringLiteral(": ") + tr("Settings"));
     dlg->resize(500, 30);
     QVBoxLayout      *vl  = new QVBoxLayout;
     QDialogButtonBox *dbb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    connect(dbb, SIGNAL(accepted()), w, SIGNAL(apply()));
+    if (fileStorageSettings) {
+        connect(dbb, &QDialogButtonBox::accepted, this,
+                [fileStorage, fileStorageSettings]() { fileStorage->setStoragePath(fileStorageSettings->path()); });
+    } else {
+        connect(dbb, SIGNAL(accepted()), w, SIGNAL(apply()));
+    }
     connect(dbb, SIGNAL(accepted()), dlg, SLOT(accept()));
     connect(dbb, SIGNAL(rejected()), dlg, SLOT(reject()));
     vl->addWidget(w);

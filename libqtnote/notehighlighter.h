@@ -12,8 +12,6 @@ class QTextDocument;
 
 namespace QtNote {
 
-class NoteEdit;
-
 class QTNOTE_EXPORT NoteHighlighter : public QSyntaxHighlighter {
     Q_OBJECT
 public:
@@ -34,7 +32,6 @@ public:
         QTextCharFormat format;
     };
 
-    NoteHighlighter(NoteEdit *nde);
     NoteHighlighter(QTextDocument *document);
     void highlightBlock(const QString &text);
 
