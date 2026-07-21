@@ -644,7 +644,7 @@ NoteFragment NoteBlockModel::extractBlockFragment(int firstRow, int lastRow) con
     return fragment;
 }
 
-bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, QString *error)
+bool NoteBlockModel::blocksFromFragment(const NoteFragment &fragment, QList<Block> *blocks, QString *error)
 {
     if (fragment.kind != NoteFragmentKind::BlockSequence) {
         if (error)
@@ -652,8 +652,8 @@ bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, 
         return false;
     }
 
-    QList<Block> replacement;
-    replacement.reserve(fragment.blocks.size());
+    blocks->clear();
+    blocks->reserve(fragment.blocks.size());
     for (const NoteFragmentBlock &source : fragment.blocks) {
         Block destination;
         switch (source.type) {
@@ -712,8 +712,16 @@ bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, 
             destination.alt  = source.image.alt;
             break;
         }
-        replacement.append(destination);
+        blocks->append(destination);
     }
+    return true;
+}
+
+bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, QString *error)
+{
+    QList<Block> replacement;
+    if (!blocksFromFragment(fragment, &replacement, error))
+        return false;
 
     if (replacement.isEmpty())
         return true;
@@ -723,6 +731,99 @@ bool NoteBlockModel::insertBlockFragment(int row, const NoteFragment &fragment, 
         blocks_.insert(row + index, replacement.at(index));
     endInsertRows();
     emit contentsChanged();
+    return true;
+}
+
+int NoteBlockModel::replaceTextBlockRangeWithFragment(int row, const QString &before, const QString &after,
+                                                      const NoteFragment &fragment, QString *error)
+{
+    if (row < 0 || row >= blocks_.size() || (blocks_.at(row).type != Text && blocks_.at(row).type != Heading)) {
+        if (error)
+            *error = QStringLiteral("target is not a text block");
+        return -1;
+    }
+
+    QList<Block> replacement;
+    if (!blocksFromFragment(fragment, &replacement, error))
+        return -1;
+
+    const Block original  = blocks_.at(row);
+    const auto  textBlock = [&original](const QString &text) {
+        Block block;
+        block.type         = original.type;
+        block.text         = text.trimmed();
+        block.headingLevel = original.headingLevel;
+        return block;
+    };
+    int insertedRow = row;
+    if (!before.isEmpty()) {
+        replacement.prepend(textBlock(before));
+        ++insertedRow;
+    }
+    if (!after.isEmpty())
+        replacement.append(textBlock(after));
+    if (replacement.isEmpty())
+        replacement.append(textBlock(QString()));
+
+    beginResetModel();
+    blocks_.removeAt(row);
+    for (int index = 0; index < replacement.size(); ++index)
+        blocks_.insert(row + index, replacement.at(index));
+    endResetModel();
+    emit contentsChanged();
+    return insertedRow;
+}
+
+bool NoteBlockModel::replaceTableCellsWithFragment(int row, int firstCell, const NoteFragment &fragment, QString *error)
+{
+    if (row < 0 || row >= blocks_.size() || blocks_.at(row).type != Table) {
+        if (error)
+            *error = QStringLiteral("target is not a table");
+        return false;
+    }
+    if (fragment.kind != NoteFragmentKind::BlockSequence || fragment.blocks.size() != 1
+        || fragment.blocks.constFirst().type != NoteFragmentBlockType::Table) {
+        if (error)
+            *error = QStringLiteral("fragment is not a single table");
+        return false;
+    }
+    const NoteFragmentTable &source = fragment.blocks.constFirst().table;
+    if (source.rows < 1 || source.columns < 1 || qint64(source.rows) * source.columns != source.markdownCells.size()) {
+        if (error)
+            *error = QStringLiteral("table fragment has invalid geometry");
+        return false;
+    }
+
+    Block    &destination = blocks_[row];
+    const int oldColumns  = destination.columns;
+    const int oldRows     = oldColumns > 0 ? destination.cells.size() / oldColumns : 0;
+    if (oldColumns < 1 || oldRows < 1 || firstCell < 0 || firstCell >= oldRows * oldColumns) {
+        if (error)
+            *error = QStringLiteral("target table cell is invalid");
+        return false;
+    }
+    const int targetRow    = firstCell / oldColumns;
+    const int targetColumn = firstCell % oldColumns;
+    const int newColumns   = qMax(oldColumns, targetColumn + source.columns);
+    const int newRows      = qMax(oldRows, targetRow + source.rows);
+    if (qint64(newRows) * newColumns > 100000) {
+        if (error)
+            *error = QStringLiteral("expanded table is too large");
+        return false;
+    }
+
+    QStringList cells(newRows * newColumns);
+    for (int sourceRow = 0; sourceRow < oldRows; ++sourceRow)
+        for (int column = 0; column < oldColumns; ++column)
+            cells[sourceRow * newColumns + column] = destination.cells.at(sourceRow * oldColumns + column);
+    for (int sourceRow = 0; sourceRow < source.rows; ++sourceRow)
+        for (int column = 0; column < source.columns; ++column)
+            cells[(targetRow + sourceRow) * newColumns + targetColumn + column]
+                = source.markdownCells.at(sourceRow * source.columns + column);
+
+    destination.columns = newColumns;
+    destination.cells   = cells;
+    changed(row, { CellsRole });
     return true;
 }
 

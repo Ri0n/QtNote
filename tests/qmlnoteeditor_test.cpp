@@ -1,4 +1,5 @@
 #include <QClipboard>
+#include <QMimeData>
 #include <QQuickItem>
 #include <QQuickTextDocument>
 #include <QQuickWidget>
@@ -168,6 +169,73 @@ private slots:
                      QString::fromLatin1(NoteTransferController::MarkdownMimeType))),
                  QStringLiteral("**bold**"));
         QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("bold"));
+    }
+
+    void structuredPasteSplitsMarkdownTextBlock()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("before after"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        auto *document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+
+        auto *mime = new QMimeData;
+        mime->setData(QString::fromLatin1(NoteTransferController::MarkdownMimeType),
+                      QByteArrayLiteral("- first\n- second"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+        const QVariantMap result = editor.pasteStructuredFromClipboard(document, 0, 7, 7);
+        QVERIFY(result.value(QStringLiteral("handled")).toBool());
+        QCOMPARE(result.value(QStringLiteral("focusRow")).toInt(), 1);
+        QCOMPARE(editor.contents(), QStringLiteral("before\n\n- first\n- second\n\nafter"));
+    }
+
+    void keyboardPasteUsesStructuredMarkdownPath()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("before after"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        activeEditor->setProperty("cursorPosition", 7);
+        activeEditor->setProperty("selectionStart", 7);
+        activeEditor->setProperty("selectionEnd", 7);
+
+        auto *mime = new QMimeData;
+        mime->setData(QString::fromLatin1(NoteTransferController::MarkdownMimeType), QByteArrayLiteral("## inserted"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+        QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("before\n\n## inserted\n\nafter"));
+    }
+
+    void tablePasteImportsTsvRectangle()
+    {
+        QmlNoteEditor editor;
+        editor.load(QStringLiteral("text"), Note::Markdown);
+        editor.model()->insertTable(1);
+        editor.model()->setTableCell(1, 0, QStringLiteral("A"));
+        editor.model()->setTableCell(1, 1, QStringLiteral("B"));
+        editor.model()->setTableCell(1, 2, QStringLiteral("1"));
+        editor.model()->setTableCell(1, 3, QStringLiteral("2"));
+        auto *mime = new QMimeData;
+        mime->setData(QString::fromLatin1(NoteTransferController::TsvMimeType), QByteArrayLiteral("X\tY\nZ\tW"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+
+        const QVariantMap result = editor.pasteTableFromClipboard(1, 3);
+        QVERIFY(result.value(QStringLiteral("handled")).toBool());
+        const auto table = editor.model()->data(editor.model()->index(1), NoteBlockModel::CellsRole).toMap();
+        QCOMPARE(table.value(QStringLiteral("columns")).toInt(), 3);
+        QCOMPARE(table.value(QStringLiteral("values")).toStringList(),
+                 QStringList({ "A", "B", "", "1", "X", "Y", "", "Z", "W" }));
     }
 
     void adjacentParagraphsUseOneTextEditor()

@@ -26,6 +26,7 @@
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
+#include "notefragmentmediatransfer.h"
 #include "notehighlighter.h"
 #include "notetransfercontroller.h"
 
@@ -896,6 +897,84 @@ void QmlNoteEditor::copyDocumentToClipboard()
         QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
     else
         QGuiApplication::clipboard()->setText(contents());
+}
+
+QVariantMap QmlNoteEditor::pasteStructuredFromClipboard(QQuickTextDocument *quickDocument, int row, int start, int end)
+{
+    QVariantMap result;
+    if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
+        return result;
+
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
+    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
+        || imported.fragment.blocks.isEmpty()) {
+        return result;
+    }
+
+    NoteFragment          fragment = imported.fragment;
+    QList<MediaReference> insertedMedia;
+    if (!fragment.media.isEmpty()) {
+        const auto cloned = NoteFragmentMediaTransfer::cloneForDestination(fragment, *LocalMediaStore::instance(),
+                                                                           LocalMediaStore::instance());
+        if (!cloned) {
+            result.insert(QStringLiteral("error"), cloned.error);
+            return result;
+        }
+        fragment      = cloned.fragment;
+        insertedMedia = cloned.importedMedia;
+    }
+
+    QTextDocument *document  = quickDocument->textDocument();
+    const int      limit     = documentEnd(document);
+    start                    = qBound(0, start, limit);
+    end                      = qBound(start, end, limit);
+    const auto markdownRange = [document](int rangeStart, int rangeEnd) {
+        if (rangeStart == rangeEnd)
+            return QString();
+        QTextCursor cursor(document);
+        cursor.setPosition(rangeStart);
+        cursor.setPosition(rangeEnd, QTextCursor::KeepAnchor);
+        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+            markdown.chop(1);
+        return markdown;
+    };
+
+    QString   error;
+    const int insertedRow = model_->replaceTextBlockRangeWithFragment(row, markdownRange(0, start),
+                                                                      markdownRange(end, limit), fragment, &error);
+    if (insertedRow < 0) {
+        result.insert(QStringLiteral("error"), error);
+        return result;
+    }
+    result.insert(QStringLiteral("handled"), true);
+    result.insert(QStringLiteral("focusRow"), insertedRow);
+    if (!insertedMedia.isEmpty())
+        emit mediaInserted(insertedMedia);
+    return result;
+}
+
+QVariantMap QmlNoteEditor::pasteTableFromClipboard(int row, int cell)
+{
+    QVariantMap result;
+    if (!model_->markdown())
+        return result;
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
+    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
+        || !imported.fragment.media.isEmpty() || imported.fragment.blocks.size() != 1
+        || imported.fragment.blocks.constFirst().type != NoteFragmentBlockType::Table) {
+        return result;
+    }
+
+    QString error;
+    if (!model_->replaceTableCellsWithFragment(row, cell, imported.fragment, &error)) {
+        result.insert(QStringLiteral("error"), error);
+        return result;
+    }
+    result.insert(QStringLiteral("handled"), true);
+    return result;
 }
 
 void QmlNoteEditor::setSpellCheckEnabled(bool enabled)

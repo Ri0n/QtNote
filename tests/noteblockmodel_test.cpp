@@ -82,6 +82,53 @@ private slots:
         QCOMPARE(model.contents(), QStringLiteral("unchanged"));
     }
 
+    void replacesTextRangeWithStructuredFragmentAtomically()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("before selected after"), true);
+        NoteFragment      fragment;
+        NoteFragmentBlock list;
+        list.type      = NoteFragmentBlockType::List;
+        list.listItems = { { QStringLiteral("first"), 0, NoteFragmentListKind::Bullet, false },
+                           { QStringLiteral("second"), 0, NoteFragmentListKind::Bullet, false } };
+        fragment.blocks.append(list);
+
+        QString error;
+        QCOMPARE(model.replaceTextBlockRangeWithFragment(0, QStringLiteral("before "), QStringLiteral(" after"),
+                                                         fragment, &error),
+                 1);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QCOMPARE(model.rowCount(), 3);
+        QCOMPARE(model.contents(), QStringLiteral("before\n\n- first\n- second\n\nafter"));
+    }
+
+    void replacesTableRectangleAndExpandsTable()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("text"), true);
+        model.insertTable(1);
+        model.setTableCell(1, 0, QStringLiteral("A"));
+        model.setTableCell(1, 1, QStringLiteral("B"));
+        model.setTableCell(1, 2, QStringLiteral("1"));
+        model.setTableCell(1, 3, QStringLiteral("2"));
+        NoteFragment      fragment;
+        NoteFragmentBlock table;
+        table.type             = NoteFragmentBlockType::Table;
+        table.table.rows       = 2;
+        table.table.columns    = 2;
+        table.table.headerRows = 1;
+        table.table.markdownCells
+            = { QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z"), QStringLiteral("W") };
+        fragment.blocks.append(table);
+
+        QString error;
+        QVERIFY2(model.replaceTableCellsWithFragment(1, 3, fragment, &error), qPrintable(error));
+        const auto cells = model.data(model.index(1), NoteBlockModel::CellsRole).toMap();
+        QCOMPARE(cells.value(QStringLiteral("columns")).toInt(), 3);
+        QCOMPARE(cells.value(QStringLiteral("values")).toStringList(),
+                 QStringList({ "A", "B", "", "1", "X", "Y", "", "Z", "W" }));
+    }
+
     void mergesAdjacentMarkdownParagraphs()
     {
         NoteBlockModel model;

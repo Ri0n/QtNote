@@ -459,6 +459,23 @@ ListView {
             qmlNoteEditor.copyMarkdownToClipboard(markdown)
     }
 
+    function pasteStructuredSelection(editor) {
+        if (!editor || editor.listItemIndex >= 0)
+            return false
+        editor.commitText(false)
+        if (editor.tableCell) {
+            const tablePasted = qmlNoteEditor.pasteTableFromClipboard(editor.blockIndex, editor.tableCellIndex)
+            return tablePasted.handled
+        }
+        const pasted = qmlNoteEditor.pasteStructuredFromClipboard(editor.textDocument, editor.blockIndex,
+                                                                    editor.selectionStart, editor.selectionEnd)
+        if (!pasted.handled)
+            return false
+        clearDocumentSelection()
+        pendingFocusBlock = pasted.focusRow
+        return true
+    }
+
     function cutDocumentSelection() {
         if (!hasDocumentSelection())
             return
@@ -928,6 +945,7 @@ ListView {
         property int blockIndex: -1
         property int listItemIndex: -1
         property int tableRow: -1
+        property int tableCellIndex: -1
         property bool tableCell: false
         property bool canRemoveTableRow: false
         property bool canRemoveTableColumn: false
@@ -1060,6 +1078,8 @@ ListView {
                 event.accepted = true
             } else if (event.matches(StandardKey.Cut) && root.hasDocumentSelection()) {
                 root.cutDocumentSelection()
+                event.accepted = true
+            } else if (event.matches(StandardKey.Paste) && root.pasteStructuredSelection(blockArea)) {
                 event.accepted = true
             }
         }
@@ -1687,6 +1707,7 @@ ListView {
                     font.bold: index < tableRoot.columns
                     sourceText: cellText
                     tableCell: true
+                    tableCellIndex: index
                     tableRow: Math.floor(index / tableRoot.columns)
                     canRemoveTableRow: cellModel.count / tableRoot.columns > 1
                     canRemoveTableColumn: tableRoot.columns > 1

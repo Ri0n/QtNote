@@ -75,6 +75,9 @@ public:
     // of them by NoteTransferController.
     NoteFragment extractBlockFragment(int firstRow, int lastRow) const;
     bool         insertBlockFragment(int row, const NoteFragment &fragment, QString *error = nullptr);
+    int          replaceTextBlockRangeWithFragment(int row, const QString &before, const QString &after,
+                                                   const NoteFragment &fragment, QString *error = nullptr);
+    bool replaceTableCellsWithFragment(int row, int firstCell, const NoteFragment &fragment, QString *error = nullptr);
 
 signals:
     void markdownChanged();
@@ -97,6 +100,7 @@ private:
 
     static QList<Block> parseMarkdown(const QString &source);
     static QString      writeMarkdown(const QList<Block> &blocks);
+    static bool         blocksFromFragment(const NoteFragment &fragment, QList<Block> *blocks, QString *error);
     void                changed(int row, const QList<int> &roles);
 
     QList<Block>            blocks_;

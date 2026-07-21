@@ -368,6 +368,12 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
     connect(qmlEditor, &QmlNoteEditor::contentsChanged, this, &NoteWidget::textChanged);
     connect(qmlEditor, &QmlNoteEditor::imagePasteRequested, this, &NoteWidget::insertClipboardImage);
+    connect(qmlEditor, &QmlNoteEditor::mediaInserted, this, [this](const QList<MediaReference> &references) {
+        auto media = _note.media();
+        media.append(references);
+        _note.setMedia(media);
+        qmlEditor->setMedia(media);
+    });
     connect(qmlEditor, &QmlNoteEditor::focusLost, this, &NoteWidget::save);
     connect(qmlEditor, &QmlNoteEditor::focusReceived, this, &NoteWidget::focusReceived, Qt::QueuedConnection);
 

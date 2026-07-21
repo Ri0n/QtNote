@@ -115,10 +115,16 @@ and plain text on the system clipboard. Referenced media travels with the
 private payload; a sole image up to 8 MiB also carries its bytes, allowing PNG
 export outside QtNote.
 
-The next UI layer must supply exact range/cell selection DTOs and a target
-insertion position. Until it does, ordinary partial text paste deliberately
-remains on the native QML text-control path rather than being redirected
-through a lossy pseudo-block operation.
+Markdown text and heading blocks already have a precise insertion path: an
+imported structural fragment splits the current text block at the selection and
+atomically replaces that range. A TSV or table fragment pasted into one table
+cell writes a rectangular range and expands the table right/down as necessary.
+List-item insertion still needs its own DTO; for that target ordinary partial
+text paste remains on the native QML text-control path rather than being
+redirected through a lossy pseudo-block operation. A media-bearing fragment
+pasted into a text/heading block is cloned before insertion and its new
+references are appended to the destination note manifest in the same editor
+operation.
 
 ## Drag-and-drop behaviour
 

@@ -43,6 +43,8 @@ public:
     Q_INVOKABLE void         copyToClipboard(const QString &text);
     Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
     Q_INVOKABLE void         copyDocumentToClipboard();
+    Q_INVOKABLE QVariantMap  pasteStructuredFromClipboard(QQuickTextDocument *document, int row, int start, int end);
+    Q_INVOKABLE QVariantMap  pasteTableFromClipboard(int row, int cell);
     Q_INVOKABLE QVariantMap  linkInfo(QQuickTextDocument *document, int start, int end) const;
     Q_INVOKABLE int          setLink(QQuickTextDocument *document, int start, int end, const QString &href);
     Q_INVOKABLE bool         primaryModifierPressed() const;
@@ -59,6 +61,7 @@ signals:
     void focusReceived();
     void focusLost();
     void imagePasteRequested(const QImage &image);
+    void mediaInserted(const QList<MediaReference> &references);
     void spellCheckEnabledChanged();
 
 protected:
