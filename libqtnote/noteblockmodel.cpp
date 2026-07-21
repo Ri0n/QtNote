@@ -11,6 +11,15 @@ namespace QtNote {
 namespace {
     const QString TableLineBreakMarker = QStringLiteral("QTNOTE_TABLE_LINE_BREAK_7F3A");
 
+    QString decodeTableCellLineBreaks(QString text)
+    {
+        static const QRegularExpression lineBreak(QStringLiteral("<br\\s*/?>"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+        text.replace(lineBreak, QStringLiteral("\n"));
+        text.replace(TableLineBreakMarker, QStringLiteral("\n"));
+        return text;
+    }
+
     bool isListType(NoteBlockModel::BlockType type)
     {
         return type == NoteBlockModel::BulletList || type == NoteBlockModel::CheckList
@@ -24,13 +33,10 @@ namespace {
             line.remove(0, 1);
         if (line.endsWith('|'))
             line.chop(1);
-        auto                            cells = line.split('|');
-        static const QRegularExpression lineBreak(QStringLiteral("<br\\s*/?>"),
-                                                  QRegularExpression::CaseInsensitiveOption);
+        auto cells = line.split('|');
         for (auto &cell : cells) {
             cell = cell.trimmed();
-            cell.replace(lineBreak, QStringLiteral("\n"));
-            cell.replace(TableLineBreakMarker, QStringLiteral("\n"));
+            cell = decodeTableCellLineBreaks(std::move(cell));
         }
         return cells;
     }
@@ -436,7 +442,7 @@ void NoteBlockModel::setTableCell(int row, int cell, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || cell < 0 || cell >= blocks_[row].cells.size())
         return;
-    const QString value = coalesceAdjacentMarkdownLinks(text);
+    const QString value = coalesceAdjacentMarkdownLinks(decodeTableCellLineBreaks(text));
     if (blocks_[row].cells[cell] == value)
         return;
     const QString before     = blocks_[row].cells[cell];

@@ -562,6 +562,80 @@ private slots:
         auto *document = cell->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
         QCOMPARE(document->textDocument()->toPlainText(), QStringLiteral("one\ntwo"));
+        QCOMPARE(document->textDocument()->blockCount(), 1);
+    }
+
+    void tableCellHardBreaksSurviveCrossCellFocusChanges()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| left | first |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
+        QObject *left  = nullptr;
+        QObject *right = nullptr;
+        for (const QVariant &value : root->property("editors").toList()) {
+            QObject *candidate = value.value<QObject *>();
+            if (!candidate)
+                continue;
+            if (candidate->property("tableCellIndex").toInt() == 2)
+                left = candidate;
+            else if (candidate->property("tableCellIndex").toInt() == 3)
+                right = candidate;
+        }
+        QVERIFY(left);
+        QVERIFY(right);
+        auto *document = right->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+
+        QVERIFY(QMetaObject::invokeMethod(right, "forceActiveFocus"));
+        right->setProperty("cursorPosition", right->property("length"));
+        QTest::keyClick(quick, Qt::Key_Return, Qt::ShiftModifier);
+        QTest::keyClicks(quick, QStringLiteral("second"));
+        QTRY_COMPARE(editor.model()
+                         ->data(editor.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(3),
+                     QStringLiteral("first\nsecond"));
+
+        QVERIFY(QMetaObject::invokeMethod(left, "forceActiveFocus"));
+        QTRY_COMPARE(document->textDocument()->toPlainText(), QStringLiteral("first\nsecond"));
+
+        QVERIFY(QMetaObject::invokeMethod(right, "forceActiveFocus"));
+        right->setProperty("cursorPosition", right->property("length"));
+        QTest::keyClick(quick, Qt::Key_Return, Qt::ShiftModifier);
+        QTest::keyClicks(quick, QStringLiteral("third"));
+        QTRY_VERIFY(!right->property("sourceTextPending").toBool());
+
+        auto geometry = [root](int index) {
+            QVariant result;
+            QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, result), Q_ARG(QVariant, index));
+            return result.toMap();
+        };
+        const auto leftGeometry  = geometry(2);
+        const auto rightGeometry = geometry(3);
+        QVERIFY(!leftGeometry.isEmpty());
+        QVERIFY(!rightGeometry.isEmpty());
+        const QPoint dragStart(
+            rightGeometry[QStringLiteral("x")].toInt() + rightGeometry[QStringLiteral("width")].toInt() - 6,
+            rightGeometry[QStringLiteral("y")].toInt() + rightGeometry[QStringLiteral("height")].toInt() - 4);
+        const QPoint dragEnd(
+            leftGeometry[QStringLiteral("x")].toInt() + leftGeometry[QStringLiteral("width")].toInt() - 6,
+            leftGeometry[QStringLiteral("y")].toInt() + leftGeometry[QStringLiteral("height")].toInt() / 2);
+        QTest::mousePress(quick, Qt::LeftButton, Qt::NoModifier, dragStart);
+        QTest::mouseMove(quick, dragEnd, 30);
+        QTest::mouseRelease(quick, Qt::LeftButton, Qt::NoModifier, dragEnd);
+
+        QTRY_VERIFY(root->property("selectionSpansEditors").toBool());
+        QTRY_COMPARE(document->textDocument()->toPlainText(), QStringLiteral("first\nsecond\nthird"));
+        QCOMPARE(document->textDocument()->blockCount(), 1);
     }
 
     void backspaceDeletesCrossCellSelectionInOneTableRow()

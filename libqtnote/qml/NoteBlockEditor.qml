@@ -206,9 +206,9 @@ ListView {
 
     function markdownTableCellForRendering(source) {
         // The model stores a table-cell hard break as a newline and writes it
-        // as <br>.  Qt's Markdown parser treats a bare newline as a soft
-        // space, so spell it as a GFM hard break for the editable TextArea.
-        return markdownForRendering(source).replace(/\n/g, "  \n")
+        // as <br>. Recreate Qt's in-document line separator directly so the
+        // editable value remains one QTextDocument block.
+        return markdownForRendering(source).replace(/\n/g, "\u2028")
     }
 
     function registerEditor(editor) {
@@ -2512,6 +2512,11 @@ ListView {
                     commitText: function() {
                         root.blockModel.setTableCell(
                             tableRoot.block.index, index, qmlNoteEditor.markdownTableCellText(textDocument))
+                        // setTableCell echoes the canonical value through
+                        // sourceText. The current QTextDocument already owns
+                        // that edit; applying the echo on focus loss would
+                        // parse its line separators for a second time.
+                        sourceTextPending = false
                     }
                     onTextChanged: commitChangedText(activeFocus)
                     onLinkActivated: link => Qt.openUrlExternally(link)
