@@ -4,11 +4,34 @@ function handleKey(host, controller, event, cell) {
     const row = Math.floor(cell.index / host.columns)
     const column = cell.index % host.columns
     const modifiers = event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)
+    const emptyCell = cell.length === 0 && cell.cursorPosition === 0
+    if (!modifiers && host.tableEmpty()) {
+        if (event.key === Qt.Key_Backspace && cell.index === 0) {
+            controller.removeTableBlock(host.block.index, true)
+            return true
+        }
+        if (event.key === Qt.Key_Delete && cell.index + 1 === host.cellCount()) {
+            controller.removeTableBlock(host.block.index, false)
+            return true
+        }
+    }
     if (!modifiers && (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete)
-            && cell.length === 0 && cell.cursorPosition === 0
+            && emptyCell
             && host.rowCount() > 1 && host.rowEmpty(row)) {
+        const previousRowLastCell = row > 0 ? row * host.columns - 1 : -1
+        const previousRowEnd = previousRowLastCell >= 0 ? host.cellLength(previousRowLastCell) : 0
         controller.blockModel.removeTableRow(host.block.index, row)
-        host.focusCell(Math.max(0, row - 1) * host.columns + Math.min(column, host.columns - 1), 0)
+        if (event.key === Qt.Key_Backspace && column === 0 && previousRowLastCell >= 0)
+            host.focusCell(previousRowLastCell, previousRowEnd)
+        else
+            host.focusCell(Math.max(0, row - 1) * host.columns + Math.min(column, host.columns - 1), 0)
+        return true
+    }
+    if (!modifiers && event.key === Qt.Key_Backspace && emptyCell) {
+        if (cell.index > 0)
+            host.focusCell(cell.index - 1, host.cellLength(cell.index - 1))
+        else
+            controller.focusPrecedingBlock(host.block.index)
         return true
     }
     if (!modifiers && event.key === Qt.Key_Left && cell.cursorPosition === 0) {

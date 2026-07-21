@@ -52,6 +52,32 @@ namespace {
 
     int documentEnd(const QTextDocument *document) { return document ? qMax(0, document->characterCount() - 1) : 0; }
 
+    QString markdownRange(QTextDocument *document, int start, int end)
+    {
+        if (!document)
+            return {};
+        const int limit = documentEnd(document);
+        start           = qBound(0, start, limit);
+        end             = qBound(start, end, limit);
+        if (start == end)
+            return {};
+        QTextCursor cursor(document);
+        cursor.setPosition(start);
+        cursor.setPosition(end, QTextCursor::KeepAnchor);
+        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+            markdown.chop(1);
+        return markdown;
+    }
+
+    bool invokeQmlBoolean(QObject *object, const char *method)
+    {
+        if (!object)
+            return false;
+        QVariant result;
+        return QMetaObject::invokeMethod(object, method, Q_RETURN_ARG(QVariant, result)) && result.toBool();
+    }
+
     QTextCharFormat formatAt(QTextDocument *document, int position)
     {
         const int limit = documentEnd(document);
@@ -429,6 +455,25 @@ namespace {
         return markdown;
     }
 
+    QList<NoteBlockSelectionRange> decodeSelectionRanges(const QVariantList &encodedRanges)
+    {
+        QList<NoteBlockSelectionRange> ranges;
+        ranges.reserve(encodedRanges.size());
+        for (const QVariant &encoded : encodedRanges) {
+            const QVariantMap       map = encoded.toMap();
+            NoteBlockSelectionRange range;
+            range.blockIndex     = map.value(QStringLiteral("blockIndex"), -1).toInt();
+            range.listItemIndex  = map.value(QStringLiteral("listItemIndex"), -1).toInt();
+            range.tableCellIndex = map.value(QStringLiteral("tableCellIndex"), -1).toInt();
+            range.markdown       = map.value(QStringLiteral("markdown")).toString();
+            range.wholeEditor    = map.value(QStringLiteral("wholeEditor")).toBool();
+            range.before         = map.value(QStringLiteral("before")).toString();
+            range.after          = map.value(QStringLiteral("after")).toString();
+            ranges.append(range);
+        }
+        return ranges;
+    }
+
 }
 
 QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new NoteBlockModel(this))
@@ -717,18 +762,7 @@ QString QmlNoteEditor::markdownSelection(QQuickTextDocument *quickDocument, int 
 {
     if (!quickDocument || !quickDocument->textDocument())
         return {};
-    QTextDocument *document = quickDocument->textDocument();
-    start                   = qBound(0, start, documentEnd(document));
-    end                     = qBound(start, end, documentEnd(document));
-    if (start == end)
-        return {};
-    QTextCursor cursor(document);
-    cursor.setPosition(start);
-    cursor.setPosition(end, QTextCursor::KeepAnchor);
-    QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
-    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
-        markdown.chop(1);
-    return markdown;
+    return markdownRange(quickDocument->textDocument(), start, end);
 }
 
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
@@ -828,7 +862,11 @@ QStringList QmlNoteEditor::spellingSuggestions(const QString &word) const
 
 NoteFragment QmlNoteEditor::documentFragment() const
 {
-    NoteFragment fragment = model_->extractBlockFragment(0, model_->rowCount() - 1);
+    return withMedia(model_->extractBlockFragment(0, model_->rowCount() - 1));
+}
+
+NoteFragment QmlNoteEditor::withMedia(NoteFragment fragment) const
+{
     for (const NoteFragmentBlock &block : std::as_const(fragment.blocks)) {
         if (block.type != NoteFragmentBlockType::Image)
             continue;
@@ -874,29 +912,76 @@ void QmlNoteEditor::copyToClipboard(const QString &text)
 
 void QmlNoteEditor::copyMarkdownToClipboard(const QString &markdown)
 {
-    NoteFragment fragment;
+    // The visible selection is Markdown, not one literal text block.  Keeping
+    // it as a Text block would make our private MIME format treat list/table
+    // syntax as ordinary characters on the next QtNote paste.  Parse it back
+    // through the block model so the private and public representations carry
+    // the same structure.
+    NoteBlockModel model;
+    model.load(markdown, true);
+    NoteFragment fragment = model.extractBlockFragment(0, model.rowCount() - 1);
     fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
-    NoteFragmentBlock block;
-    block.type     = NoteFragmentBlockType::Text;
-    block.markdown = markdown;
-    fragment.blocks.append(block);
 
     NoteTransferController controller;
     auto                   exported = controller.createMimeData(fragment);
-    if (exported)
+    if (exported) {
         QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-    else
+        qInfo() << "QML clipboard copy: selection blocks=" << fragment.blocks.size()
+                << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
+    } else {
         QGuiApplication::clipboard()->setText(markdown);
+        qWarning() << "QML clipboard copy fell back to plain text:" << exported.error;
+    }
 }
 
 void QmlNoteEditor::copyDocumentToClipboard()
 {
     NoteTransferController controller;
-    auto                   exported = controller.createMimeData(documentFragment());
-    if (exported)
+    const NoteFragment     fragment = documentFragment();
+    auto                   exported = controller.createMimeData(fragment);
+    if (exported) {
         QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-    else
+        qInfo() << "QML clipboard copy: whole document blocks=" << fragment.blocks.size()
+                << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
+    } else {
         QGuiApplication::clipboard()->setText(contents());
+        qWarning() << "QML clipboard copy fell back to plain text:" << exported.error;
+    }
+}
+
+bool QmlNoteEditor::copySelectionToClipboard(const QVariantList &encodedRanges)
+{
+    NoteFragment fragment = withMedia(model_->extractSelectionFragment(decodeSelectionRanges(encodedRanges)));
+    if (fragment.blocks.isEmpty())
+        return false;
+
+    NoteTransferController controller;
+    auto                   exported = controller.createMimeData(fragment);
+    if (!exported) {
+        qWarning() << "QML structured selection copy failed:" << exported.error;
+        return false;
+    }
+    QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
+    qInfo() << "QML clipboard copy: structured selection blocks=" << fragment.blocks.size()
+            << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
+    return true;
+}
+
+QVariantMap QmlNoteEditor::deleteSelection(const QVariantList &encodedRanges)
+{
+    const QList<NoteBlockSelectionRange> ranges   = decodeSelectionRanges(encodedRanges);
+    const int                            focusRow = model_->removeSelectionRanges(ranges);
+    if (focusRow < 0)
+        return {};
+    QVariantMap result { { QStringLiteral("handled"), true }, { QStringLiteral("focusRow"), focusRow } };
+    // If the selection started inside an editor, its prefix survived at the
+    // same structural address. Preserve the exact QTextDocument position of
+    // that boundary instead of merely focusing the beginning of the block.
+    if (!ranges.isEmpty() && !ranges.constFirst().before.isEmpty() && !encodedRanges.isEmpty()) {
+        const QVariantMap first = encodedRanges.constFirst().toMap();
+        result.insert(QStringLiteral("focusPosition"), first.value(QStringLiteral("selectionStart"), 0));
+    }
+    return result;
 }
 
 QVariantMap QmlNoteEditor::pasteStructuredFromClipboard(QQuickTextDocument *quickDocument, int row, int start, int end)
@@ -925,25 +1010,12 @@ QVariantMap QmlNoteEditor::pasteStructuredFromClipboard(QQuickTextDocument *quic
         insertedMedia = cloned.importedMedia;
     }
 
-    QTextDocument *document  = quickDocument->textDocument();
-    const int      limit     = documentEnd(document);
-    start                    = qBound(0, start, limit);
-    end                      = qBound(start, end, limit);
-    const auto markdownRange = [document](int rangeStart, int rangeEnd) {
-        if (rangeStart == rangeEnd)
-            return QString();
-        QTextCursor cursor(document);
-        cursor.setPosition(rangeStart);
-        cursor.setPosition(rangeEnd, QTextCursor::KeepAnchor);
-        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
-        while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
-            markdown.chop(1);
-        return markdown;
-    };
+    QTextDocument *document = quickDocument->textDocument();
+    const int      limit    = documentEnd(document);
 
     QString   error;
-    const int insertedRow = model_->replaceTextBlockRangeWithFragment(row, markdownRange(0, start),
-                                                                      markdownRange(end, limit), fragment, &error);
+    const int insertedRow = model_->replaceTextBlockRangeWithFragment(
+        row, markdownRange(document, 0, start), markdownRange(document, end, limit), fragment, &error);
     if (insertedRow < 0) {
         result.insert(QStringLiteral("error"), error);
         return result;
@@ -974,6 +1046,34 @@ QVariantMap QmlNoteEditor::pasteTableFromClipboard(int row, int cell)
         return result;
     }
     result.insert(QStringLiteral("handled"), true);
+    return result;
+}
+
+QVariantMap QmlNoteEditor::pasteListFromClipboard(QQuickTextDocument *quickDocument, int row, int item, int start,
+                                                  int end)
+{
+    QVariantMap result;
+    if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
+        return result;
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
+    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
+        || !imported.fragment.media.isEmpty() || imported.fragment.blocks.size() != 1
+        || imported.fragment.blocks.constFirst().type != NoteFragmentBlockType::List) {
+        return result;
+    }
+
+    QTextDocument *document = quickDocument->textDocument();
+    const int      limit    = documentEnd(document);
+    QString        error;
+    const int      focusItem = model_->replaceListItemRangeWithFragment(
+        row, item, markdownRange(document, 0, start), markdownRange(document, end, limit), imported.fragment, &error);
+    if (focusItem < 0) {
+        result.insert(QStringLiteral("error"), error);
+        return result;
+    }
+    result.insert(QStringLiteral("handled"), true);
+    result.insert(QStringLiteral("focusItem"), focusItem);
     return result;
 }
 
@@ -1037,16 +1137,36 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
 
     if (watched == quick_) {
         if (event->type() == QEvent::KeyPress) {
-            auto keyEvent = static_cast<QKeyEvent *>(event);
+            auto     keyEvent = static_cast<QKeyEvent *>(event);
+            QObject *root     = quick_->rootObject();
+            if (keyEvent->matches(QKeySequence::Copy) && invokeQmlBoolean(root, "copyActiveSelection"))
+                return true;
+            if (keyEvent->matches(QKeySequence::Cut) && invokeQmlBoolean(root, "cutActiveSelection"))
+                return true;
             if (keyEvent->matches(QKeySequence::Paste)) {
-                const auto mime = QGuiApplication::clipboard()->mimeData();
-                if (mime && mime->hasImage()) {
+                const auto             mime = QGuiApplication::clipboard()->mimeData();
+                NoteTransferController controller;
+                const auto             imported = controller.importMimeData(mime);
+                qInfo() << "QML clipboard paste: formats=" << (mime ? mime->formats() : QStringList())
+                        << "selected=" << imported.sourceMimeType << "blocks=" << imported.fragment.blocks.size()
+                        << "image=" << imported.hasImage() << "error=" << imported.error;
+                // Office applications often publish a bitmap preview together
+                // with TSV or HTML. Image is a fallback, never a reason to
+                // discard the more structured representation.
+                const bool hasStructuredPayload = imported && !imported.hasImage()
+                    && imported.sourceMimeType != QStringLiteral("text/plain") && !imported.fragment.blocks.isEmpty();
+                if (mime && mime->hasImage() && !hasStructuredPayload) {
                     const auto image = qvariant_cast<QImage>(mime->imageData());
                     if (!image.isNull()) {
                         emit imagePasteRequested(image);
                         return true;
                     }
                 }
+                // Handle the complete operation while the event still belongs
+                // to QQuickWidget. This prevents TextArea's native rich-text
+                // paste from racing the QML Keys handler.
+                if (invokeQmlBoolean(root, "pasteClipboard"))
+                    return true;
             }
         }
         if (event->type() == QEvent::FocusIn) {

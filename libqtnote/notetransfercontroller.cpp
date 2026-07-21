@@ -6,6 +6,9 @@
 #include <QMimeData>
 #include <QTextBlock>
 #include <QTextDocument>
+#include <QTextDocumentFragment>
+#include <QTextFrame>
+#include <QTextTable>
 #include <QUrl>
 
 #include <algorithm>
@@ -46,6 +49,104 @@ namespace {
         result.fragment              = model.extractBlockFragment(0, model.rowCount() - 1);
         result.fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
         result.sourceMimeType        = sourceMimeType;
+        return result;
+    }
+
+    QString markdownFromDocumentRange(QTextDocument *document, int start, int end)
+    {
+        if (!document || start >= end)
+            return {};
+        const int   limit = qMax(0, document->characterCount() - 1);
+        QTextCursor cursor(document);
+        cursor.setPosition(qBound(0, start, limit));
+        cursor.setPosition(qBound(0, end, limit), QTextCursor::KeepAnchor);
+        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+            markdown.chop(1);
+        return markdown;
+    }
+
+    void appendMarkdownBlocks(NoteFragment *destination, const QString &markdown)
+    {
+        if (!destination || markdown.trimmed().isEmpty())
+            return;
+        const auto parsed = fragmentFromMarkdown(markdown, QStringLiteral("text/html"));
+        destination->blocks.append(parsed.fragment.blocks);
+    }
+
+    NoteFragmentBlock tableBlockFromDocument(QTextTable *table)
+    {
+        NoteFragmentBlock block;
+        block.type             = NoteFragmentBlockType::Table;
+        block.table.rows       = table ? table->rows() : 0;
+        block.table.columns    = table ? table->columns() : 0;
+        block.table.headerRows = table ? qBound(0, table->format().headerRowCount(), table->rows()) : 0;
+        if (!table)
+            return block;
+
+        for (int row = 0; row < table->rows(); ++row) {
+            for (int column = 0; column < table->columns(); ++column) {
+                const QTextTableCell cell = table->cellAt(row, column);
+                // QTextTable::cellAt returns the spanning cell for every
+                // covered coordinate. Keep the top-left value once and leave
+                // the remaining rectangle empty in our rectangular model.
+                if (!cell.isValid() || cell.row() != row || cell.column() != column) {
+                    block.table.markdownCells.append(QString());
+                    continue;
+                }
+                block.table.markdownCells.append(markdownFromDocumentRange(
+                    table->document(), cell.firstCursorPosition().position(), cell.lastCursorPosition().position()));
+            }
+        }
+        return block;
+    }
+
+    NoteTransferController::ImportResult fragmentFromHtml(const QString &html)
+    {
+        QTextDocument document;
+        document.setHtml(html);
+
+        NoteTransferController::ImportResult result;
+        result.sourceMimeType        = QStringLiteral("text/html");
+        result.fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
+
+        QTextFrame *root      = document.rootFrame();
+        int         textStart = -1;
+        int         textEnd   = -1;
+        const auto  flushText = [&] {
+            if (textStart >= 0)
+                appendMarkdownBlocks(&result.fragment, markdownFromDocumentRange(&document, textStart, textEnd));
+            textStart = -1;
+            textEnd   = -1;
+        };
+
+        for (auto iterator = root->begin(); !iterator.atEnd(); ++iterator) {
+            if (const QTextBlock block = iterator.currentBlock(); block.isValid()) {
+                if (block.text().trimmed().isEmpty())
+                    continue;
+                if (textStart < 0)
+                    textStart = block.position();
+                textEnd = block.position() + block.length();
+                continue;
+            }
+
+            QTextFrame *frame = iterator.currentFrame();
+            flushText();
+            if (auto *table = dynamic_cast<QTextTable *>(frame)) {
+                NoteFragmentBlock block = tableBlockFromDocument(table);
+                if (block.table.rows > 0 && block.table.columns > 0)
+                    result.fragment.blocks.append(block);
+            } else if (frame) {
+                appendMarkdownBlocks(
+                    &result.fragment,
+                    markdownFromDocumentRange(&document, frame->firstPosition(), frame->lastPosition()));
+            }
+        }
+        flushText();
+
+        if (result.fragment.blocks.isEmpty())
+            return fragmentFromMarkdown(document.toMarkdown(QTextDocument::MarkdownDialectGitHub),
+                                        QStringLiteral("text/html"));
         return result;
     }
 
@@ -183,13 +284,6 @@ NoteTransferController::ImportResult NoteTransferController::importMimeData(cons
     if (!markdown.isNull())
         return fragmentFromMarkdown(markdown, QString::fromLatin1(MarkdownMimeType));
 
-    if (mimeData->hasHtml()) {
-        QTextDocument document;
-        document.setHtml(mimeData->html());
-        return fragmentFromMarkdown(document.toMarkdown(QTextDocument::MarkdownDialectGitHub),
-                                    QStringLiteral("text/html"));
-    }
-
     const QString tsv = textForMime(mimeData, QString::fromLatin1(TsvMimeType));
     if (!tsv.isNull()) {
         ImportResult result;
@@ -198,6 +292,13 @@ NoteTransferController::ImportResult NoteTransferController::importMimeData(cons
         if (result.fragment.blocks.isEmpty())
             result.error = QStringLiteral("TSV contains no table cells");
         return result;
+    }
+
+    // Spreadsheets commonly offer both HTML and TSV, plus a bitmap preview.
+    // TSV is lossless for the cell rectangle and maps directly to our table
+    // block, whereas QTextDocument may represent the HTML table as rich text.
+    if (mimeData->hasHtml()) {
+        return fragmentFromHtml(mimeData->html());
     }
 
     if (mimeData->hasImage()) {

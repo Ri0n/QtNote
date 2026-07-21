@@ -43,18 +43,21 @@ public:
     Q_INVOKABLE void         copyToClipboard(const QString &text);
     Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
     Q_INVOKABLE void         copyDocumentToClipboard();
+    Q_INVOKABLE bool         copySelectionToClipboard(const QVariantList &ranges);
+    Q_INVOKABLE QVariantMap  deleteSelection(const QVariantList &ranges);
     Q_INVOKABLE QVariantMap  pasteStructuredFromClipboard(QQuickTextDocument *document, int row, int start, int end);
     Q_INVOKABLE QVariantMap  pasteTableFromClipboard(int row, int cell);
-    Q_INVOKABLE QVariantMap  linkInfo(QQuickTextDocument *document, int start, int end) const;
-    Q_INVOKABLE int          setLink(QQuickTextDocument *document, int start, int end, const QString &href);
-    Q_INVOKABLE bool         primaryModifierPressed() const;
-    Q_INVOKABLE int          applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
-    Q_INVOKABLE QString      markdownText(QQuickTextDocument *document) const;
-    Q_INVOKABLE QString      markdownSelection(QQuickTextDocument *document, int start, int end) const;
-    bool                     spellCheckEnabled() const { return spellCheckEnabled_; }
-    void                     setSpellCheckEnabled(bool enabled);
-    void                     addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
-    void                     rehighlight();
+    Q_INVOKABLE QVariantMap pasteListFromClipboard(QQuickTextDocument *document, int row, int item, int start, int end);
+    Q_INVOKABLE QVariantMap linkInfo(QQuickTextDocument *document, int start, int end) const;
+    Q_INVOKABLE int         setLink(QQuickTextDocument *document, int start, int end, const QString &href);
+    Q_INVOKABLE bool        primaryModifierPressed() const;
+    Q_INVOKABLE int         applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
+    Q_INVOKABLE QString     markdownText(QQuickTextDocument *document) const;
+    Q_INVOKABLE QString     markdownSelection(QQuickTextDocument *document, int start, int end) const;
+    bool                    spellCheckEnabled() const { return spellCheckEnabled_; }
+    void                    setSpellCheckEnabled(bool enabled);
+    void                    addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
+    void                    rehighlight();
 
 signals:
     void contentsChanged();
@@ -71,6 +74,7 @@ protected:
 private:
     void            updateFocusWindow();
     NoteFragment    documentFragment() const;
+    NoteFragment    withMedia(NoteFragment fragment) const;
     NoteBlockModel *model_ = nullptr;
     QQuickWidget   *quick_ = nullptr;
     struct HighlightExtension {

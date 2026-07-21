@@ -1,4 +1,5 @@
 #include <QClipboard>
+#include <QJSValue>
 #include <QMimeData>
 #include <QQuickItem>
 #include <QQuickTextDocument>
@@ -93,6 +94,26 @@ private slots:
         QTRY_COMPARE(editor.contents(), QStringLiteral("typed"));
     }
 
+    void clickBelowLastBlockFocusesDocumentEnd()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("short text"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        auto *active = root->property("activeEditor").value<QObject *>();
+        active->setProperty("cursorPosition", 0);
+
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier, QPoint(quick->width() / 2, quick->height() - 10));
+
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(),
+                     active->property("length").toInt());
+    }
+
     void invokesQmlDocumentHighlighters()
     {
         QmlNoteEditor editor;
@@ -148,6 +169,27 @@ private slots:
         QTRY_COMPARE(editor.contents(), QString());
     }
 
+    void deleteRemovesWholeSelectedDocumentIncludingTable()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("before\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nafter"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QVERIFY(QMetaObject::invokeMethod(root, "selectAllDocument"));
+
+        QTest::keyClick(quick, Qt::Key_Delete);
+
+        QTRY_COMPARE(editor.contents(), QString());
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QCOMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Text));
+    }
+
     void partialCopyPreservesMarkdownFormatting()
     {
         QmlNoteEditor editor;
@@ -169,6 +211,31 @@ private slots:
                      QString::fromLatin1(NoteTransferController::MarkdownMimeType))),
                  QStringLiteral("**bold**"));
         QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("bold"));
+    }
+
+    void keyboardCopyUsesLiveSelectionState()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("**bold**"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        auto *activeEditor = root->property("activeEditor").value<QObject *>();
+        QVERIFY(QMetaObject::invokeMethod(activeEditor, "select", Q_ARG(int, 0),
+                                          Q_ARG(int, activeEditor->property("length").toInt())));
+        // Reproduce Ctrl+C arriving before selectionStateRefresh's zero-delay
+        // timer has updated the cached property.
+        root->setProperty("documentSelectionAvailable", false);
+        QTest::keyClick(quick, Qt::Key_C, Qt::ControlModifier);
+
+        const QMimeData *mime = QGuiApplication::clipboard()->mimeData();
+        QVERIFY(mime->hasFormat(QString::fromLatin1(NoteTransferController::FragmentMimeType)));
+        QCOMPARE(QString::fromUtf8(mime->data(QString::fromLatin1(NoteTransferController::MarkdownMimeType))),
+                 QStringLiteral("**bold**"));
     }
 
     void structuredPasteSplitsMarkdownTextBlock()
@@ -217,6 +284,205 @@ private slots:
         QTRY_COMPARE(editor.contents(), QStringLiteral("before\n\n## inserted\n\nafter"));
     }
 
+    void keyboardPastePreservesWholeQtNoteFragment()
+    {
+        QmlNoteEditor source;
+        source.resize(500, 400);
+        source.load(QStringLiteral("## Header\n\n- [x] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |"), Note::Markdown);
+        source.show();
+        QTest::qWait(30);
+        auto *sourceQuick = source.findChild<QQuickWidget *>();
+        QVERIFY(sourceQuick);
+        QTRY_VERIFY(sourceQuick->rootObject()->property("activeEditor").value<QObject *>());
+        QTest::keyClick(sourceQuick, Qt::Key_A, Qt::ControlModifier);
+        QTest::keyClick(sourceQuick, Qt::Key_C, Qt::ControlModifier);
+        QVERIFY(QGuiApplication::clipboard()->mimeData()->hasFormat(
+            QString::fromLatin1(NoteTransferController::FragmentMimeType)));
+
+        QmlNoteEditor target;
+        target.resize(500, 400);
+        target.load(QStringLiteral("before"), Note::Markdown);
+        target.show();
+        QTest::qWait(30);
+        auto *quick = target.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        activeEditor->setProperty("cursorPosition", 0);
+        QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
+        QTRY_COMPARE(target.contents(),
+                     QStringLiteral("## Header\n\n- [x] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nbefore"));
+        QCOMPARE(target.model()->rowCount(), 4);
+        QCOMPARE(target.model()->data(target.model()->index(1), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::CheckList));
+        QCOMPARE(target.model()->data(target.model()->index(2), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Table));
+    }
+
+    void copyMarkdownClipboardKeepsStructuralBlocks()
+    {
+        const QString  markdown = QStringLiteral("## Header\n\n- [ ] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |");
+        NoteBlockModel parsed;
+        parsed.load(markdown, true);
+        QCOMPARE(parsed.rowCount(), 3);
+        QCOMPARE(parsed.data(parsed.index(2), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Table));
+
+        QmlNoteEditor source;
+        source.copyMarkdownToClipboard(markdown);
+
+        NoteTransferController controller;
+        const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
+        QVERIFY(imported);
+        QCOMPARE(imported.fragment.blocks.size(), 3);
+        QCOMPARE(imported.fragment.blocks.at(0).type, NoteFragmentBlockType::Heading);
+        QCOMPARE(imported.fragment.blocks.at(1).type, NoteFragmentBlockType::List);
+        QCOMPARE(imported.fragment.blocks.at(2).type, NoteFragmentBlockType::Table);
+
+        QmlNoteEditor target;
+        target.resize(500, 400);
+        target.load(QStringLiteral("before"), Note::Markdown);
+        target.show();
+        QTest::qWait(30);
+        auto *quick = target.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        auto *document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        const QVariantMap result = target.pasteStructuredFromClipboard(document, 0, 0, 0);
+        QVERIFY(result.value(QStringLiteral("handled")).toBool());
+        QCOMPARE(target.contents(),
+                 QStringLiteral("## Header\n\n- [ ] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nbefore"));
+    }
+
+    void partialCrossBlockCopyPreservesListAndTable()
+    {
+        QmlNoteEditor source;
+        source.resize(700, 700);
+        source.load(QStringLiteral("prefix\n\n- [ ] one\n- [x] two\n\n"
+                                   "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nsuffix"),
+                    Note::Markdown);
+        source.show();
+        QTest::qWait(30);
+        auto *sourceQuick = source.findChild<QQuickWidget *>();
+        auto *sourceRoot  = sourceQuick->rootObject();
+        QTRY_COMPARE(sourceRoot->property("editors").toList().size(), 8);
+        const auto editors = sourceRoot->property("editors").toList();
+        auto      *first   = editors.constFirst().value<QObject *>();
+        auto      *last    = editors.constLast().value<QObject *>();
+        QVERIFY(first && last);
+        QVERIFY(QMetaObject::invokeMethod(sourceRoot, "applyDocumentSelection",
+                                          Q_ARG(QVariant, QVariant::fromValue(first)), Q_ARG(QVariant, 3),
+                                          Q_ARG(QVariant, QVariant::fromValue(last)), Q_ARG(QVariant, 3)));
+        QTest::keyClick(sourceQuick, Qt::Key_C, Qt::ControlModifier);
+
+        NoteTransferController controller;
+        const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
+        QVERIFY(imported);
+        QCOMPARE(imported.fragment.blocks.size(), 4);
+        QCOMPARE(imported.fragment.blocks.at(0).type, NoteFragmentBlockType::Text);
+        QCOMPARE(imported.fragment.blocks.at(1).type, NoteFragmentBlockType::List);
+        QCOMPARE(imported.fragment.blocks.at(2).type, NoteFragmentBlockType::Table);
+        QCOMPARE(imported.fragment.blocks.at(3).type, NoteFragmentBlockType::Text);
+
+        QmlNoteEditor target;
+        target.resize(700, 700);
+        target.load(QStringLiteral("target"), Note::Markdown);
+        target.show();
+        QTest::qWait(30);
+        auto *targetQuick = target.findChild<QQuickWidget *>();
+        QTRY_VERIFY(targetQuick->rootObject()->property("activeEditor").value<QObject *>());
+        QTest::keyClick(targetQuick, Qt::Key_V, Qt::ControlModifier);
+
+        QTRY_COMPARE(target.contents(),
+                     QStringLiteral("fix\n\n- [ ] one\n- [x] two\n\n"
+                                    "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nsuf\n\ntarget"));
+        QCOMPARE(target.model()->data(target.model()->index(1), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::CheckList));
+        QCOMPARE(target.model()->data(target.model()->index(2), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Table));
+    }
+
+    void partialCrossBlockDeleteRemovesListAndTable()
+    {
+        QmlNoteEditor editor;
+        editor.resize(700, 700);
+        editor.load(QStringLiteral("beforeXSELECT\n\n- [ ] one\n- [x] two\n\n"
+                                   "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nREMOVEafter"),
+                    Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 8);
+        const auto editors = root->property("editors").toList();
+        auto      *first   = editors.constFirst().value<QObject *>();
+        auto      *last    = editors.constLast().value<QObject *>();
+        QVERIFY(first && last);
+        QVERIFY(QMetaObject::invokeMethod(root, "applyDocumentSelection", Q_ARG(QVariant, QVariant::fromValue(first)),
+                                          Q_ARG(QVariant, 7), Q_ARG(QVariant, QVariant::fromValue(last)),
+                                          Q_ARG(QVariant, 6)));
+
+        QTest::keyClick(quick, Qt::Key_Delete);
+
+        QTRY_COMPARE(editor.contents(), QStringLiteral("beforeXafter"));
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QCOMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Text));
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 7);
+    }
+
+    void pastePrefersTsvOverOfficeImagePreview()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("before"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+        auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
+        activeEditor->setProperty("cursorPosition", 0);
+
+        QImage preview(1, 1, QImage::Format_ARGB32_Premultiplied);
+        preview.fill(Qt::red);
+        auto *mime = new QMimeData;
+        mime->setImageData(preview);
+        mime->setData(QString::fromLatin1(NoteTransferController::TsvMimeType), QByteArrayLiteral("A\tB\n1\t2"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+        QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("| A | B |\n| --- | --- |\n| 1 | 2 |\n\nbefore"));
+    }
+
+    void pasteImportsHtmlTableInsteadOfImagePreview()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("before"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        QTRY_VERIFY(quick->rootObject()->property("activeEditor").value<QObject *>());
+
+        QImage preview(1, 1, QImage::Format_ARGB32_Premultiplied);
+        preview.fill(Qt::red);
+        auto *mime = new QMimeData;
+        mime->setImageData(preview);
+        mime->setHtml(QStringLiteral("<table><tr><td>A</td><td>B</td></tr>"
+                                     "<tr><td>1</td><td>2</td></tr></table>"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+        QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
+
+        QTRY_COMPARE(editor.model()->rowCount(), 2);
+        QCOMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Table));
+        QCOMPARE(editor.contents(), QStringLiteral("| A | B |\n| --- | --- |\n| 1 | 2 |\n\nbefore"));
+    }
+
     void tablePasteImportsTsvRectangle()
     {
         QmlNoteEditor editor;
@@ -236,6 +502,34 @@ private slots:
         QCOMPARE(table.value(QStringLiteral("columns")).toInt(), 3);
         QCOMPARE(table.value(QStringLiteral("values")).toStringList(),
                  QStringList({ "A", "B", "", "1", "X", "Y", "", "Z", "W" }));
+    }
+
+    void listPastePreservesNestedFragmentStructure()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 400);
+        editor.load(QStringLiteral("- before selected after\n- tail"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        const QJSValue editors = root->property("editors").value<QJSValue>();
+        QCOMPARE(editors.property(QStringLiteral("length")).toInt(), 2);
+        QObject *listCell = editors.property(0).toQObject();
+        QVERIFY(listCell);
+        auto *document = listCell->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        auto *mime = new QMimeData;
+        mime->setData(QString::fromLatin1(NoteTransferController::MarkdownMimeType),
+                      QByteArrayLiteral("- [x] task\n    1. nested"));
+        QGuiApplication::clipboard()->setMimeData(mime);
+
+        const QVariantMap result = editor.pasteListFromClipboard(document, 0, 0, 7, 15);
+        QVERIFY(result.value(QStringLiteral("handled")).toBool());
+        QCOMPARE(result.value(QStringLiteral("focusItem")).toInt(), 1);
+        QCOMPARE(editor.contents(), QStringLiteral("- before\n- [x] task\n    1. nested\n- after\n- tail"));
     }
 
     void adjacentParagraphsUseOneTextEditor()
@@ -771,6 +1065,88 @@ private slots:
                          .toStringList()
                          .size(),
                      4);
+        const auto activeIndex = [root] {
+            QVariant value;
+            QMetaObject::invokeMethod(root, "activeEditorIndex", Q_RETURN_ARG(QVariant, value));
+            return value.toInt();
+        };
+        QTRY_COMPARE(activeIndex(), 3);
+        QCOMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 3);
+    }
+
+    void backspaceInEmptyTableCellMovesToPreviousCell()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 350);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| C | |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto    *quick = editor.findChild<QQuickWidget *>();
+        auto    *root  = quick->rootObject();
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 3)));
+        const auto geometry = geometryValue.toMap();
+        QVERIFY(!geometry.isEmpty());
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier,
+                          QPoint(geometry["x"].toInt() + 8, geometry["y"].toInt() + geometry["height"].toInt() / 2));
+
+        QTest::keyClick(quick, Qt::Key_Backspace);
+
+        const auto activeIndex = [root] {
+            QVariant value;
+            QMetaObject::invokeMethod(root, "activeEditorIndex", Q_RETURN_ARG(QVariant, value));
+            return value.toInt();
+        };
+        QTRY_COMPARE(activeIndex(), 2);
+        QCOMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 1);
+        QCOMPARE(editor.model()
+                     ->data(editor.model()->index(0), NoteBlockModel::CellsRole)
+                     .toMap()[QStringLiteral("values")]
+                     .toStringList(),
+                 QStringList({ "A", "B", "C", "" }));
+    }
+
+    void boundaryDeleteRemovesCompletelyEmptyTable()
+    {
+        const auto makeEmptyTable = [](QmlNoteEditor &editor) {
+            editor.load(QStringLiteral("placeholder"), Note::Markdown);
+            editor.model()->removeBlock(0);
+            editor.model()->insertTable(0);
+            editor.resize(500, 350);
+            editor.show();
+            QTest::qWait(30);
+        };
+        const auto clickCell = [](QmlNoteEditor &editor, int cell) {
+            auto    *quick = editor.findChild<QQuickWidget *>();
+            auto    *root  = quick->rootObject();
+            QVariant geometryValue;
+            QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                      Q_ARG(QVariant, cell));
+            const auto geometry = geometryValue.toMap();
+            QTest::mouseClick(
+                quick, Qt::LeftButton, Qt::NoModifier,
+                QPoint(geometry["x"].toInt() + 8, geometry["y"].toInt() + geometry["height"].toInt() / 2));
+            return quick;
+        };
+
+        QmlNoteEditor backspaceEditor;
+        makeEmptyTable(backspaceEditor);
+        auto *backspaceQuick = clickCell(backspaceEditor, 0);
+        QTest::keyClick(backspaceQuick, Qt::Key_Backspace);
+        QTRY_COMPARE(backspaceEditor.model()->rowCount(), 1);
+        QCOMPARE(backspaceEditor.model()->data(backspaceEditor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Text));
+        QCOMPARE(backspaceEditor.contents(), QString());
+
+        QmlNoteEditor deleteEditor;
+        makeEmptyTable(deleteEditor);
+        auto *deleteQuick = clickCell(deleteEditor, 3);
+        QTest::keyClick(deleteQuick, Qt::Key_Delete);
+        QTRY_COMPARE(deleteEditor.model()->rowCount(), 1);
+        QCOMPARE(deleteEditor.model()->data(deleteEditor.model()->index(0), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Text));
+        QCOMPARE(deleteEditor.contents(), QString());
     }
 
     void insertsTableAndNumberedListBlocks()

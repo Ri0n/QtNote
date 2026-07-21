@@ -57,7 +57,24 @@ Menu {
     MenuSeparator {}
     MenuItem { action: Action { text: qsTr("Cut"); shortcut: StandardKey.Cut; enabled: menu.controller.documentSelectionAvailable; onTriggered: menu.controller.cutDocumentSelection() } }
     MenuItem { action: Action { text: qsTr("Copy"); shortcut: StandardKey.Copy; enabled: menu.controller.documentSelectionAvailable; onTriggered: menu.controller.copyDocumentSelection() } }
-    MenuItem { action: Action { text: qsTr("Paste"); shortcut: StandardKey.Paste; enabled: menu.editor ? menu.editor.canPaste : false; onTriggered: if (menu.editor) menu.editor.paste() } }
+    MenuItem {
+        action: Action {
+            text: qsTr("Paste")
+            shortcut: StandardKey.Paste
+            enabled: menu.editor ? menu.editor.canPaste : false
+            onTriggered: {
+                if (!menu.editor)
+                    return
+                // Calling TextArea.paste() directly bypasses BlockTextArea's
+                // key handler and lets QTextDocument create an opaque rich
+                // text table.  Give the block model first chance to consume
+                // every structural clipboard format; retain Qt's normal text
+                // paste only as the fallback.
+                menu.controller.activeEditor = menu.editor
+                menu.controller.pasteClipboard()
+            }
+        }
+    }
     MenuSeparator {}
     MenuItem { action: Action { text: qsTr("Select All"); shortcut: StandardKey.SelectAll; onTriggered: menu.controller.selectAllDocument() } }
 }

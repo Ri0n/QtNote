@@ -9,6 +9,10 @@ ListView {
     property var blockModel: noteBlockModel
     property var activeEditor: null
     property int pendingFocusBlock: -1
+    property bool pendingFocusAtEnd: false
+    property int pendingFocusPosition: -1
+    property int pendingListFocusBlock: -1
+    property int pendingFocusListItem: -1
     property var editors: []
     property var selectionAnchorEditor: null
     property int selectionAnchorPosition: 0
@@ -204,9 +208,13 @@ ListView {
         }
         if (editor.blockIndex === pendingFocusBlock) {
             editor.forceActiveFocus()
-            editor.cursorPosition = 0
+            const position = pendingFocusPosition >= 0
+                ? pendingFocusPosition : (pendingFocusAtEnd ? editor.length : 0)
+            editor.cursorPosition = Math.max(0, Math.min(editor.length, position))
             activeEditor = editor
             pendingFocusBlock = -1
+            pendingFocusAtEnd = false
+            pendingFocusPosition = -1
         }
     }
 
@@ -423,7 +431,16 @@ ListView {
     }
 
     function hasDocumentSelection() {
-        return documentSelectionAvailable
+        if (wholeDocumentSelected)
+            return true
+        // documentSelectionAvailable is updated by a zero-delay timer. A
+        // quick Ctrl+C immediately after mouse release must still see the
+        // actual selection instead of falling through to TextArea.copy().
+        for (const editor of editors) {
+            if (editor && editor.selectionStart !== editor.selectionEnd)
+                return true
+        }
+        return false
     }
 
     function selectedDocumentText() {
@@ -449,20 +466,81 @@ ListView {
         return parts.join("\n")
     }
 
+    function structuredSelectionRanges() {
+        const ordered = orderedEditors()
+        let first = -1
+        let last = -1
+        for (let index = 0; index < ordered.length; ++index) {
+            const editor = ordered[index]
+            if (editor.selectionStart !== editor.selectionEnd) {
+                if (first < 0)
+                    first = index
+                last = index
+            }
+        }
+        if (first < 0)
+            return []
+
+        const ranges = []
+        for (let index = first; index <= last; ++index) {
+            const editor = ordered[index]
+            const selected = editor.selectionStart !== editor.selectionEnd
+            // Empty editors between the selection boundaries still represent
+            // structural cells/items and must not disappear from the fragment.
+            if (!selected && !selectionSpansEditors)
+                continue
+            ranges.push({
+                blockIndex: editor.blockIndex,
+                listItemIndex: editor.listItemIndex,
+                tableCellIndex: editor.tableCellIndex,
+                markdown: selected ? qmlNoteEditor.markdownSelection(
+                                         editor.textDocument, editor.selectionStart, editor.selectionEnd) : "",
+                wholeEditor: editor.selectionStart === 0 && editor.selectionEnd === editor.length,
+                selectionStart: editor.selectionStart,
+                before: selected ? qmlNoteEditor.markdownSelection(
+                                       editor.textDocument, 0, editor.selectionStart) : "",
+                after: selected ? qmlNoteEditor.markdownSelection(
+                                      editor.textDocument, editor.selectionEnd, editor.length) : ""
+            })
+        }
+        return ranges
+    }
+
     function copyDocumentSelection() {
         if (wholeDocumentSelected) {
             qmlNoteEditor.copyDocumentToClipboard()
             return
         }
+        if (selectionSpansEditors
+                && qmlNoteEditor.copySelectionToClipboard(structuredSelectionRanges()))
+            return
         const markdown = selectedDocumentMarkdown()
         if (markdown.length > 0)
             qmlNoteEditor.copyMarkdownToClipboard(markdown)
     }
 
+    function copyActiveSelection() {
+        if (!hasDocumentSelection())
+            return false
+        copyDocumentSelection()
+        return true
+    }
+
     function pasteStructuredSelection(editor) {
-        if (!editor || editor.listItemIndex >= 0)
+        if (!editor)
             return false
         editor.commitText(false)
+        if (editor.listItemIndex >= 0) {
+            const listPasted = qmlNoteEditor.pasteListFromClipboard(editor.textDocument, editor.blockIndex,
+                                                                      editor.listItemIndex, editor.selectionStart,
+                                                                      editor.selectionEnd)
+            if (!listPasted.handled)
+                return false
+            clearDocumentSelection()
+            pendingListFocusBlock = editor.blockIndex
+            pendingFocusListItem = listPasted.focusItem
+            return true
+        }
         if (editor.tableCell) {
             const tablePasted = qmlNoteEditor.pasteTableFromClipboard(editor.blockIndex, editor.tableCellIndex)
             return tablePasted.handled
@@ -473,6 +551,15 @@ ListView {
             return false
         clearDocumentSelection()
         pendingFocusBlock = pasted.focusRow
+        pendingFocusAtEnd = false
+        return true
+    }
+
+    function pasteClipboard() {
+        if (!activeEditor)
+            return false
+        if (!pasteStructuredSelection(activeEditor))
+            activeEditor.paste()
         return true
     }
 
@@ -480,11 +567,8 @@ ListView {
         if (!hasDocumentSelection())
             return
         copyDocumentSelection()
-        if (wholeDocumentSelected) {
-            wholeDocumentSelected = false
-            blockModel.contents = ""
+        if (deleteStructuredSelection())
             return
-        }
         for (const editor of orderedEditors()) {
             if (editor.selectionStart === editor.selectionEnd)
                 continue
@@ -496,7 +580,40 @@ ListView {
         }
     }
 
+    function cutActiveSelection() {
+        if (!hasDocumentSelection())
+            return false
+        cutDocumentSelection()
+        return true
+    }
+
     function deleteStructuredSelection() {
+        if (wholeDocumentSelected) {
+            wholeDocumentSelected = false
+            selectionSpansEditors = false
+            documentSelectionAvailable = false
+            blockModel.contents = ""
+            focusBlock(0)
+            return true
+        }
+        const ranges = structuredSelectionRanges()
+        if (ranges.length > 1
+                && ranges[0].blockIndex !== ranges[ranges.length - 1].blockIndex) {
+            // The model reset destroys the old delegates, so clear only the
+            // aggregate state here instead of walking stale TextArea objects.
+            selectionSpansEditors = false
+            documentSelectionAvailable = false
+            activeEditor = null
+            const removed = qmlNoteEditor.deleteSelection(ranges)
+            if (removed.handled) {
+                if (removed.focusPosition !== undefined) {
+                    focusBlock(removed.focusRow, false, removed.focusPosition)
+                } else {
+                    focusBlock(removed.focusRow)
+                }
+                return true
+            }
+        }
         const selected = orderedEditors().filter(editor => editor.selectionStart !== editor.selectionEnd)
         if (selected.length < 2)
             return false
@@ -552,17 +669,23 @@ ListView {
         return true
     }
 
-    function focusBlock(blockIndex) {
+    function focusBlock(blockIndex, atEnd, position) {
         pendingFocusBlock = blockIndex
+        pendingFocusAtEnd = Boolean(atEnd)
+        pendingFocusPosition = position === undefined ? -1 : position
         positionViewAtIndex(blockIndex, ListView.Contain)
         pendingFocusRetry.restart()
         Qt.callLater(function() {
             for (const editor of editors) {
                 if (editor && editor.blockIndex === blockIndex) {
                     editor.forceActiveFocus()
-                    editor.cursorPosition = 0
+                    const cursor = root.pendingFocusPosition >= 0
+                        ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? editor.length : 0)
+                    editor.cursorPosition = Math.max(0, Math.min(editor.length, cursor))
                     root.activeEditor = editor
                     root.pendingFocusBlock = -1
+                    root.pendingFocusAtEnd = false
+                    root.pendingFocusPosition = -1
                     return
                 }
             }
@@ -571,9 +694,13 @@ ListView {
             if (directEditor && directEditor.cursorPosition !== undefined) {
                 directEditor.blockIndex = blockIndex
                 directEditor.forceActiveFocus()
-                directEditor.cursorPosition = 0
+                const cursor = root.pendingFocusPosition >= 0
+                    ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? directEditor.length : 0)
+                directEditor.cursorPosition = Math.max(0, Math.min(directEditor.length, cursor))
                 root.activeEditor = directEditor
                 root.pendingFocusBlock = -1
+                root.pendingFocusAtEnd = false
+                root.pendingFocusPosition = -1
             }
         })
     }
@@ -600,10 +727,39 @@ ListView {
             return false
         editor.blockIndex = pendingFocusBlock
         editor.forceActiveFocus()
-        editor.cursorPosition = 0
+        const position = pendingFocusPosition >= 0
+            ? pendingFocusPosition : (pendingFocusAtEnd ? editor.length : 0)
+        editor.cursorPosition = Math.max(0, Math.min(editor.length, position))
         activeEditor = editor
         pendingFocusBlock = -1
+        pendingFocusAtEnd = false
+        pendingFocusPosition = -1
         return true
+    }
+
+    function focusDocumentEnd() {
+        const ordered = orderedEditors()
+        if (ordered.length === 0)
+            return false
+        const editor = ordered[ordered.length - 1]
+        clearDocumentSelection()
+        editor.forceActiveFocus()
+        editor.cursorPosition = editor.length
+        activeEditor = editor
+        return true
+    }
+
+    function removeTableBlock(blockIndex, backwards) {
+        const oldCount = count
+        blockModel.removeBlock(blockIndex)
+        if (oldCount === 1) {
+            blockModel.appendTextBlock()
+            focusBlock(0)
+            return
+        }
+        const target = backwards ? Math.max(0, blockIndex - 1)
+                                 : Math.min(blockIndex, oldCount - 2)
+        focusBlock(target, backwards)
     }
 
     function focusFollowingBlock(blockIndex, appendIfMissing) {
@@ -877,6 +1033,23 @@ ListView {
         }
     }
 
+    // Text editors only occupy their implicit content height. Observe taps in
+    // the unused viewport below the final block and treat that area as the
+    // continuation of the document.
+    TapHandler {
+        acceptedButtons: Qt.LeftButton
+        gesturePolicy: TapHandler.DragThreshold
+        onTapped: function(eventPoint) {
+            const ordered = root.orderedEditors()
+            if (ordered.length === 0)
+                return
+            const last = ordered[ordered.length - 1]
+            const bottom = last.mapToItem(root, 0, last.height).y
+            if (eventPoint.position.y > bottom)
+                root.focusDocumentEnd()
+        }
+    }
+
     delegate: FocusScope {
         id: blockDelegate
         required property int index
@@ -917,9 +1090,13 @@ ListView {
                     item.blockIndex = index
                 if (item && item.blockIndex === root.pendingFocusBlock) {
                     item.forceActiveFocus()
-                    item.cursorPosition = 0
+                    const cursor = root.pendingFocusPosition >= 0
+                        ? root.pendingFocusPosition : (root.pendingFocusAtEnd ? item.length : 0)
+                    item.cursorPosition = Math.max(0, Math.min(item.length, cursor))
                     root.activeEditor = item
                     root.pendingFocusBlock = -1
+                    root.pendingFocusAtEnd = false
+                    root.pendingFocusPosition = -1
                 }
                 if (blockType === 0 && index === 0 && blockText.trim().length === 0)
                     item.forceActiveFocus()
@@ -1051,6 +1228,10 @@ ListView {
             }
         }
 
+        // Structural paste must run before TextArea's built-in rich-text
+        // importer; otherwise an office HTML table becomes an embedded
+        // QTextDocument table instead of a NoteBlockModel table.
+        Keys.priority: Keys.BeforeItem
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Control || event.key === Qt.Key_Meta) {
                 primaryModifierDown = true
@@ -1073,13 +1254,11 @@ ListView {
             } else if (event.matches(StandardKey.SelectAll)) {
                 root.selectAllDocument()
                 event.accepted = true
-            } else if (event.matches(StandardKey.Copy) && root.hasDocumentSelection()) {
-                root.copyDocumentSelection()
+            } else if (event.matches(StandardKey.Copy) && root.copyActiveSelection()) {
                 event.accepted = true
-            } else if (event.matches(StandardKey.Cut) && root.hasDocumentSelection()) {
-                root.cutDocumentSelection()
+            } else if (event.matches(StandardKey.Cut) && root.cutActiveSelection()) {
                 event.accepted = true
-            } else if (event.matches(StandardKey.Paste) && root.pasteStructuredSelection(blockArea)) {
+            } else if (event.matches(StandardKey.Paste) && root.pasteClipboard()) {
                 event.accepted = true
             }
         }
@@ -1527,6 +1706,12 @@ ListView {
                         checkModel.setProperty(index, "itemType", type)
                 }
                 syncingItems = false
+                if (root.pendingListFocusBlock === block.index && root.pendingFocusListItem >= 0) {
+                    const focusItemIndex = root.pendingFocusListItem
+                    root.pendingListFocusBlock = -1
+                    root.pendingFocusListItem = -1
+                    focusItem(focusItemIndex, 0)
+                }
             }
             ListModel { id: checkModel }
             function focusItem(itemIndex, position) {
@@ -1688,6 +1873,12 @@ ListView {
             function rowEmpty(row) {
                 for (let column = 0; column < columns; ++column)
                     if (String(tableData.values[row * columns + column] || "").trim().length > 0)
+                        return false
+                return true
+            }
+            function tableEmpty() {
+                for (const value of tableData.values || [])
+                    if (String(value || "").trim().length > 0)
                         return false
                 return true
             }

@@ -60,20 +60,28 @@ Paste and drop choose one supported representation in this order:
 
 1. validated QtNote fragment;
 2. `text/markdown`;
-3. HTML;
-4. TSV/CSV for a table-oriented target;
+3. TSV/CSV;
+4. HTML;
 5. image data;
 6. URL or file list;
 7. plain text.
+
+The image fallback is considered only after the structured formats. In
+particular, office suites may expose a bitmap preview alongside HTML or TSV;
+QtNote must import the table rather than the preview.
 
 HTML is parsed through `QTextDocument` and traversed into the supported model;
 it is never converted using regular expressions.  Unsupported styling is
 reduced to text.  Remote images are not downloaded on paste: their source URL
 may be retained as a link only if the user has an explicit import action.
 
-Excel commonly exposes both HTML and TSV.  When the target is a table, a
-rectangular TSV payload must win over flattened plain text.  Otherwise the HTML
-table is converted to a note table when its dimensions are valid.
+Excel and LibreOffice Calc commonly expose both HTML and TSV. A rectangular
+TSV payload takes priority over HTML as well as a bitmap preview: it maps
+directly to a QML table without allowing QTextDocument to create an embedded
+rich-text table. Otherwise the HTML table is converted to a note table when
+its dimensions are valid. The HTML path walks `QTextDocument` frames and
+extracts `QTextTable` cells explicitly; `QTextDocument::toMarkdown()` is not
+used to flatten a table because Qt may serialize it as ordinary text.
 
 ## Media ownership
 
@@ -107,24 +115,30 @@ attachment IDs.
 
 ### Current implementation boundary
 
-The initial implementation supplies the versioned fragment codec, whole-block
-extraction/insertion, MIME export/import, media cloning and `Select all →
-Copy`. It also exports a partial text selection through `QTextDocumentFragment`
-so inline links and formatting survive. Copy puts private CBOR, Markdown, HTML
-and plain text on the system clipboard. Referenced media travels with the
-private payload; a sole image up to 8 MiB also carries its bytes, allowing PNG
-export outside QtNote.
+The implementation supplies the versioned fragment codec, whole-block and
+cross-block range extraction, MIME export/import, media cloning and `Select all
+→ Copy`. A selection confined to one editor remains an inline
+`QTextDocumentFragment`, so copying a few words does not unexpectedly create a
+list or table. A selection spanning editors is resolved by `NoteBlockModel`:
+list item kinds/indentation, a rectangular table range, headings and complete
+image blocks retain their structure. Copy puts private CBOR, Markdown, HTML and
+plain text on the system clipboard. Referenced media travels with the private
+payload; a sole image up to 8 MiB also carries its bytes, allowing PNG export
+outside QtNote.
 
 Markdown text and heading blocks already have a precise insertion path: an
 imported structural fragment splits the current text block at the selection and
 atomically replaces that range. A TSV or table fragment pasted into one table
 cell writes a rectangular range and expands the table right/down as necessary.
-List-item insertion still needs its own DTO; for that target ordinary partial
-text paste remains on the native QML text-control path rather than being
-redirected through a lossy pseudo-block operation. A media-bearing fragment
-pasted into a text/heading block is cloned before insertion and its new
-references are appended to the destination note manifest in the same editor
-operation.
+A list fragment pasted into a flat list item preserves item types, checked
+state and relative indentation. Replacing an item with nested descendants is
+currently rejected rather than risking reparenting them; that case needs an
+explicit subtree selection DTO. A media-bearing fragment pasted into a
+text/heading block is cloned before insertion and its new references are
+appended to the destination note manifest in the same editor operation.
+Keyboard and context-menu paste share one entry point. The `QQuickWidget`
+event filter invokes it before `TextArea` sees the key event, preventing Qt's
+native rich-text importer from racing the block-model operation.
 
 ## Drag-and-drop behaviour
 

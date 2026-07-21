@@ -8,6 +8,16 @@
 
 namespace QtNote {
 
+struct QTNOTE_EXPORT NoteBlockSelectionRange {
+    int     blockIndex { -1 };
+    int     listItemIndex { -1 };
+    int     tableCellIndex { -1 };
+    QString markdown;
+    bool    wholeEditor { false };
+    QString before;
+    QString after;
+};
+
 class QTNOTE_EXPORT NoteBlockModel : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(bool markdown READ markdown NOTIFY markdownChanged)
@@ -70,14 +80,17 @@ public:
     Q_INVOKABLE void removeBlock(int row);
     void             setPreviewUrls(const QHash<QString, QString> &urls);
 
-    // C++ transfer boundary.  These operations deal in whole structural
-    // blocks; precise text and table-cell selections will be layered on top
-    // of them by NoteTransferController.
+    // C++ transfer boundary. QML reports visual editor ranges, while the model
+    // restores their list/table/block semantics.
     NoteFragment extractBlockFragment(int firstRow, int lastRow) const;
+    NoteFragment extractSelectionFragment(const QList<NoteBlockSelectionRange> &ranges) const;
+    int          removeSelectionRanges(const QList<NoteBlockSelectionRange> &ranges);
     bool         insertBlockFragment(int row, const NoteFragment &fragment, QString *error = nullptr);
     int          replaceTextBlockRangeWithFragment(int row, const QString &before, const QString &after,
                                                    const NoteFragment &fragment, QString *error = nullptr);
     bool replaceTableCellsWithFragment(int row, int firstCell, const NoteFragment &fragment, QString *error = nullptr);
+    int  replaceListItemRangeWithFragment(int row, int item, const QString &before, const QString &after,
+                                          const NoteFragment &fragment, QString *error = nullptr);
 
 signals:
     void markdownChanged();

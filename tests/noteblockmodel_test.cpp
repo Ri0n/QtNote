@@ -70,6 +70,54 @@ private slots:
                  QStringLiteral("before\n\n# Title\n\n- [x] done\n\n| Name | Value |\n| --- | --- |\n| a | b |"));
     }
 
+    void extractsCrossBlockSelectionStructurally()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("prefix\n\n- [ ] one\n- [x] two\n\n"
+                                  "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nsuffix"),
+                   true);
+        const QList<NoteBlockSelectionRange> ranges {
+            { 0, -1, -1, QStringLiteral("fix"), false }, { 1, 0, -1, QStringLiteral("one"), true },
+            { 1, 1, -1, QStringLiteral("two"), true },   { 2, -1, 0, QStringLiteral("A"), true },
+            { 2, -1, 1, QStringLiteral("B"), true },     { 2, -1, 2, QStringLiteral("1"), true },
+            { 2, -1, 3, QStringLiteral("2"), true },     { 3, -1, -1, QStringLiteral("suf"), false },
+        };
+
+        const NoteFragment fragment = model.extractSelectionFragment(ranges);
+        QCOMPARE(fragment.blocks.size(), 4);
+        QCOMPARE(fragment.blocks.at(0).type, NoteFragmentBlockType::Text);
+        QCOMPARE(fragment.blocks.at(0).markdown, QStringLiteral("fix"));
+        QCOMPARE(fragment.blocks.at(1).type, NoteFragmentBlockType::List);
+        QCOMPARE(fragment.blocks.at(1).listItems.size(), 2);
+        QCOMPARE(fragment.blocks.at(1).listItems.at(1).checked, true);
+        QCOMPARE(fragment.blocks.at(2).type, NoteFragmentBlockType::Table);
+        QCOMPARE(fragment.blocks.at(2).table.markdownCells, QStringList({ "A", "B", "1", "2" }));
+        QCOMPARE(fragment.blocks.at(3).markdown, QStringLiteral("suf"));
+    }
+
+    void removesCrossBlockSelectionIncludingListAndTable()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("beforeXSELECT\n\n- [ ] one\n- [x] two\n\n"
+                                  "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nREMOVEafter"),
+                   true);
+        const QList<NoteBlockSelectionRange> ranges {
+            { 0, -1, -1, QStringLiteral("SELECT"), false, QStringLiteral("beforeX"), QString() },
+            { 1, 0, -1, QStringLiteral("one"), true, QString(), QString() },
+            { 1, 1, -1, QStringLiteral("two"), true, QString(), QString() },
+            { 2, -1, 0, QStringLiteral("A"), true, QString(), QString() },
+            { 2, -1, 1, QStringLiteral("B"), true, QString(), QString() },
+            { 2, -1, 2, QStringLiteral("1"), true, QString(), QString() },
+            { 2, -1, 3, QStringLiteral("2"), true, QString(), QString() },
+            { 3, -1, -1, QStringLiteral("REMOVE"), false, QString(), QStringLiteral("after") },
+        };
+
+        QCOMPARE(model.removeSelectionRanges(ranges), 0);
+        QCOMPARE(model.rowCount(), 1);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Text));
+        QCOMPARE(model.contents(), QStringLiteral("beforeXafter"));
+    }
+
     void rejectsNonBlockFragmentInsertion()
     {
         NoteBlockModel model;
@@ -127,6 +175,39 @@ private slots:
         QCOMPARE(cells.value(QStringLiteral("columns")).toInt(), 3);
         QCOMPARE(cells.value(QStringLiteral("values")).toStringList(),
                  QStringList({ "A", "B", "", "1", "X", "Y", "", "Z", "W" }));
+    }
+
+    void replacesFlatListItemWithMixedListFragment()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- before selected after\n- tail"), true);
+        NoteFragment      fragment;
+        NoteFragmentBlock list;
+        list.type      = NoteFragmentBlockType::List;
+        list.listItems = { { QStringLiteral("task"), 0, NoteFragmentListKind::Check, true },
+                           { QStringLiteral("nested"), 1, NoteFragmentListKind::Numbered, false } };
+        fragment.blocks.append(list);
+
+        QString error;
+        QCOMPARE(model.replaceListItemRangeWithFragment(0, 0, QStringLiteral("before "), QStringLiteral(" after"),
+                                                        fragment, &error),
+                 1);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        QCOMPARE(model.contents(), QStringLiteral("- before\n- [x] task\n    1. nested\n- after\n- tail"));
+    }
+
+    void rejectsListPasteIntoItemWithDescendants()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("- parent\n    - child\n- tail"), true);
+        NoteFragment      fragment;
+        NoteFragmentBlock list;
+        list.type      = NoteFragmentBlockType::List;
+        list.listItems = { { QStringLiteral("pasted"), 0, NoteFragmentListKind::Bullet, false } };
+        fragment.blocks.append(list);
+        QString error;
+        QCOMPARE(model.replaceListItemRangeWithFragment(0, 0, QString(), QString(), fragment, &error), -1);
+        QCOMPARE(error, QStringLiteral("target list item has nested descendants"));
     }
 
     void mergesAdjacentMarkdownParagraphs()

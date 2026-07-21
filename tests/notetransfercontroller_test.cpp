@@ -13,6 +13,7 @@ private slots:
     void exportsMultipleFormatsAndRestoresPrivateFragment();
     void importsMarkdownBeforeHtmlAndPlainText();
     void importsTsvAsTable();
+    void importsHtmlTableAsTable();
     void roundTripsSingleImageAsPng();
     void malformedPrivateFormatFallsBackToPlainText();
 };
@@ -67,6 +68,26 @@ void NoteTransferControllerTest::importsTsvAsTable()
     QVERIFY2(imported, qPrintable(imported.error));
     QCOMPARE(imported.sourceMimeType, QString::fromLatin1(NoteTransferController::TsvMimeType));
     QCOMPARE(imported.fragment.blocks.size(), 1);
+    QCOMPARE(imported.fragment.blocks.at(0).table.rows, 2);
+    QCOMPARE(imported.fragment.blocks.at(0).table.columns, 2);
+    QCOMPARE(imported.fragment.blocks.at(0).table.markdownCells, QStringList({ "A", "B", "1", "2" }));
+}
+
+void NoteTransferControllerTest::importsHtmlTableAsTable()
+{
+    QMimeData mime;
+    mime.setHtml(QStringLiteral("<html><body><table><tr><td>A</td><td>B</td></tr>"
+                                "<tr><td>1</td><td>2</td></tr></table></body></html>"));
+    QImage preview(1, 1, QImage::Format_ARGB32_Premultiplied);
+    preview.fill(Qt::red);
+    mime.setImageData(preview);
+
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(&mime);
+    QVERIFY2(imported, qPrintable(imported.error));
+    QCOMPARE(imported.sourceMimeType, QStringLiteral("text/html"));
+    QCOMPARE(imported.fragment.blocks.size(), 1);
+    QCOMPARE(imported.fragment.blocks.at(0).type, NoteFragmentBlockType::Table);
     QCOMPARE(imported.fragment.blocks.at(0).table.rows, 2);
     QCOMPARE(imported.fragment.blocks.at(0).table.columns, 2);
     QCOMPARE(imported.fragment.blocks.at(0).table.markdownCells, QStringList({ "A", "B", "1", "2" }));
