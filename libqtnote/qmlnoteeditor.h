@@ -17,12 +17,18 @@ class QShowEvent;
 
 namespace QtNote {
 class NoteBlockModel;
+class NoteDocumentHistory;
 class NoteHighlighter;
 class HighlighterExtension;
 
 class QTNOTE_EXPORT QmlNoteEditor : public QWidget {
     Q_OBJECT
     Q_PROPERTY(bool spellCheckEnabled READ spellCheckEnabled WRITE setSpellCheckEnabled NOTIFY spellCheckEnabledChanged)
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY undoStateChanged)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY undoStateChanged)
+    Q_PROPERTY(QString undoText READ undoText NOTIFY undoStateChanged)
+    Q_PROPERTY(QString redoText READ redoText NOTIFY undoStateChanged)
+    Q_PROPERTY(bool markdown READ isMarkdown NOTIFY formatChanged)
 
 public:
     enum class LoadPolicy {
@@ -33,16 +39,24 @@ public:
     Q_ENUM(LoadPolicy)
 
     explicit QmlNoteEditor(QWidget *parent = nullptr);
+    ~QmlNoteEditor() override;
 
     NoteBlockModel  *model() const { return model_; }
     void             load(const QString &contents, Note::Format format, LoadPolicy policy = LoadPolicy::ResetHistory);
     void             setMedia(const QList<MediaReference> &media);
     QString          contents() const;
     bool             isMarkdown() const;
+    bool             canUndo() const;
+    bool             canRedo() const;
+    QString          undoText() const;
+    QString          redoText() const;
     void             insertText(const QString &text);
     void             focusEditor();
     void             insertTable();
     void             insertList(int type);
+    void             beginExternalHistoryTransaction(const QString &kind);
+    void             endExternalHistoryTransaction();
+    void             breakHistoryMerge();
     Q_INVOKABLE void registerTextDocument(QQuickTextDocument *document, bool titleDocument);
     Q_INVOKABLE QVariantList spellCheckRanges(QQuickTextDocument *document);
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
@@ -61,6 +75,11 @@ public:
     Q_INVOKABLE int         applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
     Q_INVOKABLE QString     markdownText(QQuickTextDocument *document) const;
     Q_INVOKABLE QString     markdownSelection(QQuickTextDocument *document, int start, int end) const;
+    Q_INVOKABLE void        beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView);
+    Q_INVOKABLE void        endHistoryTransaction(const QVariantMap &afterView);
+    Q_INVOKABLE void        updateHistoryViewState(const QVariantMap &viewState, bool breakMerge = false);
+    Q_INVOKABLE bool        undo();
+    Q_INVOKABLE bool        redo();
     bool                    spellCheckEnabled() const { return spellCheckEnabled_; }
     void                    setSpellCheckEnabled(bool enabled);
     void                    addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
@@ -72,7 +91,10 @@ signals:
     void focusLost();
     void imagePasteRequested(const QImage &image);
     void mediaInserted(const QList<MediaReference> &references);
+    void mediaChanged(const QList<MediaReference> &references);
     void spellCheckEnabledChanged();
+    void undoStateChanged();
+    void formatChanged(bool markdown);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -80,6 +102,10 @@ protected:
 
 private:
     void            updateFocusWindow();
+    void            flushPendingEditorChanges();
+    void            prepareForHistoryRestore();
+    void            scheduleHistoryViewRestore(const QVariantMap &viewState);
+    void            restoreScalarField(int blockIndex, int role, int fieldIndex, const QString &value);
     NoteFragment    documentFragment() const;
     NoteFragment    withMedia(NoteFragment fragment) const;
     NoteBlockModel *model_ = nullptr;
@@ -92,17 +118,19 @@ private:
         QPointer<NoteHighlighter> highlighter;
         bool                      titleDocument;
     };
-    QList<HighlightExtension>    extensions_;
-    QList<RegisteredHighlighter> highlighters_;
-    QPointer<QWidget>            focusWindow_;
-    QString                      baselineOverrideContents_;
-    quint64                      loadGeneration_           = 0;
-    bool                         baselineOverrideMarkdown_ = false;
-    bool                         baselineOverrideActive_   = false;
-    bool                         suppressNextFocusRefresh_ = false;
-    bool                         hasLoaded_                = false;
-    bool                         spellCheckEnabled_        = true;
-    QList<MediaReference>        media_;
+    QList<HighlightExtension>            extensions_;
+    QList<RegisteredHighlighter>         highlighters_;
+    QPointer<QWidget>                    focusWindow_;
+    QString                              baselineOverrideContents_;
+    quint64                              loadGeneration_             = 0;
+    bool                                 baselineOverrideMarkdown_   = false;
+    bool                                 baselineOverrideActive_     = false;
+    bool                                 suppressNextFocusRefresh_   = false;
+    bool                                 hasLoaded_                  = false;
+    bool                                 spellCheckEnabled_          = true;
+    bool                                 scalarHistoryChangePending_ = false;
+    QList<MediaReference>                media_;
+    std::unique_ptr<NoteDocumentHistory> history_;
 };
 } // namespace QtNote
 

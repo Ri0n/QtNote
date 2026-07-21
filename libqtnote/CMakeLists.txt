@@ -9,10 +9,12 @@ set(CMAKE_AUTOUIC ON)
 file(GLOB libqtnote_SRCS CONFIGURE_DEPENDS "./*.cpp")
 file(GLOB libqtnote_HDRS CONFIGURE_DEPENDS "./*.h")
 file(GLOB libqtnote_UIS CONFIGURE_DEPENDS "./*.ui")
+set(libqtnote_PRIVATE_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/notedocumenthistory.h")
 list(APPEND libqtnote_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/iconutils.cpp")
 list(APPEND libqtnote_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/iconutils.h")
 list(REMOVE_DUPLICATES libqtnote_SRCS)
 list(REMOVE_DUPLICATES libqtnote_HDRS)
+list(FILTER libqtnote_HDRS EXCLUDE REGEX "/notedocumenthistory\\.h$")
 list(REMOVE_ITEM libqtnote_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/freedesktopnotifier.cpp")
 list(REMOVE_ITEM libqtnote_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/freedesktopnotifier.h")
 list(REMOVE_ITEM libqtnote_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/qtnotedbus.cpp")
@@ -37,6 +39,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 add_library(qtnote SHARED
     ${libqtnote_HDRS}
+    ${libqtnote_PRIVATE_HDRS}
     ${libqtnote_SRCS}
     ${libqtnote_UIS}
     main.qrc

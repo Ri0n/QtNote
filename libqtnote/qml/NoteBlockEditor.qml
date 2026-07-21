@@ -277,8 +277,9 @@ ListView {
     }
 
     function captureEditorState() {
+        const focusAddress = pendingFocusAddress || editorAddress(activeEditor)
         const state = {
-            active: editorAddress(activeEditor),
+            active: focusAddress,
             wholeDocumentSelected: wholeDocumentSelected,
             selectionSpansEditors: selectionSpansEditors,
             selectionStart: null,
@@ -292,6 +293,12 @@ ListView {
                                                documentSelectionEndPosition)
         }
         return state
+    }
+
+    function documentHistoryOwnsFocus() {
+        // The URL is still a temporary value while its TextField is focused;
+        // its native local undo stack owns Ctrl+Z/Ctrl+Shift+Z in that state.
+        return !urlField.activeFocus
     }
 
     function addressMatchesEditor(address, editor, exact) {
@@ -325,7 +332,19 @@ ListView {
                 if (addressMatchesEditor(address, editor, false))
                     return editor
         }
-        return null
+        // Structural restore can legitimately remove a list item/table cell or
+        // turn a structured block into plain text. Prefer the first surviving
+        // editor in the same block, then the closest preceding block.
+        for (const editor of ordered)
+            if (Number(address.blockIndex) === editor.blockIndex)
+                return editor
+        let preceding = null
+        for (const editor of ordered) {
+            if (editor.blockIndex > Number(address.blockIndex))
+                break
+            preceding = editor
+        }
+        return preceding || (ordered.length > 0 ? ordered[0] : null)
     }
 
     function applyEditorAddress(editor, address) {
@@ -411,6 +430,16 @@ ListView {
     }
 
     function restoreEditorState(state) {
+        // A scalar undo keeps the delegate alive. Its sourceText binding sees
+        // the restored model value while the editor is still focused and, by
+        // design, defers replacing the QTextDocument. Apply that one pending
+        // value before restoring cursor/selection; otherwise the model and the
+        // visible editor disagree until the next focus/navigation event.
+        for (const editor of editors) {
+            if (editor && editor.sourceTextPending
+                    && typeof editor.applyPendingSourceText === "function")
+                editor.applyPendingSourceText()
+        }
         clearDocumentSelection()
         pendingEditorState = state || null
         if (!pendingEditorState)
@@ -513,8 +542,10 @@ ListView {
     }
 
     function beginEditTransaction(kind) {
-        if (editTransactionDepth === 0)
+        if (editTransactionDepth === 0) {
             flushPendingEditorChanges()
+            qmlNoteEditor.beginHistoryTransaction(kind, captureEditorState())
+        }
         ++editTransactionDepth
     }
 
@@ -522,6 +553,8 @@ ListView {
         if (editTransactionDepth <= 0)
             return
         --editTransactionDepth
+        if (editTransactionDepth === 0)
+            qmlNoteEditor.endHistoryTransaction(captureEditorState())
     }
 
     function runEditTransaction(kind, callback) {
@@ -858,6 +891,10 @@ ListView {
     }
 
     function deleteStructuredSelection() {
+        // Ordinary selection inside one editor is handled by TextArea. Avoid
+        // taking a structural before-state for every Backspace/Delete key.
+        if (!wholeDocumentSelected && !selectionSpansEditors && selectedEditorCount() < 2)
+            return false
         return runEditTransaction("delete-selection", function() {
             return deleteStructuredSelectionImpl()
         })
@@ -1458,20 +1495,31 @@ ListView {
             return true
         }
 
-        function synchronizeSourceText(force) {
-            if (activeFocus) {
-                sourceTextPending = true
-                return
-            }
+        function applySourceText(force) {
             sourceTextPending = false
             if (!force && text === sourceText) {
                 rememberPlainText()
-                return
+                return false
             }
             syncingSourceText = true
             text = sourceText
             syncingSourceText = false
             rememberPlainText()
+            return true
+        }
+
+        function synchronizeSourceText(force) {
+            if (activeFocus) {
+                sourceTextPending = true
+                return false
+            }
+            return applySourceText(force)
+        }
+
+        function applyPendingSourceText() {
+            if (!sourceTextPending)
+                return false
+            return applySourceText(true)
         }
 
         function shouldCommitTextChange(allowed) {
@@ -1543,7 +1591,11 @@ ListView {
                 editorMouseArea.refreshPlainLinkHover(event.modifiers)
                 plainLinkHoverCanvas.requestPaint()
             }
-            if (blockArea.handleLinkSpaceExit(event)) {
+            if (event.matches(StandardKey.Undo) && qmlNoteEditor.undo()) {
+                event.accepted = true
+            } else if (event.matches(StandardKey.Redo) && qmlNoteEditor.redo()) {
+                event.accepted = true
+            } else if (blockArea.handleLinkSpaceExit(event)) {
                 event.accepted = true
             } else if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
                     && root.deleteStructuredSelection()) {
@@ -1745,6 +1797,7 @@ ListView {
                 plainLinkHoverCanvas.requestPaint()
             }
             onPressed: function(mouse) {
+                qmlNoteEditor.updateHistoryViewState(root.captureEditorState(), true)
                 const position = blockArea.positionAt(mouse.x, mouse.y)
                 if (mouse.button === Qt.LeftButton) {
                     blockArea.forceActiveFocus()

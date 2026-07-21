@@ -150,12 +150,18 @@ bool NoteBlockModel::setData(const QModelIndex &index, const QVariant &value, in
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= blocks_.size())
         return false;
-    auto &block = blocks_[index.row()];
+    auto   &block = blocks_[index.row()];
+    QString before;
+    QString after;
+    bool    scalar = false;
     switch (role) {
     case TextRole:
         if (block.text == value.toString())
             return false;
+        before     = block.text;
         block.text = value.toString();
+        after      = block.text;
+        scalar     = true;
         break;
     case ItemsRole:
         if (block.items == value.toStringList())
@@ -170,16 +176,24 @@ bool NoteBlockModel::setData(const QModelIndex &index, const QVariant &value, in
     case UrlRole:
         if (block.url == value.toString())
             return false;
+        before    = block.url;
         block.url = value.toString();
+        after     = block.url;
+        scalar    = true;
         break;
     case AltRole:
         if (block.alt == value.toString())
             return false;
+        before    = block.alt;
         block.alt = value.toString();
+        after     = block.alt;
+        scalar    = true;
         break;
     default:
         return false;
     }
+    if (scalar)
+        emit scalarEdited(index.row(), role, -1, before, after);
     changed(index.row(), { role });
     return true;
 }
@@ -217,6 +231,36 @@ QString NoteBlockModel::contents() const
 
 void NoteBlockModel::setContents(const QString &contents) { load(contents, markdown_); }
 
+QList<NoteBlockModel::Block> NoteBlockModel::cloneBlocks(const QList<Block> &blocks)
+{
+    // A QList copy would share its backing storage with the live model. That
+    // makes every subsequent character edit detach the entire block list while
+    // a history command exists. Keep the list container independent; strings
+    // and variants remain implicitly shared until an individual field changes.
+    QList<Block> result;
+    result.reserve(blocks.size());
+    for (const auto &block : blocks)
+        result.append(block);
+    return result;
+}
+
+NoteBlockModel::State NoteBlockModel::state() const { return { cloneBlocks(blocks_), markdown_ }; }
+
+bool NoteBlockModel::restoreState(const State &state)
+{
+    if (this->state() == state)
+        return false;
+    const bool formatChanged = markdown_ != state.markdown;
+    beginResetModel();
+    blocks_   = cloneBlocks(state.blocks);
+    markdown_ = state.markdown;
+    endResetModel();
+    if (formatChanged)
+        emit markdownChanged();
+    emit contentsChanged();
+    return true;
+}
+
 void NoteBlockModel::load(const QString &contents, bool markdown)
 {
     beginResetModel();
@@ -239,7 +283,9 @@ void NoteBlockModel::setListItem(int row, int item, const QString &text)
     const QString value = coalesceAdjacentMarkdownLinks(text);
     if (blocks_[row].items[item] == value)
         return;
+    const QString before     = blocks_[row].items[item];
     blocks_[row].items[item] = value;
+    emit scalarEdited(row, ItemsRole, item, before, value);
     changed(row, { ItemsRole });
 }
 
@@ -380,7 +426,9 @@ void NoteBlockModel::setTableCell(int row, int cell, const QString &text)
     const QString value = coalesceAdjacentMarkdownLinks(text);
     if (blocks_[row].cells[cell] == value)
         return;
+    const QString before     = blocks_[row].cells[cell];
     blocks_[row].cells[cell] = value;
+    emit scalarEdited(row, CellsRole, cell, before, value);
     changed(row, { CellsRole });
 }
 

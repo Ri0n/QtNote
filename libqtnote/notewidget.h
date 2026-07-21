@@ -119,6 +119,9 @@ private slots:
 
 private:
     void    updateSpeechRecognitionAction();
+    void    syncEditorMode(bool markdown);
+    void    insertTableBlock();
+    void    insertListBlock(int type);
     void    showSpeechRecognitionError(const QString &error);
     void    appendRecognizedText(const QString &text);
     QString speechRecognitionLanguage() const;

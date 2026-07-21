@@ -249,13 +249,10 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
     connect(insertImageAction, &QAction::triggered, this, &NoteWidget::insertImage);
 
     auto *insertTableAction = initAction(nullptr, tr("Insert table"), tr("Insert a 2 by 2 table"), "");
+    insertTableAction->setObjectName(QStringLiteral("insertTableAction"));
     insertTableAction->setIcon(QIcon::fromTheme(QStringLiteral("insert-table")));
     tbar->addAction(insertTableAction);
-    connect(insertTableAction, &QAction::triggered, this, [this]() {
-        if (!qmlEditor->isMarkdown())
-            switchToMarkdown();
-        qmlEditor->insertTable();
-    });
+    connect(insertTableAction, &QAction::triggered, this, &NoteWidget::insertTableBlock);
 
     auto *listButton = new QToolButton(tbar);
     listButton->setIcon(QIcon::fromTheme(QStringLiteral("format-list-unordered")));
@@ -266,21 +263,12 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
     auto *taskListAction     = listMenu->addAction(tr("Task list"));
     auto *numberedListAction = listMenu->addAction(tr("Numbered list"));
     auto *bulletListAction   = listMenu->addAction(tr("Bullet list"));
-    connect(taskListAction, &QAction::triggered, this, [this]() {
-        if (!qmlEditor->isMarkdown())
-            switchToMarkdown();
-        qmlEditor->insertList(NoteBlockModel::CheckList);
-    });
-    connect(numberedListAction, &QAction::triggered, this, [this]() {
-        if (!qmlEditor->isMarkdown())
-            switchToMarkdown();
-        qmlEditor->insertList(NoteBlockModel::NumberedList);
-    });
-    connect(bulletListAction, &QAction::triggered, this, [this]() {
-        if (!qmlEditor->isMarkdown())
-            switchToMarkdown();
-        qmlEditor->insertList(NoteBlockModel::BulletList);
-    });
+    taskListAction->setObjectName(QStringLiteral("insertTaskListAction"));
+    numberedListAction->setObjectName(QStringLiteral("insertNumberedListAction"));
+    bulletListAction->setObjectName(QStringLiteral("insertBulletListAction"));
+    connect(taskListAction, &QAction::triggered, this, [this]() { insertListBlock(NoteBlockModel::CheckList); });
+    connect(numberedListAction, &QAction::triggered, this, [this]() { insertListBlock(NoteBlockModel::NumberedList); });
+    connect(bulletListAction, &QAction::triggered, this, [this]() { insertListBlock(NoteBlockModel::BulletList); });
     listButton->setMenu(listMenu);
     tbar->addWidget(listButton);
 
@@ -308,12 +296,14 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
     tbar->addSeparator();
 
     mdModeAct = initAction(":/svg/markdown", tr("Markdown"), tr("Render markdown"), "Ctrl+M");
+    mdModeAct->setObjectName(QStringLiteral("markdownModeAction"));
     tbar->addAction(mdModeAct);
     connect(mdModeAct, &QAction::triggered, this, &NoteWidget::switchToMarkdown);
     mdModeAct->setVisible(false); // we are initially in rich text mode
     ui->noteEdit->setUnconditionalLinks(true);
 
     txtModeAct = initAction(":/svg/txt", tr("Text"), tr("Plain text mode"), "Ctrl+T");
+    txtModeAct->setObjectName(QStringLiteral("textModeAction"));
     tbar->addAction(txtModeAct);
     connect(txtModeAct, &QAction::triggered, this, &NoteWidget::switchToText);
 
@@ -374,6 +364,9 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
         _note.setMedia(media);
         qmlEditor->setMedia(media);
     });
+    connect(qmlEditor, &QmlNoteEditor::mediaChanged, this,
+            [this](const QList<MediaReference> &references) { _note.setMedia(references); });
+    connect(qmlEditor, &QmlNoteEditor::formatChanged, this, &NoteWidget::syncEditorMode);
     connect(qmlEditor, &QmlNoteEditor::focusLost, this, &NoteWidget::save);
     connect(qmlEditor, &QmlNoteEditor::focusReceived, this, &NoteWidget::focusReceived, Qt::QueuedConnection);
 
@@ -492,6 +485,8 @@ void NoteWidget::save()
     _draftPersisted = true;
     if (const auto draft = drafts->editingDraft(_draftId); draft)
         _draftRevision = draft.value.revision;
+    if (qmlEditor)
+        qmlEditor->breakHistoryMerge();
     _lastChangeElapsed.restart();
 }
 
@@ -616,33 +611,19 @@ void NoteWidget::setContents(const QString &title, const QString &body, Note::Fo
         ui->noteEdit->setHtml(title + QLatin1String("<br/>") + body);
         ui->noteEdit->setMarkdown(ui->noteEdit->toMarkdown()); // to cleanup html
         qmlEditor->load(ui->noteEdit->toMarkdown(), Note::Markdown, editorLoadPolicy);
-        mdModeAct->setVisible(false);
-        txtModeAct->setVisible(true);
-        ui->noteEdit->setAcceptRichText(true);
-        ui->noteEdit->setUnconditionalLinks(true);
         break;
     case Note::Markdown:
         ui->noteEdit->setMarkdown(title + QLatin1String("\n\n") + body);
         qmlEditor->load(title + QLatin1String("\n\n") + body, Note::Markdown, editorLoadPolicy);
-        mdModeAct->setVisible(false);
-        txtModeAct->setVisible(true);
-        ui->noteEdit->setAcceptRichText(true);
-        ui->noteEdit->setUnconditionalLinks(true);
         break;
     case Note::PlainText:
         ui->noteEdit->setPlainText(title + QLatin1Char('\n') + body);
         qmlEditor->load(title + QLatin1Char('\n') + body, Note::PlainText, editorLoadPolicy);
-        mdModeAct->setVisible(true);
-        txtModeAct->setVisible(false);
-        ui->noteEdit->setAcceptRichText(false);
-        ui->noteEdit->setUnconditionalLinks(false);
         break;
     }
+    syncEditorMode(format != Note::PlainText);
     loadMediaResources();
     resizeMediaToViewport();
-    if (insertImageAction)
-        insertImageAction->setEnabled(canInsertImages());
-    ui->noteEdit->setImagePasteEnabled(canInsertImages());
     _changed = false;
     _autosaveTimer.stop(); // timer not required atm
     _lastChangeElapsed.restart();
@@ -754,6 +735,9 @@ bool NoteWidget::canInsertImages() const
 
 bool NoteWidget::insertImportedImage(const MediaReference &reference)
 {
+    if (qmlEditor && isMarkdown())
+        qmlEditor->beginExternalHistoryTransaction(QStringLiteral("insert-image"));
+
     auto media = _note.media();
     media.append(reference);
     _note.setMedia(media);
@@ -761,6 +745,7 @@ bool NoteWidget::insertImportedImage(const MediaReference &reference)
     if (qmlEditor && isMarkdown()) {
         qmlEditor->setMedia(media);
         qmlEditor->model()->appendImage(reference.uri(), reference.originalName);
+        qmlEditor->endExternalHistoryTransaction();
         return true;
     }
 
@@ -960,14 +945,52 @@ void NoteWidget::showSpeechRecognitionError(const QString &error)
 
 void NoteWidget::switchToMarkdown()
 {
+    if (qmlEditor && qmlEditor->model()->markdown())
+        return;
     auto const &[title, body] = Utils::splitTitle(text());
     setContents(title, body, Note::Markdown, ContentLoadPolicy::RecordFormatConversion);
 }
 
 void NoteWidget::switchToText()
 {
+    if (qmlEditor && !qmlEditor->model()->markdown())
+        return;
     auto const &[title, body] = Utils::splitTitle(text());
     setContents(title, body, Note::PlainText, ContentLoadPolicy::RecordFormatConversion);
+}
+
+void NoteWidget::syncEditorMode(bool markdown)
+{
+    if (mdModeAct)
+        mdModeAct->setVisible(!markdown);
+    if (txtModeAct)
+        txtModeAct->setVisible(markdown);
+    ui->noteEdit->setAcceptRichText(markdown);
+    ui->noteEdit->setUnconditionalLinks(markdown);
+
+    const auto storage       = _note.storage();
+    const bool imagesEnabled = storage && storage->supportsMedia() && markdown;
+    if (insertImageAction)
+        insertImageAction->setEnabled(imagesEnabled);
+    ui->noteEdit->setImagePasteEnabled(imagesEnabled);
+}
+
+void NoteWidget::insertTableBlock()
+{
+    qmlEditor->beginExternalHistoryTransaction(QStringLiteral("insert-table"));
+    if (!qmlEditor->model()->markdown())
+        switchToMarkdown();
+    qmlEditor->insertTable();
+    qmlEditor->endExternalHistoryTransaction();
+}
+
+void NoteWidget::insertListBlock(int type)
+{
+    qmlEditor->beginExternalHistoryTransaction(QStringLiteral("insert-or-convert-list"));
+    if (!qmlEditor->model()->markdown())
+        switchToMarkdown();
+    qmlEditor->insertList(type);
+    qmlEditor->endExternalHistoryTransaction();
 }
 
 void NoteWidget::onCopyClicked()

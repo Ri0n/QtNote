@@ -285,6 +285,31 @@ private slots:
         QCOMPARE(changed.size(), 0);
     }
 
+    void reportsScalarEditsWithoutExposingInternalState()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("text\n\n- first\n\n"
+                                  "| A | B |\n| --- | --- |\n| C | D |\n\n"
+                                  "![cat](media://cat)"),
+                   true);
+        QSignalSpy edits(&model, &NoteBlockModel::scalarEdited);
+
+        model.setBlockText(0, QStringLiteral("changed"));
+        model.setListItem(1, 0, QStringLiteral("second"));
+        model.setTableCell(2, 2, QStringLiteral("cell"));
+        model.setImageUrl(3, QStringLiteral("media://other"));
+        model.setImageAlt(3, QStringLiteral("description"));
+
+        QCOMPARE(edits.size(), 5);
+        QCOMPARE(edits.at(0).at(1).toInt(), int(NoteBlockModel::TextRole));
+        QCOMPARE(edits.at(1).at(1).toInt(), int(NoteBlockModel::ItemsRole));
+        QCOMPARE(edits.at(1).at(2).toInt(), 0);
+        QCOMPARE(edits.at(2).at(1).toInt(), int(NoteBlockModel::CellsRole));
+        QCOMPARE(edits.at(2).at(2).toInt(), 2);
+        QCOMPARE(edits.at(3).at(1).toInt(), int(NoteBlockModel::UrlRole));
+        QCOMPARE(edits.at(4).at(1).toInt(), int(NoteBlockModel::AltRole));
+    }
+
     void coalescesAdjacentLinksCreatedAcrossFormatRuns()
     {
         NoteBlockModel model;

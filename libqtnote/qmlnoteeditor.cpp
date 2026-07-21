@@ -4,6 +4,7 @@
 #include <QFont>
 #include <QGuiApplication>
 #include <QKeyEvent>
+#include <QKeySequence>
 #include <QMimeData>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -26,6 +27,7 @@
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
+#include "notedocumenthistory.h"
 #include "notefragmentmediatransfer.h"
 #include "notehighlighter.h"
 #include "notetransfercontroller.h"
@@ -109,6 +111,16 @@ namespace {
             return false;
         QVariant result;
         return QMetaObject::invokeMethod(object, method, Q_RETURN_ARG(QVariant, result)) && result.toBool();
+    }
+
+    QVariantMap captureQmlEditorState(QObject *object)
+    {
+        if (!object)
+            return {};
+        QVariant result;
+        if (!QMetaObject::invokeMethod(object, "captureEditorState", Q_RETURN_ARG(QVariant, result)))
+            return {};
+        return result.toMap();
     }
 
     QTextCharFormat formatAt(QTextDocument *document, int position)
@@ -508,8 +520,88 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     quick_->installEventFilter(this);
     layout->addWidget(quick_);
 
+    history_ = std::make_unique<NoteDocumentHistory>();
+    history_->setRestoreHandler([this](const NoteDocumentHistory::DocumentState &state, const QVariantMap &viewState) {
+        prepareForHistoryRestore();
+        if (media_ != state.media)
+            setMedia(state.media);
+        const bool modeChanged = model_->markdown() != state.model.markdown;
+        model_->restoreState(state.model);
+        if (modeChanged)
+            emit formatChanged(model_->markdown());
+        scheduleHistoryViewRestore(viewState);
+    });
+    history_->setScalarRestoreHandler(
+        [this](const NoteDocumentHistory::ScalarAddress &address, const QString &value, const QVariantMap &viewState) {
+            prepareForHistoryRestore();
+            restoreScalarField(address.blockIndex, address.role, address.fieldIndex, value);
+            scheduleHistoryViewRestore(viewState);
+        });
+    history_->setChangedHandler([this] { emit undoStateChanged(); });
+    history_->reset({ model_->state(), media_ });
+
+    connect(model_, &NoteBlockModel::scalarEdited, this,
+            [this](int row, int role, int fieldIndex, const QString &before, const QString &after) {
+                scalarHistoryChangePending_ = true;
+                if (history_ && !history_->isRestoring() && !history_->inTransaction()) {
+                    history_->observeScalar({ row, role, fieldIndex }, before, after,
+                                            captureQmlEditorState(quick_->rootObject()));
+                }
+            });
+    connect(model_, &NoteBlockModel::contentsChanged, this, [this] {
+        if (scalarHistoryChangePending_) {
+            scalarHistoryChangePending_ = false;
+            return;
+        }
+        if (!history_ || history_->isRestoring() || history_->inTransaction())
+            return;
+        history_->observeChange({ model_->state(), media_ }, captureQmlEditorState(quick_->rootObject()));
+    });
     connect(model_, &NoteBlockModel::contentsChanged, this, &QmlNoteEditor::contentsChanged);
     updateFocusWindow();
+}
+
+QmlNoteEditor::~QmlNoteEditor() = default;
+
+void QmlNoteEditor::prepareForHistoryRestore()
+{
+    if (quick_ && quick_->rootObject())
+        QMetaObject::invokeMethod(quick_->rootObject(), "prepareForHistoryRestore");
+}
+
+void QmlNoteEditor::flushPendingEditorChanges()
+{
+    if (quick_ && quick_->rootObject())
+        QMetaObject::invokeMethod(quick_->rootObject(), "flushPendingEditorChanges");
+}
+
+void QmlNoteEditor::scheduleHistoryViewRestore(const QVariantMap &viewState)
+{
+    QTimer::singleShot(0, this, [this, viewState] {
+        if (quick_ && quick_->rootObject())
+            QMetaObject::invokeMethod(quick_->rootObject(), "restoreEditorState", Q_ARG(QVariant, viewState));
+    });
+}
+
+void QmlNoteEditor::restoreScalarField(int blockIndex, int role, int fieldIndex, const QString &value)
+{
+    switch (role) {
+    case NoteBlockModel::TextRole:
+        model_->setBlockText(blockIndex, value);
+        break;
+    case NoteBlockModel::ItemsRole:
+        model_->setListItem(blockIndex, fieldIndex, value);
+        break;
+    case NoteBlockModel::CellsRole:
+        model_->setTableCell(blockIndex, fieldIndex, value);
+        break;
+    case NoteBlockModel::UrlRole:
+        model_->setImageUrl(blockIndex, value);
+        break;
+    case NoteBlockModel::AltRole:
+        model_->setImageAlt(blockIndex, value);
+        break;
+    }
 }
 
 void QmlNoteEditor::showEvent(QShowEvent *event)
@@ -535,8 +627,11 @@ void QmlNoteEditor::load(const QString &contents, Note::Format format, LoadPolic
     const bool    markdown         = format != Note::PlainText;
     const QString previousContents = model_->contents();
     const bool    previousMarkdown = model_->markdown();
+    const bool    modeChanged      = previousMarkdown != markdown;
     const bool modeSwitch = policy == LoadPolicy::RecordFormatConversion && hasLoaded_ && previousMarkdown != markdown;
-    const quint64 generation = ++loadGeneration_;
+    const quint64     generation               = ++loadGeneration_;
+    const QVariantMap beforeView               = captureQmlEditorState(quick_->rootObject());
+    const bool        nestedHistoryTransaction = history_ && history_->inTransaction();
 
     if (modeSwitch) {
         baselineOverrideContents_ = previousContents;
@@ -549,30 +644,51 @@ void QmlNoteEditor::load(const QString &contents, Note::Format format, LoadPolic
         suppressNextFocusRefresh_ = false;
     }
 
+    if (history_) {
+        history_->beginTransaction(modeSwitch ? QStringLiteral("format-conversion") : QStringLiteral("load"),
+                                   { model_->state(), media_ }, beforeView);
+    }
+
     model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
     if (markdown)
         restoreProtectedMarkdown(model_);
     hasLoaded_ = true;
 
-    if (!modeSwitch)
-        return;
+    if (history_) {
+        const NoteDocumentHistory::DocumentState after { model_->state(), media_ };
+        if (modeSwitch)
+            history_->endTransaction(after, beforeView);
+        else
+            history_->reset(after);
+    }
 
-    // NoteWidget::setContents() deliberately blocks editor signals and records
-    // a new baseline after load(). During a user-requested mode switch, expose
-    // the old state until that function finishes. On the next event-loop turn,
-    // reveal the converted model, mark it dirty, and checkpoint it immediately.
-    QTimer::singleShot(0, this, [this, generation] {
-        if (generation != loadGeneration_ || !baselineOverrideActive_)
+    if (modeSwitch && !nestedHistoryTransaction)
+        scheduleHistoryViewRestore(beforeView);
+
+    QTimer::singleShot(0, this, [this, generation, modeChanged] {
+        if (generation != loadGeneration_)
             return;
-        baselineOverrideActive_ = false;
-        baselineOverrideContents_.clear();
-        emit contentsChanged();
-        emit focusLost();
+        const bool revealConversion = baselineOverrideActive_;
+        if (revealConversion) {
+            baselineOverrideActive_ = false;
+            baselineOverrideContents_.clear();
+        }
+        // A containing NoteWidget can suppress signals while loading. Emit the
+        // derived UI state after that synchronous scope has ended.
+        emit undoStateChanged();
+        if (modeChanged)
+            emit formatChanged(model_->markdown());
+        if (revealConversion) {
+            emit contentsChanged();
+            emit focusLost();
+        }
     });
 }
 
 void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
 {
+    if (media_ == media)
+        return;
     media_ = media;
     QHash<QString, QString> urls;
     for (const auto &reference : media) {
@@ -582,6 +698,7 @@ void QmlNoteEditor::setMedia(const QList<MediaReference> &media)
         }
     }
     model_->setPreviewUrls(urls);
+    emit mediaChanged(media_);
 }
 
 QString QmlNoteEditor::contents() const
@@ -594,6 +711,14 @@ bool QmlNoteEditor::isMarkdown() const
     return baselineOverrideActive_ ? baselineOverrideMarkdown_ : model_->markdown();
 }
 
+bool QmlNoteEditor::canUndo() const { return history_ && history_->canUndo(); }
+
+bool QmlNoteEditor::canRedo() const { return history_ && history_->canRedo(); }
+
+QString QmlNoteEditor::undoText() const { return history_ ? history_->undoText() : QString(); }
+
+QString QmlNoteEditor::redoText() const { return history_ ? history_->redoText() : QString(); }
+
 void QmlNoteEditor::insertText(const QString &text)
 {
     QVariant inserted;
@@ -603,7 +728,9 @@ void QmlNoteEditor::insertText(const QString &text)
         && inserted.toBool()) {
         return;
     }
+    beginHistoryTransaction(QStringLiteral("insert-text"), captureQmlEditorState(quick_->rootObject()));
     model_->appendText(text);
+    endHistoryTransaction(captureQmlEditorState(quick_->rootObject()));
 }
 
 void QmlNoteEditor::focusEditor()
@@ -623,6 +750,60 @@ void QmlNoteEditor::insertList(int type)
 {
     if (quick_->rootObject())
         QMetaObject::invokeMethod(quick_->rootObject(), "insertListBlock", Q_ARG(QVariant, type));
+}
+
+void QmlNoteEditor::beginExternalHistoryTransaction(const QString &kind)
+{
+    QObject *root = quick_ ? quick_->rootObject() : nullptr;
+    flushPendingEditorChanges();
+    beginHistoryTransaction(kind, captureQmlEditorState(root));
+}
+
+void QmlNoteEditor::endExternalHistoryTransaction()
+{
+    endHistoryTransaction(captureQmlEditorState(quick_->rootObject()));
+}
+
+void QmlNoteEditor::breakHistoryMerge()
+{
+    if (history_)
+        history_->breakMerge();
+}
+
+void QmlNoteEditor::beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView)
+{
+    if (history_)
+        history_->beginTransaction(kind, { model_->state(), media_ }, beforeView);
+}
+
+void QmlNoteEditor::endHistoryTransaction(const QVariantMap &afterView)
+{
+    if (history_)
+        history_->endTransaction({ model_->state(), media_ }, afterView);
+}
+
+void QmlNoteEditor::updateHistoryViewState(const QVariantMap &viewState, bool breakMerge)
+{
+    if (history_)
+        history_->updateViewState(viewState, breakMerge);
+}
+
+bool QmlNoteEditor::undo()
+{
+    flushPendingEditorChanges();
+    if (!canUndo())
+        return false;
+    history_->undo();
+    return true;
+}
+
+bool QmlNoteEditor::redo()
+{
+    flushPendingEditorChanges();
+    if (!canRedo())
+        return false;
+    history_->redo();
+    return true;
 }
 
 bool QmlNoteEditor::primaryModifierPressed() const
@@ -783,6 +964,7 @@ void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titl
 {
     if (!document || !document->textDocument())
         return;
+    document->textDocument()->setUndoRedoEnabled(false);
     auto highlighter = new NoteHighlighter(document->textDocument());
     for (const auto &item : extensions_) {
         const auto type = NoteHighlighter::ExtType(item.type);
@@ -1151,37 +1333,54 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
 
     if (watched == quick_) {
         if (event->type() == QEvent::KeyPress) {
-            auto     keyEvent = static_cast<QKeyEvent *>(event);
-            QObject *root     = quick_->rootObject();
-            if (keyEvent->matches(QKeySequence::Copy) && invokeQmlBoolean(root, "copyActiveSelection"))
-                return true;
-            if (keyEvent->matches(QKeySequence::Cut) && invokeQmlBoolean(root, "cutActiveSelection"))
-                return true;
-            if (keyEvent->matches(QKeySequence::Paste)) {
-                const auto             mime = QGuiApplication::clipboard()->mimeData();
-                NoteTransferController controller;
-                const auto             imported = controller.importMimeData(mime);
-                qInfo() << "QML clipboard paste: formats=" << (mime ? mime->formats() : QStringList())
-                        << "selected=" << imported.sourceMimeType << "blocks=" << imported.fragment.blocks.size()
-                        << "image=" << imported.hasImage() << "error=" << imported.error;
-                // Office applications often publish a bitmap preview together
-                // with TSV or HTML. Image is a fallback, never a reason to
-                // discard the more structured representation.
-                const bool hasStructuredPayload = imported && !imported.hasImage()
-                    && imported.sourceMimeType != QStringLiteral("text/plain") && !imported.fragment.blocks.isEmpty();
-                if (mime && mime->hasImage() && !hasStructuredPayload) {
-                    const auto image = qvariant_cast<QImage>(mime->imageData());
-                    if (!image.isNull()) {
-                        emit imagePasteRequested(image);
-                        return true;
-                    }
-                }
-                // Handle the complete operation while the event still belongs
-                // to QQuickWidget. This prevents TextArea's native rich-text
-                // paste from racing the QML Keys handler.
-                if (invokeQmlBoolean(root, "pasteClipboard"))
+            auto       keyEvent                 = static_cast<QKeyEvent *>(event);
+            QObject   *root                     = quick_->rootObject();
+            const bool documentHistoryOwnsFocus = invokeQmlBoolean(root, "documentHistoryOwnsFocus");
+            if (documentHistoryOwnsFocus) {
+                const auto modifiers = keyEvent->modifiers();
+                const bool plainText = !keyEvent->text().isEmpty()
+                    && !(modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier));
+                const bool deletion = keyEvent->key() == Qt::Key_Backspace || keyEvent->key() == Qt::Key_Delete;
+                updateHistoryViewState(captureQmlEditorState(root), !(plainText || deletion));
+                if (keyEvent->matches(QKeySequence::Undo) && undo())
                     return true;
+                if (keyEvent->matches(QKeySequence::Redo) && redo())
+                    return true;
+                if (keyEvent->matches(QKeySequence::Copy) && invokeQmlBoolean(root, "copyActiveSelection"))
+                    return true;
+                if (keyEvent->matches(QKeySequence::Cut) && invokeQmlBoolean(root, "cutActiveSelection"))
+                    return true;
+                if (keyEvent->matches(QKeySequence::Paste)) {
+                    const auto             mime = QGuiApplication::clipboard()->mimeData();
+                    NoteTransferController controller;
+                    const auto             imported = controller.importMimeData(mime);
+                    qInfo() << "QML clipboard paste: formats=" << (mime ? mime->formats() : QStringList())
+                            << "selected=" << imported.sourceMimeType << "blocks=" << imported.fragment.blocks.size()
+                            << "image=" << imported.hasImage() << "error=" << imported.error;
+                    // Office applications often publish a bitmap preview together
+                    // with TSV or HTML. Image is a fallback, never a reason to
+                    // discard the more structured representation.
+                    const bool hasStructuredPayload = imported && !imported.hasImage()
+                        && imported.sourceMimeType != QStringLiteral("text/plain")
+                        && !imported.fragment.blocks.isEmpty();
+                    if (mime && mime->hasImage() && !hasStructuredPayload) {
+                        const auto image = qvariant_cast<QImage>(mime->imageData());
+                        if (!image.isNull()) {
+                            emit imagePasteRequested(image);
+                            return true;
+                        }
+                    }
+                    // Handle the complete operation while the event still belongs
+                    // to QQuickWidget. This prevents TextArea's native rich-text
+                    // paste from racing the QML Keys handler.
+                    if (invokeQmlBoolean(root, "pasteClipboard"))
+                        return true;
+                }
             }
+        } else if (event->type() == QEvent::InputMethod) {
+            QObject *root = quick_->rootObject();
+            if (invokeQmlBoolean(root, "documentHistoryOwnsFocus"))
+                updateHistoryViewState(captureQmlEditorState(root), false);
         }
         if (event->type() == QEvent::FocusIn) {
             // Retry a pending checkpoint before NoteWidget checks whether an

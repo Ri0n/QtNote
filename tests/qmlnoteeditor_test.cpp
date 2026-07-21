@@ -1,3 +1,4 @@
+#include <QAction>
 #include <QClipboard>
 #include <QJSValue>
 #include <QMimeData>
@@ -8,9 +9,13 @@
 
 #include "highlighterext.h"
 #include "noteblockmodel.h"
+#include "notedata.h"
 #include "notehighlighter.h"
 #include "notetransfercontroller.h"
+#include "notewidget.h"
 #include "qmlnoteeditor.h"
+
+#include <QUuid>
 
 using namespace QtNote;
 
@@ -135,6 +140,379 @@ private slots:
         QTRY_COMPARE(root->property("activeEditor").value<QObject *>(), secondListItem);
         QCOMPARE(secondListItem->property("selectionStart").toInt(), 1);
         QCOMPARE(secondListItem->property("selectionEnd").toInt(), 4);
+    }
+
+    void undoRedoMergesTypingAndRestoresCursor()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QString(), Note::PlainText);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        editor.focusEditor();
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+
+        QTest::keyClicks(quick, QStringLiteral("typed"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("typed"));
+        QVERIFY(editor.canUndo());
+
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QString());
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        QCOMPARE(root->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 0);
+        QVERIFY(editor.canRedo());
+
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("typed"));
+    }
+
+    void undoKeepsInsertionAndDeletionAsSeparateSteps()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QString(), Note::PlainText);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        editor.focusEditor();
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        auto *textEditor = root->property("activeEditor").value<QObject *>();
+
+        QTest::keyClicks(quick, QStringLiteral("ab"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("ab"));
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("a"));
+
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("ab"));
+        QTRY_COMPARE(textEditor->property("text").toString(), QStringLiteral("ab"));
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QString());
+        QTRY_COMPARE(textEditor->property("text").toString(), QString());
+    }
+
+    void repeatedBackspaceIsOneUndoStep()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QString(), Note::PlainText);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        editor.focusEditor();
+
+        QTest::keyClicks(quick, QStringLiteral("abcdef"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("abcdef"));
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTest::keyClick(quick, Qt::Key_Backspace);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("abc"));
+
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.contents(), QStringLiteral("abcdef"));
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.contents(), QString());
+    }
+
+    void imageFieldsUseScalarUndoCommands()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 300);
+        editor.load(QStringLiteral("![cat](media://cat)"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 2);
+
+        QObject *url = nullptr;
+        QObject *alt = nullptr;
+        for (const auto &value : root->property("editors").toList()) {
+            auto *candidate = value.value<QObject *>();
+            if (candidate->property("editorField").toString() == QLatin1String("imageUrl"))
+                url = candidate;
+            else if (candidate->property("editorField").toString() == QLatin1String("imageAlt"))
+                alt = candidate;
+        }
+        QVERIFY(url);
+        QVERIFY(alt);
+
+        QVERIFY(QMetaObject::invokeMethod(url, "forceActiveFocus"));
+        url->setProperty("cursorPosition", url->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("123"));
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::UrlRole).toString(),
+                     QStringLiteral("media://cat123"));
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::UrlRole).toString(),
+                     QStringLiteral("media://cat"));
+        QVERIFY(editor.redo());
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::UrlRole).toString(),
+                     QStringLiteral("media://cat123"));
+        QVERIFY(editor.undo());
+        QVERIFY(!editor.canUndo());
+
+        QVERIFY(QMetaObject::invokeMethod(alt, "forceActiveFocus"));
+        alt->setProperty("cursorPosition", alt->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("123"));
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::AltRole).toString(),
+                     QStringLiteral("cat123"));
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::AltRole).toString(),
+                     QStringLiteral("cat"));
+        QVERIFY(editor.redo());
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::AltRole).toString(),
+                     QStringLiteral("cat123"));
+    }
+
+    void undoInLinkUrlFieldStaysLocal()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("link"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+        text->setProperty("cursorPosition", text->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("x"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("linkx"));
+        QVERIFY(editor.canUndo());
+
+        QVERIFY(QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4)));
+        QTest::keyClick(quick, Qt::Key_K, Qt::ControlModifier);
+        auto *urlField = root->findChild<QObject *>(QStringLiteral("noteLinkUrlField"));
+        QVERIFY(urlField);
+        QTRY_VERIFY(urlField->property("activeFocus").toBool());
+        QTest::keyClicks(quick, QStringLiteral("abc"));
+        QCOMPARE(urlField->property("text").toString(), QStringLiteral("abc"));
+
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QCOMPARE(editor.contents(), QStringLiteral("linkx"));
+        QTRY_VERIFY(urlField->property("text").toString() != QStringLiteral("abc"));
+        QVERIFY(editor.canUndo());
+
+        const QString pastedUrl = QStringLiteral("https://example.org/local-field");
+        QVERIFY(QMetaObject::invokeMethod(urlField, "selectAll"));
+        QGuiApplication::clipboard()->setText(pastedUrl);
+        QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
+        QTRY_COMPARE(urlField->property("text").toString(), pastedUrl);
+        QCOMPARE(editor.contents(), QStringLiteral("linkx"));
+        QTest::keyClick(quick, Qt::Key_Escape);
+    }
+
+    void undoRedoRestoresCompoundListAndTableOperations()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("- first"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *listItem = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(listItem);
+        listItem->setProperty("cursorPosition", 2);
+        QVERIFY(QMetaObject::invokeMethod(listItem, "forceActiveFocus"));
+
+        QTest::keyClick(quick, Qt::Key_Return);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+                     QStringList({ "fi", "rst" }));
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+                     QStringList({ "first" }));
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+                     QStringList({ "fi", "rst" }));
+
+        QVERIFY(QMetaObject::invokeMethod(root, "insertTableBlock"));
+        QTRY_COMPARE(editor.model()->rowCount(), 2);
+        QCOMPARE(editor.model()->data(editor.model()->index(1), NoteBlockModel::TypeRole).toInt(),
+                 int(NoteBlockModel::Table));
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(editor.model()->rowCount(), 1);
+        QTest::keyClick(quick, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(editor.model()->rowCount(), 2);
+    }
+
+    void undoRedoRestoresExplicitFormatConversion()
+    {
+        QmlNoteEditor editor;
+        editor.load(QStringLiteral("- first\n- second"), Note::Markdown);
+        editor.load(editor.contents(), Note::PlainText, QmlNoteEditor::LoadPolicy::RecordFormatConversion);
+        QTRY_VERIFY(!editor.isMarkdown());
+        QVERIFY(editor.canUndo());
+
+        QVERIFY(editor.undo());
+        QTRY_VERIFY(editor.isMarkdown());
+        QCOMPARE(editor.contents(), QStringLiteral("- first\n- second"));
+        QVERIFY(editor.redo());
+        QTRY_VERIFY(!editor.isMarkdown());
+    }
+
+    void noteWidgetSynchronizesModeAndGroupsAutomaticConversion()
+    {
+        Note note(new NoteData(nullptr));
+        note.setText(QString(), Note::PlainText);
+        NoteWidget widget(note);
+        auto      *editor         = widget.findChild<QmlNoteEditor *>();
+        auto      *markdownAction = widget.findChild<QAction *>(QStringLiteral("markdownModeAction"));
+        auto      *textAction     = widget.findChild<QAction *>(QStringLiteral("textModeAction"));
+        auto      *tableAction    = widget.findChild<QAction *>(QStringLiteral("insertTableAction"));
+        QVERIFY(editor);
+        QVERIFY(markdownAction);
+        QVERIFY(textAction);
+        QVERIFY(tableAction);
+        QObject::disconnect(editor, &QmlNoteEditor::focusLost, &widget, &NoteWidget::save);
+        QCoreApplication::processEvents();
+
+        QVERIFY(!editor->model()->markdown());
+        QVERIFY(markdownAction->isVisible());
+        QVERIFY(!textAction->isVisible());
+        QSignalSpy historyState(editor, &QmlNoteEditor::undoStateChanged);
+
+        markdownAction->trigger();
+        QTRY_VERIFY(editor->model()->markdown());
+        QTRY_VERIFY(!markdownAction->isVisible());
+        QTRY_VERIFY(textAction->isVisible());
+        QTRY_VERIFY(historyState.size() > 0);
+        QVERIFY(editor->undo());
+        QTRY_VERIFY(!editor->model()->markdown());
+        QTRY_VERIFY(markdownAction->isVisible());
+        QTRY_VERIFY(!textAction->isVisible());
+        QVERIFY(editor->redo());
+        QTRY_VERIFY(editor->model()->markdown());
+        QVERIFY(editor->undo());
+        QTRY_VERIFY(!editor->model()->markdown());
+
+        // One toolbar action owns both the automatic Markdown conversion and
+        // the inserted table, so one undo returns to the original plain note.
+        tableAction->trigger();
+        QTRY_VERIFY(editor->model()->markdown());
+        QTRY_VERIFY(editor->model()->rowCount() > 1);
+        QVERIFY(editor->undo());
+        QTRY_VERIFY(!editor->model()->markdown());
+        QCOMPARE(editor->model()->rowCount(), 1);
+        QVERIFY(!editor->canUndo());
+    }
+
+    void undoRedoRestoresFormattingAndTableCellText()
+    {
+        QmlNoteEditor formatting;
+        formatting.resize(500, 300);
+        formatting.load(QStringLiteral("bold text"), Note::Markdown);
+        formatting.show();
+        QTest::qWait(30);
+        auto *formatQuick = formatting.findChild<QQuickWidget *>();
+        auto *formatRoot  = formatQuick->rootObject();
+        QTRY_COMPARE(formatRoot->property("editors").toList().size(), 1);
+        auto *formatEditor = formatRoot->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(QMetaObject::invokeMethod(formatEditor, "forceActiveFocus"));
+        QVERIFY(QMetaObject::invokeMethod(formatEditor, "select", Q_ARG(int, 0), Q_ARG(int, 4)));
+        QTest::keyClick(formatQuick, Qt::Key_B, Qt::ControlModifier);
+        QTRY_COMPARE(formatting.contents(), QStringLiteral("**bold** text"));
+        QTest::keyClick(formatQuick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(formatting.contents(), QStringLiteral("bold text"));
+        QTest::keyClick(formatQuick, Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(formatting.contents(), QStringLiteral("**bold** text"));
+        // History restores focus asynchronously after delegates have been
+        // recreated. Let that finish before opening a second editor window,
+        // otherwise the first window can reclaim the application focus.
+        QTest::qWait(20);
+        formatting.hide();
+
+        QmlNoteEditor table;
+        table.resize(600, 400);
+        table.load(QStringLiteral("| A | B |\n| --- | --- |\n| C | D |"), Note::Markdown);
+        table.show();
+        QTest::qWait(30);
+        auto *tableQuick = table.findChild<QQuickWidget *>();
+        auto *tableRoot  = tableQuick->rootObject();
+        QTRY_COMPARE(tableRoot->property("editors").toList().size(), 4);
+        QObject *cell = nullptr;
+        for (const auto &value : tableRoot->property("editors").toList()) {
+            auto *candidate = value.value<QObject *>();
+            if (candidate && candidate->property("tableCellIndex").toInt() == 2) {
+                cell = candidate;
+                break;
+            }
+        }
+        QVERIFY(cell);
+        QVERIFY(QMetaObject::invokeMethod(cell, "forceActiveFocus"));
+        QTRY_VERIFY(cell->property("activeFocus").toBool());
+        cell->setProperty("cursorPosition", cell->property("length"));
+        QTest::keyClicks(tableQuick, QStringLiteral("X"));
+        QTRY_COMPARE(table.model()
+                         ->data(table.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(2),
+                     QStringLiteral("CX"));
+        QTest::keyClick(tableQuick, Qt::Key_Z, Qt::ControlModifier);
+        QTRY_COMPARE(table.model()
+                         ->data(table.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(2),
+                     QStringLiteral("C"));
+        QVERIFY(table.redo());
+        QTRY_COMPARE(table.model()
+                         ->data(table.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(2),
+                     QStringLiteral("CX"));
+    }
+
+    void undoRedoRestoresImageBlockAndMediaManifest()
+    {
+        QmlNoteEditor editor;
+        editor.load(QString(), Note::Markdown);
+
+        MediaReference image;
+        image.id           = QUuid::createUuid();
+        image.blobId       = QByteArray::fromHex("0123456789abcdef");
+        image.originalName = QStringLiteral("cat.png");
+        image.portableName = QStringLiteral("cat.png");
+        image.mediaType    = QStringLiteral("image/png");
+
+        QList<MediaReference> observedMedia;
+        QObject::connect(&editor, &QmlNoteEditor::mediaChanged,
+                         [&observedMedia](const QList<MediaReference> &media) { observedMedia = media; });
+
+        editor.beginExternalHistoryTransaction(QStringLiteral("Insert image"));
+        editor.setMedia({ image });
+        editor.model()->appendImage(image.uri(), image.originalName);
+        editor.endExternalHistoryTransaction();
+        QCOMPARE(editor.model()->rowCount(), 2);
+        QCOMPARE(observedMedia.size(), 1);
+
+        QVERIFY(editor.undo());
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QCOMPARE(observedMedia.size(), 0);
+
+        QVERIFY(editor.redo());
+        QCOMPARE(editor.model()->rowCount(), 2);
+        QCOMPARE(observedMedia.size(), 1);
+        QCOMPARE(observedMedia.constFirst().id, image.id);
     }
 
     void routesClipboardImages()

@@ -22,6 +22,13 @@ struct QTNOTE_EXPORT MediaReference {
 
     QString uri() const;
     bool    isValid() const { return !id.isNull() && !blobId.isEmpty() && !portableName.isEmpty(); }
+
+    bool operator==(const MediaReference &other) const
+    {
+        return id == other.id && blobId == other.blobId && originalName == other.originalName
+            && portableName == other.portableName && mediaType == other.mediaType && size == other.size
+            && checksum == other.checksum && remoteData == other.remoteData;
+    }
 };
 
 } // namespace QtNote

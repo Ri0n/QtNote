@@ -8,6 +8,9 @@
 
 namespace QtNote {
 
+class NoteDocumentHistory;
+class QmlNoteEditor;
+
 struct QTNOTE_EXPORT NoteBlockSelectionRange {
     int     blockIndex { -1 };
     int     listItemIndex { -1 };
@@ -94,9 +97,15 @@ public:
 
 signals:
     void markdownChanged();
+    void scalarEdited(int row, int role, int fieldIndex, const QString &before, const QString &after);
     void contentsChanged();
 
 private:
+    friend class NoteDocumentHistory;
+    friend class QmlNoteEditor;
+
+    // Internal document representation used by editor history. It preserves
+    // topology without turning the storage format into public libqtnote API.
     struct Block {
         BlockType    type = Text;
         QString      text;
@@ -109,11 +118,29 @@ private:
         QString      url;
         QString      alt;
         int          headingLevel = 0;
+
+        bool operator==(const Block &other) const
+        {
+            return type == other.type && text == other.text && items == other.items && indents == other.indents
+                && itemTypes == other.itemTypes && checked == other.checked && cells == other.cells
+                && columns == other.columns && url == other.url && alt == other.alt
+                && headingLevel == other.headingLevel;
+        }
     };
 
+    struct State {
+        QList<Block> blocks;
+        bool         markdown = false;
+
+        bool operator==(const State &other) const { return markdown == other.markdown && blocks == other.blocks; }
+    };
+
+    State               state() const;
+    bool                restoreState(const State &state);
     static QList<Block> parseMarkdown(const QString &source);
     static QString      writeMarkdown(const QList<Block> &blocks);
     static bool         blocksFromFragment(const NoteFragment &fragment, QList<Block> *blocks, QString *error);
+    static QList<Block> cloneBlocks(const QList<Block> &blocks);
     void                changed(int row, const QList<int> &roles);
 
     QList<Block>            blocks_;

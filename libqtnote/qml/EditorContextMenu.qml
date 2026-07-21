@@ -52,8 +52,24 @@ Menu {
         onToggled: if (menu.editorBackend) menu.editorBackend.spellCheckEnabled = checked
     }
     MenuSeparator {}
-    MenuItem { action: Action { text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: menu.editor ? menu.editor.canUndo : false; onTriggered: if (menu.editor) menu.editor.undo() } }
-    MenuItem { action: Action { text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: menu.editor ? menu.editor.canRedo : false; onTriggered: if (menu.editor) menu.editor.redo() } }
+    MenuItem {
+        action: Action {
+            text: menu.editorBackend && menu.editorBackend.undoText.length > 0
+                ? qsTr("Undo %1").arg(menu.editorBackend.undoText) : qsTr("Undo")
+            shortcut: StandardKey.Undo
+            enabled: menu.editorBackend ? menu.editorBackend.canUndo : false
+            onTriggered: if (menu.editorBackend) menu.editorBackend.undo()
+        }
+    }
+    MenuItem {
+        action: Action {
+            text: menu.editorBackend && menu.editorBackend.redoText.length > 0
+                ? qsTr("Redo %1").arg(menu.editorBackend.redoText) : qsTr("Redo")
+            shortcut: StandardKey.Redo
+            enabled: menu.editorBackend ? menu.editorBackend.canRedo : false
+            onTriggered: if (menu.editorBackend) menu.editorBackend.redo()
+        }
+    }
     MenuSeparator {}
     MenuItem { action: Action { text: qsTr("Cut"); shortcut: StandardKey.Cut; enabled: menu.controller.documentSelectionAvailable; onTriggered: menu.controller.cutDocumentSelection() } }
     MenuItem { action: Action { text: qsTr("Copy"); shortcut: StandardKey.Copy; enabled: menu.controller.documentSelectionAvailable; onTriggered: menu.controller.copyDocumentSelection() } }
