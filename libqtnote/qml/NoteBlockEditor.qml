@@ -237,6 +237,39 @@ ListView {
         onTriggered: root.refreshSelectionState()
     }
 
+    // TextArea knows how to keep a cursor visible inside itself, but the
+    // structured editor is an outer ListView. Coalesce cursor moves into one
+    // outer scroll adjustment per event-loop turn.
+    Timer {
+        id: cursorVisibilityRefresh
+        interval: 0
+        property var editor: null
+        onTriggered: root.ensureEditorCursorVisible(editor)
+    }
+
+    function scheduleCursorVisibility(editor) {
+        if (!editor || !editor.activeFocus)
+            return
+        cursorVisibilityRefresh.editor = editor
+        cursorVisibilityRefresh.restart()
+    }
+
+    function ensureEditorCursorVisible(editor) {
+        if (!editor || editor !== activeEditor || !editor.activeFocus)
+            return
+        const rectangle = editor.positionToRectangle(editor.cursorPosition)
+        const point = editor.mapToItem(root, rectangle.x, rectangle.y)
+        const margin = Math.max(4, Math.round(editorFontMetrics.height / 2))
+        const top = point.y
+        const bottom = point.y + Math.max(1, rectangle.height)
+        if (top < margin) {
+            contentY = Math.max(originY, contentY + top - margin)
+        } else if (bottom > height - margin) {
+            const maximum = originY + Math.max(0, contentHeight - height)
+            contentY = Math.min(maximum, contentY + bottom - (height - margin))
+        }
+    }
+
     Timer {
         id: pendingFocusRetry
         interval: 10
@@ -1053,6 +1086,17 @@ ListView {
     }
 
     function focusDocumentEnd() {
+        // Images deliberately have no TextArea. A click below a document
+        // ending in one therefore means "continue after the image", not
+        // "move to the end of the preceding text block".
+        if (count > 0 && blockModel.blockTypeAt(count - 1) === 4) {
+            const imageRow = count - 1
+            return runEditTransaction("append-text-after-image", function() {
+                blockModel.appendTextBlock()
+                focusBlock(imageRow + 1)
+                return true
+            })
+        }
         const ordered = orderedEditors()
         if (ordered.length === 0)
             return false
@@ -1081,27 +1125,34 @@ ListView {
     }
 
     function focusFollowingBlock(blockIndex, appendIfMissing) {
-        const next = blockIndex + 1
-        if (next < count) {
-            const ordered = orderedEditors()
-            const activeIndex = ordered.indexOf(activeEditor)
-            if (activeIndex >= 0 && activeIndex + 1 < ordered.length) {
-                const editor = ordered[activeIndex + 1]
-                editor.blockIndex = next
-                editor.forceActiveFocus()
-                editor.cursorPosition = 0
-                activeEditor = editor
-                return
+        // Images have no cursor of their own. Find the next actual editor,
+        // rather than pretending the immediately following block is one.
+        const ordered = orderedEditors()
+        for (const editor of ordered) {
+            if (editor.blockIndex <= blockIndex)
+                continue
+            editor.forceActiveFocus()
+            editor.cursorPosition = 0
+            activeEditor = editor
+            return true
+        }
+        // The next delegate may not be instantiated yet when it is outside
+        // ListView's cache. Locate it from the model and let the normal
+        // pending-focus path load it; only image blocks are intentionally
+        // skipped here.
+        for (let row = blockIndex + 1; row < count; ++row) {
+            if (blockModel.blockTypeAt(row) !== 4) {
+                focusBlock(row)
+                return true
             }
-            focusBlock(next)
-            return
         }
         if (!appendIfMissing)
-            return
+            return false
         runEditTransaction("append-following-text-block", function() {
             blockModel.appendTextBlock()
-            focusBlock(next)
+            focusBlock(count - 1)
         })
+        return true
     }
 
     function focusPrecedingBlock(blockIndex) {
@@ -1111,13 +1162,46 @@ ListView {
         const activeIndex = ordered.indexOf(activeEditor)
         if (activeIndex > 0) {
             const editor = ordered[activeIndex - 1]
-            editor.blockIndex = blockIndex - 1
             editor.forceActiveFocus()
             editor.cursorPosition = editor.length
             activeEditor = editor
             return
         }
         focusBlock(blockIndex - 1)
+    }
+
+    function hasOnlyImagesFollowing(blockIndex) {
+        if (blockIndex + 1 >= count)
+            return false
+        for (let row = blockIndex + 1; row < count; ++row) {
+            if (blockModel.blockTypeAt(row) !== 4)
+                return false
+        }
+        return true
+    }
+
+    function removeImageBlock(blockIndex) {
+        if (blockModel.blockTypeAt(blockIndex) !== 4)
+            return false
+        return runEditTransaction("remove-image", function() {
+            const oldCount = count
+            blockModel.removeBlock(blockIndex)
+            if (oldCount === 1) {
+                blockModel.appendTextBlock()
+                focusBlock(0)
+            }
+            return true
+        })
+    }
+
+    function handleAdjacentImageDeletion(event, editor) {
+        if (!editor || event.modifiers || editor.selectionStart !== editor.selectionEnd)
+            return false
+        if (event.key === Qt.Key_Delete && editor.cursorPosition === editor.length)
+            return removeImageBlock(editor.blockIndex + 1)
+        if (event.key === Qt.Key_Backspace && editor.cursorPosition === 0)
+            return removeImageBlock(editor.blockIndex - 1)
+        return false
     }
 
     function handleBlockBoundaryNavigation(event, editor) {
@@ -1133,7 +1217,11 @@ ListView {
             const last = editor.positionToRectangle(editor.length)
             if (rectangle.y < last.y - 0.5)
                 return false
-            focusFollowingBlock(editor.blockIndex, false)
+            // Do not create ordinary empty paragraphs by pressing Down at the
+            // end of a note. The sole exception is an image-only tail: it has
+            // no cursor, so a real text block is needed to get past it.
+            focusFollowingBlock(editor.blockIndex,
+                                !event.isAutoRepeat && hasOnlyImagesFollowing(editor.blockIndex))
         }
         return true
     }
@@ -1373,8 +1461,10 @@ ListView {
             const ordered = root.orderedEditors()
             if (ordered.length === 0)
                 return
+            const lastBlock = root.itemAtIndex(root.count - 1)
             const last = ordered[ordered.length - 1]
-            const bottom = last.mapToItem(root, 0, last.height).y
+            const bottom = lastBlock ? lastBlock.mapToItem(root, 0, lastBlock.height).y
+                                     : last.mapToItem(root, 0, last.height).y
             if (eventPoint.position.y > bottom)
                 root.focusDocumentEnd()
         }
@@ -1547,10 +1637,12 @@ ListView {
             if (activeFocus) {
                 root.activeEditor = this
                 rememberPlainText()
+                root.scheduleCursorVisibility(this)
             } else if (sourceTextPending) {
                 synchronizeSourceText()
             }
         }
+        onCursorPositionChanged: root.scheduleCursorVisibility(blockArea)
         Component.onCompleted: {
             synchronizeSourceText(true)
             root.registerEditor(blockArea)
@@ -1599,6 +1691,8 @@ ListView {
                 event.accepted = true
             } else if ((event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)
                     && root.deleteStructuredSelection()) {
+                event.accepted = true
+            } else if (root.handleAdjacentImageDeletion(event, blockArea)) {
                 event.accepted = true
             } else if (root.handleInlineFormatting(event, blockArea)) {
                 event.accepted = true
@@ -2362,6 +2456,10 @@ ListView {
                     text: qsTr("Save Image As…")
                     enabled: imageRoot.block.url.startsWith("qtnote-media:/")
                     onTriggered: qmlNoteEditor.saveImageAs(imageRoot.block.url)
+                }
+                MenuItem {
+                    text: qsTr("Remove Image")
+                    onTriggered: root.removeImageBlock(imageRoot.block.index)
                 }
             }
         }

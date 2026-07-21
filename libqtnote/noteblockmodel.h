@@ -78,6 +78,7 @@ public:
     Q_INVOKABLE void appendImage(const QString &url, const QString &alt);
     Q_INVOKABLE void insertTable(int row);
     Q_INVOKABLE void insertList(int row, BlockType type);
+    Q_INVOKABLE int  blockTypeAt(int row) const;
     Q_INVOKABLE bool convertListLevel(int row, int item, BlockType type);
     Q_INVOKABLE int  convertTextBlockToHeading(int row, int position, int level);
     Q_INVOKABLE void removeBlock(int row);

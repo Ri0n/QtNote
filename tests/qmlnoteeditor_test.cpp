@@ -495,6 +495,62 @@ private slots:
         QCOMPARE(observedMedia.constFirst().id, image.id);
     }
 
+    void imageCanBeDeletedAndCursorCanContinueAfterIt()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 350);
+        editor.load(QStringLiteral("before\n\n![cat](media://cat)"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *before = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(before);
+        QVERIFY(QMetaObject::invokeMethod(before, "forceActiveFocus"));
+        before->setProperty("cursorPosition", before->property("length"));
+
+        QTest::keyClick(quick, Qt::Key_Delete);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("before"));
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.contents(), QStringLiteral("before\n\n![cat](media://cat)"));
+
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        before = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(QMetaObject::invokeMethod(before, "forceActiveFocus"));
+        before->setProperty("cursorPosition", before->property("length"));
+        QTest::keyClick(quick, Qt::Key_Down);
+
+        QTRY_COMPARE(editor.model()->rowCount(), 3);
+        QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 2);
+        QTest::keyClicks(quick, QStringLiteral("after"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("before\n\n![cat](media://cat)\n\nafter"));
+    }
+
+    void keyboardCursorScrollsOuterStructuredEditor()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 250);
+        editor.load(QStringLiteral("a long line ").repeated(800), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        QTRY_VERIFY(root->property("activeEditor").value<QObject *>());
+        auto *active = root->property("activeEditor").value<QObject *>();
+
+        QTest::keyClick(quick, Qt::Key_End, Qt::ControlModifier);
+        QTRY_COMPARE(active->property("cursorPosition").toInt(), active->property("length").toInt());
+        QTRY_VERIFY(root->property("contentY").toReal() > root->property("originY").toReal() + 1.0);
+    }
+
     void routesClipboardImages()
     {
         QmlNoteEditor editor;

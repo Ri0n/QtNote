@@ -542,6 +542,11 @@ void NoteBlockModel::appendImage(const QString &url, const QString &alt)
     emit contentsChanged();
 }
 
+int NoteBlockModel::blockTypeAt(int row) const
+{
+    return row >= 0 && row < blocks_.size() ? int(blocks_.at(row).type) : -1;
+}
+
 void NoteBlockModel::insertTable(int row)
 {
     row = qBound(0, row, blocks_.size());
