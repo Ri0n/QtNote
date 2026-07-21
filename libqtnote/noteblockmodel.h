@@ -57,6 +57,7 @@ public:
 
     Q_INVOKABLE void load(const QString &contents, bool markdown);
     Q_INVOKABLE void setBlockText(int row, const QString &text);
+    Q_INVOKABLE bool mergeTextBlockWithNext(int row);
     Q_INVOKABLE void setListItem(int row, int item, const QString &text);
     Q_INVOKABLE void insertListItem(int row, int item, const QString &text);
     Q_INVOKABLE void mergeListItemWithNext(int row, int item);

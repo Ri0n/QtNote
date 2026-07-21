@@ -72,8 +72,14 @@ function handleKey(host, controller, event, cell) {
     }
     if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
             && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
-        if (event.modifiers & Qt.ShiftModifier)
-            return false
+        if (event.modifiers & Qt.ShiftModifier) {
+            // A cell is a single Markdown table field, so Return normally
+            // changes the table structure.  Shift+Return is its explicit
+            // hard-break counterpart.  Insert it ourselves because
+            // TextEdit's Markdown mode otherwise drops the line break.
+            cell.insert(cell.cursorPosition, "\u2028")
+            return true
+        }
         if (row + 1 === host.rowCount() && host.rowCount() > 1
                 && cell.length === 0 && cell.cursorPosition === 0 && host.rowEmpty(row)) {
             return controller.runEditTransaction("leave-table", function() {

@@ -498,6 +498,120 @@ private slots:
         QCOMPARE(observedMedia.constFirst().id, image.id);
     }
 
+    void tableCellRendersAndPreservesMarkdownLinks()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| before [title](https://link.example) after | D |"),
+                    Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
+        QObject *cell = nullptr;
+        for (const QVariant &value : root->property("editors").toList()) {
+            QObject *candidate = value.value<QObject *>();
+            if (candidate && candidate->property("tableCellIndex").toInt() == 2) {
+                cell = candidate;
+                break;
+            }
+        }
+        QVERIFY(cell);
+        auto *document = cell->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        const QVariantMap link = editor.linkInfo(document, 7, 12);
+        QVERIFY(link.value(QStringLiteral("valid")).toBool());
+        QCOMPARE(link.value(QStringLiteral("href")).toString(), QStringLiteral("https://link.example"));
+
+        QVERIFY(QMetaObject::invokeMethod(cell, "forceActiveFocus"));
+        cell->setProperty("cursorPosition", cell->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("!"));
+        QTRY_COMPARE(editor.model()
+                         ->data(editor.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(2),
+                     QStringLiteral("before [title](https://link.example) after!"));
+    }
+
+    void tableCellRendersMarkdownHardBreaks()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| one<br>two | D |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
+        QObject *cell = nullptr;
+        for (const QVariant &value : root->property("editors").toList()) {
+            QObject *candidate = value.value<QObject *>();
+            if (candidate && candidate->property("tableCellIndex").toInt() == 2) {
+                cell = candidate;
+                break;
+            }
+        }
+        QVERIFY(cell);
+        auto *document = cell->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(document->textDocument()->toPlainText(), QStringLiteral("one\ntwo"));
+    }
+
+    void backspaceDeletesCrossCellSelectionInOneTableRow()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 400);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| left | right |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
+        QObject *left  = nullptr;
+        QObject *right = nullptr;
+        for (const QVariant &value : root->property("editors").toList()) {
+            QObject *candidate = value.value<QObject *>();
+            if (!candidate)
+                continue;
+            if (candidate->property("tableCellIndex").toInt() == 2)
+                left = candidate;
+            else if (candidate->property("tableCellIndex").toInt() == 3)
+                right = candidate;
+        }
+        QVERIFY(left);
+        QVERIFY(right);
+        QVERIFY(QMetaObject::invokeMethod(left, "forceActiveFocus"));
+        const int leftEnd  = left->property("length").toInt();
+        const int rightEnd = right->property("length").toInt();
+        QVERIFY(QMetaObject::invokeMethod(left, "select", Q_ARG(int, leftEnd), Q_ARG(int, leftEnd)));
+        QVERIFY(QMetaObject::invokeMethod(right, "select", Q_ARG(int, 0), Q_ARG(int, rightEnd)));
+        root->setProperty("activeEditor", QVariant::fromValue(left));
+        root->setProperty("selectionSpansEditors", true);
+        root->setProperty("documentSelectionStartEditor", QVariant::fromValue(left));
+        root->setProperty("documentSelectionStartPosition", leftEnd);
+        root->setProperty("documentSelectionEndEditor", QVariant::fromValue(right));
+        root->setProperty("documentSelectionEndPosition", rightEnd);
+        root->setProperty("documentSelectionAvailable", true);
+
+        QTest::keyClick(quick, Qt::Key_Backspace);
+
+        QTRY_COMPARE(editor.model()
+                         ->data(editor.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList(),
+                     QStringList({ "A", "B", "left", "" }));
+    }
+
     void imageCanBeDeletedAndCursorCanContinueAfterIt()
     {
         QmlNoteEditor editor;
@@ -532,6 +646,54 @@ private slots:
         QTRY_COMPARE(root->property("activeEditor").value<QObject *>()->property("blockIndex").toInt(), 2);
         QTest::keyClicks(quick, QStringLiteral("after"));
         QTRY_COMPARE(editor.contents(), QStringLiteral("before\n\n![cat](media://cat)\n\nafter"));
+    }
+
+    void backspaceAndDeleteMergeAdjacentTextBlocks()
+    {
+        const auto prepare = [](QmlNoteEditor &editor) {
+            editor.resize(500, 350);
+            editor.load(QStringLiteral("first"), Note::Markdown);
+            editor.model()->appendTextBlock();
+            editor.model()->setBlockText(1, QStringLiteral("second"));
+            editor.show();
+            QTest::qWait(30);
+        };
+        const auto editorForBlock = [](QObject *root, int blockIndex) -> QObject * {
+            for (const QVariant &value : root->property("editors").toList()) {
+                QObject *candidate = value.value<QObject *>();
+                if (candidate && candidate->property("blockIndex").toInt() == blockIndex)
+                    return candidate;
+            }
+            return nullptr;
+        };
+
+        QmlNoteEditor backspaceEditor;
+        prepare(backspaceEditor);
+        auto *backspaceQuick = backspaceEditor.findChild<QQuickWidget *>();
+        auto *backspaceRoot  = backspaceQuick->rootObject();
+        QTRY_COMPARE(backspaceRoot->property("editors").toList().size(), 2);
+        auto *second = editorForBlock(backspaceRoot, 1);
+        QVERIFY(second);
+        QVERIFY(QMetaObject::invokeMethod(second, "forceActiveFocus"));
+        second->setProperty("cursorPosition", 0);
+        QTest::keyClick(backspaceQuick, Qt::Key_Backspace);
+        QTRY_COMPARE(backspaceEditor.contents(), QStringLiteral("firstsecond"));
+        QCOMPARE(backspaceEditor.model()->rowCount(), 1);
+        QTRY_COMPARE(backspaceRoot->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 5);
+
+        QmlNoteEditor deleteEditor;
+        prepare(deleteEditor);
+        auto *deleteQuick = deleteEditor.findChild<QQuickWidget *>();
+        auto *deleteRoot  = deleteQuick->rootObject();
+        QTRY_COMPARE(deleteRoot->property("editors").toList().size(), 2);
+        auto *first = editorForBlock(deleteRoot, 0);
+        QVERIFY(first);
+        QVERIFY(QMetaObject::invokeMethod(first, "forceActiveFocus"));
+        first->setProperty("cursorPosition", first->property("length"));
+        QTest::keyClick(deleteQuick, Qt::Key_Delete);
+        QTRY_COMPARE(deleteEditor.contents(), QStringLiteral("firstsecond"));
+        QCOMPARE(deleteEditor.model()->rowCount(), 1);
+        QTRY_COMPARE(deleteRoot->property("activeEditor").value<QObject *>()->property("cursorPosition").toInt(), 5);
     }
 
     void keyboardCursorScrollsOuterStructuredEditor()
@@ -1167,6 +1329,8 @@ private slots:
         QTRY_COMPARE(geometry(2)[QStringLiteral("height")].toInt(), geometry(3)[QStringLiteral("height")].toInt());
         QCOMPARE(root->property("editorRegistrations").toInt(), registrations);
         QTRY_VERIFY(editor.contents().contains(QStringLiteral("<br>")));
+        QTest::keyClicks(quick, QStringLiteral("three"));
+        QTRY_VERIFY(editor.contents().contains(QStringLiteral("two<br>three")));
 
         QTest::keyClick(quick, Qt::Key_End);
         QTest::keyClick(quick, Qt::Key_Return);

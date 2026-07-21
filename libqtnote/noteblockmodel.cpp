@@ -276,6 +276,19 @@ void NoteBlockModel::setBlockText(int row, const QString &text)
     setData(index(row), coalesceAdjacentMarkdownLinks(text), TextRole);
 }
 
+bool NoteBlockModel::mergeTextBlockWithNext(int row)
+{
+    if (row < 0 || row + 1 >= blocks_.size() || blocks_[row].type != Text || blocks_[row + 1].type != Text)
+        return false;
+
+    beginRemoveRows({}, row + 1, row + 1);
+    blocks_[row].text = coalesceAdjacentMarkdownLinks(blocks_[row].text + blocks_[row + 1].text);
+    blocks_.removeAt(row + 1);
+    endRemoveRows();
+    changed(row, { TextRole });
+    return true;
+}
+
 void NoteBlockModel::setListItem(int row, int item, const QString &text)
 {
     if (row < 0 || row >= blocks_.size() || item < 0 || item >= blocks_[row].items.size())

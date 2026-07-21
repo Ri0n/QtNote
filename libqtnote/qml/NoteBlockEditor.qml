@@ -204,6 +204,13 @@ ListView {
         })
     }
 
+    function markdownTableCellForRendering(source) {
+        // The model stores a table-cell hard break as a newline and writes it
+        // as <br>.  Qt's Markdown parser treats a bare newline as a soft
+        // space, so spell it as a GFM hard break for the editable TextArea.
+        return markdownForRendering(source).replace(/\n/g, "  \n")
+    }
+
     function registerEditor(editor) {
         if (editors.indexOf(editor) < 0) {
             editors = editors.concat([editor])
@@ -396,6 +403,21 @@ ListView {
             editor.cursorPosition = cursor
         activeEditor = editor
         pendingFocusAddress = null
+        // A structural change (notably a table-cell edit) may settle its
+        // delegate's height after focus was restored.  Re-check on the next
+        // two turns so ListView's scroll anchoring cannot leave the cursor
+        // outside the viewport.
+        scheduleCursorVisibility(editor)
+        Qt.callLater(function() {
+            if (editor !== root.activeEditor || !editor.activeFocus)
+                return
+            root.positionViewAtIndex(editor.blockIndex, ListView.Contain)
+            root.scheduleCursorVisibility(editor)
+            Qt.callLater(function() {
+                if (editor === root.activeEditor && editor.activeFocus)
+                    root.scheduleCursorVisibility(editor)
+            })
+        })
         return true
     }
 
@@ -814,6 +836,7 @@ ListView {
                 blockIndex: editor.blockIndex,
                 listItemIndex: editor.listItemIndex,
                 tableCellIndex: editor.tableCellIndex,
+                tableRow: editor.tableRow,
                 markdown: selected ? qmlNoteEditor.markdownSelection(
                                          editor.textDocument, rangeStart, rangeEnd) : "",
                 wholeEditor: !boundaryOnly && rangeStart === 0 && rangeEnd === editor.length,
@@ -989,6 +1012,29 @@ ListView {
                             field: "listItem",
                             cursorPosition: focusPosition
                         })
+                    return true
+                }
+
+                const tableCells = ranges.filter(range => range.tableCellIndex >= 0)
+                if (tableCells.length === ranges.length
+                        && tableCells.every(range => range.blockIndex === block)
+                        && tableCells.every(range => range.tableRow === tableCells[0].tableRow)) {
+                    // A selection crossing neighbouring cells in one table
+                    // row is still a text selection, not a request to remove
+                    // the row.  Native TextArea only knows the focused cell,
+                    // so apply both boundary fragments explicitly.
+                    const start = tableCells[0]
+                    prepareForStructuralMutation()
+                    for (const cell of tableCells) {
+                        blockModel.setTableCell(block, cell.tableCellIndex, cell.before + cell.after)
+                    }
+                    focusEditorAddress({
+                        blockIndex: block,
+                        listItemIndex: -1,
+                        tableCellIndex: start.tableCellIndex,
+                        field: "tableCell",
+                        cursorPosition: start.selectionStart
+                    })
                     return true
                 }
             }
@@ -1202,6 +1248,39 @@ ListView {
         if (event.key === Qt.Key_Backspace && editor.cursorPosition === 0)
             return removeImageBlock(editor.blockIndex - 1)
         return false
+    }
+
+    function handleAdjacentTextBlockMerge(event, editor) {
+        if (!editor || event.modifiers || editor.selectionStart !== editor.selectionEnd)
+            return false
+        const isBackspace = event.key === Qt.Key_Backspace && editor.cursorPosition === 0
+        const isDelete = event.key === Qt.Key_Delete && editor.cursorPosition === editor.length
+        if (!isBackspace && !isDelete)
+            return false
+
+        const mergeRow = isBackspace ? editor.blockIndex - 1 : editor.blockIndex
+        if (blockModel.blockTypeAt(mergeRow) !== 0 || blockModel.blockTypeAt(mergeRow + 1) !== 0)
+            return false
+
+        let cursorPosition = isDelete ? editor.cursorPosition : -1
+        if (isBackspace) {
+            for (const candidate of orderedEditors()) {
+                if (candidate.blockIndex === mergeRow) {
+                    cursorPosition = candidate.length
+                    break
+                }
+            }
+        }
+        return runEditTransaction("merge-text-blocks", function() {
+            prepareForStructuralMutation()
+            if (!blockModel.mergeTextBlockWithNext(mergeRow))
+                return false
+            if (cursorPosition >= 0)
+                focusBlock(mergeRow, false, cursorPosition)
+            else
+                focusBlock(mergeRow, true)
+            return true
+        })
     }
 
     function handleBlockBoundaryNavigation(event, editor) {
@@ -1707,6 +1786,8 @@ ListView {
                     && root.deleteStructuredSelection()) {
                 event.accepted = true
             } else if (root.handleAdjacentImageDeletion(event, blockArea)) {
+                event.accepted = true
+            } else if (root.handleAdjacentTextBlockMerge(event, blockArea)) {
                 event.accepted = true
             } else if (root.handleInlineFormatting(event, blockArea)) {
                 event.accepted = true
@@ -2367,7 +2448,8 @@ ListView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     font.bold: index < tableRoot.columns
-                    sourceText: cellText
+                    sourceText: root.markdownTableCellForRendering(cellText)
+                    textFormat: TextEdit.MarkdownText
                     tableCell: true
                     tableCellIndex: index
                     editorField: "tableCell"
@@ -2428,9 +2510,11 @@ ListView {
                         border.color: tableCell.palette.mid
                     }
                     commitText: function() {
-                        root.blockModel.setTableCell(tableRoot.block.index, index, text)
+                        root.blockModel.setTableCell(
+                            tableRoot.block.index, index, qmlNoteEditor.markdownTableCellText(textDocument))
                     }
                     onTextChanged: commitChangedText(activeFocus)
+                    onLinkActivated: link => Qt.openUrlExternally(link)
                 }
             }
         }

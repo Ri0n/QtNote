@@ -1195,6 +1195,35 @@ QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
     return markdown;
 }
 
+QString QmlNoteEditor::markdownTableCellText(QQuickTextDocument *quickDocument) const
+{
+    if (!quickDocument || !quickDocument->textDocument())
+        return {};
+
+    // QTextDocument serializes a visual line separator as an ordinary
+    // newline, indistinguishable from its own soft wrapping.  Protect every
+    // intentional separator before invoking the normal Markdown serializer,
+    // then restore it using the table-safe GFM spelling.
+    std::unique_ptr<QTextDocument> document(quickDocument->textDocument()->clone());
+    const QString                  marker = QStringLiteral("QTNOTETABLEHARDBREAK8C53");
+    for (int position = document->characterCount() - 2; position >= 0; --position) {
+        const QChar character = document->characterAt(position);
+        if (character != QChar::LineSeparator && character != QChar::ParagraphSeparator)
+            continue;
+        QTextCursor cursor(document.get());
+        cursor.setPosition(position);
+        cursor.setPosition(position + 1, QTextCursor::KeepAnchor);
+        cursor.insertText(marker, QTextCharFormat());
+    }
+
+    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedLinks(document.get()));
+    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
+        markdown.chop(1);
+    markdown.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    markdown.replace(marker, QStringLiteral("<br>"));
+    return markdown;
+}
+
 QString QmlNoteEditor::markdownSelection(QQuickTextDocument *quickDocument, int start, int end) const
 {
     if (!quickDocument || !quickDocument->textDocument())

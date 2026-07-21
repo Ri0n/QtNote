@@ -81,6 +81,7 @@ public:
     Q_INVOKABLE bool        primaryModifierPressed() const;
     Q_INVOKABLE int         applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
     Q_INVOKABLE QString     markdownText(QQuickTextDocument *document) const;
+    Q_INVOKABLE QString     markdownTableCellText(QQuickTextDocument *document) const;
     Q_INVOKABLE QString     markdownSelection(QQuickTextDocument *document, int start, int end) const;
     Q_INVOKABLE void        beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView);
     Q_INVOKABLE void        endHistoryTransaction(const QVariantMap &afterView);
