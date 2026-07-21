@@ -104,6 +104,7 @@ namespace {
     }
 
     QString unwrapMarkdownWriterLines(const QString &markdown);
+    QString markdownWithSerializedInlineFormats(QTextDocument *document);
 
     QString markdownRange(QTextDocument *document, int start, int end)
     {
@@ -117,8 +118,10 @@ namespace {
         QTextCursor cursor(document);
         cursor.setPosition(start);
         cursor.setPosition(end, QTextCursor::KeepAnchor);
-        QString markdown
-            = unwrapMarkdownWriterLines(QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub));
+        QTextDocument selection;
+        QTextCursor   destination(&selection);
+        destination.insertFragment(QTextDocumentFragment(cursor));
+        QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedInlineFormats(&selection));
         while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
             markdown.chop(1);
         return markdown;
@@ -336,14 +339,16 @@ namespace {
     }
 
     struct InlineStyle {
-        bool bold   = false;
-        bool italic = false;
-        bool strike = false;
-        bool code   = false;
+        bool bold      = false;
+        bool italic    = false;
+        bool strike    = false;
+        bool code      = false;
+        bool underline = false;
 
         bool operator==(const InlineStyle &other) const
         {
-            return bold == other.bold && italic == other.italic && strike == other.strike && code == other.code;
+            return bold == other.bold && italic == other.italic && strike == other.strike && code == other.code
+                && underline == other.underline;
         }
     };
 
@@ -355,13 +360,22 @@ namespace {
         QVector<InlineStyle> styles;
     };
 
+    struct CodeGroup {
+        int         start = 0;
+        int         end   = 0;
+        QString     text;
+        InlineStyle style;
+    };
+
     InlineStyle explicitInlineStyle(const QTextCharFormat &format)
     {
         InlineStyle style;
-        style.bold   = format.hasProperty(QTextFormat::FontWeight) && format.fontWeight() >= QFont::Bold;
-        style.italic = format.hasProperty(QTextFormat::FontItalic) && format.fontItalic();
-        style.strike = format.hasProperty(QTextFormat::FontStrikeOut) && format.fontStrikeOut();
-        style.code   = format.hasProperty(QTextFormat::FontFixedPitch) && format.fontFixedPitch();
+        style.bold      = format.hasProperty(QTextFormat::FontWeight) && format.fontWeight() >= QFont::Bold;
+        style.italic    = format.hasProperty(QTextFormat::FontItalic) && format.fontItalic();
+        style.strike    = format.hasProperty(QTextFormat::FontStrikeOut) && format.fontStrikeOut();
+        style.code      = format.hasProperty(QTextFormat::FontFixedPitch) && format.fontFixedPitch();
+        style.underline = format.hasProperty(QTextFormat::TextUnderlineStyle)
+            && format.underlineStyle() != QTextCharFormat::NoUnderline;
         return style;
     }
 
@@ -413,6 +427,32 @@ namespace {
         return groups;
     }
 
+    QVector<CodeGroup> documentCodeGroups(const QTextDocument *document)
+    {
+        QVector<CodeGroup> groups;
+        if (!document)
+            return groups;
+        for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
+            for (auto it = block.begin(); !it.atEnd(); ++it) {
+                const QTextFragment fragment = it.fragment();
+                if (!fragment.isValid() || fragment.length() <= 0)
+                    continue;
+                const QTextCharFormat format = fragment.charFormat();
+                const InlineStyle     style  = explicitInlineStyle(format);
+                if ((format.isAnchor() && !format.anchorHref().isEmpty()) || !style.code)
+                    continue;
+                if (!groups.isEmpty() && groups.last().end == fragment.position() && groups.last().style == style) {
+                    groups.last().end = fragment.position() + fragment.length();
+                    groups.last().text += fragment.text();
+                } else {
+                    groups.append(
+                        { fragment.position(), fragment.position() + fragment.length(), fragment.text(), style });
+                }
+            }
+        }
+        return groups;
+    }
+
     QString escapeMarkdownLabelText(const QString &text)
     {
         QString escaped;
@@ -448,6 +488,8 @@ namespace {
     QVector<QString> inlineDelimiters(const InlineStyle &style)
     {
         QVector<QString> delimiters;
+        if (style.underline)
+            delimiters.append(QStringLiteral("<ins>"));
         if (style.strike)
             delimiters.append(QStringLiteral("~~"));
         if (style.bold)
@@ -455,6 +497,24 @@ namespace {
         if (style.italic)
             delimiters.append(QStringLiteral("*"));
         return delimiters;
+    }
+
+    QString closingInlineDelimiter(const QString &delimiter)
+    {
+        return delimiter == QLatin1String("<ins>") ? QStringLiteral("</ins>") : delimiter;
+    }
+
+    QString serializedMarkdownCode(CodeGroup group)
+    {
+        group.style.code                  = false;
+        const QVector<QString> delimiters = inlineDelimiters(group.style);
+        QString                result;
+        for (const QString &delimiter : delimiters)
+            result += delimiter;
+        result += codeSpan(group.text);
+        for (int index = delimiters.size() - 1; index >= 0; --index)
+            result += closingInlineDelimiter(delimiters.at(index));
+        return result;
     }
 
     QString formattedLinkRange(const LinkGroup &group, int start, int length)
@@ -476,7 +536,7 @@ namespace {
                 ++common;
             }
             for (int index = activeDelimiters.size() - 1; index >= common; --index)
-                result += activeDelimiters.at(index);
+                result += closingInlineDelimiter(activeDelimiters.at(index));
             for (int index = common; index < desiredDelimiters.size(); ++index)
                 result += desiredDelimiters.at(index);
 
@@ -487,7 +547,7 @@ namespace {
         }
 
         for (int index = activeDelimiters.size() - 1; index >= 0; --index)
-            result += activeDelimiters.at(index);
+            result += closingInlineDelimiter(activeDelimiters.at(index));
         return result;
     }
 
@@ -505,29 +565,120 @@ namespace {
             + markdownLinkDestination(group.href) + QLatin1Char(')');
     }
 
-    QString markdownWithSerializedLinks(QTextDocument *document)
+    struct UnderlineRange {
+        int start = 0;
+        int end   = 0;
+    };
+
+    QVector<UnderlineRange> documentUnderlineRanges(const QTextDocument *document)
     {
-        const QVector<LinkGroup> groups = documentLinkGroups(document);
-        if (groups.isEmpty())
+        QVector<UnderlineRange> ranges;
+        if (!document)
+            return ranges;
+        for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
+            for (auto it = block.begin(); !it.atEnd(); ++it) {
+                const QTextFragment fragment = it.fragment();
+                if (!fragment.isValid() || fragment.length() <= 0)
+                    continue;
+                const QTextCharFormat format = fragment.charFormat();
+                if ((format.isAnchor() && !format.anchorHref().isEmpty()) || explicitInlineStyle(format).code
+                    || !format.fontUnderline())
+                    continue;
+                if (!ranges.isEmpty() && ranges.last().end == fragment.position())
+                    ranges.last().end += fragment.length();
+                else
+                    ranges.append({ fragment.position(), fragment.position() + fragment.length() });
+            }
+        }
+        return ranges;
+    }
+
+    QString markdownWithSerializedInlineFormats(QTextDocument *document)
+    {
+        const QVector<LinkGroup>      links        = documentLinkGroups(document);
+        const QVector<CodeGroup>      codes        = documentCodeGroups(document);
+        const QVector<UnderlineRange> underlines   = documentUnderlineRanges(document);
+        bool                          hasUnderline = !underlines.isEmpty();
+        for (const LinkGroup &group : links)
+            hasUnderline = hasUnderline
+                || std::any_of(group.styles.cbegin(), group.styles.cend(),
+                               [](const InlineStyle &style) { return style.underline; });
+        for (const CodeGroup &group : codes)
+            hasUnderline = hasUnderline || group.style.underline;
+        if (links.isEmpty() && codes.isEmpty() && !hasUnderline)
             return document->toMarkdown(QTextDocument::MarkdownDialectGitHub);
 
         std::unique_ptr<QTextDocument> copy(document->clone());
-        QVector<QString>               markers;
-        markers.reserve(groups.size());
-        for (int index = 0; index < groups.size(); ++index) {
-            markers.append(QStringLiteral("QTNOTESERIALIZEDLINK7F3A%1END7F3A").arg(index));
+        if (hasUnderline) {
+            QTextCursor all(copy.get());
+            all.select(QTextCursor::Document);
+            QTextCharFormat clearUnderline;
+            clearUnderline.setFontUnderline(false);
+            all.mergeCharFormat(clearUnderline);
         }
 
-        for (int index = groups.size() - 1; index >= 0; --index) {
-            QTextCursor cursor(copy.get());
-            cursor.setPosition(groups.at(index).start);
-            cursor.setPosition(groups.at(index).end, QTextCursor::KeepAnchor);
-            cursor.insertText(markers.at(index), QTextCharFormat());
+        QVector<QString> linkMarkers;
+        linkMarkers.reserve(links.size());
+        for (int index = 0; index < links.size(); ++index) {
+            linkMarkers.append(QStringLiteral("QTNOTESERIALIZEDLINK7F3A%1END7F3A").arg(index));
+        }
+        QVector<QString> codeMarkers;
+        codeMarkers.reserve(codes.size());
+        for (int index = 0; index < codes.size(); ++index)
+            codeMarkers.append(QStringLiteral("QTNOTESERIALIZEDCODE8C53%1END8C53").arg(index));
+        QVector<QPair<QString, QString>> underlineMarkers;
+        underlineMarkers.reserve(underlines.size());
+        for (int index = 0; index < underlines.size(); ++index) {
+            underlineMarkers.append({ QStringLiteral("QTNOTEINSOPEN8C53%1END8C53").arg(index),
+                                      QStringLiteral("QTNOTEINSCLOSE8C53%1END8C53").arg(index) });
+        }
+
+        struct Replacement {
+            enum Kind { Underline, Link, Code };
+            int  start = 0;
+            int  end   = 0;
+            int  index = 0;
+            Kind kind  = Underline;
+        };
+        QVector<Replacement> replacements;
+        replacements.reserve(links.size() + codes.size() + underlines.size());
+        for (int index = 0; index < links.size(); ++index)
+            replacements.append({ links.at(index).start, links.at(index).end, index, Replacement::Link });
+        for (int index = 0; index < codes.size(); ++index)
+            replacements.append({ codes.at(index).start, codes.at(index).end, index, Replacement::Code });
+        for (int index = 0; index < underlines.size(); ++index)
+            replacements.append(
+                { underlines.at(index).start, underlines.at(index).end, index, Replacement::Underline });
+        std::sort(replacements.begin(), replacements.end(),
+                  [](const Replacement &left, const Replacement &right) { return left.start > right.start; });
+
+        for (const Replacement &replacement : replacements) {
+            if (replacement.kind == Replacement::Link || replacement.kind == Replacement::Code) {
+                QTextCursor cursor(copy.get());
+                cursor.setPosition(replacement.start);
+                cursor.setPosition(replacement.end, QTextCursor::KeepAnchor);
+                const QString &marker = replacement.kind == Replacement::Link ? linkMarkers.at(replacement.index)
+                                                                              : codeMarkers.at(replacement.index);
+                cursor.insertText(marker, QTextCharFormat());
+                continue;
+            }
+            QTextCursor close(copy.get());
+            close.setPosition(replacement.end);
+            close.insertText(underlineMarkers.at(replacement.index).second, QTextCharFormat());
+            QTextCursor open(copy.get());
+            open.setPosition(replacement.start);
+            open.insertText(underlineMarkers.at(replacement.index).first, QTextCharFormat());
         }
 
         QString markdown = copy->toMarkdown(QTextDocument::MarkdownDialectGitHub);
-        for (int index = 0; index < groups.size(); ++index)
-            markdown.replace(markers.at(index), serializedMarkdownLink(groups.at(index)));
+        for (int index = 0; index < links.size(); ++index)
+            markdown.replace(linkMarkers.at(index), serializedMarkdownLink(links.at(index)));
+        for (int index = 0; index < codes.size(); ++index)
+            markdown.replace(codeMarkers.at(index), serializedMarkdownCode(codes.at(index)));
+        for (int index = 0; index < underlines.size(); ++index) {
+            markdown.replace(underlineMarkers.at(index).first, QStringLiteral("<ins>"));
+            markdown.replace(underlineMarkers.at(index).second, QStringLiteral("</ins>"));
+        }
         return markdown;
     }
 
@@ -611,7 +762,14 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     updateFocusWindow();
 }
 
-QmlNoteEditor::~QmlNoteEditor() = default;
+QmlNoteEditor::~QmlNoteEditor()
+{
+    // Tear down the QML tree while this context object still has a complete
+    // meta-object. Otherwise late binding updates can attempt to call into a
+    // QObject that is already in its base-class destructor.
+    if (quick_)
+        quick_->setSource(QUrl());
+}
 
 void QmlNoteEditor::prepareForHistoryRestore()
 {
@@ -1169,10 +1327,15 @@ int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int star
         format.setFontItalic(!current.fontItalic());
     else if (style == QLatin1String("strike"))
         format.setFontStrikeOut(!current.fontStrikeOut());
+    else if (style == QLatin1String("underline"))
+        format.setFontUnderline(!current.fontUnderline());
     else if (style == QLatin1String("code")) {
         format.setFontFixedPitch(!current.fontFixedPitch());
-        if (!current.fontFixedPitch())
+        if (!current.fontFixedPitch()) {
             format.setFontFamilies({ QStringLiteral("monospace") });
+        } else {
+            format.setFontFamilies(document->defaultFont().families());
+        }
     } else if (style == QLatin1String("link")) {
         format.setAnchor(!current.isAnchor());
         format.setAnchorHref(current.isAnchor() ? QString() : QStringLiteral("url"));
@@ -1183,13 +1346,45 @@ int QmlNoteEditor::applyInlineFormat(QQuickTextDocument *quickDocument, int star
     return end;
 }
 
+void QmlNoteEditor::applyInlineHtmlFormatting(QQuickTextDocument *quickDocument) const
+{
+    if (!quickDocument || !quickDocument->textDocument())
+        return;
+
+    static const QString openMarker  = QStringLiteral("QTNOTEINSOPEN7F3A");
+    static const QString closeMarker = QStringLiteral("QTNOTEINSCLOSE7F3A");
+    auto                *document    = quickDocument->textDocument();
+    QTextCursor          search(document);
+    while (true) {
+        QTextCursor open = document->find(openMarker, search);
+        if (open.isNull())
+            break;
+        QTextCursor close = document->find(closeMarker, open);
+        if (close.isNull())
+            break;
+
+        const int start = open.selectionStart();
+        const int end   = close.selectionStart() - openMarker.size();
+        close.removeSelectedText();
+        open.removeSelectedText();
+
+        QTextCursor content(document);
+        content.setPosition(start);
+        content.setPosition(qMax(start, end), QTextCursor::KeepAnchor);
+        QTextCharFormat underline;
+        underline.setFontUnderline(true);
+        content.mergeCharFormat(underline);
+        search.setPosition(qMax(start, end));
+    }
+}
+
 QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
 {
     if (!quickDocument || !quickDocument->textDocument())
         return {};
 
     auto   *document = quickDocument->textDocument();
-    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedLinks(document));
+    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedInlineFormats(document));
     while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
         markdown.chop(1);
     return markdown;
@@ -1216,7 +1411,7 @@ QString QmlNoteEditor::markdownTableCellText(QQuickTextDocument *quickDocument) 
         cursor.insertText(marker, QTextCharFormat());
     }
 
-    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedLinks(document.get()));
+    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedInlineFormats(document.get()));
     while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
         markdown.chop(1);
     markdown.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));

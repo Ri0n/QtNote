@@ -538,6 +538,121 @@ private slots:
                      QStringLiteral("before [title](https://link.example) after!"));
     }
 
+    void rendersAndPreservesGithubUnderline()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 300);
+        editor.load(QStringLiteral("before <ins>underlined</ins> after"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        QObject *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        auto *document = text->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(document->textDocument()->toPlainText(), QStringLiteral("before underlined after"));
+
+        QTextCursor cursor(document->textDocument());
+        cursor.setPosition(7);
+        cursor.setPosition(17, QTextCursor::KeepAnchor);
+        QVERIFY(cursor.charFormat().fontUnderline());
+        QCOMPARE(editor.markdownSelection(document, 7, 17), QStringLiteral("<ins>underlined</ins>"));
+
+        QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+        text->setProperty("cursorPosition", text->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("!"));
+        QTRY_COMPARE(editor.contents(), QStringLiteral("before <ins>underlined</ins> after!"));
+    }
+
+    void acceptsUnderlineAliasInTableAndWritesGithubIns()
+    {
+        QmlNoteEditor editor;
+        editor.resize(600, 300);
+        editor.load(QStringLiteral("| A | B |\n| --- | --- |\n| <u>underlined</u> | plain |"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
+        QObject *cell = nullptr;
+        for (const QVariant &value : root->property("editors").toList()) {
+            QObject *candidate = value.value<QObject *>();
+            if (candidate && candidate->property("tableCellIndex").toInt() == 2) {
+                cell = candidate;
+                break;
+            }
+        }
+        QVERIFY(cell);
+        auto *document = cell->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(document->textDocument()->toPlainText(), QStringLiteral("underlined"));
+        QTextCursor cursor(document->textDocument());
+        cursor.setPosition(0);
+        cursor.setPosition(10, QTextCursor::KeepAnchor);
+        QVERIFY(cursor.charFormat().fontUnderline());
+
+        QVERIFY(QMetaObject::invokeMethod(cell, "forceActiveFocus"));
+        cell->setProperty("cursorPosition", cell->property("length"));
+        QTest::keyClicks(quick, QStringLiteral("!"));
+        QTRY_COMPARE(editor.model()
+                         ->data(editor.model()->index(0), NoteBlockModel::CellsRole)
+                         .toMap()
+                         .value(QStringLiteral("values"))
+                         .toStringList()
+                         .at(2),
+                     QStringLiteral("<ins>underlined!</ins>"));
+    }
+
+    void serializesUnderlineInsideLink()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("<ins>[underlined](https://example.org)</ins>"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        auto *document = text->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(editor.markdownText(document), QStringLiteral("[<ins>underlined</ins>](https://example.org)"));
+    }
+
+    void leavesUnderlineTagsLiteralInsideCodeSpan()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 300);
+        editor.load(QStringLiteral("`<ins>literal</ins>`"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(text);
+        auto *document = text->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(document->textDocument()->toPlainText(), QStringLiteral("<ins>literal</ins>"));
+        QTextCursor cursor(document->textDocument());
+        cursor.setPosition(0);
+        cursor.setPosition(18, QTextCursor::KeepAnchor);
+        QVERIFY(!cursor.charFormat().fontUnderline());
+        QVERIFY(cursor.charFormat().fontFixedPitch());
+        QCOMPARE(editor.markdownText(document), QStringLiteral("`<ins>literal</ins>`"));
+    }
+
     void tableCellRendersMarkdownHardBreaks()
     {
         QmlNoteEditor editor;
@@ -1696,6 +1811,22 @@ private slots:
 
         QTRY_COMPARE(editor.contents(), QStringLiteral("**bold** text"));
         QTest::keyClick(quick, Qt::Key_B, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("bold text"));
+
+        QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4));
+        QTest::keyClick(quick, Qt::Key_U, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("<ins>bold</ins> text"));
+        QTest::keyClick(quick, Qt::Key_U, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("bold text"));
+
+        QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4));
+        QTest::keyClick(quick, Qt::Key_QuoteLeft, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("`bold` text"));
+        QTest::keyClick(quick, Qt::Key_U, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("<ins>`bold`</ins> text"));
+        QTest::keyClick(quick, Qt::Key_U, Qt::ControlModifier);
+        QTRY_COMPARE(editor.contents(), QStringLiteral("`bold` text"));
+        QTest::keyClick(quick, Qt::Key_QuoteLeft, Qt::ControlModifier);
         QTRY_COMPARE(editor.contents(), QStringLiteral("bold text"));
 
         QMetaObject::invokeMethod(text, "select", Q_ARG(int, 0), Q_ARG(int, 4));

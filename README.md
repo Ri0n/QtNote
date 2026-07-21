@@ -113,6 +113,7 @@ https://app.transifex.com/rion/qtnote
 ## Architecture documentation
 
 - [Media storage, encrypted local blobs, drafts, and remote caches](docs/media-storage-architecture.md)
+- [QML editor Markdown compatibility](docs/markdown-support.md)
 
 ### Planned major featues
 

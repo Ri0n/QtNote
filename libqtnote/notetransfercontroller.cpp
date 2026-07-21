@@ -4,9 +4,11 @@
 
 #include <QBuffer>
 #include <QMimeData>
+#include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextDocument>
 #include <QTextDocumentFragment>
+#include <QTextFragment>
 #include <QTextFrame>
 #include <QTextTable>
 #include <QUrl>
@@ -52,6 +54,155 @@ namespace {
         return result;
     }
 
+    struct UnderlineRange {
+        int start = 0;
+        int end   = 0;
+    };
+
+    QVector<UnderlineRange> underlineRanges(const QTextDocument *document)
+    {
+        QVector<UnderlineRange> ranges;
+        if (!document)
+            return ranges;
+        for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
+            for (auto it = block.begin(); !it.atEnd(); ++it) {
+                const QTextFragment fragment = it.fragment();
+                if (!fragment.isValid() || fragment.length() <= 0)
+                    continue;
+                const QTextCharFormat format = fragment.charFormat();
+                // HTML links are commonly underlined by their presentation
+                // style. That is not an explicit <u>/<ins> annotation and
+                // must not leak into the imported Markdown.
+                if ((format.isAnchor() && !format.anchorHref().isEmpty()) || !format.fontUnderline())
+                    continue;
+                if (!ranges.isEmpty() && ranges.last().end == fragment.position())
+                    ranges.last().end += fragment.length();
+                else
+                    ranges.append({ fragment.position(), fragment.position() + fragment.length() });
+            }
+        }
+        return ranges;
+    }
+
+    QString markdownWithGithubUnderlines(const QTextDocument *source)
+    {
+        const QVector<UnderlineRange> ranges = underlineRanges(source);
+        if (ranges.isEmpty())
+            return source ? source->toMarkdown(QTextDocument::MarkdownDialectGitHub) : QString();
+
+        std::unique_ptr<QTextDocument> document(source->clone());
+        QTextCharFormat                clearUnderline;
+        clearUnderline.setFontUnderline(false);
+        for (const UnderlineRange &range : ranges) {
+            QTextCursor cursor(document.get());
+            cursor.setPosition(range.start);
+            cursor.setPosition(range.end, QTextCursor::KeepAnchor);
+            cursor.mergeCharFormat(clearUnderline);
+        }
+
+        QVector<QPair<QString, QString>> markers;
+        markers.reserve(ranges.size());
+        for (int index = 0; index < ranges.size(); ++index) {
+            markers.append({ QStringLiteral("QTNOTEINSOPEN7F3A%1END7F3A").arg(index),
+                             QStringLiteral("QTNOTEINSCLOSE7F3A%1END7F3A").arg(index) });
+        }
+        for (int index = ranges.size() - 1; index >= 0; --index) {
+            QTextCursor close(document.get());
+            close.setPosition(ranges.at(index).end);
+            close.insertText(markers.at(index).second, QTextCharFormat());
+            QTextCursor open(document.get());
+            open.setPosition(ranges.at(index).start);
+            open.insertText(markers.at(index).first, QTextCharFormat());
+        }
+
+        QString markdown = document->toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        for (int index = 0; index < markers.size(); ++index) {
+            markdown.replace(markers.at(index).first, QStringLiteral("<ins>"));
+            markdown.replace(markers.at(index).second, QStringLiteral("</ins>"));
+        }
+        return markdown;
+    }
+
+    QString protectGithubUnderlineTags(QString markdown)
+    {
+        static const QRegularExpression underline(QStringLiteral(R"(^(<(ins|u)(?:\s[^>]*)?>([\s\S]*?)</\2\s*>))"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+        const QString                   openMarker  = QStringLiteral("QTNOTEINSOPEN7F3A");
+        const QString                   closeMarker = QStringLiteral("QTNOTEINSCLOSE7F3A");
+        QString                         result;
+        QString                         codeDelimiter;
+        for (int index = 0; index < markdown.size();) {
+            const QChar character = markdown.at(index);
+            if (character == QLatin1Char('\\') && index + 1 < markdown.size()) {
+                result += markdown.mid(index, 2);
+                index += 2;
+                continue;
+            }
+            if (character == QLatin1Char('`')) {
+                int end = index;
+                while (end < markdown.size() && markdown.at(end) == QLatin1Char('`'))
+                    ++end;
+                const QString delimiter = markdown.mid(index, end - index);
+                if (codeDelimiter.isEmpty() || codeDelimiter == delimiter)
+                    codeDelimiter = codeDelimiter.isEmpty() ? delimiter : QString();
+                result += delimiter;
+                index = end;
+                continue;
+            }
+            if (codeDelimiter.isEmpty() && character == QLatin1Char('<')) {
+                const QRegularExpressionMatch match
+                    = underline.match(markdown.mid(index), 0, QRegularExpression::NormalMatch,
+                                      QRegularExpression::AnchorAtOffsetMatchOption);
+                if (match.hasMatch()) {
+                    result += openMarker + match.captured(3) + closeMarker;
+                    index += match.capturedLength();
+                    continue;
+                }
+            }
+            result += character;
+            ++index;
+        }
+        return result;
+    }
+
+    void applyGithubUnderlineMarkers(QTextDocument *document)
+    {
+        if (!document)
+            return;
+        static const QString openMarker  = QStringLiteral("QTNOTEINSOPEN7F3A");
+        static const QString closeMarker = QStringLiteral("QTNOTEINSCLOSE7F3A");
+        QTextCursor          search(document);
+        while (true) {
+            QTextCursor open = document->find(openMarker, search);
+            if (open.isNull())
+                break;
+            QTextCursor close = document->find(closeMarker, open);
+            if (close.isNull())
+                break;
+
+            const int start = open.selectionStart();
+            const int end   = close.selectionStart() - openMarker.size();
+            close.removeSelectedText();
+            open.removeSelectedText();
+
+            QTextCursor content(document);
+            content.setPosition(start);
+            content.setPosition(qMax(start, end), QTextCursor::KeepAnchor);
+            QTextCharFormat format;
+            format.setFontUnderline(true);
+            content.mergeCharFormat(format);
+            search.setPosition(qMax(start, end));
+        }
+    }
+
+    void setMarkdownPreservingGithubUnderlines(QTextDocument *document, const QString &markdown)
+    {
+        if (!document)
+            return;
+        document->setMarkdown(protectGithubUnderlineTags(markdown), QTextDocument::MarkdownDialectGitHub);
+        applyGithubUnderlineMarkers(document);
+    }
+
     QString markdownFromDocumentRange(QTextDocument *document, int start, int end)
     {
         if (!document || start >= end)
@@ -60,7 +211,10 @@ namespace {
         QTextCursor cursor(document);
         cursor.setPosition(qBound(0, start, limit));
         cursor.setPosition(qBound(0, end, limit), QTextCursor::KeepAnchor);
-        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        QTextDocument selected;
+        QTextCursor   destination(&selected);
+        destination.insertFragment(QTextDocumentFragment(cursor));
+        QString markdown = markdownWithGithubUnderlines(&selected);
         while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
             markdown.chop(1);
         return markdown;
@@ -145,8 +299,7 @@ namespace {
         flushText();
 
         if (result.fragment.blocks.isEmpty())
-            return fragmentFromMarkdown(document.toMarkdown(QTextDocument::MarkdownDialectGitHub),
-                                        QStringLiteral("text/html"));
+            return fragmentFromMarkdown(markdownWithGithubUnderlines(&document), QStringLiteral("text/html"));
         return result;
     }
 
@@ -348,7 +501,7 @@ QString NoteTransferController::plainTextForFragment(const NoteFragment &fragmen
     if (error && !error->isEmpty())
         return {};
     QTextDocument document;
-    document.setMarkdown(markdown, QTextDocument::MarkdownDialectGitHub);
+    setMarkdownPreservingGithubUnderlines(&document, markdown);
     QStringList paragraphs;
     for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
         paragraphs.append(block.text());
@@ -361,7 +514,7 @@ QString NoteTransferController::htmlForFragment(const NoteFragment &fragment, QS
     if (error && !error->isEmpty())
         return {};
     QTextDocument document;
-    document.setMarkdown(markdown, QTextDocument::MarkdownDialectGitHub);
+    setMarkdownPreservingGithubUnderlines(&document, markdown);
     return document.toHtml();
 }
 

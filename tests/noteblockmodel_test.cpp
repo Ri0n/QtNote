@@ -37,6 +37,24 @@ private slots:
         QVERIFY(model.contents().contains(QStringLiteral("[link](https://example.org)")));
     }
 
+    void preservesGithubUnderlineMarkup()
+    {
+        NoteBlockModel model;
+        model.load(QStringLiteral("before <ins>one</ins> after\n\n"
+                                  "| A | B |\n| --- | --- |\n| <u>two</u> | plain |"),
+                   true);
+
+        QCOMPARE(model.rowCount(), 2);
+        QCOMPARE(model.data(model.index(0), NoteBlockModel::TextRole).toString(),
+                 QStringLiteral("before <ins>one</ins> after"));
+        const auto table = model.data(model.index(1), NoteBlockModel::CellsRole).toMap();
+        QCOMPARE(table.value(QStringLiteral("values")).toStringList(),
+                 QStringList({ "A", "B", "<u>two</u>", "plain" }));
+        QCOMPARE(model.contents(),
+                 QStringLiteral("before <ins>one</ins> after\n\n"
+                                "| A | B |\n| --- | --- |\n| <u>two</u> | plain |"));
+    }
+
     void extractsAndInsertsWholeBlockFragments()
     {
         NoteBlockModel source;

@@ -178,15 +178,16 @@ ListView {
     }
 
     function markdownForRendering(source) {
-        if (!source || (source.indexOf("*") < 0 && source.indexOf("_") < 0
-                        && source.indexOf("~") < 0 && source.indexOf("`") < 0))
-            return source
+        let rendered = underlineMarkupForRendering(source || "")
+        if (!rendered || (rendered.indexOf("*") < 0 && rendered.indexOf("_") < 0
+                          && rendered.indexOf("~") < 0 && rendered.indexOf("`") < 0))
+            return rendered
 
         // QTextDocument can lose nested or intraword formatting inside a
         // link label. Give every uniform style run its own adjacent link.
         // The C++ serializer joins the runs back into one Markdown link.
         const linkPattern = /\[((?:\\.|[^\]\\\n])*)\]\(([^)\n]+)\)/g
-        return source.replace(linkPattern, function(fullMatch, label, destination, offset, wholeText) {
+        return rendered.replace(linkPattern, function(fullMatch, label, destination, offset, wholeText) {
             if (offset > 0 && wholeText.charAt(offset - 1) === "!")
                 return fullMatch
 
@@ -202,6 +203,42 @@ ListView {
             }
             return result.length > 0 ? result : fullMatch
         })
+    }
+
+    function underlineMarkupForRendering(source) {
+        const underlinePattern = /^<(ins|u)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/i
+        let result = ""
+        let codeDelimiter = ""
+        for (let index = 0; index < source.length;) {
+            const character = source.charAt(index)
+            if (character === "\\" && index + 1 < source.length) {
+                result += source.substring(index, index + 2)
+                index += 2
+                continue
+            }
+            if (character === "`") {
+                let end = index
+                while (end < source.length && source.charAt(end) === "`")
+                    ++end
+                const delimiter = source.substring(index, end)
+                if (codeDelimiter.length === 0 || codeDelimiter === delimiter)
+                    codeDelimiter = codeDelimiter.length === 0 ? delimiter : ""
+                result += delimiter
+                index = end
+                continue
+            }
+            if (codeDelimiter.length === 0 && character === "<") {
+                const match = source.substring(index).match(underlinePattern)
+                if (match) {
+                    result += "QTNOTEINSOPEN7F3A" + match[2] + "QTNOTEINSCLOSE7F3A"
+                    index += match[0].length
+                    continue
+                }
+            }
+            result += character
+            ++index
+        }
+        return result
     }
 
     function markdownTableCellForRendering(source) {
@@ -1371,6 +1408,8 @@ ListView {
             return "bold"
         if (event.key === Qt.Key_I && !(event.modifiers & Qt.ShiftModifier))
             return "italic"
+        if (event.key === Qt.Key_U && !(event.modifiers & Qt.ShiftModifier))
+            return "underline"
         if (event.key === Qt.Key_S && event.modifiers & Qt.ShiftModifier)
             return "strike"
         if (event.key === Qt.Key_QuoteLeft && !(event.modifiers & Qt.ShiftModifier))
@@ -1686,6 +1725,9 @@ ListView {
             }
             syncingSourceText = true
             text = sourceText
+            if (renderedMarkdown && sourceText.indexOf("QTNOTEINSOPEN7F3A") >= 0
+                    && typeof qmlNoteEditor !== "undefined" && qmlNoteEditor !== null)
+                qmlNoteEditor.applyInlineHtmlFormatting(textDocument)
             syncingSourceText = false
             rememberPlainText()
             return true

@@ -3,6 +3,8 @@
 #include <QBuffer>
 #include <QMimeData>
 #include <QTest>
+#include <QTextCursor>
+#include <QTextDocument>
 
 using namespace QtNote;
 
@@ -15,6 +17,8 @@ private slots:
     void importsTsvAsTable();
     void importsHtmlTableAsTable();
     void importsInlineHtmlLinkWithinParagraph();
+    void importsHtmlUnderlineAsGithubIns();
+    void exportsGithubUnderlineAsHtmlUnderline();
     void roundTripsSingleImageAsPng();
     void malformedPrivateFormatFallsBackToPlainText();
 };
@@ -107,6 +111,51 @@ void NoteTransferControllerTest::importsInlineHtmlLinkWithinParagraph()
     QCOMPARE(controller.markdownForFragment(imported.fragment, &error),
              QStringLiteral("before [link](https://example.org) after"));
     QVERIFY2(error.isEmpty(), qPrintable(error));
+}
+
+void NoteTransferControllerTest::importsHtmlUnderlineAsGithubIns()
+{
+    QMimeData mime;
+    mime.setHtml(QStringLiteral("<table><tr><td>plain <u>underlined</u></td></tr></table>"));
+
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(&mime);
+    QVERIFY2(imported, qPrintable(imported.error));
+    QCOMPARE(imported.fragment.blocks.size(), 1);
+    QCOMPARE(imported.fragment.blocks.constFirst().type, NoteFragmentBlockType::Table);
+    QCOMPARE(imported.fragment.blocks.constFirst().table.markdownCells,
+             QStringList({ QStringLiteral("plain <ins>underlined</ins>") }));
+}
+
+void NoteTransferControllerTest::exportsGithubUnderlineAsHtmlUnderline()
+{
+    NoteFragment fragment;
+    fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
+    NoteFragmentBlock block;
+    block.type     = NoteFragmentBlockType::Text;
+    block.markdown = QStringLiteral("plain <ins>underlined</ins>");
+    fragment.blocks.append(block);
+
+    NoteTransferController controller;
+    QString                error;
+    QTextDocument          document;
+    document.setHtml(controller.htmlForFragment(fragment, &error));
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QCOMPARE(document.toPlainText(), QStringLiteral("plain underlined"));
+    QTextCursor cursor(&document);
+    cursor.setPosition(6);
+    cursor.setPosition(16, QTextCursor::KeepAnchor);
+    QVERIFY(cursor.charFormat().fontUnderline());
+
+    block.markdown  = QStringLiteral("`<ins>literal</ins>`");
+    fragment.blocks = { block };
+    document.setHtml(controller.htmlForFragment(fragment, &error));
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QCOMPARE(document.toPlainText(), QStringLiteral("<ins>literal</ins>"));
+    cursor = QTextCursor(&document);
+    cursor.setPosition(0);
+    cursor.setPosition(18, QTextCursor::KeepAnchor);
+    QVERIFY(!cursor.charFormat().fontUnderline());
 }
 
 void NoteTransferControllerTest::roundTripsSingleImageAsPng()

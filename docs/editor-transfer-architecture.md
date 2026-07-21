@@ -74,6 +74,10 @@ HTML is parsed through `QTextDocument` and traversed into the supported model;
 it is never converted using regular expressions.  Unsupported styling is
 reduced to text.  Remote images are not downloaded on paste: their source URL
 may be retained as a link only if the user has an explicit import action.
+Underline from HTML and office applications is preserved as the documented
+GitHub `<ins>text</ins>` spelling. `<u>` is accepted on input but is not emitted
+as the canonical form. Presentation underline belonging to an ordinary HTML
+link is not mistaken for explicit underlined content.
 
 Excel and LibreOffice Calc commonly expose both HTML and TSV. A rectangular
 TSV payload takes priority over HTML as well as a bitmap preview: it maps
