@@ -2,6 +2,7 @@
 #define QMLNOTEEDITOR_H
 
 #include <QPointer>
+#include <QStringList>
 #include <QVariantMap>
 #include <QWidget>
 #include <memory>
@@ -13,7 +14,10 @@
 class QQuickWidget;
 class QQuickTextDocument;
 class QImage;
+class QMimeData;
+class QPointF;
 class QShowEvent;
+class QTemporaryDir;
 
 namespace QtNote {
 class NoteBlockModel;
@@ -44,6 +48,7 @@ public:
     NoteBlockModel  *model() const { return model_; }
     void             load(const QString &contents, Note::Format format, LoadPolicy policy = LoadPolicy::ResetHistory);
     void             setMedia(const QList<MediaReference> &media);
+    void             setImageInsertionEnabled(bool enabled) { imageInsertionEnabled_ = enabled; }
     QString          contents() const;
     bool             isMarkdown() const;
     bool             canUndo() const;
@@ -64,6 +69,7 @@ public:
     Q_INVOKABLE void         copyToClipboard(const QString &text);
     Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
     Q_INVOKABLE void         saveImageAs(const QString &url);
+    Q_INVOKABLE bool         startImageDrag(int row);
     Q_INVOKABLE void         copyDocumentToClipboard();
     Q_INVOKABLE bool         copySelectionToClipboard(const QVariantList &ranges);
     Q_INVOKABLE QVariantMap  deleteSelection(const QVariantList &ranges);
@@ -91,6 +97,8 @@ signals:
     void focusReceived();
     void focusLost();
     void imagePasteRequested(const QImage &image);
+    void imageDropRequested(const QImage &image, int row);
+    void imageFilesDropRequested(const QStringList &fileNames, int row);
     void mediaInserted(const QList<MediaReference> &references);
     void mediaChanged(const QList<MediaReference> &references);
     void spellCheckEnabledChanged();
@@ -109,6 +117,10 @@ private:
     void            restoreScalarField(int blockIndex, int role, int fieldIndex, const QString &value);
     NoteFragment    documentFragment() const;
     NoteFragment    withMedia(NoteFragment fragment) const;
+    bool            canAcceptImageDrop(const QMimeData *mimeData) const;
+    bool            handleImageDrop(const QMimeData *mimeData, int row);
+    int             insertionRowAt(const QPointF &position) const;
+    QString         materializeDragImage(const MediaReference &reference, const QByteArray &data);
     NoteBlockModel *model_ = nullptr;
     QQuickWidget   *quick_ = nullptr;
     struct HighlightExtension {
@@ -130,8 +142,11 @@ private:
     bool                                 hasLoaded_                  = false;
     bool                                 spellCheckEnabled_          = true;
     bool                                 scalarHistoryChangePending_ = false;
+    bool                                 imageInsertionEnabled_      = false;
+    bool                                 imageDragAccepted_          = false;
     QList<MediaReference>                media_;
     std::unique_ptr<NoteDocumentHistory> history_;
+    std::unique_ptr<QTemporaryDir>       dragExportDirectory_;
 };
 } // namespace QtNote
 

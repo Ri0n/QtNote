@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include <QIcon>
 #include <QPointer>
+#include <QStringList>
 #include <QTimer>
 #include <QUuid>
 #include <QWidget>
@@ -113,6 +114,8 @@ private slots:
     void startSpeechRecognition();
     void insertImage();
     void insertClipboardImage(const QImage &image);
+    void insertDroppedImage(const QImage &image, int row);
+    void insertDroppedImageFiles(const QStringList &fileNames, int row);
     void finishSpeechRecognition();
     void cancelSpeechRecognition();
     void updateSpeechRecognitionProgress(qint64 elapsedMs, qint64 maxDurationMs);
@@ -128,7 +131,9 @@ private:
     QString normalizeSpeechRecognitionLanguage(const QString &language) const;
     QString speechContextId() const;
     bool    canInsertImages() const;
-    bool    insertImportedImage(const MediaReference &reference);
+    void    insertRasterImage(const QImage &image, const QString &name, int row = -1);
+    bool    insertImportedImage(const MediaReference &reference, int row = -1);
+    bool    insertImportedImages(const QList<MediaReference> &references, int row, const QString &historyKind);
 
     Ui::NoteWidget *ui        = nullptr;
     QmlNoteEditor  *qmlEditor = nullptr;

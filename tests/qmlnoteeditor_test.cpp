@@ -1,10 +1,13 @@
 #include <QAction>
 #include <QClipboard>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QJSValue>
 #include <QMimeData>
 #include <QQuickItem>
 #include <QQuickTextDocument>
 #include <QQuickWidget>
+#include <QTemporaryDir>
 #include <QtTest>
 
 #include "highlighterext.h"
@@ -564,6 +567,82 @@ private slots:
         QTest::keyClick(quick, Qt::Key_V, Qt::ControlModifier);
         QCOMPARE(spy.size(), 1);
         QCOMPARE(qvariant_cast<QImage>(spy.first().first()).size(), QSize(3, 2));
+    }
+
+    void acceptsBitmapAndLocalImageDrops()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 350);
+        editor.load(QStringLiteral("first\n\nsecond"), Note::Markdown);
+        editor.setImageInsertionEnabled(true);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        QVERIFY(quick);
+        auto *root = quick->rootObject();
+        QVERIFY(root);
+        const int    initialRows = editor.model()->rowCount();
+        const QPoint dropPoint(quick->width() / 2, quick->height() - 12);
+        QVariant     expectedRowValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "insertionRowAtPoint", Q_RETURN_ARG(QVariant, expectedRowValue),
+                                          Q_ARG(QVariant, dropPoint.x()), Q_ARG(QVariant, dropPoint.y())));
+        const int expectedRow = expectedRowValue.toInt();
+
+        QImage bitmap(4, 3, QImage::Format_ARGB32_Premultiplied);
+        bitmap.fill(Qt::red);
+        QMimeData bitmapMime;
+        bitmapMime.setImageData(bitmap);
+        QSignalSpy      bitmapDrop(&editor, &QmlNoteEditor::imageDropRequested);
+        QDragEnterEvent bitmapEnter(dropPoint, Qt::CopyAction, &bitmapMime, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &bitmapEnter);
+        QVERIFY(bitmapEnter.isAccepted());
+        QDropEvent bitmapEvent(QPointF(dropPoint), Qt::CopyAction, &bitmapMime, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &bitmapEvent);
+        QVERIFY(bitmapEvent.isAccepted());
+        QCOMPARE(bitmapDrop.size(), 1);
+        QCOMPARE(qvariant_cast<QImage>(bitmapDrop.constFirst().at(0)).size(), QSize(4, 3));
+        QCOMPARE(bitmapDrop.constFirst().at(1).toInt(), expectedRow);
+
+        QTemporaryDir directory;
+        QVERIFY(directory.isValid());
+        const QString fileName = directory.filePath(QStringLiteral("dropped.png"));
+        QVERIFY(bitmap.save(fileName));
+        QMimeData fileMime;
+        fileMime.setUrls({ QUrl::fromLocalFile(fileName) });
+        QSignalSpy      fileDrop(&editor, &QmlNoteEditor::imageFilesDropRequested);
+        QDragEnterEvent fileEnter(dropPoint, Qt::CopyAction, &fileMime, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &fileEnter);
+        QVERIFY(fileEnter.isAccepted());
+        QDropEvent fileEvent(QPointF(dropPoint), Qt::CopyAction, &fileMime, Qt::LeftButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &fileEvent);
+        QVERIFY(fileEvent.isAccepted());
+        QCOMPARE(fileDrop.size(), 1);
+        QCOMPARE(fileDrop.constFirst().at(0).toStringList(), QStringList({ fileName }));
+        QCOMPARE(fileDrop.constFirst().at(1).toInt(), expectedRow);
+
+        NoteFragment fragment;
+        fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
+        NoteFragmentBlock imageBlock;
+        imageBlock.type            = NoteFragmentBlockType::Image;
+        imageBlock.image.alt       = QStringLiteral("dragged");
+        imageBlock.image.sourceUri = QUrl::fromLocalFile(fileName).toString();
+        fragment.blocks.append(imageBlock);
+        NoteTransferController controller;
+        auto                   exported = controller.createMimeData(fragment);
+        QVERIFY2(exported, qPrintable(exported.error));
+        QDragEnterEvent internalEnter(dropPoint, Qt::CopyAction, exported.mimeData.get(), Qt::LeftButton,
+                                      Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &internalEnter);
+        QVERIFY(internalEnter.isAccepted());
+        QDropEvent internalEvent(QPointF(dropPoint), Qt::CopyAction, exported.mimeData.get(), Qt::LeftButton,
+                                 Qt::NoModifier);
+        QCoreApplication::sendEvent(quick, &internalEvent);
+        QVERIFY(internalEvent.isAccepted());
+        QTRY_COMPARE(editor.model()->rowCount(), initialRows + 1);
+        QCOMPARE(editor.model()->blockTypeAt(expectedRow), int(NoteBlockModel::Image));
+        QVERIFY(editor.undo());
+        QTRY_COMPARE(editor.model()->rowCount(), initialRows);
     }
 
     void acceptsKeyboardInput()

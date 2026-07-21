@@ -358,6 +358,8 @@ NoteWidget::NoteWidget(const Note &note, const QUuid &draftId) : ui(new Ui::Note
     connect(ui->noteEdit, SIGNAL(textChanged()), SLOT(textChanged()));
     connect(qmlEditor, &QmlNoteEditor::contentsChanged, this, &NoteWidget::textChanged);
     connect(qmlEditor, &QmlNoteEditor::imagePasteRequested, this, &NoteWidget::insertClipboardImage);
+    connect(qmlEditor, &QmlNoteEditor::imageDropRequested, this, &NoteWidget::insertDroppedImage);
+    connect(qmlEditor, &QmlNoteEditor::imageFilesDropRequested, this, &NoteWidget::insertDroppedImageFiles);
     connect(qmlEditor, &QmlNoteEditor::mediaInserted, this, [this](const QList<MediaReference> &references) {
         auto media = _note.media();
         media.append(references);
@@ -709,6 +711,18 @@ void NoteWidget::insertImage()
 
 void NoteWidget::insertClipboardImage(const QImage &image)
 {
+    const auto name = QStringLiteral("Clipboard_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    insertRasterImage(image, name);
+}
+
+void NoteWidget::insertDroppedImage(const QImage &image, int row)
+{
+    const auto name = QStringLiteral("Dropped_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    insertRasterImage(image, name, row);
+}
+
+void NoteWidget::insertRasterImage(const QImage &image, const QString &name, int row)
+{
     if (!canInsertImages() || image.isNull())
         return;
 
@@ -718,13 +732,28 @@ void NoteWidget::insertClipboardImage(const QImage &image)
         QMessageBox::warning(this, tr("Insert image"), tr("Could not encode the clipboard image."));
         return;
     }
-    const auto name = QStringLiteral("Clipboard_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
     const auto imported = LocalMediaStore::instance()->importData(encoded, name, QStringLiteral("image/png"));
     if (!imported) {
         QMessageBox::warning(this, tr("Insert image"), imported.error);
         return;
     }
-    insertImportedImage(imported.value);
+    insertImportedImage(imported.value, row);
+}
+
+void NoteWidget::insertDroppedImageFiles(const QStringList &fileNames, int row)
+{
+    if (!canInsertImages())
+        return;
+    QList<MediaReference> references;
+    for (const QString &fileName : fileNames) {
+        const auto imported = LocalMediaStore::instance()->importFile(fileName);
+        if (!imported) {
+            QMessageBox::warning(this, tr("Insert image"), imported.error);
+            return;
+        }
+        references.append(imported.value);
+    }
+    insertImportedImages(references, row, QStringLiteral("drop-images"));
 }
 
 bool NoteWidget::canInsertImages() const
@@ -733,21 +762,14 @@ bool NoteWidget::canInsertImages() const
     return storage && storage->supportsMedia() && isMarkdown();
 }
 
-bool NoteWidget::insertImportedImage(const MediaReference &reference)
+bool NoteWidget::insertImportedImage(const MediaReference &reference, int row)
 {
     if (qmlEditor && isMarkdown())
-        qmlEditor->beginExternalHistoryTransaction(QStringLiteral("insert-image"));
+        return insertImportedImages({ reference }, row, QStringLiteral("insert-image"));
 
     auto media = _note.media();
     media.append(reference);
     _note.setMedia(media);
-
-    if (qmlEditor && isMarkdown()) {
-        qmlEditor->setMedia(media);
-        qmlEditor->model()->appendImage(reference.uri(), reference.originalName);
-        qmlEditor->endExternalHistoryTransaction();
-        return true;
-    }
 
     auto cursor = ui->noteEdit->textCursor();
     if (cursor.hasSelection())
@@ -780,6 +802,24 @@ bool NoteWidget::insertImportedImage(const MediaReference &reference)
     cursor.setCharFormat(QTextCharFormat());
     ui->noteEdit->setTextCursor(cursor);
     _mediaResizeTimer.start();
+    return true;
+}
+
+bool NoteWidget::insertImportedImages(const QList<MediaReference> &references, int row, const QString &historyKind)
+{
+    if (references.isEmpty() || !qmlEditor || !isMarkdown())
+        return false;
+
+    qmlEditor->beginExternalHistoryTransaction(historyKind);
+    auto media = _note.media();
+    media.append(references);
+    _note.setMedia(media);
+    qmlEditor->setMedia(media);
+
+    int insertionRow = row < 0 ? qmlEditor->model()->rowCount() : qBound(0, row, qmlEditor->model()->rowCount());
+    for (const MediaReference &reference : references)
+        qmlEditor->model()->insertImage(insertionRow++, reference.uri(), reference.originalName);
+    qmlEditor->endExternalHistoryTransaction();
     return true;
 }
 
@@ -973,6 +1013,7 @@ void NoteWidget::syncEditorMode(bool markdown)
     if (insertImageAction)
         insertImageAction->setEnabled(imagesEnabled);
     ui->noteEdit->setImagePasteEnabled(imagesEnabled);
+    qmlEditor->setImageInsertionEnabled(imagesEnabled);
 }
 
 void NoteWidget::insertTableBlock()

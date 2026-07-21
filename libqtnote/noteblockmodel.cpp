@@ -529,15 +529,17 @@ void NoteBlockModel::appendText(const QString &text)
     emit contentsChanged();
 }
 
-void NoteBlockModel::appendImage(const QString &url, const QString &alt)
+void NoteBlockModel::appendImage(const QString &url, const QString &alt) { insertImage(blocks_.size(), url, alt); }
+
+void NoteBlockModel::insertImage(int row, const QString &url, const QString &alt)
 {
-    const int row = blocks_.size();
+    row = qBound(0, row, blocks_.size());
     beginInsertRows({}, row, row);
     Block block;
     block.type = Image;
     block.url  = url;
     block.alt  = alt;
-    blocks_.append(block);
+    blocks_.insert(row, block);
     endInsertRows();
     emit contentsChanged();
 }

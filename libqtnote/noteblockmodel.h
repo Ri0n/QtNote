@@ -76,6 +76,7 @@ public:
     Q_INVOKABLE void appendTextBlock();
     Q_INVOKABLE void appendText(const QString &text);
     Q_INVOKABLE void appendImage(const QString &url, const QString &alt);
+    Q_INVOKABLE void insertImage(int row, const QString &url, const QString &alt);
     Q_INVOKABLE void insertTable(int row);
     Q_INVOKABLE void insertList(int row, BlockType type);
     Q_INVOKABLE int  blockTypeAt(int row) const;

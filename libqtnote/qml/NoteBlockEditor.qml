@@ -1232,6 +1232,20 @@ ListView {
         return activeEditor && activeEditor.blockIndex >= 0 ? activeEditor.blockIndex + 1 : count
     }
 
+    function insertionRowAtPoint(x, y) {
+        let lastVisibleRow = 0
+        for (let row = 0; row < count; ++row) {
+            const block = itemAtIndex(row)
+            if (!block)
+                continue
+            const position = block.mapToItem(root, 0, 0)
+            if (y < position.y + block.height / 2)
+                return row
+            lastVisibleRow = row + 1
+        }
+        return Math.min(count, lastVisibleRow)
+    }
+
     function insertTableBlock() {
         return runEditTransaction("insert-table", function() {
             const row = insertionBlockIndex()
@@ -2439,6 +2453,20 @@ ListView {
                     acceptedButtons: Qt.RightButton
                     gesturePolicy: TapHandler.DragThreshold
                     onTapped: imageContextMenu.popup()
+                }
+                DragHandler {
+                    id: imageDragHandler
+                    target: null
+                    acceptedButtons: Qt.LeftButton
+                    property bool dragStarted: false
+                    onActiveChanged: {
+                        if (active && !dragStarted) {
+                            dragStarted = true
+                            qmlNoteEditor.startImageDrag(imageRoot.block.index)
+                        } else if (!active) {
+                            dragStarted = false
+                        }
+                    }
                 }
                 // Layout.fillWidth gives Image a viewport-wide box, but its
                 // implicit height is still the source's native height. For a

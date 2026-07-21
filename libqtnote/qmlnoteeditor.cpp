@@ -2,13 +2,19 @@
 
 #include <QClipboard>
 #include <QDir>
+#include <QDrag>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFont>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QMimeDatabase>
+#include <QPixmap>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
@@ -19,6 +25,7 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QTemporaryDir>
 #include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -29,6 +36,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QVector>
+#include <algorithm>
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
@@ -58,6 +66,42 @@ namespace {
     };
 
     int documentEnd(const QTextDocument *document) { return document ? qMax(0, document->characterCount() - 1) : 0; }
+
+    bool isUsableImageFragment(const NoteFragment &fragment)
+    {
+        if (fragment.blocks.isEmpty())
+            return false;
+        for (const NoteFragmentBlock &block : fragment.blocks) {
+            if (block.type != NoteFragmentBlockType::Image || block.image.sourceUri.isEmpty())
+                return false;
+            const QUrl source(block.image.sourceUri);
+            if (source.scheme().compare(QStringLiteral("qtnote-media"), Qt::CaseInsensitive) != 0)
+                continue;
+            const bool hasMedia = std::any_of(fragment.media.cbegin(), fragment.media.cend(), [&block](const auto &m) {
+                return m.sourceUri == block.image.sourceUri && m.reference.isValid();
+            });
+            if (!hasMedia)
+                return false;
+        }
+        return true;
+    }
+
+    QStringList localImageFiles(const QMimeData *mimeData)
+    {
+        QStringList result;
+        if (!mimeData || !mimeData->hasUrls())
+            return result;
+        QMimeDatabase database;
+        for (const QUrl &url : mimeData->urls()) {
+            const QString fileName = url.toLocalFile();
+            if (fileName.isEmpty() || !QFileInfo(fileName).isFile())
+                continue;
+            const QMimeType type = database.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
+            if (type.name().startsWith(QLatin1String("image/")))
+                result.append(fileName);
+        }
+        return result;
+    }
 
     QString unwrapMarkdownWriterLines(const QString &markdown);
 
@@ -515,6 +559,7 @@ QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QWidget(parent), model_(new Note
     quick_ = new QQuickWidget(this);
     setFocusPolicy(Qt::StrongFocus);
     quick_->setFocusPolicy(Qt::StrongFocus);
+    quick_->setAcceptDrops(true);
     setFocusProxy(quick_);
     quick_->setResizeMode(QQuickWidget::SizeRootObjectToView);
     quick_->setClearColor(palette().color(QPalette::Base));
@@ -738,6 +783,164 @@ void QmlNoteEditor::saveImageAs(const QString &url)
     if (!file.open(QIODevice::WriteOnly) || file.write(loaded.value) != loaded.value.size() || !file.commit()) {
         QMessageBox::warning(this, tr("Save Image As"), tr("Could not save the image: %1").arg(file.errorString()));
     }
+}
+
+QString QmlNoteEditor::materializeDragImage(const MediaReference &reference, const QByteArray &data)
+{
+    if (data.isEmpty())
+        return {};
+    if (!dragExportDirectory_) {
+        dragExportDirectory_
+            = std::make_unique<QTemporaryDir>(QDir::tempPath() + QStringLiteral("/qtnote-image-drag-XXXXXX"));
+    }
+    if (!dragExportDirectory_->isValid())
+        return {};
+
+    QString name
+        = QFileInfo(reference.portableName.isEmpty() ? reference.originalName : reference.portableName).fileName();
+    if (name.isEmpty())
+        name = QStringLiteral("image");
+    const QString subdirectory
+        = QDir(dragExportDirectory_->path()).filePath(reference.id.toString(QUuid::WithoutBraces));
+    if (!QDir().mkpath(subdirectory))
+        return {};
+    const QString path = QDir(subdirectory).filePath(name);
+    QSaveFile     file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size() || !file.commit())
+        return {};
+    return path;
+}
+
+bool QmlNoteEditor::startImageDrag(int row)
+{
+    if (!model_->markdown() || model_->blockTypeAt(row) != int(NoteBlockModel::Image))
+        return false;
+
+    NoteFragment fragment = withMedia(model_->extractBlockFragment(row, row));
+    if (!isUsableImageFragment(fragment))
+        return false;
+
+    NoteTransferController controller;
+    auto                   exported = controller.createMimeData(fragment);
+    if (!exported) {
+        qWarning() << "QML image drag export failed:" << exported.error;
+        return false;
+    }
+
+    QByteArray            imageData;
+    const MediaReference *reference = nullptr;
+    if (!fragment.media.isEmpty()) {
+        reference         = &fragment.media.constFirst().reference;
+        const auto loaded = LocalMediaStore::instance()->data(reference->blobId);
+        if (loaded)
+            imageData = loaded.value;
+    }
+
+    if (reference && !imageData.isEmpty()) {
+        const QString exportedFile = materializeDragImage(*reference, imageData);
+        if (!exportedFile.isEmpty()) {
+            QList<QUrl> urls = exported.mimeData->urls();
+            urls.prepend(QUrl::fromLocalFile(exportedFile));
+            exported.mimeData->setUrls(urls);
+
+            // Keep the private QtNote fragment pointing at qtnote-media, but
+            // make every public representation independently usable by an
+            // external process which happens to prefer HTML or Markdown over
+            // image/png or text/uri-list.
+            NoteFragment publicFragment = fragment;
+            publicFragment.media.clear();
+            publicFragment.blocks.first().image.sourceUri = QUrl::fromLocalFile(exportedFile).toString();
+            QString       publicError;
+            const QString markdown = NoteTransferController::markdownForFragment(publicFragment, &publicError);
+            if (publicError.isEmpty()) {
+                exported.mimeData->setData(QString::fromLatin1(NoteTransferController::MarkdownMimeType),
+                                           markdown.toUtf8());
+                exported.mimeData->setHtml(NoteTransferController::htmlForFragment(publicFragment));
+                exported.mimeData->setText(NoteTransferController::plainTextForFragment(publicFragment));
+            }
+        }
+    }
+
+    QDrag drag(quick_);
+    drag.setMimeData(exported.mimeData.release());
+    QImage preview;
+    if (!imageData.isEmpty())
+        preview.loadFromData(imageData);
+    if (!preview.isNull()) {
+        const QImage thumbnail = preview.scaled(QSize(256, 192), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        drag.setPixmap(QPixmap::fromImage(thumbnail));
+        drag.setHotSpot(QPoint(thumbnail.width() / 2, thumbnail.height() / 2));
+    }
+    drag.exec(Qt::CopyAction, Qt::CopyAction);
+    return true;
+}
+
+int QmlNoteEditor::insertionRowAt(const QPointF &position) const
+{
+    if (!quick_ || !quick_->rootObject())
+        return model_->rowCount();
+    QVariant result;
+    if (!QMetaObject::invokeMethod(quick_->rootObject(), "insertionRowAtPoint", Q_RETURN_ARG(QVariant, result),
+                                   Q_ARG(QVariant, position.x()), Q_ARG(QVariant, position.y()))) {
+        return model_->rowCount();
+    }
+    return qBound(0, result.toInt(), model_->rowCount());
+}
+
+bool QmlNoteEditor::canAcceptImageDrop(const QMimeData *mimeData) const
+{
+    if (!imageInsertionEnabled_ || !model_->markdown() || !mimeData)
+        return false;
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(mimeData);
+    return (imported && (imported.hasImage() || isUsableImageFragment(imported.fragment)))
+        || !localImageFiles(mimeData).isEmpty();
+}
+
+bool QmlNoteEditor::handleImageDrop(const QMimeData *mimeData, int row)
+{
+    if (!canAcceptImageDrop(mimeData))
+        return false;
+
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(mimeData);
+    if (imported && isUsableImageFragment(imported.fragment)) {
+        NoteFragment          fragment = imported.fragment;
+        QList<MediaReference> insertedMedia;
+        if (!fragment.media.isEmpty()) {
+            const auto cloned = NoteFragmentMediaTransfer::cloneForDestination(fragment, *LocalMediaStore::instance(),
+                                                                               LocalMediaStore::instance());
+            if (!cloned) {
+                qWarning() << "QML image drop media import failed:" << cloned.error;
+                return false;
+            }
+            fragment      = cloned.fragment;
+            insertedMedia = cloned.importedMedia;
+        }
+
+        const QVariantMap beforeView = captureQmlEditorState(quick_->rootObject());
+        beginHistoryTransaction(QStringLiteral("drop-image"), beforeView);
+        QString    error;
+        const bool inserted = model_->insertBlockFragment(qBound(0, row, model_->rowCount()), fragment, &error);
+        if (inserted && !insertedMedia.isEmpty())
+            emit mediaInserted(insertedMedia);
+        endHistoryTransaction(captureQmlEditorState(quick_->rootObject()));
+        if (!inserted)
+            qWarning() << "QML image drop insertion failed:" << error;
+        return inserted;
+    }
+
+    if (imported && imported.hasImage()) {
+        emit imageDropRequested(imported.image, row);
+        return true;
+    }
+
+    const QStringList files = localImageFiles(mimeData);
+    if (!files.isEmpty()) {
+        emit imageFilesDropRequested(files, row);
+        return true;
+    }
+    return false;
 }
 
 QString QmlNoteEditor::contents() const
@@ -1371,7 +1574,37 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
         emit focusLost();
 
     if (watched == quick_) {
-        if (event->type() == QEvent::KeyPress) {
+        if (event->type() == QEvent::DragEnter) {
+            auto *dragEvent    = static_cast<QDragEnterEvent *>(event);
+            imageDragAccepted_ = canAcceptImageDrop(dragEvent->mimeData());
+            if (imageDragAccepted_) {
+                dragEvent->setDropAction(Qt::CopyAction);
+                dragEvent->accept();
+                return true;
+            }
+        } else if (event->type() == QEvent::DragMove && imageDragAccepted_) {
+            auto *dragEvent = static_cast<QDragMoveEvent *>(event);
+            dragEvent->setDropAction(Qt::CopyAction);
+            dragEvent->accept();
+            return true;
+        } else if (event->type() == QEvent::DragLeave) {
+            imageDragAccepted_ = false;
+        } else if (event->type() == QEvent::Drop && imageDragAccepted_) {
+            auto *dropEvent = static_cast<QDropEvent *>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            const QPointF position = dropEvent->position();
+#else
+            const QPointF position = dropEvent->posF();
+#endif
+            imageDragAccepted_ = false;
+            if (handleImageDrop(dropEvent->mimeData(), insertionRowAt(position))) {
+                dropEvent->setDropAction(Qt::CopyAction);
+                dropEvent->accept();
+                return true;
+            }
+            dropEvent->ignore();
+            return true;
+        } else if (event->type() == QEvent::KeyPress) {
             auto       keyEvent                 = static_cast<QKeyEvent *>(event);
             QObject   *root                     = quick_->rootObject();
             const bool documentHistoryOwnsFocus = invokeQmlBoolean(root, "documentHistoryOwnsFocus");
