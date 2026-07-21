@@ -655,6 +655,44 @@ private slots:
         QVERIFY(root->property("activeEditor").value<QObject *>()->property("activeFocus").toBool());
     }
 
+    void enterAtEndOfLinkedListItemDoesNotSplitUrl()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 350);
+        editor.load(QStringLiteral("1. hello [dsbb](https://ya.ru) world"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QTRY_COMPARE(root->property("editors").toList().size(), 1);
+        auto *item = root->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(item);
+        QVERIFY(QMetaObject::invokeMethod(item, "forceActiveFocus"));
+        item->setProperty("cursorPosition", item->property("length"));
+
+        QTest::keyClick(quick, Qt::Key_Return);
+
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+                     QStringList({ "hello [dsbb](https://ya.ru) world", "" }));
+        QCOMPARE(editor.contents(), QStringLiteral("1. hello [dsbb](https://ya.ru) world\n2. "));
+
+        QmlNoteEditor splitInsideLink;
+        splitInsideLink.resize(500, 350);
+        splitInsideLink.load(QStringLiteral("- hello [dsbb](https://ya.ru) world"), Note::Markdown);
+        splitInsideLink.show();
+        QTest::qWait(30);
+        auto *splitQuick = splitInsideLink.findChild<QQuickWidget *>();
+        auto *splitRoot  = splitQuick->rootObject();
+        QTRY_COMPARE(splitRoot->property("editors").toList().size(), 1);
+        auto *splitItem = splitRoot->property("editors").toList().constFirst().value<QObject *>();
+        QVERIFY(QMetaObject::invokeMethod(splitItem, "forceActiveFocus"));
+        splitItem->setProperty("cursorPosition", 8); // Between "ds" and "bb".
+        QTest::keyClick(splitQuick, Qt::Key_Return);
+        QTRY_COMPARE(
+            splitInsideLink.model()->data(splitInsideLink.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+            QStringList({ "hello [ds](https://ya.ru)", "[bb](https://ya.ru) world" }));
+    }
+
     void backspaceConvertsLastEmptyChecklistItemToText()
     {
         QmlNoteEditor editor;
@@ -860,6 +898,72 @@ private slots:
         QTRY_COMPARE(editor.contents(), QStringLiteral("[**bold** *text*](url)"));
     }
 
+    void inlineLinkStaysWithinParagraphAndListAcrossModeSwitch()
+    {
+        const auto applyLink = [](QmlNoteEditor &editor, int selectionStart, int selectionEnd) {
+            editor.resize(500, 300);
+            editor.show();
+            QTest::qWait(30);
+            auto *quick = editor.findChild<QQuickWidget *>();
+            auto *root  = quick->rootObject();
+            QTRY_COMPARE(root->property("editors").toList().size(), 1);
+            auto *text = root->property("editors").toList().constFirst().value<QObject *>();
+            QVERIFY(text);
+            QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
+            QVERIFY(QMetaObject::invokeMethod(text, "select", Q_ARG(int, selectionStart), Q_ARG(int, selectionEnd)));
+            QTest::keyClick(quick, Qt::Key_K, Qt::ControlModifier);
+            auto *urlField = root->findChild<QObject *>(QStringLiteral("noteLinkUrlField"));
+            QVERIFY(urlField);
+            QTRY_VERIFY(urlField->property("activeFocus").toBool());
+            QTest::keyClicks(quick, QStringLiteral("url"));
+            QTest::keyClick(quick, Qt::Key_Return);
+        };
+
+        QmlNoteEditor paragraph;
+        paragraph.load(QStringLiteral("before link after"), Note::Markdown);
+        applyLink(paragraph, 7, 11);
+        QTRY_COMPARE(paragraph.contents(), QStringLiteral("before [link](url) after"));
+
+        paragraph.load(paragraph.contents(), Note::PlainText);
+        QCOMPARE(paragraph.contents(), QStringLiteral("before [link](url) after"));
+        paragraph.load(paragraph.contents(), Note::Markdown);
+        QCOMPARE(paragraph.contents(), QStringLiteral("before [link](url) after"));
+        paragraph.hide();
+
+        QmlNoteEditor inserted;
+        inserted.load(QStringLiteral("before  after"), Note::Markdown);
+        applyLink(inserted, 7, 7);
+        QTRY_COMPARE(inserted.contents(), QStringLiteral("before [link](url) after"));
+        inserted.hide();
+
+        QmlNoteEditor list;
+        list.load(QStringLiteral("- before link after"), Note::Markdown);
+        applyLink(list, 7, 11);
+        QTRY_COMPARE(list.contents(), QStringLiteral("- before [link](url) after"));
+        list.hide();
+
+        const QString longUrl = QStringLiteral("https://example.org/a/very/long/path/that/exceeds/the/markdown/"
+                                               "writers/usual/wrapping/column?with=query&and=value");
+        QmlNoteEditor longLink;
+        longLink.resize(500, 300);
+        longLink.load(QStringLiteral("before link after"), Note::Markdown);
+        longLink.show();
+        QTest::qWait(30);
+        auto *longRoot = longLink.findChild<QQuickWidget *>()->rootObject();
+        QTRY_COMPARE(longRoot->property("editors").toList().size(), 1);
+        auto *longText = longRoot->property("editors").toList().constFirst().value<QObject *>();
+        auto *document = longText->property("textDocument").value<QQuickTextDocument *>();
+        QVERIFY(document);
+        QCOMPARE(longLink.setLink(document, 7, 11, longUrl), 11);
+        longLink.model()->setBlockText(0, longLink.markdownText(document));
+        const QString inlineLongLink = QStringLiteral("before [link](%1) after").arg(longUrl);
+        QCOMPARE(longLink.contents(), inlineLongLink);
+        longLink.load(longLink.contents(), Note::PlainText);
+        QCOMPARE(longLink.contents(), inlineLongLink);
+        longLink.load(longLink.contents(), Note::Markdown);
+        QCOMPARE(longLink.contents(), inlineLongLink);
+    }
+
     void downLeavesHeadingForFollowingTextBlock()
     {
         QmlNoteEditor editor;
@@ -958,23 +1062,77 @@ private slots:
     {
         QmlNoteEditor editor;
         editor.resize(500, 350);
-        editor.load(QStringLiteral("1. one\n2. two\n3. three"), Note::Markdown);
+        editor.load(QStringLiteral("1. one\n2. two\n3. three\n4. four"), Note::Markdown);
         editor.show();
         QTest::qWait(30);
         auto *quick = editor.findChild<QQuickWidget *>();
         auto *root  = quick->rootObject();
-        QTRY_COMPARE(root->property("editors").toList().size(), 3);
+        QTRY_COMPARE(root->property("editors").toList().size(), 4);
         const auto editors = root->property("editors").toList();
-        auto      *first   = editors[0].value<QObject *>();
         auto      *second  = editors[1].value<QObject *>();
-        QVERIFY(first && second);
+        auto      *third   = editors[2].value<QObject *>();
+        QVERIFY(second && third);
         const bool selectionApplied = QMetaObject::invokeMethod(
-            root, "applyDocumentSelection", Q_ARG(QVariant, QVariant::fromValue(first)), Q_ARG(QVariant, 1),
+            root, "applyDocumentSelection", Q_ARG(QVariant, QVariant::fromValue(third)), Q_ARG(QVariant, 1),
             Q_ARG(QVariant, QVariant::fromValue(second)), Q_ARG(QVariant, 1));
         QVERIFY(selectionApplied);
         QTest::keyClick(quick, Qt::Key_Delete);
         QTRY_COMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
-                     QStringList({ "three" }));
+                     QStringList({ "one", "four" }));
+
+        QTRY_COMPARE(root->property("editors").toList().size(), 2);
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 1)));
+        const auto geometry = geometryValue.toMap();
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier,
+                          QPoint(geometry["x"].toInt() + 8, geometry["y"].toInt() + geometry["height"].toInt() / 2));
+        QTest::qWait(30);
+        QCOMPARE(editor.model()->data(editor.model()->index(0), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "one", "four" }));
+    }
+
+    void reverseSelectionFromListItemBoundaryDoesNotResurrectDeletedText()
+    {
+        QmlNoteEditor editor;
+        editor.resize(500, 350);
+        editor.load(QStringLiteral("xx\n1. a\n2. b"), Note::Markdown);
+        editor.show();
+        QTest::qWait(30);
+
+        auto *quick = editor.findChild<QQuickWidget *>();
+        auto *root  = quick->rootObject();
+        QVERIFY(root);
+        QTRY_COMPARE(root->property("editors").toList().size(), 3);
+        const auto editors = root->property("editors").toList();
+        auto      *text    = editors[0].value<QObject *>();
+        auto      *first   = editors[1].value<QObject *>();
+        auto      *second  = editors[2].value<QObject *>();
+        QVERIFY(text && first && second);
+
+        QVERIFY(QMetaObject::invokeMethod(root, "applyDocumentSelection", Q_ARG(QVariant, QVariant::fromValue(second)),
+                                          Q_ARG(QVariant, second->property("length")),
+                                          Q_ARG(QVariant, QVariant::fromValue(first)),
+                                          Q_ARG(QVariant, first->property("length"))));
+        QTest::keyClick(quick, Qt::Key_Delete);
+
+        QTRY_COMPARE(editor.model()->rowCount(), 2);
+        QTRY_COMPARE(editor.model()->data(editor.model()->index(1), NoteBlockModel::ItemsRole).toStringList(),
+                     QStringList({ "a" }));
+        QTRY_COMPARE(root->property("editors").toList().size(), 2);
+
+        QVariant geometryValue;
+        QVERIFY(QMetaObject::invokeMethod(root, "editorGeometry", Q_RETURN_ARG(QVariant, geometryValue),
+                                          Q_ARG(QVariant, 0)));
+        const auto geometry = geometryValue.toMap();
+        QTest::mouseClick(quick, Qt::LeftButton, Qt::NoModifier,
+                          QPoint(geometry["x"].toInt() + geometry["width"].toInt() - 8,
+                                 geometry["y"].toInt() + geometry["height"].toInt() / 2));
+        QTest::qWait(30);
+
+        QCOMPARE(editor.model()->data(editor.model()->index(1), NoteBlockModel::ItemsRole).toStringList(),
+                 QStringList({ "a" }));
+        QCOMPARE(editor.contents(), QStringLiteral("xx\n\n1. a"));
     }
 
     void downLeavesLastStructuredBlock()

@@ -269,6 +269,20 @@ private slots:
         QCOMPARE(model.contents(), QStringLiteral("[Надежду *Л*ебедев*у*](url)"));
     }
 
+    void keepsLongInlineLinksOnTheirSourceLine()
+    {
+        const QString  url       = QStringLiteral("https://example.org/a/very/long/path/that/exceeds/the/markdown/"
+                                                         "writers/usual/wrapping/column?with=query&and=value");
+        const QString  paragraph = QStringLiteral("before [%1](%1) after").arg(url);
+        NoteBlockModel model;
+        model.load(paragraph, true);
+        QCOMPARE(model.contents(), paragraph);
+
+        const QString listSource = QStringLiteral("- before [%1](%1) after").arg(url);
+        model.load(listSource, true);
+        QCOMPARE(model.contents(), listSource);
+    }
+
     void editsTableStructure()
     {
         NoteBlockModel model;

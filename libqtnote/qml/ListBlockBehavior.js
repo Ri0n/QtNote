@@ -59,8 +59,9 @@ function handleKey(host, controller, event, cell, itemIndex) {
             }
             return true
         }
-        const right = cell.text.substring(position)
-        controller.blockModel.setListItem(host.block.index, itemIndex, cell.text.substring(0, position))
+        const left = cell.markdownRange(0, position)
+        const right = cell.markdownRange(position, cell.length)
+        controller.blockModel.setListItem(host.block.index, itemIndex, left)
         controller.blockModel.insertListItem(host.block.index, itemIndex + 1, right)
         host.focusItem(itemIndex + 1, 0)
         return true

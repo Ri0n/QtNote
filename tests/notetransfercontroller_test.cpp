@@ -14,6 +14,7 @@ private slots:
     void importsMarkdownBeforeHtmlAndPlainText();
     void importsTsvAsTable();
     void importsHtmlTableAsTable();
+    void importsInlineHtmlLinkWithinParagraph();
     void roundTripsSingleImageAsPng();
     void malformedPrivateFormatFallsBackToPlainText();
 };
@@ -91,6 +92,21 @@ void NoteTransferControllerTest::importsHtmlTableAsTable()
     QCOMPARE(imported.fragment.blocks.at(0).table.rows, 2);
     QCOMPARE(imported.fragment.blocks.at(0).table.columns, 2);
     QCOMPARE(imported.fragment.blocks.at(0).table.markdownCells, QStringList({ "A", "B", "1", "2" }));
+}
+
+void NoteTransferControllerTest::importsInlineHtmlLinkWithinParagraph()
+{
+    QMimeData mime;
+    mime.setHtml(QStringLiteral("<p>before <a href=\"https://example.org\">link</a> after</p>"));
+
+    NoteTransferController controller;
+    const auto             imported = controller.importMimeData(&mime);
+    QVERIFY2(imported, qPrintable(imported.error));
+    QCOMPARE(imported.fragment.blocks.size(), 1);
+    QString error;
+    QCOMPARE(controller.markdownForFragment(imported.fragment, &error),
+             QStringLiteral("before [link](https://example.org) after"));
+    QVERIFY2(error.isEmpty(), qPrintable(error));
 }
 
 void NoteTransferControllerTest::roundTripsSingleImageAsPng()

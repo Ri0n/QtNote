@@ -1144,11 +1144,17 @@ QList<NoteBlockModel::Block> NoteBlockModel::parseMarkdown(const QString &source
         }
         return false;
     };
-    // QTextDocument remains the Markdown reader for inline semantics, but
-    // its serializer can flatten a GFM table that follows a task list.  Keep
-    // the original source in that case so our structural scanner does not
-    // turn the table into a plain QTextDocument text block on copy/paste.
-    const QStringList &lines = hasTable(sourceLines) && !hasTable(canonicalLines) ? sourceLines : canonicalLines;
+    static const QRegularExpression inlineLink(
+        QStringLiteral(R"((?<!!)\[(?:\\.|[^\]\\\n])*\]\((?:\\.|[^)\\\n])*\)|<https?://[^>\n]+>)"));
+    const bool preserveLinkedSourceLines = inlineLink.match(protectedSource).hasMatch();
+    // QTextDocument remains the Markdown reader for inline semantics, but its
+    // writer wraps long paragraphs (very often around a link). Such a soft
+    // wrap becomes a real newline in plain-text mode and can split a list.
+    // Preserve source line boundaries for linked content. Do the same when
+    // Qt flattens a GFM table following a task list.
+    const QStringList &lines = preserveLinkedSourceLines || (hasTable(sourceLines) && !hasTable(canonicalLines))
+        ? sourceLines
+        : canonicalLines;
     QList<Block>       result;
     static const QRegularExpression image(QStringLiteral(R"(^\s*!\[([^\]]*)\]\((\S+?)(?:\s+"[^"]*")?\)\s*$)"));
     static const QRegularExpression heading(QStringLiteral(R"(^\s*(#{1,6})\s+(.+?)\s*#*\s*$)"));

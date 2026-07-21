@@ -52,6 +52,8 @@ namespace {
 
     int documentEnd(const QTextDocument *document) { return document ? qMax(0, document->characterCount() - 1) : 0; }
 
+    QString unwrapMarkdownWriterLines(const QString &markdown);
+
     QString markdownRange(QTextDocument *document, int start, int end)
     {
         if (!document)
@@ -64,10 +66,41 @@ namespace {
         QTextCursor cursor(document);
         cursor.setPosition(start);
         cursor.setPosition(end, QTextCursor::KeepAnchor);
-        QString markdown = QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub);
+        QString markdown
+            = unwrapMarkdownWriterLines(QTextDocumentFragment(cursor).toMarkdown(QTextDocument::MarkdownDialectGitHub));
         while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
             markdown.chop(1);
         return markdown;
+    }
+
+    QString unwrapMarkdownWriterLines(const QString &markdown)
+    {
+        const QStringList lines = markdown.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QString           result;
+        bool              previousWasContent = false;
+        for (const QString &line : lines) {
+            if (line.isEmpty()) {
+                if (!result.endsWith(QStringLiteral("\n\n"))) {
+                    if (result.endsWith(QLatin1Char('\n')))
+                        result += QLatin1Char('\n');
+                    else
+                        result += QStringLiteral("\n\n");
+                }
+                previousWasContent = false;
+                continue;
+            }
+            if (previousWasContent) {
+                // Two trailing spaces are an explicit Markdown hard break.
+                // Every other newline inside one QTextDocument block is a
+                // soft wrap introduced by Qt's Markdown writer.
+                result += result.endsWith(QStringLiteral("  ")) ? QLatin1Char('\n') : QLatin1Char(' ');
+                result += line.trimmed();
+            } else {
+                result += line;
+            }
+            previousWasContent = true;
+        }
+        return result;
     }
 
     bool invokeQmlBoolean(QObject *object, const char *method)
@@ -752,7 +785,7 @@ QString QmlNoteEditor::markdownText(QQuickTextDocument *quickDocument) const
         return {};
 
     auto   *document = quickDocument->textDocument();
-    QString markdown = markdownWithSerializedLinks(document);
+    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedLinks(document));
     while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
         markdown.chop(1);
     return markdown;
