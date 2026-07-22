@@ -1,5 +1,6 @@
 /*
 QtNote - Simple note-taking application
+
 Copyright (C) 2010 Sergei Ilinykh
 
 This program is free software: you can redistribute it and/or modify
@@ -9,16 +10,18 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Contacts:
-E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
+E-Mail: rion4ik@gmail.com
+XMPP: rion@jabber.ru
 */
 
+#include <QApplication>
 #include <QCloseEvent>
 #include <QItemSelection>
 #include <QPropertyAnimation>
@@ -78,6 +81,11 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) : QDialog(0), ui(new Ui::NoteManage
     ui->setupUi(this);
     setWindowIcon(QIcon(":/icons/manager"));
     setAttribute(Qt::WA_DeleteOnClose);
+
+    ui->splitter->setStretchFactor(0, 0);
+    ui->splitter->setStretchFactor(1, 1);
+    ui->splitter->setCollapsible(1, false);
+
     ui->ckSearchInText->setMaximumHeight(0);
     new SearchOptsAnim(ui->leFilter, ui->ckSearchInText, this);
 
@@ -86,7 +94,6 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) : QDialog(0), ui(new Ui::NoteManage
     searchModel->setSourceModel(model);
     searchModel->setDynamicSortFilter(true);
     searchModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
-
     ui->notesTree->setModel(searchModel);
     ui->notesTree->setSortingEnabled(false);
 
@@ -98,6 +105,7 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) : QDialog(0), ui(new Ui::NoteManage
     } else {
         expanded = QSettings().value("nm-expanded").toStringList();
     }
+
     for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
         auto index = model->index(i, 0);
         if (expandAll || expanded.contains(model->data(index, NotesModel::StorageIdRole).toString())) {
@@ -106,6 +114,7 @@ NoteManagerDlg::NoteManagerDlg(Main *qtnote) : QDialog(0), ui(new Ui::NoteManage
     }
 
     updateStats();
+
     connect(ui->notesTree, SIGNAL(doubleClicked(QModelIndex)), SLOT(itemDoubleClicked(QModelIndex)));
     connect(ui->notesTree->selectionModel(), SIGNAL(currentRowChanged(QModelIndex, QModelIndex)),
             SLOT(currentRowChanged(QModelIndex, QModelIndex)));
@@ -118,12 +127,14 @@ NoteManagerDlg::~NoteManagerDlg()
 {
     QSettings   s;
     QStringList expanded;
+
     for (int i = 0, cnt = model->rowCount(); i < cnt; i++) {
         auto index = model->index(i, 0);
         if (ui->notesTree->isExpanded(searchModel->mapFromSource(index))) {
             expanded << model->data(index, NotesModel::StorageIdRole).toString();
         }
     }
+
     s.setValue("nm-expanded", expanded);
     delete ui;
 }
@@ -151,13 +162,12 @@ void NoteManagerDlg::changeEvent(QEvent *e)
 
 void NoteManagerDlg::closeEvent(QCloseEvent *event)
 {
-    if (ui->splitter->count() > 1) {
-        auto *editor = qobject_cast<NoteWidget *>(ui->splitter->widget(ui->splitter->count() - 1));
-        if (editor && !editor->prepareToClose()) {
-            event->ignore();
-            return;
-        }
+    auto *editor = qobject_cast<NoteWidget *>(ui->previewStack->currentWidget());
+    if (editor && !editor->prepareToClose()) {
+        event->ignore();
+        return;
     }
+
     QDialog::closeEvent(event);
 }
 
@@ -172,8 +182,8 @@ void NoteManagerDlg::itemDoubleClicked(const QModelIndex &index)
 
 void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelIndex &previous)
 {
-    // TODO save previous?
     Q_UNUSED(previous)
+
     auto srcCurrent = searchModel->mapToSource(current);
     if (srcCurrent.data(NotesModel::ItemTypeRole).toInt() != NotesModel::ItemNote) {
         return;
@@ -184,37 +194,51 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
     const auto searchText = ui->leFilter->text().trimmed();
     const bool highlightMatch
         = searchModel->searchInBody() && !searchText.isEmpty() && searchModel->hasBodyMatch(storageId, noteId);
+
     if (previewJob)
         previewJob->cancel();
+
     previewJob = NoteManager::instance()->loadNoteAsync(storageId, noteId, this);
     connect(previewJob, &StorageJob::finished, this,
             [this, job = previewJob, storageId, noteId, searchText, highlightMatch]() {
                 if (!job || job->state() != StorageJob::Succeeded)
                     return;
+
                 const auto current = searchModel->mapToSource(ui->notesTree->currentIndex());
                 if (current.data(NotesModel::StorageIdRole).toString() != storageId
-                    || current.data(NotesModel::NoteIdRole).toString() != noteId)
+                    || current.data(NotesModel::NoteIdRole).toString() != noteId) {
                     return;
+                }
+
                 auto *nw = qtnote->noteWidget(job->result());
                 if (highlightMatch)
                     nw->findText(searchText, false);
-                if (ui->splitter->count() > 1) {
-                    QWidget *prevWidget = ui->splitter->widget(ui->splitter->count() - 1);
-                    auto    *previous   = qobject_cast<NoteWidget *>(prevWidget);
-                    if (previous && !previous->prepareToClose()) {
-                        delete nw;
-                        return;
-                    }
-                    if (previous) {
-                        delete ui->splitter->widget(ui->splitter->count() - 1);
-                    } else {
-                        prevWidget->hide();
-                    }
-                } else
-                    resize(700, 400);
-                ui->splitter->addWidget(nw);
-                ui->splitter->setStretchFactor(0, 0);
-                ui->splitter->setStretchFactor(1, 1);
+
+                auto *previous = qobject_cast<NoteWidget *>(ui->previewStack->currentWidget());
+                if (previous && !previous->prepareToClose()) {
+                    delete nw;
+                    return;
+                }
+
+                const QList<int> splitterSizes = ui->splitter->sizes();
+
+                ui->splitter->setUpdatesEnabled(false);
+                ui->previewStack->setUpdatesEnabled(false);
+
+                ui->previewStack->addWidget(nw);
+                ui->previewStack->setCurrentWidget(nw);
+
+                if (previous) {
+                    ui->previewStack->removeWidget(previous);
+                    previous->deleteLater();
+                }
+
+                if (splitterSizes.size() == ui->splitter->count())
+                    ui->splitter->setSizes(splitterSizes);
+
+                ui->previewStack->setUpdatesEnabled(true);
+                ui->splitter->setUpdatesEnabled(true);
+                ui->splitter->update();
             });
 }
 

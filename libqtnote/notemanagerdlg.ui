@@ -22,7 +22,7 @@
      </property>
      <widget class="QtNote::NoteManagerView" name="notesTree">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
+       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -52,19 +52,42 @@
        <bool>false</bool>
       </attribute>
      </widget>
-     <widget class="QLabel" name="label_2">
+     <widget class="QStackedWidget" name="previewStack">
       <property name="minimumSize">
        <size>
         <width>500</width>
         <height>0</height>
        </size>
       </property>
-      <property name="text">
-       <string>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag'n'Drop and search your notes)&lt;/h6&gt;</string>
+      <property name="currentIndex">
+       <number>0</number>
       </property>
-      <property name="alignment">
-       <set>Qt::AlignmentFlag::AlignCenter</set>
-      </property>
+      <widget class="QWidget" name="previewPlaceholder">
+       <layout class="QVBoxLayout" name="previewPlaceholderLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>&lt;h1&gt;Notes Manager&lt;/h1&gt;&lt;h6&gt;(Group, Drag'n'Drop and search your notes)&lt;/h6&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </item>
