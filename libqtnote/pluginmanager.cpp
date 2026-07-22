@@ -33,6 +33,8 @@ E-Mail: rion4ik@gmail.com XMPP: rion@jabber.ru
 #include "notewidget.h"
 #include "pluginhost.h"
 #include "pluginmanager.h"
+
+#include "desktopeditorplatformbackend.h"
 #include "qtnote.h"
 #include "shortcutsmanager.h"
 #include "spellcheckproviderinterface.h"
@@ -264,6 +266,15 @@ PluginManager::~PluginManager()
             p->instance = 0;
         }
     }
+}
+
+void PluginManager::attachEditorPlatformBackend(DesktopEditorPlatformBackend *backend)
+{
+    if (!backend)
+        return;
+    connect(pluginHost, &PluginHost::rehightlight_requested, backend, &DesktopEditorPlatformBackend::rehighlight,
+            Qt::UniqueConnection);
+    pluginHost->attachSpellCheck(backend);
 }
 
 void PluginManager::loadPlugins()

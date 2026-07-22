@@ -11,6 +11,7 @@ namespace QtNote {
 
 class NoteEditor;
 class NoteStorage;
+class NotesWorkspaceController;
 
 class EmptyListModel final : public QAbstractListModel {
     Q_OBJECT
@@ -42,6 +43,7 @@ public:
 class MobileApplication final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QAbstractItemModel *notesModel READ notesModel CONSTANT)
+    Q_PROPERTY(QObject *workspace READ workspace CONSTANT)
     Q_PROPERTY(QAbstractItemModel *pluginsModel READ pluginsModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *storagesModel READ storagesModel CONSTANT)
     Q_PROPERTY(QObject *currentNoteEditor READ currentNoteEditor NOTIFY currentNoteEditorChanged)
@@ -56,6 +58,7 @@ public:
     QAbstractItemModel *pluginsModel();
     QAbstractItemModel *storagesModel();
     QObject            *currentNoteEditor() const;
+    QObject            *workspace();
 
     bool  askBeforeDelete() const;
     int   notesPerPage() const;
@@ -81,14 +84,13 @@ private:
     bool openEditor(const Note &note, const QUuid &draftId = {});
     void recoverDraft(NoteStorage *storage);
 
-    MobileStoragesModel  storages_;
-    EmptyListModel       plugins_;
-    EmptyListModel       notes_;
-    QPointer<NoteEditor> currentNoteEditor_;
-    QString              initializationError_;
-    bool                 askBeforeDelete_ { true };
-    int                  notesPerPage_ { 30 };
-    qreal                editorFontSize_ { 16.0 };
+    MobileStoragesModel       storages_;
+    EmptyListModel            plugins_;
+    NotesWorkspaceController *workspace_ { nullptr };
+    QString                   initializationError_;
+    bool                      askBeforeDelete_ { true };
+    int                       notesPerPage_ { 30 };
+    qreal                     editorFontSize_ { 16.0 };
 };
 
 } // namespace QtNote

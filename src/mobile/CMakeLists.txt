@@ -6,8 +6,10 @@ qt_policy(SET QTP0001 NEW)
 
 set(qtnote_mobile_shared_qml
     "${CMAKE_SOURCE_DIR}/libqtnote/qml/EditorContextMenu.qml"
+    "${CMAKE_SOURCE_DIR}/libqtnote/qml/EditorToolbar.qml"
     "${CMAKE_SOURCE_DIR}/libqtnote/qml/ListBlockBehavior.js"
     "${CMAKE_SOURCE_DIR}/libqtnote/qml/NoteBlockEditor.qml"
+    "${CMAKE_SOURCE_DIR}/libqtnote/qml/NotesManagerPage.qml"
     "${CMAKE_SOURCE_DIR}/libqtnote/qml/TableBlockBehavior.js"
 )
 foreach(qtnote_mobile_qml_file IN LISTS qtnote_mobile_shared_qml)

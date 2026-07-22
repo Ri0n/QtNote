@@ -382,50 +382,23 @@ private slots:
         QTRY_VERIFY(!editor.isMarkdown());
     }
 
-    void noteWidgetSynchronizesModeAndGroupsAutomaticConversion()
+    void sharedToolbarCommandsUseOneFormatConversionTransaction()
     {
-        Note note(new NoteData(nullptr));
-        note.setText(QString(), Note::PlainText);
-        NoteWidget widget(note);
-        auto      *editor         = widget.findChild<QmlNoteEditor *>();
-        auto      *markdownAction = widget.findChild<QAction *>(QStringLiteral("markdownModeAction"));
-        auto      *textAction     = widget.findChild<QAction *>(QStringLiteral("textModeAction"));
-        auto      *tableAction    = widget.findChild<QAction *>(QStringLiteral("insertTableAction"));
-        QVERIFY(editor);
-        QVERIFY(markdownAction);
-        QVERIFY(textAction);
-        QVERIFY(tableAction);
-        QObject::disconnect(editor, &QmlNoteEditor::focusLost, &widget, &NoteWidget::save);
-        QCoreApplication::processEvents();
+        QmlNoteEditor editor;
+        editor.load(QString(), Note::PlainText);
+        QVERIFY(!editor.isMarkdown());
 
-        QVERIFY(!editor->model()->markdown());
-        QVERIFY(markdownAction->isVisible());
-        QVERIFY(!textAction->isVisible());
-        QSignalSpy historyState(editor, &QmlNoteEditor::undoStateChanged);
+        editor.beginExternalHistoryTransaction(QStringLiteral("insert-table"));
+        editor.load(editor.contents(), Note::Markdown, NoteEditor::LoadPolicy::RecordFormatConversion);
+        editor.insertTable();
+        editor.endExternalHistoryTransaction();
+        QTRY_VERIFY(editor.isMarkdown());
+        QTRY_VERIFY(editor.model()->rowCount() > 1);
 
-        markdownAction->trigger();
-        QTRY_VERIFY(editor->model()->markdown());
-        QTRY_VERIFY(!markdownAction->isVisible());
-        QTRY_VERIFY(textAction->isVisible());
-        QTRY_VERIFY(historyState.size() > 0);
-        QVERIFY(editor->undo());
-        QTRY_VERIFY(!editor->model()->markdown());
-        QTRY_VERIFY(markdownAction->isVisible());
-        QTRY_VERIFY(!textAction->isVisible());
-        QVERIFY(editor->redo());
-        QTRY_VERIFY(editor->model()->markdown());
-        QVERIFY(editor->undo());
-        QTRY_VERIFY(!editor->model()->markdown());
-
-        // One toolbar action owns both the automatic Markdown conversion and
-        // the inserted table, so one undo returns to the original plain note.
-        tableAction->trigger();
-        QTRY_VERIFY(editor->model()->markdown());
-        QTRY_VERIFY(editor->model()->rowCount() > 1);
-        QVERIFY(editor->undo());
-        QTRY_VERIFY(!editor->model()->markdown());
-        QCOMPARE(editor->model()->rowCount(), 1);
-        QVERIFY(!editor->canUndo());
+        QVERIFY(editor.undo());
+        QTRY_VERIFY(!editor.isMarkdown());
+        QCOMPARE(editor.model()->rowCount(), 1);
+        QVERIFY(!editor.canUndo());
     }
 
     void undoRedoRestoresFormattingAndTableCellText()

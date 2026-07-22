@@ -1,4 +1,5 @@
 #include "pluginhost.h"
+#include "desktopeditorplatformbackend.h"
 #include "notehighlighter.h"
 #include "notemanager.h"
 #include "notewidget.h"
@@ -54,6 +55,12 @@ void PluginHost::attachSpellCheck(QWidget *w)
 {
     if (spellCheckExtension_)
         addHighlightExtension(w, spellCheckExtension_, int(NoteHighlighter::SpellCheck));
+}
+
+void PluginHost::attachSpellCheck(DesktopEditorPlatformBackend *backend)
+{
+    if (backend && spellCheckExtension_)
+        backend->addHighlightExtension(spellCheckExtension_, int(NoteHighlighter::SpellCheck));
 }
 
 QString PluginHost::activeSpellCheckProviderId() const { return provider_ ? provider_->id() : QString(); }

@@ -13,6 +13,7 @@
 
 namespace QtNote {
 
+class DesktopEditorPlatformBackend;
 class PluginHost;
 
 class PluginManager : public QObject {
@@ -98,6 +99,7 @@ public:
     }
     QList<SpeechRecognitionProviderInterface *> speechRecognitionProviders() const;
     SpeechRecognitionProviderInterface         *speechRecognitionProvider() const;
+    void                                        attachEditorPlatformBackend(DesktopEditorPlatformBackend *backend);
 
 signals:
 

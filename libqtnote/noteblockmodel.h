@@ -10,7 +10,6 @@ namespace QtNote {
 
 class NoteDocumentHistory;
 class NoteEditor;
-class QmlNoteEditor;
 
 struct QTNOTE_EXPORT NoteBlockSelectionRange {
     int     blockIndex { -1 };
@@ -107,8 +106,6 @@ signals:
 private:
     friend class NoteDocumentHistory;
     friend class NoteEditor;
-    friend class QmlNoteEditor;
-
     // Internal document representation used by editor history. It preserves
     // topology without turning the storage format into public libqtnote API.
     struct Block {

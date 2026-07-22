@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.14.0)
 include(QtNoteMacro)
 project(libqtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
+if(NOT DEFINED QTNOTE_ABI_VERSION)
+    set(QTNOTE_ABI_VERSION 2 CACHE STRING "libqtnote ABI version")
+endif()
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -45,6 +49,7 @@ set(qtnote_CORE_SRCS
     fileremotecachestore.cpp
     filestorage.cpp
     localdatakeystore.cpp
+    localmediaimageprovider.cpp
     localmediastore.cpp
     mediareference.cpp
     note.cpp
@@ -56,6 +61,9 @@ set(qtnote_CORE_SRCS
     notefragment.cpp
     notefragmentmediatransfer.cpp
     notemanager.cpp
+    notesmodel.cpp
+    notessearchmodel.cpp
+    notesworkspacecontroller.cpp
     notestorage.cpp
     notetransfercontroller.cpp
     ptfstorage.cpp
@@ -72,6 +80,7 @@ set(qtnote_CORE_HDRS
     fileremotecachestore.h
     filestorage.h
     localdatakeystore.h
+    localmediaimageprovider.h
     localmediastore.h
     mediareference.h
     note.h
@@ -81,6 +90,9 @@ set(qtnote_CORE_HDRS
     notefragment.h
     notefragmentmediatransfer.h
     notemanager.h
+    notesmodel.h
+    notessearchmodel.h
+    notesworkspacecontroller.h
     notestorage.h
     notetransfercontroller.h
     ptfstorage.h
@@ -121,7 +133,7 @@ target_include_directories(qtnote_core PUBLIC
 set_target_properties(qtnote_core PROPERTIES
   POSITION_INDEPENDENT_CODE ON
 )
-target_link_libraries(qtnote_core PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Quick)
+target_link_libraries(qtnote_core PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Qml)
 target_link_libraries(qtnote_core PRIVATE qca-qt${QT_VERSION_MAJOR})
 target_link_libraries(qtnote_core PRIVATE Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
 foreach(qtnote_core_dependency qtnote_bundled_qca qtnote_bundled_qtkeychain)
@@ -157,7 +169,7 @@ target_include_directories(qtnote PUBLIC
 
 set_target_properties(qtnote PROPERTIES
   VERSION ${QTNOTE_VERSION}
-  SOVERSION ${QTNOTE_VERSION_MAJOR}
+  SOVERSION ${QTNOTE_ABI_VERSION}
 )
 if(WIN32)
     set_target_properties(qtnote PROPERTIES
@@ -169,7 +181,7 @@ else()
     )
 endif()
 target_link_libraries(qtnote PUBLIC qtnote_core Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
-target_link_libraries(qtnote PRIVATE Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::QuickWidgets Qt${QT_VERSION_MAJOR}::Qml)
+target_link_libraries(qtnote PRIVATE Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::QuickWidgets Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::QuickControls2)
 target_link_libraries(qtnote PRIVATE qca-qt${QT_VERSION_MAJOR})
 target_link_libraries(qtnote PRIVATE Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
 if(TARGET Qt${QT_VERSION_MAJOR}::DBus)

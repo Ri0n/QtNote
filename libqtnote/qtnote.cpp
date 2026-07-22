@@ -12,6 +12,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPluginLoader>
+#include <QPointer>
 #include <QProcess>
 #include <QSet>
 #include <QSettings>
@@ -31,7 +32,7 @@
 #include "globalshortcutsinterface.h"
 #include "notedialog.h"
 #include "notemanager.h"
-#include "notemanagerdlg.h"
+#include "notesmanagerwindow.h"
 #include "notewidget.h"
 #include "notificationinterface.h"
 #include "optionsdlg.h"
@@ -72,6 +73,7 @@ public:
     ActionNotificationInterface *actionNotifier;
     StickyNotesManager          *stickyNotes;
     QSet<QUuid>                  recoveredDraftIds;
+    QPointer<NotesManagerWindow> notesManagerWindow;
 #ifdef QTNOTE_DBUS_AVAILABLE
     QtNoteDBus *dbus;
 #endif
@@ -245,12 +247,13 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
     connect(actNoteFromSel, SIGNAL(triggered(bool)), SLOT(createNewNoteFromSelection()));
     _shortcutsManager->registerGlobal(ShortcutsManager::SKNoteFromSelection, actNoteFromSel);
 
-    connect(qApp, &QCoreApplication::aboutToQuit, this, []() {
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [this]() {
         // Covers SIGTERM/session shutdown paths which bypass Main::exitQtNote().
-        // NoteDialog and NoteManagerDlg perform the final synchronous checkpoint
-        // and mark the last editor's draft Ready.
+        // Each shell performs its final synchronous checkpoint before closing.
+        if (d->notesManagerWindow)
+            d->notesManagerWindow->close();
         for (auto *widget : QApplication::topLevelWidgets()) {
-            if (widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
+            if (widget->objectName() == QLatin1String("noteDlg"))
                 widget->close();
         }
     });
@@ -293,13 +296,14 @@ void Main::parseAppArguments(const QStringList &args)
 
 void Main::exitQtNote()
 {
+    if (d->notesManagerWindow && !d->notesManagerWindow->close())
+        return;
     for (auto *widget : QApplication::topLevelWidgets()) {
-        if (widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
+        if (widget->objectName() == QLatin1String("noteDlg"))
             widget->close();
     }
     for (auto *widget : QApplication::topLevelWidgets()) {
-        if ((widget->objectName() == QLatin1String("noteDlg") || qobject_cast<NoteManagerDlg *>(widget))
-            && widget->isVisible())
+        if (widget->objectName() == QLatin1String("noteDlg") && widget->isVisible())
             return; // A draft checkpoint failed; keep the application alive.
     }
 
@@ -324,10 +328,16 @@ void Main::showAbout()
 
 void Main::showNoteManager()
 {
-    NoteManagerDlg *d = new NoteManagerDlg(this);
-    connect(d, &NoteManagerDlg::showNoteRequested, this, &Main::openNoteDialog);
-    d->show();
-    activateWidget(d);
+    if (!d->notesManagerWindow) {
+        d->notesManagerWindow = new NotesManagerWindow(this);
+        _pluginManager->attachEditorPlatformBackend(d->notesManagerWindow->platformBackend());
+        connect(d->notesManagerWindow, &NotesManagerWindow::openNoteRequested, this, &Main::openNoteDialog);
+    }
+    if (!d->notesManagerWindow->isReady()) {
+        notifyError(tr("The note manager QML window could not be created"));
+        return;
+    }
+    d->notesManagerWindow->show();
 }
 
 void Main::showOptions()

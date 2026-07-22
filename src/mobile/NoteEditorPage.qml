@@ -23,36 +23,13 @@ Page {
             backRequested()
     }
 
-    header: ToolBar {
-        RowLayout {
-            anchors.fill: parent
-            spacing: 0
-
-            ToolButton {
-                Layout.fillHeight: true
-                text: qsTr("<")
-                font.pixelSize: 30
-                Accessible.name: qsTr("Back")
-                onClicked: root.closeEditor()
-            }
-
-            Label {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                text: editor && editor.text.length > 0 ? editor.text.split("\n")[0] : qsTr("New note")
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
-                font.pixelSize: 20
-                font.bold: true
-            }
-
-            ToolButton {
-                Layout.fillHeight: true
-                text: qsTr("MD")
-                enabled: false
-                Accessible.name: qsTr("Markdown")
-            }
-        }
+    header: EditorToolbar {
+        editorBackend: root.editor
+        blockEditor: blockEditor
+        platformBackend: null
+        compact: true
+        showBackButton: true
+        onBackRequested: root.closeEditor()
     }
 
     NoteBlockEditor {

@@ -3,6 +3,8 @@
 #include "draftmanager.h"
 #include "noteeditor.h"
 #include "notemanager.h"
+#include "notesmodel.h"
+#include "notesworkspacecontroller.h"
 #include "ptfstorage.h"
 
 #include <QDir>
@@ -87,12 +89,16 @@ QHash<int, QByteArray> MobileStoragesModel::roleNames() const
 
 QString MobileStoragesModel::storagePath() const { return ptfStoragePath(); }
 
-MobileApplication::MobileApplication(QObject *parent) : QObject(parent), storages_(this), plugins_(this), notes_(this)
+MobileApplication::MobileApplication(QObject *parent) : QObject(parent), storages_(this), plugins_(this)
 {
+    workspace_ = new NotesWorkspaceController(this);
+    connect(workspace_, &NotesWorkspaceController::currentEditorChanged, this,
+            &MobileApplication::currentNoteEditorChanged);
     QSettings settings;
     askBeforeDelete_ = settings.value(QStringLiteral("ui.ask-on-delete"), true).toBool();
     notesPerPage_    = settings.value(QStringLiteral("mobile.notes-per-page"), 30).toInt();
-    editorFontSize_  = settings.value(QStringLiteral("mobile.editor-font-size"), 16.0).toReal();
+    workspace_->sourceModel()->setPageSize(notesPerPage_);
+    editorFontSize_ = settings.value(QStringLiteral("mobile.editor-font-size"), 16.0).toReal();
 
     if (!DraftManager::instance()->initialize(&initializationError_))
         qWarning() << "Failed to initialize encrypted draft store:" << initializationError_;
@@ -104,13 +110,15 @@ MobileApplication::MobileApplication(QObject *parent) : QObject(parent), storage
         notes->registerStorage(std::make_unique<PTFStorage>());
 }
 
-QAbstractItemModel *MobileApplication::notesModel() { return &notes_; }
+QAbstractItemModel *MobileApplication::notesModel() { return workspace_->notesModel(); }
 
 QAbstractItemModel *MobileApplication::pluginsModel() { return &plugins_; }
 
 QAbstractItemModel *MobileApplication::storagesModel() { return &storages_; }
 
-QObject *MobileApplication::currentNoteEditor() const { return currentNoteEditor_; }
+QObject *MobileApplication::currentNoteEditor() const { return workspace_->currentEditor(); }
+
+QObject *MobileApplication::workspace() { return workspace_; }
 
 bool MobileApplication::askBeforeDelete() const { return askBeforeDelete_; }
 
@@ -124,34 +132,17 @@ bool MobileApplication::createNote()
         qWarning() << "Cannot create note; draft store is unavailable:" << initializationError_;
         return false;
     }
-
-    auto storage = NoteManager::instance()->defaultStorage();
-    if (!storage || !storage->isAccessible()) {
-        qWarning() << "Cannot create note; default storage is unavailable";
-        return false;
-    }
-
-    auto note = storage->createNote();
-    if (note.isNull()) {
-        qWarning() << "Cannot create note shell";
-        return false;
-    }
-
-    return openEditor(note);
+    return workspace_->createNote();
 }
 
 bool MobileApplication::openEditor(const Note &note, const QUuid &draftId)
 {
-    if (currentNoteEditor_ && !closeCurrentNote())
-        return false;
-    currentNoteEditor_ = new NoteEditor(note, draftId, this);
-    emit currentNoteEditorChanged();
-    return true;
+    return workspace_->openNote(note, draftId);
 }
 
 void MobileApplication::recoverDraft(NoteStorage *storage)
 {
-    if (!storage || currentNoteEditor_ || !DraftManager::instance()->isReady())
+    if (!storage || workspace_->currentEditor() || !DraftManager::instance()->isReady())
         return;
     for (const auto &draft : DraftManager::instance()->recoverableDrafts()) {
         if (!draft.storageId.isEmpty() && draft.storageId != storage->systemName())
@@ -162,25 +153,9 @@ void MobileApplication::recoverDraft(NoteStorage *storage)
     }
 }
 
-bool MobileApplication::saveCurrentNote()
-{
-    if (!currentNoteEditor_)
-        return false;
-    return currentNoteEditor_->save();
-}
+bool MobileApplication::saveCurrentNote() { return workspace_->saveCurrentNote(); }
 
-bool MobileApplication::closeCurrentNote()
-{
-    if (!currentNoteEditor_)
-        return true;
-    const auto editor = currentNoteEditor_;
-    if (!editor->close())
-        return false;
-    editor->deleteLater();
-    currentNoteEditor_.clear();
-    emit currentNoteEditorChanged();
-    return true;
-}
+bool MobileApplication::closeCurrentNote() { return workspace_->closeCurrentNote(); }
 
 bool MobileApplication::setPluginEnabled(int row, bool enabled)
 {
@@ -205,6 +180,7 @@ void MobileApplication::setNotesPerPage(int value)
         return;
     notesPerPage_ = value;
     QSettings().setValue(QStringLiteral("mobile.notes-per-page"), value);
+    workspace_->sourceModel()->setPageSize(value);
     emit notesPerPageChanged();
 }
 

@@ -2,17 +2,17 @@
 
 ## Goal
 
-Desktop and mobile use one editing controller and one document model. Platform
-views may provide different window chrome and system integrations, but they must
-not implement note checkpoint, close, recovery, or draft lease rules themselves.
+Desktop and Android use one editing controller, one structured document model,
+one history implementation, one transfer/formatting contract, and one adaptive
+QML toolbar. Platform shells provide only window chrome and operating-system
+integrations. They do not implement checkpoint, close, recovery, publication,
+or draft lease rules.
 
 ## Current structure
 
 `NoteEditor` is the shared controller. It owns the logical `Note`, the draft
-editing lease, canonical text, format and media state, one `NoteBlockModel`,
-and the document-wide undo/redo history.
-`NoteWidget` no longer keeps parallel note, baseline, dirty, draft revision, or
-session state.
+editing lease, canonical text, format and media state, one `NoteBlockModel`, and
+the document-wide undo/redo history.
 
 ```mermaid
 flowchart TD
@@ -21,35 +21,69 @@ flowchart TD
     NE[NoteEditor]
     BM[NoteBlockModel]
     DH[NoteDocumentHistory]
-    NW[NoteWidget desktop shell]
-    QE[QmlNoteEditor desktop platform host]
-    MP[NoteEditorPage mobile shell]
+    TB[EditorToolbar.qml]
     QB[NoteBlockEditor.qml]
+
+    subgraph DesktopStandalone[Desktop standalone shell]
+        NW[NoteWidget]
+        DHOST[DesktopNoteEditorHost]
+        DPB[DesktopEditorPlatformBackend]
+    end
+
+    subgraph DesktopManager[Desktop manager]
+        MW[NotesManagerWindow]
+        WC[NotesWorkspaceController]
+        MP[NotesManagerPage.qml]
+    end
+
+    subgraph Android[Android shell]
+        MA[MobileApplication]
+        AP[NotesPage / NoteEditorPage]
+    end
 
     NE --> DM
     DM --> DS
     NE --> BM
     NE --> DH
-    NW --> NE
-    NW --> QE
-    QE --> NE
-    QE --> QB
-    MP --> NE
-    MP --> QB
     QB --> BM
     QB -->|editorBackend| NE
-    QB -. desktop platformBackend .-> QE
+    TB -->|commands| NE
+    TB --> QB
+
+    NW --> NE
+    NW --> DHOST
+    DHOST --> QB
+    DHOST --> DPB
+    QB -. platformBackend .-> DPB
+
+    MW --> WC
+    WC --> NE
+    MW --> MP
+    MP --> TB
+    MP --> QB
+    MP -. desktop platformBackend .-> DPB
+
+    MA --> WC
+    AP --> TB
+    AP --> QB
 ```
 
 `NoteBlockEditor.qml` uses `NoteEditor` as its `editorBackend` on both
-platforms. This API contains history, structured clipboard, formatting, link,
-Markdown serialization, and media-manifest operations. The optional
-`platformBackend` is present on desktop only and supplies spell checking,
-native image drag, and Save As integration. Android passes `null` for it.
+platforms. This API contains history, structured clipboard, formatting, links,
+Markdown serialization, and media-manifest operations.
+
+`DesktopEditorPlatformBackend` contains the optional desktop-only services:
+spell checking, native image drag, file dialogs, image import, and Save As.
+Android passes `null` as `platformBackend`.
+
+`DesktopNoteEditorHost` is only a `QQuickWidget` host and a desktop event
+adapter. It owns no document or draft state. The desktop note manager does not
+use this QWidget host: it is a pure Qt Quick top-level window and connects the
+same controller, model, toolbar, and block editor directly.
 
 ## Lifecycle ownership
 
-Only `NoteEditor` performs the editing lifecycle transitions:
+Only `NoteEditor` performs editing lifecycle transitions:
 
 ```mermaid
 stateDiagram-v2
@@ -60,49 +94,70 @@ stateDiagram-v2
     Open --> Closed: close without changes
     Editing --> Ready: last editor closes
     Ready --> Publishing: DraftManager
-    Publishing --> [*]: storage accepts note
-    Publishing --> Retry: retryable failure
+    Publishing --> [*]: storage accepts note or proves no-op
+    Publishing --> Retry: retryable or paused failure
     Retry --> Publishing
 ```
 
-Entering the Android background checkpoints the current editor but does not
-mark it ready. Android system Back closes through `NoteEditor::close()`. If the
-process terminates after a checkpoint, the mobile application opens the
-recoverable `Editing` draft when its storage becomes ready.
+Shells must flush their active QML delegate before asking `NoteEditor` to save or
+close. Android additionally commits the input method's preedit text. Losing
+focus checkpoints but does not mark a draft Ready. Closing a standalone window,
+leaving an Android editor, switching the manager preview, or closing the manager
+calls the same `NoteEditor::close()` protocol.
 
-Before a mobile checkpoint, the QML shell commits the Android input method's
-preedit text and flushes the active block delegate into `NoteBlockModel`. The
-controller therefore never persists a visually newer but logically stale
-document.
+A clean editor receiving focus may call `reloadNewerDraft()`. It reads a newer
+checkpoint from the same draft UUID and never reloads the origin storage over a
+newer Editing draft. A dirty editor is not overwritten.
+
+## Shared notes manager
+
+The manager uses the existing data path rather than a second mobile model:
+
+```mermaid
+flowchart LR
+    NM[NoteManager / NoteStorage] --> LM[NotesModel]
+    LM --> SM[NotesSearchModel]
+    SM --> WC[NotesWorkspaceController]
+    WC --> PAGE[NotesManagerPage.qml]
+    WC --> NE[Current NoteEditor]
+```
+
+`NotesModel` exposes storage and note roles to QML, asynchronous per-storage
+refresh, loading/error state, in-memory pagination, and drag metadata.
+`NotesSearchModel` performs title/tag filtering and optional asynchronous body
+search. `NotesWorkspaceController` is deliberately thin: it owns selection,
+load jobs, create/delete/move commands, and the current `NoteEditor`, while all
+draft semantics remain in `NoteEditor` and `DraftManager`.
+
+`NotesManagerPage.qml` is adaptive. Desktop embeds the current editor beside the
+notes tree. Android uses the same list/controller but opens the current editor
+on its existing navigation page.
 
 ## Platform responsibilities
 
-`NoteDocumentHistory` and `NoteBlockModel` are UI independent. `NoteEditor`
-contains the shared QML-facing editing contract and therefore links Qt Quick,
-but not Qt Widgets. It registers the QML root as a weak `QObject` view and uses
-its `captureEditorState`, `prepareForHistoryRestore`, and `restoreEditorState`
-methods. The surrounding shells are responsible only for platform services:
-
-| Responsibility | Shared controller | Desktop shell | Mobile shell |
+| Responsibility | Shared core/QML | Desktop-only | Android-only |
 | --- | --- | --- | --- |
-| Draft checkpoint and publication transition | Yes | No | No |
-| Canonical document model | Yes | No | No |
-| Undo/redo, structured clipboard, formatting, links and media manifest | Yes | No | No |
-| Window geometry, pinning, printing | No | Yes | No |
-| Spell checking, native image drag and Save As | No | Yes | No |
-| Android activity state and system Back | No | No | Yes |
-| QML block rendering | Shared QML | Host | Host |
+| Draft checkpoint, leases, close and publication transition | `NoteEditor` / `DraftManager` | No | No |
+| Canonical document model and history | `NoteEditor` / `NoteBlockModel` | No | No |
+| Clipboard, formatting, links and Markdown serialization | `NoteEditor` / shared QML | No | No |
+| Editor toolbar | `EditorToolbar.qml` | Host | Host |
+| Notes list/search/workspace | Shared model/controller/QML | Pure Quick window | Mobile navigation shell |
+| Spell checking, native image drag and file dialogs | No | `DesktopEditorPlatformBackend` | No |
+| Window geometry, pinning, printing, speech and legacy plugins | No | `NoteWidget` temporarily | No |
+| IME/background/system Back handling | No | No | Mobile shell |
 
 ## Remaining migration
 
-1. Reduce `QmlNoteEditor` to a `QQuickWidget` host with desktop drag, file dialog,
-   and focus adapters. Rename it to reflect that responsibility.
-2. Move the editor toolbar to an adaptive QML component shared by desktop and
-   mobile.
-3. Remove the legacy `NoteEdit : QTextEdit` compatibility path after all in-tree
-   plugins use controller/highlighter APIs.
-4. When no QWidget-only behavior remains in `NoteWidget`, replace it with the
-   desktop QML window shell.
+1. Remove the legacy hidden `NoteEdit : QTextEdit` compatibility path after all
+   in-tree plugins use controller/highlighter APIs. Find/replace and print/export
+   must then operate on the structured editor or a temporary `QTextDocument`.
+2. Move the remaining standalone-window services out of `NoteWidget` and choose
+   the final desktop QML window shell.
+3. Replace the mobile placeholder plugin/storage models with the common plugin
+   and storage models, then define Android bundled plugin loading.
+4. Design and migrate the common settings API.
+5. Complete Android IME, process-death, rotation, device, and release-build
+   hardening.
 
 Each migration step must move the existing implementation and immediately make
 both platforms use it. A parallel mobile implementation is not an acceptable

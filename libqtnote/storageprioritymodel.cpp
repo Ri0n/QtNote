@@ -29,12 +29,11 @@ StoragePriorityModel::StoragePriorityModel(QObject *parent) : QAbstractListModel
         resetFromManager();
         endResetModel();
     });
-    connect(NoteManager::instance(), qOverload<NoteStorage::Ptr>(&NoteManager::storageChanged), this,
-            [this](const NoteStorage::Ptr &storage) {
-                const int row = storage ? rowForStorage(storage->systemName()) : -1;
-                if (row >= 0)
-                    emit dataChanged(index(row), index(row));
-            });
+    connect(NoteManager::instance(), &NoteManager::storageChanged, this, [this](const NoteStorage::Ptr &storage) {
+        const int row = storage ? rowForStorage(storage->systemName()) : -1;
+        if (row >= 0)
+            emit dataChanged(index(row), index(row));
+    });
 }
 
 int StoragePriorityModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : items_.count(); }

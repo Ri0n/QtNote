@@ -26,7 +26,7 @@ namespace QtNote {
 class NoteEdit;
 class NoteEditor;
 class NoteHighlighter;
-class QmlNoteEditor;
+class DesktopNoteEditorHost;
 class SpeechAudioRecorder;
 class SpeechRecognitionJob;
 class NoteSaveJob;
@@ -132,15 +132,12 @@ private:
     bool    insertImportedImage(const MediaReference &reference, int row = -1);
     bool    insertImportedImages(const QList<MediaReference> &references, int row, const QString &historyKind);
 
-    Ui::NoteWidget *ui        = nullptr;
-    NoteEditor     *editor    = nullptr;
-    QmlNoteEditor  *qmlEditor = nullptr;
+    Ui::NoteWidget        *ui        = nullptr;
+    NoteEditor            *editor    = nullptr;
+    DesktopNoteEditorHost *qmlEditor = nullptr;
 
-    QAction                              *mdModeAct;
-    QAction                              *txtModeAct;
-    QAction                              *speechAction      = nullptr;
-    QAction                              *pinAction         = nullptr;
-    QAction                              *insertImageAction = nullptr;
+    QAction                              *speechAction = nullptr;
+    QAction                              *pinAction    = nullptr;
     QIcon                                 speechIdleIcon;
     QToolButton                          *speechButton   = nullptr;
     SpeechRecognitionProviderInterface   *speechProvider = nullptr;

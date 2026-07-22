@@ -54,10 +54,13 @@ ListView {
     activeFocusOnTab: true
     focus: true
 
-    Component.onCompleted: {
+    function registerEditorBackendView() {
         if (editorBackend && typeof editorBackend.registerEditorView === "function")
             editorBackend.registerEditorView(root)
     }
+
+    Component.onCompleted: registerEditorBackendView()
+    onEditorBackendChanged: registerEditorBackendView()
 
     ScrollBar.vertical: ScrollBar {
         id: verticalScrollBar
@@ -968,6 +971,9 @@ ListView {
     function pasteClipboard() {
         if (!activeEditor)
             return false
+        if (platformBackend && typeof platformBackend.insertClipboardImage === "function"
+                && platformBackend.insertClipboardImage(insertionBlockIndex()))
+            return true
         return runEditTransaction("paste", function() {
             if (!pasteStructuredSelection(activeEditor))
                 activeEditor.paste()
@@ -1402,6 +1408,35 @@ ListView {
             focusBlock(row)
             return true
         })
+    }
+
+    function convertActiveToHeading(level) {
+        if (!activeEditor || activeEditor.blockIndex < 0)
+            return false
+        return runEditTransaction("convert-heading", function() {
+            const row = blockModel.convertTextBlockToHeading(activeEditor.blockIndex,
+                                                              activeEditor.cursorPosition, level)
+            if (row < 0)
+                return false
+            focusBlock(row)
+            return true
+        })
+    }
+
+    function applyActiveInlineStyle(style) {
+        if (!activeEditor || !editorBackend)
+            return false
+        return runEditTransaction("inline-" + style, function() {
+            applyInlineStyle(activeEditor, style)
+            return true
+        })
+    }
+
+    function editActiveLink() {
+        if (!activeEditor)
+            return false
+        openLinkEditor(activeEditor)
+        return true
     }
 
     function handleHeadingShortcut(event, editor) {

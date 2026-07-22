@@ -1,5 +1,8 @@
-#ifndef QMLNOTEEDITOR_H
-#define QMLNOTEEDITOR_H
+#ifndef QTNOTE_TESTS_QMLNOTEEDITOR_FIXTURE_H
+#define QTNOTE_TESTS_QMLNOTEEDITOR_FIXTURE_H
+
+// Test-only compatibility fixture. Production code uses NoteEditor plus
+// DesktopNoteEditorHost/DesktopEditorPlatformBackend.
 
 #include <QPointer>
 #include <QStringList>
@@ -26,7 +29,7 @@ class NoteEditor;
 class NoteHighlighter;
 class HighlighterExtension;
 
-class QTNOTE_EXPORT QmlNoteEditor : public QWidget {
+class QmlNoteEditor : public QWidget {
     Q_OBJECT
     Q_PROPERTY(bool spellCheckEnabled READ spellCheckEnabled WRITE setSpellCheckEnabled NOTIFY spellCheckEnabledChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY undoStateChanged)
@@ -125,4 +128,4 @@ private:
 };
 } // namespace QtNote
 
-#endif
+#endif // QTNOTE_TESTS_QMLNOTEEDITOR_FIXTURE_H
