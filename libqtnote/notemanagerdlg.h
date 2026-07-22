@@ -51,7 +51,7 @@ signals:
     void showNoteRequested(const QString &, const QString &);
 
 protected:
-    void changeEvent(QEvent *e);
+    void changeEvent(QEvent *e) override;
     void closeEvent(QCloseEvent *event) override;
 
 private slots:

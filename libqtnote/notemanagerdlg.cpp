@@ -199,12 +199,17 @@ void NoteManagerDlg::currentRowChanged(const QModelIndex &current, const QModelI
                 if (highlightMatch)
                     nw->findText(searchText, false);
                 if (ui->splitter->count() > 1) {
-                    auto *previous = qobject_cast<NoteWidget *>(ui->splitter->widget(ui->splitter->count() - 1));
+                    QWidget *prevWidget = ui->splitter->widget(ui->splitter->count() - 1);
+                    auto    *previous   = qobject_cast<NoteWidget *>(prevWidget);
                     if (previous && !previous->prepareToClose()) {
                         delete nw;
                         return;
                     }
-                    delete ui->splitter->widget(ui->splitter->count() - 1);
+                    if (previous) {
+                        delete ui->splitter->widget(ui->splitter->count() - 1);
+                    } else {
+                        prevWidget->hide();
+                    }
                 } else
                     resize(700, 400);
                 ui->splitter->addWidget(nw);
