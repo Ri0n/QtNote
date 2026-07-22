@@ -95,15 +95,13 @@ methods. The surrounding shells are responsible only for platform services:
 
 ## Remaining migration
 
-1. Remove the compatibility forwarding API from `QmlNoteEditor` after desktop
-   callers and tests use `NoteEditor` directly.
-2. Reduce `QmlNoteEditor` to a `QQuickWidget` host with desktop drag, file dialog,
+1. Reduce `QmlNoteEditor` to a `QQuickWidget` host with desktop drag, file dialog,
    and focus adapters. Rename it to reflect that responsibility.
-3. Move the editor toolbar to an adaptive QML component shared by desktop and
+2. Move the editor toolbar to an adaptive QML component shared by desktop and
    mobile.
-4. Remove the legacy `NoteEdit : QTextEdit` compatibility path after all in-tree
+3. Remove the legacy `NoteEdit : QTextEdit` compatibility path after all in-tree
    plugins use controller/highlighter APIs.
-5. When no QWidget-only behavior remains in `NoteWidget`, replace it with the
+4. When no QWidget-only behavior remains in `NoteWidget`, replace it with the
    desktop QML window shell.
 
 Each migration step must move the existing implementation and immediately make

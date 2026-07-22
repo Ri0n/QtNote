@@ -64,33 +64,17 @@ public:
     Q_INVOKABLE QVariantList spellCheckRanges(QQuickTextDocument *document);
     Q_INVOKABLE QStringList  spellingSuggestions(const QString &word) const;
     Q_INVOKABLE void         addToSpellingDictionary(const QString &word);
-    Q_INVOKABLE void         copyToClipboard(const QString &text);
-    Q_INVOKABLE void         copyMarkdownToClipboard(const QString &markdown);
     Q_INVOKABLE void         saveImageAs(const QString &url);
     Q_INVOKABLE bool         startImageDrag(int row);
-    Q_INVOKABLE void         copyDocumentToClipboard();
-    Q_INVOKABLE bool         copySelectionToClipboard(const QVariantList &ranges);
-    Q_INVOKABLE QVariantMap  deleteSelection(const QVariantList &ranges);
-    Q_INVOKABLE QVariantMap  pasteStructuredFromClipboard(QQuickTextDocument *document, int row, int start, int end);
-    Q_INVOKABLE QVariantMap  pasteTableFromClipboard(int row, int cell);
-    Q_INVOKABLE QVariantMap pasteListFromClipboard(QQuickTextDocument *document, int row, int item, int start, int end);
-    Q_INVOKABLE QVariantMap linkInfo(QQuickTextDocument *document, int start, int end) const;
-    Q_INVOKABLE int         setLink(QQuickTextDocument *document, int start, int end, const QString &href);
-    Q_INVOKABLE bool        primaryModifierPressed() const;
-    Q_INVOKABLE int         applyInlineFormat(QQuickTextDocument *document, int start, int end, const QString &style);
-    Q_INVOKABLE void        applyInlineHtmlFormatting(QQuickTextDocument *document) const;
-    Q_INVOKABLE QString     markdownText(QQuickTextDocument *document) const;
-    Q_INVOKABLE QString     markdownTableCellText(QQuickTextDocument *document) const;
-    Q_INVOKABLE QString     markdownSelection(QQuickTextDocument *document, int start, int end) const;
-    Q_INVOKABLE void        beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView);
-    Q_INVOKABLE void        endHistoryTransaction(const QVariantMap &afterView);
-    Q_INVOKABLE void        updateHistoryViewState(const QVariantMap &viewState, bool breakMerge = false);
-    Q_INVOKABLE bool        undo();
-    Q_INVOKABLE bool        redo();
-    bool                    spellCheckEnabled() const { return spellCheckEnabled_; }
-    void                    setSpellCheckEnabled(bool enabled);
-    void                    addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
-    void                    rehighlight();
+    Q_INVOKABLE void         beginHistoryTransaction(const QString &kind, const QVariantMap &beforeView);
+    Q_INVOKABLE void         endHistoryTransaction(const QVariantMap &afterView);
+    Q_INVOKABLE void         updateHistoryViewState(const QVariantMap &viewState, bool breakMerge = false);
+    Q_INVOKABLE bool         undo();
+    Q_INVOKABLE bool         redo();
+    bool                     spellCheckEnabled() const { return spellCheckEnabled_; }
+    void                     setSpellCheckEnabled(bool enabled);
+    void                     addHighlightExtension(const std::shared_ptr<HighlighterExtension> &extension, int type);
+    void                     rehighlight();
 
 signals:
     void contentsChanged();

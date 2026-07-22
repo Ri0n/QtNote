@@ -1,42 +1,30 @@
-#ifdef QTNOTE_EDITOR_CORE
-#include "noteeditor.h"
-#else
 #include "qmlnoteeditor.h"
-#endif
 
 #include <QClipboard>
-#ifndef QTNOTE_EDITOR_CORE
 #include <QDir>
 #include <QDrag>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
 #include <QFileInfo>
-#endif
 #include <QFont>
 #include <QGuiApplication>
-#ifndef QTNOTE_EDITOR_CORE
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QMessageBox>
-#endif
 #include <QMimeData>
-#include <QPalette>
-#ifndef QTNOTE_EDITOR_CORE
 #include <QMimeDatabase>
+#include <QPalette>
 #include <QPixmap>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
 #include <QQuickItem>
-#endif
 #include <QQuickTextDocument>
-#include <QRegularExpression>
-#ifndef QTNOTE_EDITOR_CORE
 #include <QQuickWidget>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
-#endif
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextBlock>
@@ -46,25 +34,20 @@
 #include <QTextDocumentFragment>
 #include <QTextFragment>
 #include <QTextLayout>
-#ifndef QTNOTE_EDITOR_CORE
 #include <QTimer>
 #include <QVBoxLayout>
-#endif
 #include <QVector>
 #include <algorithm>
 
 #include "localmediastore.h"
 #include "noteblockmodel.h"
-#include "notefragmentmediatransfer.h"
-#ifndef QTNOTE_EDITOR_CORE
 #include "noteeditor.h"
+#include "notefragmentmediatransfer.h"
 #include "notehighlighter.h"
-#endif
 #include "notetransfercontroller.h"
 
 namespace QtNote {
 namespace {
-#ifndef QTNOTE_EDITOR_CORE
     class LocalMediaImageProvider : public QQuickImageProvider {
     public:
         LocalMediaImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) { }
@@ -82,11 +65,9 @@ namespace {
             return image;
         }
     };
-#endif
 
     int documentEnd(const QTextDocument *document) { return document ? qMax(0, document->characterCount() - 1) : 0; }
 
-#ifndef QTNOTE_EDITOR_CORE
     bool isUsableImageFragment(const NoteFragment &fragment)
     {
         if (fragment.blocks.isEmpty())
@@ -122,7 +103,6 @@ namespace {
         }
         return result;
     }
-#endif
 
     QString unwrapMarkdownWriterLines(const QString &markdown);
     QString markdownWithSerializedInlineFormats(QTextDocument *document);
@@ -178,7 +158,6 @@ namespace {
         return result;
     }
 
-#ifndef QTNOTE_EDITOR_CORE
     bool invokeQmlBoolean(QObject *object, const char *method)
     {
         if (!object)
@@ -196,7 +175,6 @@ namespace {
             return {};
         return result.toMap();
     }
-#endif
 
     QTextCharFormat formatAt(QTextDocument *document, int position)
     {
@@ -725,7 +703,6 @@ namespace {
 
 }
 
-#ifndef QTNOTE_EDITOR_CORE
 QmlNoteEditor::QmlNoteEditor(QWidget *parent) : QmlNoteEditor(nullptr, parent) { }
 
 QmlNoteEditor::QmlNoteEditor(NoteEditor *editor, QWidget *parent) : QWidget(parent), editor_(editor)
@@ -1096,263 +1073,6 @@ bool QmlNoteEditor::undo() { return editor_->undo(); }
 
 bool QmlNoteEditor::redo() { return editor_->redo(); }
 
-#endif
-
-#ifdef QTNOTE_EDITOR_CORE
-#define QTNOTE_SHARED_EDITOR NoteEditor
-#else
-#define QTNOTE_SHARED_EDITOR QmlNoteEditor
-#endif
-
-#ifdef QTNOTE_EDITOR_CORE
-void NoteEditor::loadDocument(const QString &contents, Note::Format format, LoadPolicy policy)
-{
-    const bool        markdown                 = format != Note::PlainText;
-    const bool        modeChanged              = model_->markdown() != markdown;
-    const bool        formatConversion         = policy == LoadPolicy::RecordFormatConversion && modeChanged;
-    const QVariantMap beforeView               = captureEditorViewState();
-    const bool        nestedHistoryTransaction = historyInTransaction();
-
-    beginHistoryTransaction(formatConversion ? QStringLiteral("format-conversion") : QStringLiteral("load"),
-                            beforeView);
-    model_->load(markdown ? protectLinkLabels(contents) : contents, markdown);
-    if (markdown)
-        restoreProtectedMarkdown(model_);
-
-    if (formatConversion)
-        endHistoryTransaction(beforeView);
-    else {
-        resetContent(model_->contents(), markdown ? Note::Markdown : Note::PlainText);
-        resetHistory();
-    }
-
-    if (formatConversion && !nestedHistoryTransaction)
-        scheduleEditorViewRestore(beforeView);
-    emit documentLoaded(modeChanged, formatConversion);
-}
-#endif
-
-bool QTNOTE_SHARED_EDITOR::primaryModifierPressed() const
-{
-    const auto modifiers = QGuiApplication::keyboardModifiers();
-    return modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier);
-}
-
-QVariantMap QTNOTE_SHARED_EDITOR::linkInfo(QQuickTextDocument *quickDocument, int start, int end) const
-{
-    QVariantMap result;
-    result.insert(QStringLiteral("valid"), false);
-    if (!quickDocument || !quickDocument->textDocument())
-        return result;
-
-    auto     *document = quickDocument->textDocument();
-    const int limit    = documentEnd(document);
-    start              = qBound(0, start, limit);
-    end                = qBound(start, end, limit);
-
-    QString href;
-    if (start == end && limit > 0) {
-        int             probe  = qMin(start, limit - 1);
-        QTextCharFormat format = formatAt(document, probe);
-        if ((!format.isAnchor() || format.anchorHref().isEmpty()) && probe > 0) {
-            --probe;
-            format = formatAt(document, probe);
-        }
-        if (format.isAnchor() && !format.anchorHref().isEmpty()) {
-            href  = format.anchorHref();
-            start = probe;
-            while (start > 0) {
-                const QTextCharFormat previous = formatAt(document, start - 1);
-                if (!previous.isAnchor() || previous.anchorHref() != href)
-                    break;
-                --start;
-            }
-            end = probe + 1;
-            while (end < limit) {
-                const QTextCharFormat next = formatAt(document, end);
-                if (!next.isAnchor() || next.anchorHref() != href)
-                    break;
-                ++end;
-            }
-        }
-    } else if (start < end) {
-        const QTextCharFormat first = formatAt(document, start);
-        if (first.isAnchor() && !first.anchorHref().isEmpty()) {
-            const QString candidate = first.anchorHref();
-            bool          sameLink  = true;
-            for (int position = start + 1; position < end; ++position) {
-                const QTextCharFormat format = formatAt(document, position);
-                if (!format.isAnchor() || format.anchorHref() != candidate) {
-                    sameLink = false;
-                    break;
-                }
-            }
-            if (sameLink)
-                href = candidate;
-        }
-    }
-
-    result.insert(QStringLiteral("valid"), true);
-    result.insert(QStringLiteral("start"), start);
-    result.insert(QStringLiteral("end"), end);
-    result.insert(QStringLiteral("href"), href);
-    return result;
-}
-
-int QTNOTE_SHARED_EDITOR::setLink(QQuickTextDocument *quickDocument, int start, int end, const QString &href)
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return -1;
-
-    auto     *document = quickDocument->textDocument();
-    const int limit    = documentEnd(document);
-    start              = qBound(0, start, limit);
-    end                = qBound(start, end, limit);
-
-    QTextCursor cursor(document);
-    cursor.setPosition(start);
-    cursor.setPosition(end, QTextCursor::KeepAnchor);
-    if (!cursor.hasSelection() && !href.isEmpty()) {
-        const QString placeholder = tr("link");
-        cursor.insertText(placeholder);
-        end = start + placeholder.size();
-    }
-
-    if (start < end)
-        setLinkOnRange(document, start, end, href);
-    return end;
-}
-
-int QTNOTE_SHARED_EDITOR::applyInlineFormat(QQuickTextDocument *quickDocument, int start, int end, const QString &style)
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return -1;
-    auto *document = quickDocument->textDocument();
-    start          = qBound(0, start, document->characterCount() - 1);
-    end            = qBound(start, end, document->characterCount() - 1);
-    QTextCursor cursor(document);
-    cursor.setPosition(start);
-    cursor.setPosition(end, QTextCursor::KeepAnchor);
-
-    QString placeholder;
-    if (!cursor.hasSelection()) {
-        placeholder = style == QLatin1String("code") ? tr("code")
-            : style == QLatin1String("link")         ? tr("link")
-                                                     : tr("text");
-        cursor.insertText(placeholder);
-        cursor.setPosition(start);
-        cursor.setPosition(start + placeholder.size(), QTextCursor::KeepAnchor);
-        end = start + placeholder.size();
-    }
-
-    const auto      current = cursor.charFormat();
-    QTextCharFormat format;
-    if (style == QLatin1String("bold"))
-        format.setFontWeight(current.fontWeight() >= QFont::Bold ? QFont::Normal : QFont::Bold);
-    else if (style == QLatin1String("italic"))
-        format.setFontItalic(!current.fontItalic());
-    else if (style == QLatin1String("strike"))
-        format.setFontStrikeOut(!current.fontStrikeOut());
-    else if (style == QLatin1String("underline"))
-        format.setFontUnderline(!current.fontUnderline());
-    else if (style == QLatin1String("code")) {
-        format.setFontFixedPitch(!current.fontFixedPitch());
-        if (!current.fontFixedPitch()) {
-            format.setFontFamilies({ QStringLiteral("monospace") });
-        } else {
-            format.setFontFamilies(document->defaultFont().families());
-        }
-    } else if (style == QLatin1String("link")) {
-        format.setAnchor(!current.isAnchor());
-        format.setAnchorHref(current.isAnchor() ? QString() : QStringLiteral("url"));
-    } else {
-        return -1;
-    }
-    cursor.mergeCharFormat(format);
-    return end;
-}
-
-void QTNOTE_SHARED_EDITOR::applyInlineHtmlFormatting(QQuickTextDocument *quickDocument) const
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return;
-
-    static const QString openMarker  = QStringLiteral("QTNOTEINSOPEN7F3A");
-    static const QString closeMarker = QStringLiteral("QTNOTEINSCLOSE7F3A");
-    auto                *document    = quickDocument->textDocument();
-    QTextCursor          search(document);
-    while (true) {
-        QTextCursor open = document->find(openMarker, search);
-        if (open.isNull())
-            break;
-        QTextCursor close = document->find(closeMarker, open);
-        if (close.isNull())
-            break;
-
-        const int start = open.selectionStart();
-        const int end   = close.selectionStart() - openMarker.size();
-        close.removeSelectedText();
-        open.removeSelectedText();
-
-        QTextCursor content(document);
-        content.setPosition(start);
-        content.setPosition(qMax(start, end), QTextCursor::KeepAnchor);
-        QTextCharFormat underline;
-        underline.setFontUnderline(true);
-        content.mergeCharFormat(underline);
-        search.setPosition(qMax(start, end));
-    }
-}
-
-QString QTNOTE_SHARED_EDITOR::markdownText(QQuickTextDocument *quickDocument) const
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return {};
-
-    auto   *document = quickDocument->textDocument();
-    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedInlineFormats(document));
-    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
-        markdown.chop(1);
-    return markdown;
-}
-
-QString QTNOTE_SHARED_EDITOR::markdownTableCellText(QQuickTextDocument *quickDocument) const
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return {};
-
-    // QTextDocument serializes a visual line separator as an ordinary
-    // newline, indistinguishable from its own soft wrapping.  Protect every
-    // intentional separator before invoking the normal Markdown serializer,
-    // then restore it using the table-safe GFM spelling.
-    std::unique_ptr<QTextDocument> document(quickDocument->textDocument()->clone());
-    const QString                  marker = QStringLiteral("QTNOTETABLEHARDBREAK8C53");
-    for (int position = document->characterCount() - 2; position >= 0; --position) {
-        const QChar character = document->characterAt(position);
-        if (character != QChar::LineSeparator && character != QChar::ParagraphSeparator)
-            continue;
-        QTextCursor cursor(document.get());
-        cursor.setPosition(position);
-        cursor.setPosition(position + 1, QTextCursor::KeepAnchor);
-        cursor.insertText(marker, QTextCharFormat());
-    }
-
-    QString markdown = unwrapMarkdownWriterLines(markdownWithSerializedInlineFormats(document.get()));
-    while (markdown.endsWith(QLatin1Char('\n')) || markdown.endsWith(QLatin1Char('\r')))
-        markdown.chop(1);
-    markdown.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-    markdown.replace(marker, QStringLiteral("<br>"));
-    return markdown;
-}
-
-QString QTNOTE_SHARED_EDITOR::markdownSelection(QQuickTextDocument *quickDocument, int start, int end) const
-{
-    if (!quickDocument || !quickDocument->textDocument())
-        return {};
-    return markdownRange(quickDocument->textDocument(), start, end);
-}
-
-#ifndef QTNOTE_EDITOR_CORE
 void QmlNoteEditor::registerTextDocument(QQuickTextDocument *document, bool titleDocument)
 {
     if (!document || !document->textDocument())
@@ -1448,14 +1168,13 @@ QStringList QmlNoteEditor::spellingSuggestions(const QString &word) const
     }
     return {};
 }
-#endif
 
-NoteFragment QTNOTE_SHARED_EDITOR::documentFragment() const
+NoteFragment QmlNoteEditor::documentFragment() const
 {
     return withMedia(model_->extractBlockFragment(0, model_->rowCount() - 1));
 }
 
-NoteFragment QTNOTE_SHARED_EDITOR::withMedia(NoteFragment fragment) const
+NoteFragment QmlNoteEditor::withMedia(NoteFragment fragment) const
 {
     for (const NoteFragmentBlock &block : std::as_const(fragment.blocks)) {
         if (block.type != NoteFragmentBlockType::Image)
@@ -1483,198 +1202,6 @@ NoteFragment QTNOTE_SHARED_EDITOR::withMedia(NoteFragment fragment) const
     return fragment;
 }
 
-void QTNOTE_SHARED_EDITOR::copyToClipboard(const QString &text)
-{
-    NoteFragment fragment;
-    fragment.sourceFormat = NoteFragmentSourceFormat::PlainText;
-    NoteFragmentBlock block;
-    block.type     = NoteFragmentBlockType::Text;
-    block.markdown = text;
-    fragment.blocks.append(block);
-
-    NoteTransferController controller;
-    auto                   exported = controller.createMimeData(fragment);
-    if (exported)
-        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-    else
-        QGuiApplication::clipboard()->setText(text);
-}
-
-void QTNOTE_SHARED_EDITOR::copyMarkdownToClipboard(const QString &markdown)
-{
-    // The visible selection is Markdown, not one literal text block.  Keeping
-    // it as a Text block would make our private MIME format treat list/table
-    // syntax as ordinary characters on the next QtNote paste.  Parse it back
-    // through the block model so the private and public representations carry
-    // the same structure.
-    NoteBlockModel model;
-    model.load(markdown, true);
-    NoteFragment fragment = model.extractBlockFragment(0, model.rowCount() - 1);
-    fragment.sourceFormat = NoteFragmentSourceFormat::Markdown;
-
-    NoteTransferController controller;
-    auto                   exported = controller.createMimeData(fragment);
-    if (exported) {
-        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-        qInfo() << "QML clipboard copy: selection blocks=" << fragment.blocks.size()
-                << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
-    } else {
-        QGuiApplication::clipboard()->setText(markdown);
-        qWarning() << "QML clipboard copy fell back to plain text:" << exported.error;
-    }
-}
-
-void QTNOTE_SHARED_EDITOR::copyDocumentToClipboard()
-{
-    NoteTransferController controller;
-    const NoteFragment     fragment = documentFragment();
-    auto                   exported = controller.createMimeData(fragment);
-    if (exported) {
-        QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-        qInfo() << "QML clipboard copy: whole document blocks=" << fragment.blocks.size()
-                << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
-    } else {
-        QGuiApplication::clipboard()->setText(model_->contents());
-        qWarning() << "QML clipboard copy fell back to plain text:" << exported.error;
-    }
-}
-
-bool QTNOTE_SHARED_EDITOR::copySelectionToClipboard(const QVariantList &encodedRanges)
-{
-    NoteFragment fragment = withMedia(model_->extractSelectionFragment(decodeSelectionRanges(encodedRanges)));
-    if (fragment.blocks.isEmpty())
-        return false;
-
-    NoteTransferController controller;
-    auto                   exported = controller.createMimeData(fragment);
-    if (!exported) {
-        qWarning() << "QML structured selection copy failed:" << exported.error;
-        return false;
-    }
-    QGuiApplication::clipboard()->setMimeData(exported.mimeData.release());
-    qInfo() << "QML clipboard copy: structured selection blocks=" << fragment.blocks.size()
-            << "formats=" << QGuiApplication::clipboard()->mimeData()->formats();
-    return true;
-}
-
-QVariantMap QTNOTE_SHARED_EDITOR::deleteSelection(const QVariantList &encodedRanges)
-{
-    const QList<NoteBlockSelectionRange> ranges   = decodeSelectionRanges(encodedRanges);
-    const int                            focusRow = model_->removeSelectionRanges(ranges);
-    if (focusRow < 0)
-        return {};
-    QVariantMap result { { QStringLiteral("handled"), true }, { QStringLiteral("focusRow"), focusRow } };
-    // If the selection started inside an editor, its prefix survived at the
-    // same structural address. Preserve the exact QTextDocument position of
-    // that boundary instead of merely focusing the beginning of the block.
-    if (!ranges.isEmpty() && !ranges.constFirst().before.isEmpty() && !encodedRanges.isEmpty()) {
-        const QVariantMap first = encodedRanges.constFirst().toMap();
-        result.insert(QStringLiteral("focusPosition"), first.value(QStringLiteral("selectionStart"), 0));
-    }
-    return result;
-}
-
-QVariantMap QTNOTE_SHARED_EDITOR::pasteStructuredFromClipboard(QQuickTextDocument *quickDocument, int row, int start,
-                                                               int end)
-{
-    QVariantMap result;
-    if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
-        return result;
-
-    NoteTransferController controller;
-    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
-    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
-        || imported.fragment.blocks.isEmpty()) {
-        return result;
-    }
-
-    NoteFragment          fragment = imported.fragment;
-    QList<MediaReference> insertedMedia;
-    if (!fragment.media.isEmpty()) {
-        const auto cloned = NoteFragmentMediaTransfer::cloneForDestination(fragment, *LocalMediaStore::instance(),
-                                                                           LocalMediaStore::instance());
-        if (!cloned) {
-            result.insert(QStringLiteral("error"), cloned.error);
-            return result;
-        }
-        fragment      = cloned.fragment;
-        insertedMedia = cloned.importedMedia;
-    }
-
-    QTextDocument *document = quickDocument->textDocument();
-    const int      limit    = documentEnd(document);
-
-    QString   error;
-    const int insertedRow = model_->replaceTextBlockRangeWithFragment(
-        row, markdownRange(document, 0, start), markdownRange(document, end, limit), fragment, &error);
-    if (insertedRow < 0) {
-        result.insert(QStringLiteral("error"), error);
-        return result;
-    }
-    result.insert(QStringLiteral("handled"), true);
-    result.insert(QStringLiteral("focusRow"), insertedRow);
-    if (!insertedMedia.isEmpty()) {
-        auto manifest = media();
-        manifest.append(insertedMedia);
-        setMedia(manifest);
-        emit mediaInserted(insertedMedia);
-    }
-    return result;
-}
-
-QVariantMap QTNOTE_SHARED_EDITOR::pasteTableFromClipboard(int row, int cell)
-{
-    QVariantMap result;
-    if (!model_->markdown())
-        return result;
-    NoteTransferController controller;
-    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
-    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
-        || !imported.fragment.media.isEmpty() || imported.fragment.blocks.size() != 1
-        || imported.fragment.blocks.constFirst().type != NoteFragmentBlockType::Table) {
-        return result;
-    }
-
-    QString error;
-    if (!model_->replaceTableCellsWithFragment(row, cell, imported.fragment, &error)) {
-        result.insert(QStringLiteral("error"), error);
-        return result;
-    }
-    result.insert(QStringLiteral("handled"), true);
-    return result;
-}
-
-QVariantMap QTNOTE_SHARED_EDITOR::pasteListFromClipboard(QQuickTextDocument *quickDocument, int row, int item,
-                                                         int start, int end)
-{
-    QVariantMap result;
-    if (!model_->markdown() || !quickDocument || !quickDocument->textDocument())
-        return result;
-    NoteTransferController controller;
-    const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
-    if (!imported || imported.sourceMimeType == QStringLiteral("text/plain") || imported.hasImage()
-        || !imported.fragment.media.isEmpty() || imported.fragment.blocks.size() != 1
-        || imported.fragment.blocks.constFirst().type != NoteFragmentBlockType::List) {
-        return result;
-    }
-
-    QTextDocument *document = quickDocument->textDocument();
-    const int      limit    = documentEnd(document);
-    QString        error;
-    const int      focusItem = model_->replaceListItemRangeWithFragment(
-        row, item, markdownRange(document, 0, start), markdownRange(document, end, limit), imported.fragment, &error);
-    if (focusItem < 0) {
-        result.insert(QStringLiteral("error"), error);
-        return result;
-    }
-    result.insert(QStringLiteral("handled"), true);
-    result.insert(QStringLiteral("focusItem"), focusItem);
-    return result;
-}
-
-#undef QTNOTE_SHARED_EDITOR
-
-#ifndef QTNOTE_EDITOR_CORE
 void QmlNoteEditor::setSpellCheckEnabled(bool enabled)
 {
     if (spellCheckEnabled_ == enabled)
@@ -1828,5 +1355,4 @@ bool QmlNoteEditor::eventFilter(QObject *watched, QEvent *event)
     }
     return QWidget::eventFilter(watched, event);
 }
-#endif
 } // namespace QtNote

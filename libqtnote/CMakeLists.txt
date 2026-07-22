@@ -52,6 +52,7 @@ set(qtnote_CORE_SRCS
     notedata.cpp
     notedocumenthistory.cpp
     noteeditor.cpp
+    noteeditoroperations.cpp
     notefragment.cpp
     notefragmentmediatransfer.cpp
     notemanager.cpp
@@ -111,12 +112,6 @@ add_library(qtnote_core OBJECT
     ${qtnote_CORE_SRCS}
     ${qtnote_CORE_UIS}
 )
-# Keep the tested Markdown/clipboard implementation single-sourced while the
-# desktop QmlNoteEditor forwarding API is being removed.  The core build of
-# this file selects NoteEditor and excludes every QWidget-only section.
-set_source_files_properties(qmlnoteeditor.cpp PROPERTIES SKIP_AUTOMOC ON)
-target_sources(qtnote_core PRIVATE qmlnoteeditor.cpp)
-target_compile_definitions(qtnote_core PRIVATE QTNOTE_EDITOR_CORE)
 target_include_directories(qtnote_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../plugins" "${CMAKE_BINARY_DIR}")
 target_include_directories(qtnote_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

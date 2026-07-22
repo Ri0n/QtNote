@@ -23,6 +23,15 @@
 
 using namespace QtNote;
 
+namespace {
+NoteEditor *backend(QmlNoteEditor &editor)
+{
+    auto *result = editor.findChild<NoteEditor *>();
+    Q_ASSERT(result);
+    return result;
+}
+}
+
 class CountingHighlighter : public SpellCheckExtension {
 public:
     int     calls = 0;
@@ -547,7 +556,7 @@ private slots:
         QVERIFY(cell);
         auto *document = cell->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
-        const QVariantMap link = editor.linkInfo(document, 7, 12);
+        const QVariantMap link = backend(editor)->linkInfo(document, 7, 12);
         QVERIFY(link.value(QStringLiteral("valid")).toBool());
         QCOMPARE(link.value(QStringLiteral("href")).toString(), QStringLiteral("https://link.example"));
 
@@ -585,7 +594,7 @@ private slots:
         cursor.setPosition(7);
         cursor.setPosition(17, QTextCursor::KeepAnchor);
         QVERIFY(cursor.charFormat().fontUnderline());
-        QCOMPARE(editor.markdownSelection(document, 7, 17), QStringLiteral("<ins>underlined</ins>"));
+        QCOMPARE(backend(editor)->markdownSelection(document, 7, 17), QStringLiteral("<ins>underlined</ins>"));
 
         QVERIFY(QMetaObject::invokeMethod(text, "forceActiveFocus"));
         text->setProperty("cursorPosition", text->property("length"));
@@ -650,7 +659,8 @@ private slots:
         QVERIFY(text);
         auto *document = text->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
-        QCOMPARE(editor.markdownText(document), QStringLiteral("[<ins>underlined</ins>](https://example.org)"));
+        QCOMPARE(backend(editor)->markdownText(document),
+                 QStringLiteral("[<ins>underlined</ins>](https://example.org)"));
     }
 
     void leavesUnderlineTagsLiteralInsideCodeSpan()
@@ -675,7 +685,7 @@ private slots:
         cursor.setPosition(18, QTextCursor::KeepAnchor);
         QVERIFY(!cursor.charFormat().fontUnderline());
         QVERIFY(cursor.charFormat().fontFixedPitch());
-        QCOMPARE(editor.markdownText(document), QStringLiteral("`<ins>literal</ins>`"));
+        QCOMPARE(backend(editor)->markdownText(document), QStringLiteral("`<ins>literal</ins>`"));
     }
 
     void tableCellRendersMarkdownHardBreaks()
@@ -1156,9 +1166,9 @@ private slots:
         auto *document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
 
-        const QString markdown = editor.markdownSelection(document, 0, 4);
+        const QString markdown = backend(editor)->markdownSelection(document, 0, 4);
         QCOMPARE(markdown, QStringLiteral("**bold**"));
-        editor.copyMarkdownToClipboard(markdown);
+        backend(editor)->copyMarkdownToClipboard(markdown);
         QCOMPARE(QString::fromUtf8(QGuiApplication::clipboard()->mimeData()->data(
                      QString::fromLatin1(NoteTransferController::MarkdownMimeType))),
                  QStringLiteral("**bold**"));
@@ -1208,7 +1218,7 @@ private slots:
         mime->setData(QString::fromLatin1(NoteTransferController::MarkdownMimeType),
                       QByteArrayLiteral("- first\n- second"));
         QGuiApplication::clipboard()->setMimeData(mime);
-        const QVariantMap result = editor.pasteStructuredFromClipboard(document, 0, 7, 7);
+        const QVariantMap result = backend(editor)->pasteStructuredFromClipboard(document, 0, 7, 7);
         QVERIFY(result.value(QStringLiteral("handled")).toBool());
         QCOMPARE(result.value(QStringLiteral("focusRow")).toInt(), 1);
         QCOMPARE(editor.contents(), QStringLiteral("before\n\n- first\n- second\n\nafter"));
@@ -1280,7 +1290,7 @@ private slots:
         QCOMPARE(parsed.data(parsed.index(2), NoteBlockModel::TypeRole).toInt(), int(NoteBlockModel::Table));
 
         QmlNoteEditor source;
-        source.copyMarkdownToClipboard(markdown);
+        backend(source)->copyMarkdownToClipboard(markdown);
 
         NoteTransferController controller;
         const auto             imported = controller.importMimeData(QGuiApplication::clipboard()->mimeData());
@@ -1301,7 +1311,7 @@ private slots:
         auto *activeEditor = quick->rootObject()->property("activeEditor").value<QObject *>();
         auto *document     = activeEditor->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
-        const QVariantMap result = target.pasteStructuredFromClipboard(document, 0, 0, 0);
+        const QVariantMap result = backend(target)->pasteStructuredFromClipboard(document, 0, 0, 0);
         QVERIFY(result.value(QStringLiteral("handled")).toBool());
         QCOMPARE(target.contents(),
                  QStringLiteral("## Header\n\n- [ ] task\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nbefore"));
@@ -1448,7 +1458,7 @@ private slots:
         mime->setData(QString::fromLatin1(NoteTransferController::TsvMimeType), QByteArrayLiteral("X\tY\nZ\tW"));
         QGuiApplication::clipboard()->setMimeData(mime);
 
-        const QVariantMap result = editor.pasteTableFromClipboard(1, 3);
+        const QVariantMap result = backend(editor)->pasteTableFromClipboard(1, 3);
         QVERIFY(result.value(QStringLiteral("handled")).toBool());
         const auto table = editor.model()->data(editor.model()->index(1), NoteBlockModel::CellsRole).toMap();
         QCOMPARE(table.value(QStringLiteral("columns")).toInt(), 3);
@@ -1478,7 +1488,7 @@ private slots:
                       QByteArrayLiteral("- [x] task\n    1. nested"));
         QGuiApplication::clipboard()->setMimeData(mime);
 
-        const QVariantMap result = editor.pasteListFromClipboard(document, 0, 0, 7, 15);
+        const QVariantMap result = backend(editor)->pasteListFromClipboard(document, 0, 0, 7, 15);
         QVERIFY(result.value(QStringLiteral("handled")).toBool());
         QCOMPARE(result.value(QStringLiteral("focusItem")).toInt(), 1);
         QCOMPARE(editor.contents(), QStringLiteral("- before\n- [x] task\n    1. nested\n- after\n- tail"));
@@ -1924,8 +1934,8 @@ private slots:
         auto *longText = longRoot->property("editors").toList().constFirst().value<QObject *>();
         auto *document = longText->property("textDocument").value<QQuickTextDocument *>();
         QVERIFY(document);
-        QCOMPARE(longLink.setLink(document, 7, 11, longUrl), 11);
-        longLink.model()->setBlockText(0, longLink.markdownText(document));
+        QCOMPARE(backend(longLink)->setLink(document, 7, 11, longUrl), 11);
+        longLink.model()->setBlockText(0, backend(longLink)->markdownText(document));
         const QString inlineLongLink = QStringLiteral("before [link](%1) after").arg(longUrl);
         QCOMPARE(longLink.contents(), inlineLongLink);
         longLink.load(longLink.contents(), Note::PlainText);
