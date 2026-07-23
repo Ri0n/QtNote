@@ -7,6 +7,7 @@
 #include "notemanager.h"
 #include "notesmodel.h"
 #include "notesworkspacecontroller.h"
+#include "settingscontroller.h"
 
 #include <QSettings>
 
@@ -78,6 +79,32 @@ bool MobileApplication::saveCurrentNote() { return workspace_->saveCurrentNote()
 bool MobileApplication::closeCurrentNote() { return workspace_->closeCurrentNote(); }
 
 bool MobileApplication::setPluginEnabled(int row, bool enabled) { return plugins_.setEnabled(row, enabled); }
+
+QUrl MobileApplication::pluginSettingsComponent(const QString &pluginId) const
+{
+    auto component = bundledPlugins_.settingsComponent(pluginId);
+    return component.isEmpty() ? QUrl(QStringLiteral("qrc:/qml/SettingsForm.qml")) : component;
+}
+
+QObject *MobileApplication::createPluginSettingsController(const QString &pluginId, QObject *owner)
+{
+    return bundledPlugins_.createSettingsController(pluginId, owner ? owner : this);
+}
+
+QUrl MobileApplication::storageSettingsComponent(const QString &storageId) const
+{
+    const auto storage = NoteManager::instance()->storage(storageId);
+    if (!storage)
+        return {};
+    const auto component = storage->settingsComponent();
+    return component.isEmpty() ? QUrl(QStringLiteral("qrc:/qml/SettingsForm.qml")) : component;
+}
+
+QObject *MobileApplication::createStorageSettingsController(const QString &storageId, QObject *owner)
+{
+    const auto storage = NoteManager::instance()->storage(storageId);
+    return storage ? storage->createSettingsController(owner ? owner : this) : nullptr;
+}
 
 void MobileApplication::setAskBeforeDelete(bool value)
 {

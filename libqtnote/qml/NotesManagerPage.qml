@@ -25,6 +25,7 @@ Item {
     property string selectedNoteId: ""
     property string selectedTitle: ""
     property bool editorFocusOwned: false
+    property bool searchExpanded: workspace.searchText.length > 0 || workspace.searchInBody
 
     function flushEditorChanges() {
         Qt.inputMethod.commit()
@@ -99,6 +100,21 @@ Item {
         noteContextMenu.popup()
     }
 
+    function openSearch() {
+        searchExpanded = true
+        Qt.callLater(function() {
+            searchField.forceActiveFocus()
+            searchField.selectAll()
+        })
+    }
+
+    function closeSearch() {
+        searchField.text = ""
+        workspace.searchText = ""
+        workspace.searchInBody = false
+        searchExpanded = false
+    }
+
     SplitView {
         anchors.fill: parent
         orientation: Qt.Horizontal
@@ -120,14 +136,27 @@ Item {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: 4
 
-                    TextField {
-                        id: searchField
+                    TabBar {
+                        id: modeTabs
+                        visible: root.showViewModeSelector
                         Layout.fillWidth: true
-                        placeholderText: qsTr("Search notes")
-                        text: root.workspace.searchText
-                        onTextEdited: root.workspace.searchText = text
+                        currentIndex: root.viewMode
+                        Accessible.name: qsTr("Notes view")
+                        onCurrentIndexChanged: {
+                            if (currentIndex >= 0 && root.viewMode !== currentIndex)
+                                root.viewMode = currentIndex
+                        }
+
+                        TabButton { text: qsTr("Recent") }
+                        TabButton { text: qsTr("By storage") }
+                    }
+
+                    ToolButton {
+                        text: root.searchExpanded ? qsTr("×") : qsTr("⌕")
+                        Accessible.name: root.searchExpanded ? qsTr("Close search") : qsTr("Search notes")
+                        onClicked: root.searchExpanded ? root.closeSearch() : root.openSearch()
                     }
 
                     ToolButton {
@@ -145,25 +174,38 @@ Item {
                     }
                 }
 
-                RowLayout {
+                Pane {
+                    id: searchPane
                     Layout.fillWidth: true
-                    spacing: 8
+                    Layout.preferredHeight: root.searchExpanded ? searchLayout.implicitHeight + topPadding + bottomPadding : 0
+                    enabled: root.searchExpanded
+                    padding: 6
+                    clip: true
+                    opacity: root.searchExpanded ? 1 : 0
 
-                    ComboBox {
-                        id: modeSelector
-                        visible: root.showViewModeSelector
-                        Layout.preferredWidth: Math.min(190, implicitWidth)
-                        model: [qsTr("Recent"), qsTr("By storage")]
-                        currentIndex: root.viewMode
-                        Accessible.name: qsTr("Notes view")
-                        onActivated: root.viewMode = currentIndex
-                    }
+                    Behavior on Layout.preferredHeight { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 110 } }
 
-                    CheckBox {
-                        Layout.fillWidth: true
-                        text: qsTr("Search in text")
-                        checked: root.workspace.searchInBody
-                        onToggled: root.workspace.searchInBody = checked
+                    RowLayout {
+                        id: searchLayout
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        spacing: 8
+
+                        TextField {
+                            id: searchField
+                            Layout.fillWidth: true
+                            placeholderText: qsTr("Search notes")
+                            text: root.workspace.searchText
+                            onTextEdited: root.workspace.searchText = text
+                            Keys.onEscapePressed: root.closeSearch()
+                        }
+
+                        CheckBox {
+                            text: qsTr("Search in text")
+                            checked: root.workspace.searchInBody
+                            onToggled: root.workspace.searchInBody = checked
+                        }
                     }
                 }
 
@@ -190,10 +232,13 @@ Item {
                             required property string iconSource
 
                             width: recentNotes.width
-                            implicitHeight: Math.max(52, contentRow.implicitHeight + 12)
+                            implicitHeight: root.touchActions ? 44 : 34
                             hoverEnabled: true
                             highlighted: root.selectedStorageId === storageId && root.selectedNoteId === noteId
-                            padding: 6
+                            leftPadding: 8
+                            rightPadding: 8
+                            topPadding: 3
+                            bottomPadding: 3
 
                             background: Rectangle {
                                 radius: 4
@@ -202,49 +247,48 @@ Item {
                                        : (recentDelegate.hovered ? Qt.rgba(recentDelegate.palette.button.r, recentDelegate.palette.button.g, recentDelegate.palette.button.b, 0.45) : "transparent")
                             }
 
+                            ToolTip.visible: hovered
+                            ToolTip.text: recentDelegate.storageName
+
                             contentItem: RowLayout {
                                 id: contentRow
-                                spacing: 10
+                                spacing: 8
 
-                                Image {
+                                Item {
                                     Layout.preferredWidth: 22
                                     Layout.preferredHeight: 22
                                     Layout.alignment: Qt.AlignVCenter
-                                    source: recentDelegate.iconSource
-                                    sourceSize.width: 22
-                                    sourceSize.height: 22
-                                    fillMode: Image.PreserveAspectFit
-                                }
 
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    spacing: 1
+                                    Image {
+                                        id: recentIcon
+                                        anchors.fill: parent
+                                        source: recentDelegate.iconSource
+                                        sourceSize.width: 22
+                                        sourceSize.height: 22
+                                        fillMode: Image.PreserveAspectFit
+                                    }
 
                                     Label {
-                                        Layout.fillWidth: true
-                                        text: recentDelegate.title
+                                        anchors.centerIn: parent
+                                        visible: recentIcon.status !== Image.Ready
+                                        text: "◆"
+                                        font.pixelSize: 15
                                         color: recentDelegate.highlighted
                                                ? recentDelegate.palette.highlightedText
                                                : recentDelegate.palette.text
-                                        elide: Text.ElideRight
-                                        verticalAlignment: Text.AlignVCenter
                                     }
+                                }
 
-                                    Label {
-                                        Layout.fillWidth: true
-                                        visible: text.length > 0
-                                        text: recentDelegate.preview.length > 0
-                                              ? recentDelegate.preview
-                                              : recentDelegate.storageName
-                                        color: recentDelegate.highlighted
-                                               ? recentDelegate.palette.highlightedText
-                                               : recentDelegate.palette.mid
-                                        opacity: 0.82
-                                        font.pixelSize: 12
-                                        elide: Text.ElideRight
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
+                                Label {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: recentDelegate.title
+                                    color: recentDelegate.highlighted
+                                           ? recentDelegate.palette.highlightedText
+                                           : recentDelegate.palette.text
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
 
@@ -309,7 +353,7 @@ Item {
                             required property string iconSource
 
                             width: notesTree.width
-                            implicitHeight: 42
+                            implicitHeight: root.touchActions ? 44 : 34
                             hoverEnabled: true
                             highlighted: itemType === 0
                                          ? root.selectedStorageId === storageId && root.selectedNoteId.length === 0
@@ -347,14 +391,29 @@ Item {
                                     Layout.preferredWidth: visible ? 12 : 0
                                 }
 
-                                Image {
+                                Item {
                                     Layout.preferredWidth: 20
                                     Layout.preferredHeight: 20
                                     Layout.alignment: Qt.AlignVCenter
-                                    source: groupedDelegate.iconSource
-                                    sourceSize.width: 20
-                                    sourceSize.height: 20
-                                    fillMode: Image.PreserveAspectFit
+
+                                    Image {
+                                        id: groupedIcon
+                                        anchors.fill: parent
+                                        source: groupedDelegate.iconSource
+                                        sourceSize.width: 20
+                                        sourceSize.height: 20
+                                        fillMode: Image.PreserveAspectFit
+                                    }
+
+                                    Label {
+                                        anchors.centerIn: parent
+                                        visible: groupedIcon.status !== Image.Ready
+                                        text: groupedDelegate.itemType === 0 ? "▣" : "◆"
+                                        font.pixelSize: 14
+                                        color: groupedDelegate.highlighted
+                                               ? groupedDelegate.palette.highlightedText
+                                               : groupedDelegate.palette.text
+                                    }
                                 }
 
                                 Label {

@@ -3,139 +3,67 @@
 ## Scope
 
 The notes manager is a shared model/controller/QML feature. Desktop presents it
-in a pure Qt Quick top-level window. Android presents the same notes list and
-workspace through mobile navigation. No manager-specific editor or draft
-implementation is allowed.
+in a pure Qt Quick top-level window. Android presents the same models and page
+through mobile navigation. No manager-specific editor or draft implementation
+is allowed.
 
-## Components
+## Models and views
 
 ```mermaid
 flowchart TD
     NS[NoteStorage plugins] --> NM[NoteManager]
-    NM --> MODEL[NotesModel]
+    NM --> MODEL[NotesModel hierarchical source]
     MODEL --> SEARCH[NotesSearchModel]
-    SEARCH --> RECENT[RecentNotesModel]
-    SEARCH --> WC[NotesWorkspaceController]
+    SEARCH --> GROUPED[Grouped by storage tree]
+    SEARCH --> RECENT[RecentNotesModel flat projection]
+    GROUPED --> WC[NotesWorkspaceController]
     RECENT --> WC
     WC --> PAGE[NotesManagerPage.qml]
     WC --> EDITOR[Current NoteEditor]
     EDITOR --> DRAFTS[DraftManager]
-
-    PAGE --> DW[NotesManagerWindow.qml desktop]
-    PAGE --> AM[NotesPage.qml Android]
-    DW -. platform services .-> DPB[DesktopEditorPlatformBackend]
 ```
 
-### `NotesModel`
+Two user-facing projections are implemented:
 
-The source model is hierarchical: storage rows contain note rows. It exposes
-stable QML roles for storage identity, note identity, title, preview, tags,
-modified time, accessibility, loading/error state, total count, and pagination.
-Each storage refresh is asynchronous and independently cancellable.
+1. **Recent** — a flat list sorted by modification time. Storage headings are
+   omitted; the storage is represented by its note icon and a hover tooltip.
+2. **By storage** — a tree whose storage rows contain note rows.
 
-The model owns presentation data only. Drag/drop decodes source and destination
-identity and emits a move request; it does not save or remove notes directly.
+Folder grouping is intentionally not simulated with tags or a second storage
+loader. It will be added later as another projection once folder identity,
+nesting, moves and cross-storage semantics are specified.
 
-### `NotesSearchModel`
+Both current modes use compact, vertically centred one-line rows. Desktop rows
+are 34 px; touch rows retain a 44 px target. Background is only shown for hover
+or selection. Failed or unavailable icon resources have textual fallbacks, and
+the core tray icon is linked into the Android target.
 
-The proxy filters title and tags synchronously. Optional body search uses
-`GlobalNoteFinder`. While a search is active the source model exposes all loaded
-summaries so pagination cannot hide a matching note. Clearing the search restores
-the previous visible page depth.
+## Search
 
-### `NotesWorkspaceController`
+The view selector is a tab bar. Search is collapsed by default behind a search
+button. Opening it animates a panel containing the query field and **Search in
+text**, then gives keyboard focus to the query. Closing the panel clears both
+filters.
 
-The controller owns the current `NoteEditor` and asynchronous note load job. It
-is responsible for UI-level commands:
+`NotesSearchModel` filters title and tags synchronously and optionally launches
+the shared asynchronous body finder. `RecentNotesModel` is a projection of the
+filtered hierarchical model, so search does not create a second refresh path.
 
-- open and switch notes;
-- create, delete, and move;
-- checkpoint, close, and focus reload;
-- expose storage choices and operation state;
-- request a separate desktop note window.
+## Ownership
 
-It does not duplicate draft rules. Before a switch the QML shell flushes and
-checkpoints the current delegate. The controller keeps the old editor active
-until the replacement note has loaded successfully. A failed or cancelled load
-therefore cannot discard the user's current editing session.
+`NotesModel` owns presentation snapshots and per-storage loading/error/pagination
+state. `NotesWorkspaceController` owns only selection, asynchronous open/move/
+delete commands and the current shared `NoteEditor`. Draft leases, checkpoint,
+reload and publication remain inside `NoteEditor` and `DraftManager`.
 
-Move is staged as a destination Ready draft. For the currently edited note,
-the destination is staged before the source editing checkpoint is discarded, so
-a staging failure cannot lose local edits and the source cannot be republished
-concurrently. The source storage note is queued for removal only after the
-destination publication succeeds. Publication signals for unrelated drafts are
-ignored by the workspace controller.
+## Desktop and Android
 
-## Desktop shell
+Desktop uses `NotesManagerWindow.qml`. Android starts in Recent mode and exposes
+swipe-right deletion plus Delete in the open-note toolbar. Desktop defaults to
+By storage. The same `NotesManagerPage.qml` implements both layouts.
 
-`NotesManagerWindow` creates one `QQmlApplicationEngine`, a
-`NotesWorkspaceController`, and a `DesktopEditorPlatformBackend`, then loads
-`NotesManagerWindow.qml`. The manager is a native Qt Quick top-level window;
-there is no `QDialog -> QSplitter -> NoteWidget -> QQuickWidget` nesting.
+## ABI
 
-This also means the first Quick renderer is not inserted into an already-visible
-QWidget hierarchy, avoiding the former splitter/native-window recreation path.
-Window geometry and navigation width are persisted by the C++ window adapter through `QSettings`.
-
-## Android shell
-
-`MobileApplication` exposes the same workspace and proxy model. `NotesPage.qml`
-uses `NotesManagerPage.qml` in list-only mode. Selecting or creating a note sets
-the shared current `NoteEditor`; the existing `StackView` then opens
-`NoteEditorPage.qml`.
-
-Android keeps its own navigation, Back, IME, background, and process-recovery
-adapters. It does not have a second notes model or editor controller.
-
-## Focus and switching protocol
-
-```mermaid
-sequenceDiagram
-    participant Q as QML shell
-    participant W as NotesWorkspaceController
-    participant E1 as Current NoteEditor
-    participant S as NoteStorage
-    participant E2 as Replacement NoteEditor
-
-    Q->>Q: commit IME and flush delegate
-    Q->>E1: save checkpoint
-    Q->>W: openNote(storageId, noteId)
-    W->>S: loadNoteAsync
-    alt load succeeds
-        S-->>W: loaded Note
-        W->>E1: close editing session
-        W->>E2: construct shared editor
-        W-->>Q: currentEditorChanged
-    else load fails or is cancelled
-        S-->>W: error
-        Note over E1: Current editor remains open
-        W-->>Q: errorStringChanged
-    end
-```
-
-Receiving window focus reloads only a newer Editing checkpoint and only when the
-current editor is clean. Losing focus checkpoints the current editor. Neither
-operation publishes the note.
-
-## Desktop ABI
-
-The migration removes the public `QmlNoteEditor` and `NoteManagerDlg` classes
-and replaces them with `DesktopNoteEditorHost`,
-`DesktopEditorPlatformBackend`, and `NotesManagerWindow`. The product version
-remains independent, while the shared-library soname uses
-`QTNOTE_ABI_VERSION=2` to make this incompatible desktop ABI explicit.
-
-## Known follow-up work
-
-- Persist expanded storage rows and selection more precisely.
-- Add large-list/backend pagination when storage APIs expose stable page tokens.
-- Add batch selection and batch move/delete.
-- Highlight body-search matches in the opened editor.
-- Coordinate deletion with another simultaneously dirty editor of the same
-  logical note.
-- Connect Android-compatible plugin runtimes to the explicit bundled factory
-  registry after separating them from desktop UI dependencies.
-- Add a touch-first move action. Delete is available both by swiping a recent
-  row and from the editor toolbar; desktop retains its context menu.
-- Move remaining find/print/pin/speech and plugin-specific actions out of the
-  legacy QWidget shell before deleting `NoteEdit` and `NoteWidget`.
+The notes-manager migration originally introduced ABI version 2. The subsequent
+QWidget-free plugin/storage settings and `QWindow` desktop-integration contracts
+raise the current libqtnote ABI to 3.

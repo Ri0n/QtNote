@@ -21,10 +21,12 @@ public:
     bool registerFactory(const Entry &entry, Factory factory);
     void initializeEnabledPlugins();
 
-    QStringList pluginIds() const override;
-    Entry       pluginEntry(const QString &pluginId) const override;
-    bool        setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy) override;
-    bool        setPluginOrder(const QStringList &pluginIds) override;
+    QStringList         pluginIds() const override;
+    Entry               pluginEntry(const QString &pluginId) const override;
+    bool                setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy) override;
+    bool                setPluginOrder(const QStringList &pluginIds) override;
+    QUrl                settingsComponent(const QString &pluginId) const override;
+    SettingsController *createSettingsController(const QString &pluginId, QObject *parent) override;
 
     QObject *instance(const QString &pluginId) const;
 

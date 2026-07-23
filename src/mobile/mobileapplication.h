@@ -8,6 +8,7 @@
 
 #include <QAbstractItemModel>
 #include <QObject>
+#include <QUrl>
 
 namespace QtNote {
 
@@ -38,10 +39,14 @@ public:
     int   notesPerPage() const;
     qreal editorFontSize() const;
 
-    Q_INVOKABLE bool createNote();
-    Q_INVOKABLE bool saveCurrentNote();
-    Q_INVOKABLE bool closeCurrentNote();
-    Q_INVOKABLE bool setPluginEnabled(int row, bool enabled);
+    Q_INVOKABLE bool     createNote();
+    Q_INVOKABLE bool     saveCurrentNote();
+    Q_INVOKABLE bool     closeCurrentNote();
+    Q_INVOKABLE bool     setPluginEnabled(int row, bool enabled);
+    Q_INVOKABLE QUrl     pluginSettingsComponent(const QString &pluginId) const;
+    Q_INVOKABLE QObject *createPluginSettingsController(const QString &pluginId, QObject *owner);
+    Q_INVOKABLE QUrl     storageSettingsComponent(const QString &storageId) const;
+    Q_INVOKABLE QObject *createStorageSettingsController(const QString &storageId, QObject *owner);
 
 public slots:
     void setAskBeforeDelete(bool value);

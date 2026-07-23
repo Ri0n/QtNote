@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="trayicon">images/qtnote24.png</file>
+    </qresource>
+    <qresource prefix="/qml">
+        <file alias="SettingsForm.qml">qml/SettingsForm.qml</file>
+    </qresource>
+</RCC>

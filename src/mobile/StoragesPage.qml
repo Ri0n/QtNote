@@ -37,14 +37,26 @@ Page {
             contentItem: RowLayout {
                 spacing: 10
 
-                Image {
+                Item {
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     Layout.alignment: Qt.AlignVCenter
-                    source: storageDelegate.iconSource
-                    sourceSize.width: 28
-                    sourceSize.height: 28
-                    fillMode: Image.PreserveAspectFit
+
+                    Image {
+                        id: storageIcon
+                        anchors.fill: parent
+                        source: storageDelegate.iconSource
+                        sourceSize.width: 28
+                        sourceSize.height: 28
+                        fillMode: Image.PreserveAspectFit
+                    }
+
+                    Label {
+                        anchors.centerIn: parent
+                        visible: storageIcon.status !== Image.Ready
+                        text: "▣"
+                        font.pixelSize: 20
+                    }
                 }
 
                 ColumnLayout {

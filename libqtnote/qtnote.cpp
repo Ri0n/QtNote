@@ -21,6 +21,7 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QTranslator>
+#include <QWindow>
 #ifdef Q_OS_MAC
 #include <ApplicationServices/ApplicationServices.h>
 #endif
@@ -443,14 +444,43 @@ void Main::notify(const QString &title, const QString &message, const QString &a
         d->notifier->notifyError(message);
 }
 
-void Main::activateWidget(QWidget *w) const { d->de->activateWidget(w); }
+namespace {
+    QWindow *windowForWidget(QWidget *widget)
+    {
+        if (!widget)
+            return nullptr;
+        widget->winId();
+        return widget->windowHandle();
+    }
+} // namespace
 
-WindowGeometryRestoreResult Main::restoreWindowGeometry(QWidget *w, const QString &key) const
+void Main::activateWidget(QWidget *widget) const { activateWindow(windowForWidget(widget)); }
+
+void Main::activateWindow(QWindow *window) const
 {
-    return d->de->restoreWindowGeometry(w, key);
+    if (window)
+        d->de->activateWindow(window);
 }
 
-bool Main::saveWindowGeometry(QWidget *w, const QString &key) const { return d->de->saveWindowGeometry(w, key); }
+WindowGeometryRestoreResult Main::restoreWindowGeometry(QWidget *widget, const QString &key) const
+{
+    return restoreWindowGeometry(windowForWidget(widget), key);
+}
+
+WindowGeometryRestoreResult Main::restoreWindowGeometry(QWindow *window, const QString &key) const
+{
+    return window ? d->de->restoreWindowGeometry(window, key) : WindowGeometryRestoreResult::Unsupported;
+}
+
+bool Main::saveWindowGeometry(QWidget *widget, const QString &key) const
+{
+    return saveWindowGeometry(windowForWidget(widget), key);
+}
+
+bool Main::saveWindowGeometry(QWindow *window, const QString &key) const
+{
+    return window && d->de->saveWindowGeometry(window, key);
+}
 
 bool Main::removeWindowGeometry(const QString &key) const { return d->de->removeWindowGeometry(key); }
 

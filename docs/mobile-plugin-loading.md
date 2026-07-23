@@ -3,46 +3,59 @@
 ## Decision
 
 Android uses an explicit factory registry for plugins compiled into the APK.
-It does not use desktop shared-library discovery and does not rely on
-`Q_IMPORT_PLUGIN` as the application-level plugin contract.
+It does not use desktop shared-library discovery and does not use
+`Q_IMPORT_PLUGIN` as the application-level contract.
 
 The shared pieces are:
 
 - `PluginListSource`: UI-neutral source contract used by `PluginListModel`;
-- `PluginManager`: desktop dynamic-plugin implementation of that contract;
+- `PluginManager`: desktop dynamic-plugin implementation;
 - `BundledPluginRegistry`: Android/bundled implementation;
-- `BundledPluginInterface`: lifecycle implemented by a bundled runtime;
-- `registerMobileBundledPlugins()`: the explicit allow-list and factory table.
+- `BundledPluginInterface`: UI-neutral bundled lifecycle;
+- `registerMobileBundledPlugins()`: explicit allow-list and factory table.
 
 ```mermaid
 flowchart LR
     QML[PluginsPage.qml] --> MODEL[PluginListModel]
     MODEL --> SOURCE[PluginListSource]
-    SOURCE --> DESKTOP[PluginManager desktop loader]
+    SOURCE --> DESKTOP[PluginManager]
     SOURCE --> MOBILE[BundledPluginRegistry]
     MOBILE --> TABLE[registerMobileBundledPlugins]
-    TABLE --> FACTORY[Bundled plugin factory]
+    TABLE --> FACTORY[Factory]
     FACTORY --> RUNTIME[BundledPluginInterface]
 ```
 
-## Eligibility
+## Shared lifecycle
 
-A plugin may be registered for Android only when its runtime implementation:
+`RegularPluginInterface/2.0` no longer accepts the desktop `Main` shell. Dynamic
+plugins implement `initialize()/shutdown()` after receiving
+`PluginHostInterface`. A runtime that is also Android-compatible may implement
+`BundledPluginInterface` with the same methods. Storage registration uses the
+shared `NoteManager`; settings use `SettingsController` plus QML.
 
-- does not depend on QWidget or QDialog;
-- does not take `QtNote::Main` as its core initialization contract;
-- does not require DBus or desktop integration;
-- does not depend on dynamic desktop plugin discovery;
-- exposes settings through the future common settings controller/schema or a
-  mobile QML component;
-- can be built and linked into the Android target with all native dependencies.
+When a plugin source is compiled directly into `qtnote_mobile`,
+`QTNOTE_BUNDLED_PLUGIN_BUILD` suppresses `Q_PLUGIN_METADATA`. This prevents
+multiple bundled classes from exporting the same dynamic-plugin entry symbols.
+Desktop plugin libraries retain normal metadata.
 
-Registration is explicit. Merely building a source directory does not make a
-plugin available in the APK.
+## Current Android allow-list
 
-## Current state
+- Gemini speech recognition;
+- OpenAI Whisper speech recognition (disabled by default);
+- Nextcloud Notes storage.
 
-The registry and shared model are active. The registration table is currently
-empty because the existing storage/provider plugins still contain desktop UI or
-host dependencies. They must be split into platform-neutral runtime and desktop
-settings adapters before being added to the allow-list.
+All three use the same runtime sources as desktop. PTF remains a core storage and
+is registered through `registerCoreStorages()` rather than the plugin registry.
+
+## Not yet admitted
+
+- Hunspell: Android dictionary packaging/download paths need device validation;
+- XMPP: QXmpp/QCoro/OMEMO packaging and the remaining key-conflict recovery
+  wizard must be made QML-only;
+- desktop integration, tray, global-shortcut and notification plugins: these are
+  desktop services rather than Android application plugins;
+- Tomboy: its backend and file-format assumptions require Android storage-access
+  review.
+
+Registration is explicit. Merely listing `android` in a plugin CMake declaration
+does not put the runtime into the APK.

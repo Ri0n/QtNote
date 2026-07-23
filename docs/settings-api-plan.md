@@ -1,27 +1,59 @@
-# Common settings API plan
+# Common settings API
 
-## Why it is needed
+## Status
 
-Current desktop contracts expose settings as `QWidget *` or `QDialog *`.
-Android cannot render those objects, and a plugin runtime must not depend on Qt
-Widgets merely to describe configuration.
+Implemented. Plugin and storage configuration no longer crosses the public API
+as `QWidget *` or `QDialog *`. Desktop and Android render the same controller
+and QML component.
 
-The common settings API is therefore not a second settings store. It is a
-UI-neutral description/controller placed between plugin or storage settings and
-the platform-specific view.
+## Contract
 
-## Recommended design
+`SettingsProviderInterface` exposes:
 
-Use a hybrid contract:
+```cpp
+QUrl settingsComponent() const;
+SettingsController *createSettingsController(QObject *parent);
+```
 
-1. A schema-driven model covers normal fields: boolean, string, integer, enum,
-   path, password/secret, validation state, help text, and restart requirement.
-2. The controller reads, validates, applies, and resets values. Secrets are
-   represented by keys or opaque handles rather than exposed as plain model data.
-3. Desktop renders the schema with Widgets or QML during migration; Android
-   renders the same schema with QML.
-4. A plugin may optionally provide a custom QML component for genuinely complex
-   settings, but the component still talks to the common controller.
+`NoteStorage` exposes the same pair directly. A provider may return the shared
+`qrc:/qml/SettingsForm.qml` for schema-driven settings or a custom QML component
+for complex workflows.
 
-This choice should be agreed before changing the current
-`settingsWidget()/optionsDialog()` plugin contracts.
+`SettingsController` is a UI-neutral `QAbstractListModel`. Its standard field
+schema covers text, password, multiline text, boolean, integer, choice and
+read-only values, descriptions, placeholders, ranges and restart requirements.
+It owns validation, Apply and Reset semantics. A custom QML page may add
+provider-specific properties and invokable commands while retaining the same
+Apply/Reset lifecycle.
+
+```mermaid
+flowchart LR
+    PROVIDER[Plugin or NoteStorage] --> CTRL[SettingsController]
+    PROVIDER --> COMPONENT[QML component URL]
+    CTRL --> DESKTOP[SettingsWindow.qml]
+    COMPONENT --> DESKTOP
+    CTRL --> MOBILE[Plugin/Storage settings page]
+    COMPONENT --> MOBILE
+```
+
+## Implemented providers
+
+- local file storage;
+- Nextcloud storage;
+- Gemini speech provider;
+- OpenAI Whisper speech provider;
+- KDE integration options;
+- Hunspell dictionary selection/download;
+- XMPP account, encryption-key and OMEMO controls.
+
+XMPP key-conflict recovery still invokes the existing internal desktop wizard
+when automatic recovery cannot select a canonical key. This is an implementation
+detail of that plugin, not part of the plugin/settings interface. It must be
+migrated to a QML recovery flow before the XMPP runtime is admitted to the
+Android bundled allow-list.
+
+## ABI and compatibility
+
+Removing the old widget-returning storage/plugin settings methods and changing
+desktop integration to `QWindow *` are ABI-breaking changes. The libqtnote
+SONAME is therefore `QTNOTE_ABI_VERSION=3`. External plugins must be rebuilt.

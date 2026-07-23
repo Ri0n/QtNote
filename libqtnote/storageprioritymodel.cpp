@@ -69,7 +69,7 @@ QVariant StoragePriorityModel::data(const QModelIndex &index, int role) const
     case AccessibleRole:
         return storage ? storage->isAccessible() : false;
     case ConfigurableRole:
-        return storage ? storage->hasSettingsWidget() || qobject_cast<FileStorage *>(storage.data()) : false;
+        return storage ? storage->isConfigurable() : false;
     default:
         return {};
     }

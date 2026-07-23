@@ -45,8 +45,8 @@ Page {
                     Layout.alignment: Qt.AlignVCenter
 
                     Image {
+                        id: pluginIcon
                         anchors.fill: parent
-                        visible: source.toString().length > 0
                         source: pluginDelegate.iconSource
                         sourceSize.width: 28
                         sourceSize.height: 28
@@ -55,7 +55,7 @@ Page {
 
                     Label {
                         anchors.centerIn: parent
-                        visible: pluginDelegate.iconSource.length === 0
+                        visible: pluginIcon.status !== Image.Ready
                         text: "⚙"
                         font.pixelSize: 20
                     }

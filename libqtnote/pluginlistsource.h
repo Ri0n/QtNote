@@ -6,8 +6,11 @@
 #include <QIcon>
 #include <QObject>
 #include <QStringList>
+#include <QUrl>
 
 namespace QtNote {
+
+class SettingsController;
 
 class QTNOTE_EXPORT PluginListSource : public QObject {
     Q_OBJECT
@@ -47,10 +50,12 @@ public:
     using QObject::QObject;
     ~PluginListSource() override = default;
 
-    virtual QStringList pluginIds() const                                               = 0;
-    virtual Entry       pluginEntry(const QString &pluginId) const                      = 0;
-    virtual bool        setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy) = 0;
-    virtual bool        setPluginOrder(const QStringList &pluginIds)                    = 0;
+    virtual QStringList         pluginIds() const                                                  = 0;
+    virtual Entry               pluginEntry(const QString &pluginId) const                         = 0;
+    virtual bool                setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy)    = 0;
+    virtual bool                setPluginOrder(const QStringList &pluginIds)                       = 0;
+    virtual QUrl                settingsComponent(const QString &pluginId) const                   = 0;
+    virtual SettingsController *createSettingsController(const QString &pluginId, QObject *parent) = 0;
 
 signals:
     void pluginsReset();

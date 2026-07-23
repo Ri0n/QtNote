@@ -9,6 +9,7 @@
 namespace QtNote {
 
 class DesktopEditorPlatformBackend;
+class NoteWidget;
 
 class PluginHost : public QObject, public PluginHostInterface {
     Q_OBJECT
@@ -18,9 +19,8 @@ public:
     NoteManager *noteManager() override;
     QString      qtnoteDataDir() override;
     void         rehighlight() override;
-    void         addHighlightExtension(QWidget *w, std::shared_ptr<HighlighterExtension> ext, int type) override;
     bool         offerSpellCheckProvider(std::shared_ptr<SpellCheckProvider> provider) override;
-    void         attachSpellCheck(QWidget *w);
+    void         attachSpellCheck(NoteWidget *widget);
     void         attachSpellCheck(DesktopEditorPlatformBackend *backend);
 
     QString activeSpellCheckProviderId() const;

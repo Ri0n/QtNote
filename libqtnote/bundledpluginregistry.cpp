@@ -1,6 +1,7 @@
 #include "bundledpluginregistry.h"
 
 #include "bundledplugininterface.h"
+#include "settingsproviderinterface.h"
 
 #include <QSet>
 #include <QSettings>
@@ -99,6 +100,33 @@ bool BundledPluginRegistry::setPluginOrder(const QStringList &pluginIds)
     return true;
 }
 
+QUrl BundledPluginRegistry::settingsComponent(const QString &pluginId) const
+{
+    const auto it = items_.constFind(pluginId);
+    if (it == items_.cend() || !it->instance)
+        return {};
+    auto *provider = qobject_cast<SettingsProviderInterface *>(it->instance.data());
+    return provider ? provider->settingsComponent() : QUrl();
+}
+
+SettingsController *BundledPluginRegistry::createSettingsController(const QString &pluginId, QObject *parent)
+{
+    auto it = items_.find(pluginId);
+    if (it == items_.end())
+        return nullptr;
+    if (!it->instance) {
+        QObject *created = it->factory(this);
+        if (!created)
+            return nullptr;
+        if (!created->parent())
+            created->setParent(this);
+        it->instance           = created;
+        it->entry.configurable = qobject_cast<SettingsProviderInterface *>(created) != nullptr;
+    }
+    auto *provider = qobject_cast<SettingsProviderInterface *>(it->instance.data());
+    return provider ? provider->createSettingsController(parent) : nullptr;
+}
+
 QObject *BundledPluginRegistry::instance(const QString &pluginId) const
 {
     const auto it = items_.constFind(pluginId);
@@ -107,13 +135,11 @@ QObject *BundledPluginRegistry::instance(const QString &pluginId) const
 
 bool BundledPluginRegistry::initialize(Item &item)
 {
-    if (item.instance) {
-        item.entry.loaded     = true;
-        item.entry.loadStatus = LS_Initialized;
+    if (item.instance && item.entry.loaded)
         return true;
-    }
-
-    QObject *created = item.factory(this);
+    QObject *created = item.instance.data();
+    if (!created)
+        created = item.factory(this);
     if (!created) {
         item.entry.loaded     = false;
         item.entry.loadStatus = LS_ErrNotPlugin;
@@ -125,14 +151,16 @@ bool BundledPluginRegistry::initialize(Item &item)
     auto *plugin = qobject_cast<BundledPluginInterface *>(created);
     if (!plugin || !plugin->initialize()) {
         delete created;
+        item.instance.clear();
         item.entry.loaded     = false;
         item.entry.loadStatus = LS_ErrNotPlugin;
         return false;
     }
 
-    item.instance         = created;
-    item.entry.loaded     = true;
-    item.entry.loadStatus = LS_Initialized;
+    item.instance           = created;
+    item.entry.loaded       = true;
+    item.entry.loadStatus   = LS_Initialized;
+    item.entry.configurable = qobject_cast<SettingsProviderInterface *>(created) != nullptr;
     return true;
 }
 

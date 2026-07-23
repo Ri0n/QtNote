@@ -23,17 +23,20 @@ To exercise the same QML shell with a desktop kit before deploying it, add
 
 ## Current boundary
 
-Android and desktop now share `NotesModel`, `NotesSearchModel`,
-`RecentNotesModel`, `NotesWorkspaceController`, `PluginListModel`, and
-`StoragePriorityModel`. Android opens in the flat Recent view; the shared manager
-also provides the storage-grouped tree.
+Android and desktop share `NotesModel`, `NotesSearchModel`, `RecentNotesModel`,
+`NotesWorkspaceController`, `PluginListModel`, `StoragePriorityModel`,
+`NoteEditor`, the structured QML editor, toolbar and settings controllers.
+Android opens in the flat Recent view; desktop defaults to the storage-grouped
+tree.
 
 PTF is registered through the same core startup function on both platforms.
 Android plugin discovery uses the explicit bundled factory registry documented
-in [Android bundled plugin loading](mobile-plugin-loading.md). The registry is
-active, but its allow-list is empty until existing plugins are split from their
-Widgets/Main/DBus dependencies.
+in [Android bundled plugin loading](mobile-plugin-loading.md). Gemini, OpenAI
+Whisper and Nextcloud are currently in the allow-list. Plugin and storage
+settings use the common QML/controller contract documented in
+[Common settings API](settings-api-plan.md).
 
-Plugin and storage settings still need the UI-neutral contract described in
-[Common settings API plan](settings-api-plan.md). Until that contract is
-implemented, desktop QWidget settings remain the only complete settings UI.
+The remaining Android work is device hardening: IME and predictive-input tests,
+background/process-death recovery, rotation and selection restoration, runtime
+permissions and storage access, bundled crypto/native-library verification,
+arm64 device builds, release signing and package metadata.

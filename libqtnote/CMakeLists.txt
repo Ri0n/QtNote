@@ -3,7 +3,7 @@ include(QtNoteMacro)
 project(libqtnote VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
 if(NOT DEFINED QTNOTE_ABI_VERSION)
-    set(QTNOTE_ABI_VERSION 2 CACHE STRING "libqtnote ABI version")
+    set(QTNOTE_ABI_VERSION 3 CACHE STRING "libqtnote ABI version")
 endif()
 
 set(CMAKE_AUTOMOC ON)
@@ -73,6 +73,7 @@ set(qtnote_CORE_SRCS
     ptfstorage.cpp
     secureenvelope.cpp
     securekeystore.cpp
+    settingscontroller.cpp
     storageiconimageprovider.cpp
     storagejob.cpp
     storageprioritymodel.cpp
@@ -111,6 +112,9 @@ set(qtnote_CORE_HDRS
     remotecachestore.h
     secureenvelope.h
     securekeystore.h
+    settingscontroller.h
+    settingsproviderinterface.h
+    speechrecognitionprovider.h
     storageiconimageprovider.h
     storagejob.h
     storageprioritymodel.h
@@ -134,6 +138,7 @@ include(GenerateExportHeader)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 add_library(qtnote_core OBJECT
+    core.qrc
     ${qtnote_CORE_HDRS}
     ${qtnote_CORE_SRCS}
     ${qtnote_CORE_UIS}

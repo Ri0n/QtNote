@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.25.0)
 
 project(qtnote_mobile VERSION ${QTNOTE_VERSION} LANGUAGES CXX)
 
+find_package(Qt6 6.4 REQUIRED COMPONENTS Network)
+
 qt_policy(SET QTP0001 NEW)
 
 set(qtnote_mobile_shared_qml
@@ -19,6 +21,17 @@ endforeach()
 
 qt_add_executable(qtnote_mobile
     main.cpp
+    "${CMAKE_SOURCE_DIR}/plugins/gemini/geminiplugin.cpp"
+    "${CMAKE_SOURCE_DIR}/plugins/gemini/geminiplugin.h"
+    "${CMAKE_SOURCE_DIR}/plugins/openaiwhisper/openaiwhisperplugin.cpp"
+    "${CMAKE_SOURCE_DIR}/plugins/openaiwhisper/openaiwhisperplugin.h"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextclouddto.h"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudworker.cpp"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudworker.h"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudstorage.cpp"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudstorage.h"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudplugin.cpp"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud/nextcloudplugin.h"
 )
 
 qt_add_qml_module(qtnote_mobile
@@ -42,6 +55,16 @@ qt_add_qml_module(qtnote_mobile
         mobilebundledplugins.h
 )
 
+target_compile_definitions(qtnote_mobile PRIVATE QTNOTE_BUNDLED_PLUGIN_BUILD)
+
+target_include_directories(qtnote_mobile PRIVATE
+    "${CMAKE_SOURCE_DIR}/plugins"
+    "${CMAKE_SOURCE_DIR}/plugins/gemini"
+    "${CMAKE_SOURCE_DIR}/plugins/openaiwhisper"
+    "${CMAKE_SOURCE_DIR}/plugins/nextcloud"
+    "${CMAKE_BINARY_DIR}"
+)
+
 target_link_libraries(qtnote_mobile PRIVATE
     qtnote_core
     Qt6::Core
@@ -49,6 +72,7 @@ target_link_libraries(qtnote_mobile PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Network
 )
 
 set_target_properties(qtnote_mobile PROPERTIES

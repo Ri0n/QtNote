@@ -253,7 +253,7 @@ void NoteManager::handleStorageChanged()
 QList<Note> NoteManager::noteList(int count) const
 {
     QList<Note> ret;
-    foreach (NoteStorage::Ptr storage, prioritizedStorages()) {
+    for (const auto &storage : prioritizedStorages()) {
         ret += storage->noteList(count);
     }
     std::sort(ret.begin(), ret.end(), noteListItemModifyComparer);

@@ -8,7 +8,6 @@
         <file alias="manager">images/manager22.png</file>
         <file alias="print">images/print22.png</file>
         <file alias="find">images/find22.png</file>
-        <file alias="trayicon">images/qtnote24.png</file>
         <file alias="trayicon-symbolic">images/qtnote-symbolic.svg</file>
         <file alias="replace-text">images/replace24.png</file>
         <file alias="plugin">images/plugin22.png</file>
@@ -31,5 +30,6 @@
         <file alias="DesktopNoteEditor.qml">qml/DesktopNoteEditor.qml</file>
         <file alias="NotesManagerPage.qml">qml/NotesManagerPage.qml</file>
         <file alias="NotesManagerWindow.qml">qml/NotesManagerWindow.qml</file>
+        <file alias="SettingsWindow.qml">qml/SettingsWindow.qml</file>
     </qresource>
 </RCC>
