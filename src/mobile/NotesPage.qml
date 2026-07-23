@@ -17,5 +17,7 @@ Page {
         embeddedEditor: false
         showCreateButton: false
         confirmDelete: mobileApp.askBeforeDelete
+        viewMode: recentMode
+        touchActions: true
     }
 }

@@ -3,6 +3,7 @@
 #include "desktopeditorplatformbackend.h"
 #include "localmediaimageprovider.h"
 #include "notesworkspacecontroller.h"
+#include "storageiconimageprovider.h"
 
 #include <QDebug>
 #include <QDragEnterEvent>
@@ -31,6 +32,7 @@ NotesManagerWindow::NotesManagerWindow(QObject *parent) : QObject(parent)
 
     engine_ = new QQmlApplicationEngine(this);
     installLocalMediaImageProvider(engine_);
+    installStorageIconImageProvider(engine_);
     engine_->rootContext()->setContextProperty(QStringLiteral("notesWorkspace"), workspace_);
     engine_->rootContext()->setContextProperty(QStringLiteral("desktopEditorPlatform"), platformBackend_);
     engine_->load(QUrl(QStringLiteral("qrc:/qml/NotesManagerWindow.qml")));

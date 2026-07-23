@@ -1,44 +1,18 @@
 #ifndef QTNOTE_MOBILEAPPLICATION_H
 #define QTNOTE_MOBILEAPPLICATION_H
 
-#include <QAbstractListModel>
-#include <QObject>
-#include <QPointer>
-
+#include "bundledpluginregistry.h"
 #include "note.h"
+#include "pluginlistmodel.h"
+#include "storageprioritymodel.h"
+
+#include <QAbstractItemModel>
+#include <QObject>
 
 namespace QtNote {
 
-class NoteEditor;
 class NoteStorage;
 class NotesWorkspaceController;
-
-class EmptyListModel final : public QAbstractListModel {
-    Q_OBJECT
-
-public:
-    explicit EmptyListModel(QObject *parent = nullptr);
-
-    int                    rowCount(const QModelIndex &parent = {}) const override;
-    QVariant               data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
-};
-
-class MobileStoragesModel final : public QAbstractListModel {
-    Q_OBJECT
-
-public:
-    enum Role { StorageIdRole = Qt::UserRole + 1, NameRole, AccessibleRole, ConfigurableRole, TooltipRole };
-    Q_ENUM(Role)
-
-    explicit MobileStoragesModel(QObject *parent = nullptr);
-
-    int                    rowCount(const QModelIndex &parent = {}) const override;
-    QVariant               data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
-
-    QString storagePath() const;
-};
 
 class MobileApplication final : public QObject {
     Q_OBJECT
@@ -84,8 +58,9 @@ private:
     bool openEditor(const Note &note, const QUuid &draftId = {});
     void recoverDraft(NoteStorage *storage);
 
-    MobileStoragesModel       storages_;
-    EmptyListModel            plugins_;
+    BundledPluginRegistry     bundledPlugins_;
+    PluginListModel           plugins_;
+    StoragePriorityModel      storages_;
     NotesWorkspaceController *workspace_ { nullptr };
     QString                   initializationError_;
     bool                      askBeforeDelete_ { true };

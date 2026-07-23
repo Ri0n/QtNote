@@ -1,99 +1,24 @@
 #include "mobileapplication.h"
 
+#include "corestorageregistry.h"
 #include "draftmanager.h"
+#include "mobilebundledplugins.h"
 #include "noteeditor.h"
 #include "notemanager.h"
 #include "notesmodel.h"
 #include "notesworkspacecontroller.h"
-#include "ptfstorage.h"
 
-#include <QDir>
-#include <QFileInfo>
 #include <QSettings>
-#include <QStandardPaths>
-
-#include <memory>
 
 namespace QtNote {
 
-namespace {
-    constexpr auto PtfStorageId = "ptf";
-
-    QString ptfStoragePath()
-    {
-        return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QLatin1Char('/')
-            + QLatin1String(PtfStorageId);
-    }
-}
-
-EmptyListModel::EmptyListModel(QObject *parent) : QAbstractListModel(parent) { }
-
-int EmptyListModel::rowCount(const QModelIndex &parent) const
-{
-    Q_UNUSED(parent)
-    return 0;
-}
-
-QVariant EmptyListModel::data(const QModelIndex &index, int role) const
-{
-    Q_UNUSED(index)
-    Q_UNUSED(role)
-    return {};
-}
-
-QHash<int, QByteArray> EmptyListModel::roleNames() const
-{
-    return {
-        { Qt::UserRole + 1, "id" },          { Qt::UserRole + 2, "title" },        { Qt::UserRole + 3, "name" },
-        { Qt::UserRole + 4, "description" }, { Qt::UserRole + 5, "versionText" },  { Qt::UserRole + 6, "enabled" },
-        { Qt::UserRole + 7, "loaded" },      { Qt::UserRole + 8, "configurable" }, { Qt::UserRole + 9, "pluginId" },
-        { Qt::UserRole + 10, "storageId" },  { Qt::UserRole + 11, "accessible" },  { Qt::UserRole + 12, "tooltip" },
-    };
-}
-
-MobileStoragesModel::MobileStoragesModel(QObject *parent) : QAbstractListModel(parent) { QDir().mkpath(storagePath()); }
-
-int MobileStoragesModel::rowCount(const QModelIndex &parent) const { return parent.isValid() ? 0 : 1; }
-
-QVariant MobileStoragesModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid() || index.row() != 0)
-        return {};
-
-    const auto path = storagePath();
-    switch (role) {
-    case StorageIdRole:
-        return QLatin1String(PtfStorageId);
-    case Qt::DisplayRole:
-    case NameRole:
-        return tr("Plain Text Storage");
-    case AccessibleRole:
-        return QFileInfo(path).isReadable();
-    case ConfigurableRole:
-        return false;
-    case Qt::ToolTipRole:
-    case TooltipRole:
-        return path;
-    default:
-        return {};
-    }
-}
-
-QHash<int, QByteArray> MobileStoragesModel::roleNames() const
-{
-    return {
-        { StorageIdRole, "storageId" },       { NameRole, "name" },       { AccessibleRole, "accessible" },
-        { ConfigurableRole, "configurable" }, { TooltipRole, "tooltip" },
-    };
-}
-
-QString MobileStoragesModel::storagePath() const { return ptfStoragePath(); }
-
-MobileApplication::MobileApplication(QObject *parent) : QObject(parent), storages_(this), plugins_(this)
+MobileApplication::MobileApplication(QObject *parent) :
+    QObject(parent), bundledPlugins_(this), plugins_(&bundledPlugins_, this), storages_(this)
 {
     workspace_ = new NotesWorkspaceController(this);
     connect(workspace_, &NotesWorkspaceController::currentEditorChanged, this,
             &MobileApplication::currentNoteEditorChanged);
+
     QSettings settings;
     askBeforeDelete_ = settings.value(QStringLiteral("ui.ask-on-delete"), true).toBool();
     notesPerPage_    = settings.value(QStringLiteral("mobile.notes-per-page"), 30).toInt();
@@ -106,24 +31,20 @@ MobileApplication::MobileApplication(QObject *parent) : QObject(parent), storage
     auto *notes = NoteManager::instance();
     connect(notes, &NoteManager::storageReady, this,
             [this](const NoteStorage::Ptr &storage) { recoverDraft(storage.data()); });
-    if (!notes->storage(PtfStorageId))
-        notes->registerStorage(std::make_unique<PTFStorage>());
+    registerCoreStorages();
+
+    registerMobileBundledPlugins(bundledPlugins_);
+    bundledPlugins_.initializeEnabledPlugins();
 }
 
-QAbstractItemModel *MobileApplication::notesModel() { return workspace_->notesModel(); }
-
+QAbstractItemModel *MobileApplication::notesModel() { return workspace_->recentNotesModel(); }
 QAbstractItemModel *MobileApplication::pluginsModel() { return &plugins_; }
-
 QAbstractItemModel *MobileApplication::storagesModel() { return &storages_; }
+QObject            *MobileApplication::currentNoteEditor() const { return workspace_->currentEditor(); }
+QObject            *MobileApplication::workspace() { return workspace_; }
 
-QObject *MobileApplication::currentNoteEditor() const { return workspace_->currentEditor(); }
-
-QObject *MobileApplication::workspace() { return workspace_; }
-
-bool MobileApplication::askBeforeDelete() const { return askBeforeDelete_; }
-
-int MobileApplication::notesPerPage() const { return notesPerPage_; }
-
+bool  MobileApplication::askBeforeDelete() const { return askBeforeDelete_; }
+int   MobileApplication::notesPerPage() const { return notesPerPage_; }
 qreal MobileApplication::editorFontSize() const { return editorFontSize_; }
 
 bool MobileApplication::createNote()
@@ -154,15 +75,9 @@ void MobileApplication::recoverDraft(NoteStorage *storage)
 }
 
 bool MobileApplication::saveCurrentNote() { return workspace_->saveCurrentNote(); }
-
 bool MobileApplication::closeCurrentNote() { return workspace_->closeCurrentNote(); }
 
-bool MobileApplication::setPluginEnabled(int row, bool enabled)
-{
-    Q_UNUSED(row)
-    Q_UNUSED(enabled)
-    return false;
-}
+bool MobileApplication::setPluginEnabled(int row, bool enabled) { return plugins_.setEnabled(row, enabled); }
 
 void MobileApplication::setAskBeforeDelete(bool value)
 {

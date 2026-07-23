@@ -27,6 +27,7 @@
 
 #include "aboutdlg.h"
 #include "actionnotificationinterface.h"
+#include "corestorageregistry.h"
 #include "deintegrationinterface.h"
 #include "draftmanager.h"
 #include "globalshortcutsinterface.h"
@@ -38,7 +39,6 @@
 #include "optionsdlg.h"
 #include "optionsplugins.h"
 #include "pluginmanager.h"
-#include "ptfstorage.h"
 #include "qtnote.h"
 #include "qtnote_config.h"
 #ifdef QTNOTE_DBUS_AVAILABLE
@@ -209,7 +209,7 @@ Main::Main(QObject *parent) : QObject(parent), d(new Private(this)), _inited(fal
         return;
     }
 
-    registerStorage(std::make_unique<PTFStorage>());
+    registerCoreStorages();
 
     _inited = NoteManager::instance()->loadAll();
     if (!NoteManager::instance()->loadAll()) {

@@ -10,7 +10,9 @@ ToolBar {
     property var platformBackend: null
     property bool compact: width < 640
     property bool showBackButton: false
+    property bool showDeleteButton: false
     signal backRequested()
+    signal deleteRequested()
 
     function runMarkdownCommand(kind, command) {
         if (!root.editorBackend || !root.blockEditor)
@@ -201,6 +203,15 @@ ToolBar {
                 enabled: root.platformBackend && root.editorBackend && root.editorBackend.supportsMedia
                 Accessible.name: qsTr("Insert image")
                 onClicked: root.insertImage()
+            }
+
+            ToolSeparator { visible: root.showDeleteButton }
+
+            ToolButton {
+                visible: root.showDeleteButton
+                text: qsTr("Delete")
+                Accessible.name: qsTr("Delete note")
+                onClicked: root.deleteRequested()
             }
 
             Item { Layout.preferredWidth: 4; Layout.fillHeight: true }

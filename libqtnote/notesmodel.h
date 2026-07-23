@@ -35,6 +35,7 @@ public:
         ErrorStringRole,
         HasMoreRole,
         NoteCountRole,
+        IconSourceRole,
     };
     Q_ENUM(DataRole)
 

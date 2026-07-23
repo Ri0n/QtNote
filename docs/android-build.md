@@ -23,24 +23,17 @@ To exercise the same QML shell with a desktop kit before deploying it, add
 
 ## Current boundary
 
-The shared editor controller and its migration plan are documented in
-[Note editor architecture](note-editor-architecture.md).
+Android and desktop now share `NotesModel`, `NotesSearchModel`,
+`RecentNotesModel`, `NotesWorkspaceController`, `PluginListModel`, and
+`StoragePriorityModel`. Android opens in the flat Recent view; the shared manager
+also provides the storage-grouped tree.
 
-The mobile target currently contains navigation for notes, plugins, application
-settings and per-plugin settings. Application settings are persisted through
-`QSettings`. The note and plugin models are intentionally empty until the
-desktop core is separated from these Widgets-only APIs:
+PTF is registered through the same core startup function on both platforms.
+Android plugin discovery uses the explicit bundled factory registry documented
+in [Android bundled plugin loading](mobile-plugin-loading.md). The registry is
+active, but its allow-list is empty until existing plugins are split from their
+Widgets/Main/DBus dependencies.
 
-- `NoteStorage::settingsWidget()` returns `QWidget *`;
-- `PluginOptionsInterface::optionsDialog()` returns `QDialog *`;
-- `QtNote::Main` requires tray, desktop integration, dialogs and global
-  shortcuts during startup;
-- desktop plugins are discovered as host shared libraries and several depend
-  on desktop-only libraries.
-
-The next core change should introduce UI-neutral settings schemas/controllers
-for storages and plugins. Desktop can render those schemas with Widgets while
-mobile renders them with QML. Plugins that need custom controls can expose a
-mobile QML component in addition to the schema. After that, the existing note
-and plugin models can be adapted to QML role names and connected to the mobile
-application object.
+Plugin and storage settings still need the UI-neutral contract described in
+[Common settings API plan](settings-api-plan.md). Until that contract is
+implemented, desktop QWidget settings remain the only complete settings UI.

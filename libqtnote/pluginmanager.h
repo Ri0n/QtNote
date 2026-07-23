@@ -9,6 +9,7 @@
 
 #include "../plugins/pluginoptionsinterface.h"
 #include "../plugins/qtnoteplugininterface.h"
+#include "pluginlistsource.h"
 #include "speechrecognitionprovider.h"
 
 namespace QtNote {
@@ -16,23 +17,9 @@ namespace QtNote {
 class DesktopEditorPlatformBackend;
 class PluginHost;
 
-class PluginManager : public QObject {
+class PluginManager : public PluginListSource {
     Q_OBJECT
 public:
-    enum LoadStatus {
-        LS_Undefined = 0,
-        LS_Loaded,
-        LS_Initialized,
-        LS_Errors       = 100,
-        LS_ErrNotPlugin = LS_Errors + 1,
-        LS_ErrVersion,
-        LS_ErrAbi,
-        LS_ErrMetadata,
-        LS_Unloaded
-    };
-
-    enum LoadPolicy { LP_Auto, LP_Enabled, LP_Disabled };
-
     enum PluginFeature {
         FirstFeature    = 0x1,
         RegularPlugin   = FirstFeature,
@@ -61,7 +48,12 @@ public:
     };
 
     explicit PluginManager(Main *parent);
-    ~PluginManager();
+    ~PluginManager() override;
+
+    QStringList pluginIds() const override;
+    Entry       pluginEntry(const QString &pluginId) const override;
+    bool        setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy) override;
+    bool        setPluginOrder(const QStringList &pluginIds) override;
 
     template <class T> T *castInterface(const PluginData::Ptr &pd) const
     {

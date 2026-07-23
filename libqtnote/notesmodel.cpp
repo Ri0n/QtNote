@@ -1,6 +1,7 @@
 #include "notesmodel.h"
 
 #include "notemanager.h"
+#include "storageiconimageprovider.h"
 
 #include <QDataStream>
 #include <QIODevice>
@@ -166,6 +167,8 @@ QVariant NotesModel::data(const QModelIndex &modelIndex, int role) const
         return storage && item->children.size() < item->allNotes.size();
     case NoteCountRole:
         return storage ? item->allNotes.size() : 0;
+    case IconSourceRole:
+        return storageIconSource(storage ? item->id : item->parent->id, !storage);
     default:
         return {};
     }
@@ -197,6 +200,7 @@ QHash<int, QByteArray> NotesModel::roleNames() const
         { ErrorStringRole, "errorString" },
         { HasMoreRole, "hasMore" },
         { NoteCountRole, "noteCount" },
+        { IconSourceRole, "iconSource" },
     };
 }
 

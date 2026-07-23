@@ -6,6 +6,7 @@
 #include "notesmodel.h"
 #include "notessearchmodel.h"
 #include "notestorage.h"
+#include "recentnotesmodel.h"
 #include "storagejob.h"
 #include "utils.h"
 
@@ -16,6 +17,7 @@ NotesWorkspaceController::NotesWorkspaceController(QObject *parent) : QObject(pa
     notesModel_  = new NotesModel(this);
     searchModel_ = new NotesSearchModel(this);
     searchModel_->setSourceModel(notesModel_);
+    recentNotesModel_ = new RecentNotesModel(searchModel_, this);
 
     connect(notesModel_, &NotesModel::statsChanged, this, &NotesWorkspaceController::noteCountChanged);
     connect(notesModel_, &NotesModel::notesDropRequested, this,
@@ -57,6 +59,8 @@ NotesWorkspaceController::NotesWorkspaceController(QObject *parent) : QObject(pa
 NotesWorkspaceController::~NotesWorkspaceController() { closeCurrentNote(); }
 
 QAbstractItemModel *NotesWorkspaceController::notesModel() const { return searchModel_; }
+QAbstractItemModel *NotesWorkspaceController::groupedNotesModel() const { return searchModel_; }
+QAbstractItemModel *NotesWorkspaceController::recentNotesModel() const { return recentNotesModel_; }
 QObject            *NotesWorkspaceController::currentEditor() const { return currentEditor_; }
 NoteEditor         *NotesWorkspaceController::editor() const { return currentEditor_.data(); }
 QString             NotesWorkspaceController::currentStorageId() const

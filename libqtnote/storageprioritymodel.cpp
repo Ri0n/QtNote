@@ -2,6 +2,7 @@
 
 #include "filestorage.h"
 #include "notemanager.h"
+#include "storageiconimageprovider.h"
 
 #include <QColor>
 #include <QDataStream>
@@ -63,6 +64,8 @@ QVariant StoragePriorityModel::data(const QModelIndex &index, int role) const
     }
     case StorageIdRole:
         return item.storageId;
+    case IconSourceRole:
+        return storageIconSource(item.storageId);
     case AccessibleRole:
         return storage ? storage->isAccessible() : false;
     case ConfigurableRole:
@@ -85,6 +88,7 @@ QHash<int, QByteArray> StoragePriorityModel::roleNames() const
     return {
         { StorageIdRole, "storageId" },       { NameRole, "name" },       { AccessibleRole, "accessible" },
         { ConfigurableRole, "configurable" }, { TooltipRole, "tooltip" }, { IconRole, "icon" },
+        { IconSourceRole, "iconSource" },
     };
 }
 

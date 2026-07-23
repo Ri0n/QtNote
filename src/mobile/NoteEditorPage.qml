@@ -16,6 +16,21 @@ Page {
         return mobileApp.saveCurrentNote()
     }
 
+    function deleteEditor() {
+        saveTimer.stop()
+        Qt.inputMethod.commit()
+        blockEditor.flushPendingEditorChanges()
+        if (mobileApp.workspace.deleteNote(root.editor.storageId, root.editor.noteId))
+            root.backRequested()
+    }
+
+    function requestDelete() {
+        if (mobileApp.askBeforeDelete)
+            deleteDialog.open()
+        else
+            deleteEditor()
+    }
+
     function closeEditor() {
         saveTimer.stop()
         checkpointEditor()
@@ -29,7 +44,9 @@ Page {
         platformBackend: null
         compact: true
         showBackButton: true
+        showDeleteButton: true
         onBackRequested: root.closeEditor()
+        onDeleteRequested: root.requestDelete()
     }
 
     NoteBlockEditor {
@@ -48,6 +65,24 @@ Page {
         }
 
         Component.onCompleted: focusInitialEditor()
+    }
+
+    Dialog {
+        id: deleteDialog
+        parent: root
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
+        modal: true
+        title: qsTr("Delete note")
+        standardButtons: Dialog.Yes | Dialog.No
+
+        Label {
+            width: Math.min(360, root.width - 48)
+            wrapMode: Text.WordWrap
+            text: qsTr("Delete this note?")
+        }
+
+        onAccepted: root.deleteEditor()
     }
 
     Timer {

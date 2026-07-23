@@ -18,10 +18,13 @@ class NoteEditor;
 class NoteLoadJob;
 class NotesModel;
 class NotesSearchModel;
+class RecentNotesModel;
 
 class QTNOTE_EXPORT NotesWorkspaceController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QAbstractItemModel *notesModel READ notesModel CONSTANT)
+    Q_PROPERTY(QAbstractItemModel *groupedNotesModel READ groupedNotesModel CONSTANT)
+    Q_PROPERTY(QAbstractItemModel *recentNotesModel READ recentNotesModel CONSTANT)
     Q_PROPERTY(QObject *currentEditor READ currentEditor NOTIFY currentEditorChanged)
     Q_PROPERTY(QString currentStorageId READ currentStorageId NOTIFY currentEditorChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentEditorChanged)
@@ -40,6 +43,8 @@ public:
     ~NotesWorkspaceController() override;
 
     QAbstractItemModel *notesModel() const;
+    QAbstractItemModel *groupedNotesModel() const;
+    QAbstractItemModel *recentNotesModel() const;
     NotesModel         *sourceModel() const { return notesModel_; }
     NotesSearchModel   *searchModel() const { return searchModel_; }
     QObject            *currentEditor() const;
@@ -106,6 +111,7 @@ private:
 
     NotesModel               *notesModel_ { nullptr };
     NotesSearchModel         *searchModel_ { nullptr };
+    RecentNotesModel         *recentNotesModel_ { nullptr };
     QPointer<NoteEditor>      currentEditor_;
     QPointer<NoteLoadJob>     loadJob_;
     QHash<QUuid, PendingMove> pendingMoves_;

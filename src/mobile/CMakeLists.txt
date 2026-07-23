@@ -38,6 +38,8 @@ qt_add_qml_module(qtnote_mobile
     SOURCES
         mobileapplication.cpp
         mobileapplication.h
+        mobilebundledplugins.cpp
+        mobilebundledplugins.h
 )
 
 target_link_libraries(qtnote_mobile PRIVATE

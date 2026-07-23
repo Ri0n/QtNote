@@ -153,9 +153,10 @@ on its existing navigation page.
    must then operate on the structured editor or a temporary `QTextDocument`.
 2. Move the remaining standalone-window services out of `NoteWidget` and choose
    the final desktop QML window shell.
-3. Replace the mobile placeholder plugin/storage models with the common plugin
-   and storage models, then define Android bundled plugin loading.
-4. Design and migrate the common settings API.
+3. Migrate eligible plugin runtimes to the explicit Android bundled factory
+   registry. Mobile already uses the common plugin and storage list models.
+4. Agree and migrate the common settings API described in
+   `settings-api-plan.md`.
 5. Complete Android IME, process-death, rotation, device, and release-build
    hardening.
 

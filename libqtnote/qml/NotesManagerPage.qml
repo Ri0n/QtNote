@@ -8,12 +8,18 @@ import QtQml.Models
 Item {
     id: root
 
+    readonly property int recentMode: 0
+    readonly property int groupedByStorageMode: 1
+
     required property var workspace
     property var platformBackend: null
     property bool embeddedEditor: true
     property bool showCreateButton: true
+    property bool showViewModeSelector: true
+    property bool touchActions: false
     property bool confirmDelete: true
     property bool compact: width < 760
+    property int viewMode: embeddedEditor ? groupedByStorageMode : recentMode
     property real navigationWidth: 340
     property string selectedStorageId: ""
     property string selectedNoteId: ""
@@ -86,6 +92,13 @@ Item {
         return false
     }
 
+    function showNoteMenu(storageId, noteId, title) {
+        selectedStorageId = storageId
+        selectedNoteId = noteId
+        selectedTitle = title
+        noteContextMenu.popup()
+    }
+
     SplitView {
         anchors.fill: parent
         orientation: Qt.Horizontal
@@ -132,162 +145,297 @@ Item {
                     }
                 }
 
-                CheckBox {
-                    text: qsTr("Search in text")
-                    checked: root.workspace.searchInBody
-                    onToggled: root.workspace.searchInBody = checked
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    ComboBox {
+                        id: modeSelector
+                        visible: root.showViewModeSelector
+                        Layout.preferredWidth: Math.min(190, implicitWidth)
+                        model: [qsTr("Recent"), qsTr("By storage")]
+                        currentIndex: root.viewMode
+                        Accessible.name: qsTr("Notes view")
+                        onActivated: root.viewMode = currentIndex
+                    }
+
+                    CheckBox {
+                        Layout.fillWidth: true
+                        text: qsTr("Search in text")
+                        checked: root.workspace.searchInBody
+                        onToggled: root.workspace.searchInBody = checked
+                    }
                 }
 
-                TreeView {
-                    id: notesTree
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    clip: true
-                    model: root.workspace.notesModel
-                    Component.onCompleted: Qt.callLater(function() { expandRecursively(-1, 1) })
-                    selectionModel: ItemSelectionModel { model: notesTree.model }
 
-                    delegate: ItemDelegate {
-                        id: delegateRoot
+                    ListView {
+                        id: recentNotes
+                        anchors.fill: parent
+                        visible: root.viewMode === root.recentMode
+                        clip: true
+                        spacing: 1
+                        model: root.workspace.recentNotesModel
 
-                        required property int row
-                        required property int column
-                        required property int depth
-                        required property bool expanded
-                        required property bool hasChildren
-                        required property bool isTreeNode
-                        required property string storageId
-                        required property string noteId
-                        required property int itemType
-                        required property string title
-                        required property string preview
-                        required property bool loading
-                        required property string errorString
-                        required property bool hasMore
-                        required property int noteCount
+                        delegate: SwipeDelegate {
+                            id: recentDelegate
 
-                        implicitWidth: notesTree.width
-                        width: notesTree.width
-                        leftPadding: 10 + depth * 18 + (isTreeNode && hasChildren ? 18 : 0)
-                        rightPadding: 8
-                        hoverEnabled: true
-                        text: itemType === 0
-                              ? (loading ? qsTr("%1 — loading…").arg(title)
-                                         : qsTr("%1 (%2)").arg(title).arg(noteCount))
-                              : title
-                        font.bold: itemType === 0
-                        highlighted: itemType === 0
-                                     ? root.selectedStorageId === storageId
-                                       && root.selectedNoteId.length === 0
-                                     : root.selectedStorageId === storageId
-                                       && root.selectedNoteId === noteId
-                        ToolTip.visible: hovered && (errorString.length > 0 || preview.length > 0)
-                        ToolTip.text: errorString.length > 0 ? errorString : preview
+                            required property string storageId
+                            required property string noteId
+                            required property string title
+                            required property string preview
+                            required property string storageName
+                            required property string iconSource
 
-                        indicator: Label {
-                            visible: delegateRoot.isTreeNode && delegateRoot.hasChildren
-                            x: 8 + delegateRoot.depth * 18
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: delegateRoot.expanded ? "▾" : "▸"
-                            color: delegateRoot.highlighted
-                                   ? delegateRoot.palette.highlightedText
-                                   : delegateRoot.palette.text
-                        }
+                            width: recentNotes.width
+                            implicitHeight: Math.max(52, contentRow.implicitHeight + 12)
+                            hoverEnabled: true
+                            highlighted: root.selectedStorageId === storageId && root.selectedNoteId === noteId
+                            padding: 6
 
-                        Drag.active: noteDrag.active
-                        Drag.source: delegateRoot
-                        Drag.keys: ["qtnote-note"]
-                        Drag.hotSpot.x: width / 2
-                        Drag.hotSpot.y: height / 2
-
-                        DragHandler {
-                            id: noteDrag
-                            target: null
-                            enabled: delegateRoot.itemType === 1
-                        }
-
-                        DropArea {
-                            anchors.fill: parent
-                            enabled: delegateRoot.itemType === 0
-                            keys: ["qtnote-note"]
-                            onEntered: function(drag) {
-                                if (drag.source && drag.source.storageId !== delegateRoot.storageId)
-                                    drag.accepted = true
+                            background: Rectangle {
+                                radius: 4
+                                color: recentDelegate.highlighted
+                                       ? recentDelegate.palette.highlight
+                                       : (recentDelegate.hovered ? Qt.rgba(recentDelegate.palette.button.r, recentDelegate.palette.button.g, recentDelegate.palette.button.b, 0.45) : "transparent")
                             }
-                            onDropped: function(drop) {
-                                if (!drop.source || drop.source.storageId === delegateRoot.storageId)
-                                    return
-                                if (root.workspace.currentEditor && !root.checkpointEditor())
-                                    return
-                                if (root.workspace.moveNote(drop.source.storageId,
-                                                            drop.source.noteId,
-                                                            delegateRoot.storageId)) {
-                                    drop.acceptProposedAction()
+
+                            contentItem: RowLayout {
+                                id: contentRow
+                                spacing: 10
+
+                                Image {
+                                    Layout.preferredWidth: 22
+                                    Layout.preferredHeight: 22
+                                    Layout.alignment: Qt.AlignVCenter
+                                    source: recentDelegate.iconSource
+                                    sourceSize.width: 22
+                                    sourceSize.height: 22
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 1
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: recentDelegate.title
+                                        color: recentDelegate.highlighted
+                                               ? recentDelegate.palette.highlightedText
+                                               : recentDelegate.palette.text
+                                        elide: Text.ElideRight
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        visible: text.length > 0
+                                        text: recentDelegate.preview.length > 0
+                                              ? recentDelegate.preview
+                                              : recentDelegate.storageName
+                                        color: recentDelegate.highlighted
+                                               ? recentDelegate.palette.highlightedText
+                                               : recentDelegate.palette.mid
+                                        opacity: 0.82
+                                        font.pixelSize: 12
+                                        elide: Text.ElideRight
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
                                 }
                             }
-                        }
 
-                        TapHandler {
-                            acceptedButtons: Qt.LeftButton
-                            enabled: delegateRoot.itemType === 1 && root.embeddedEditor
-                            onDoubleTapped: root.openStandalone(delegateRoot.storageId,
-                                                                 delegateRoot.noteId)
-                        }
-
-                        onClicked: {
-                            notesTree.selectionModel.setCurrentIndex(notesTree.index(row, column),
-                                                                     ItemSelectionModel.ClearAndSelect)
-                            if (itemType === 0) {
-                                root.selectedStorageId = storageId
-                                root.selectedNoteId = ""
-                                root.selectedTitle = title
-                                notesTree.toggleExpanded(row)
-                            } else {
-                                root.selectNote(storageId, noteId, title)
-                            }
-                        }
-
-                        TapHandler {
-                            acceptedButtons: Qt.RightButton
-                            onTapped: {
-                                if (delegateRoot.itemType !== 1)
-                                    return
-                                root.selectedStorageId = delegateRoot.storageId
-                                root.selectedNoteId = delegateRoot.noteId
-                                root.selectedTitle = delegateRoot.title
-                                noteMenu.popup()
-                            }
-                        }
-
-                        Menu {
-                            id: noteMenu
-                            MenuItem {
-                                text: qsTr("Open")
-                                onTriggered: root.selectNote(delegateRoot.storageId,
-                                                            delegateRoot.noteId,
-                                                            delegateRoot.title)
-                            }
-                            MenuItem {
-                                visible: root.embeddedEditor
-                                text: qsTr("Open in separate window")
-                                onTriggered: root.openStandalone(delegateRoot.storageId,
-                                                                   delegateRoot.noteId)
-                            }
-                            MenuItem {
-                                text: qsTr("Move…")
-                                onTriggered: {
-                                    root.selectedStorageId = delegateRoot.storageId
-                                    root.selectedNoteId = delegateRoot.noteId
-                                    root.selectedTitle = delegateRoot.title
-                                    moveDialog.open()
-                                }
-                            }
-                            MenuSeparator { }
-                            MenuItem {
+                            swipe.left: Button {
+                                visible: root.touchActions
+                                width: visible ? Math.max(92, implicitWidth) : 0
+                                height: recentDelegate.height
                                 text: qsTr("Delete")
-                                onTriggered: root.requestDelete(delegateRoot.storageId,
-                                                                  delegateRoot.noteId,
-                                                                  delegateRoot.title)
+                                onClicked: {
+                                    recentDelegate.swipe.close()
+                                    root.requestDelete(recentDelegate.storageId,
+                                                       recentDelegate.noteId,
+                                                       recentDelegate.title)
+                                }
+                            }
+
+                            onClicked: root.selectNote(storageId, noteId, title)
+
+                            TapHandler {
+                                acceptedButtons: Qt.LeftButton
+                                enabled: root.embeddedEditor
+                                onDoubleTapped: root.openStandalone(recentDelegate.storageId,
+                                                                     recentDelegate.noteId)
+                            }
+
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                onTapped: root.showNoteMenu(recentDelegate.storageId,
+                                                            recentDelegate.noteId,
+                                                            recentDelegate.title)
+                            }
+                        }
+                    }
+
+                    TreeView {
+                        id: notesTree
+                        anchors.fill: parent
+                        visible: root.viewMode === root.groupedByStorageMode
+                        clip: true
+                        model: root.workspace.groupedNotesModel
+                        Component.onCompleted: Qt.callLater(function() { expandRecursively(-1, 1) })
+                        selectionModel: ItemSelectionModel { model: notesTree.model }
+
+                        delegate: ItemDelegate {
+                            id: groupedDelegate
+
+                            required property int row
+                            required property int column
+                            required property int depth
+                            required property bool expanded
+                            required property bool hasChildren
+                            required property bool isTreeNode
+                            required property string storageId
+                            required property string noteId
+                            required property int itemType
+                            required property string title
+                            required property string preview
+                            required property bool loading
+                            required property string errorString
+                            required property bool hasMore
+                            required property int noteCount
+                            required property string iconSource
+
+                            width: notesTree.width
+                            implicitHeight: 42
+                            hoverEnabled: true
+                            highlighted: itemType === 0
+                                         ? root.selectedStorageId === storageId && root.selectedNoteId.length === 0
+                                         : root.selectedStorageId === storageId && root.selectedNoteId === noteId
+                            padding: 0
+                            ToolTip.visible: hovered && (errorString.length > 0 || preview.length > 0)
+                            ToolTip.text: errorString.length > 0 ? errorString : preview
+
+                            background: Rectangle {
+                                radius: 4
+                                color: groupedDelegate.highlighted
+                                       ? groupedDelegate.palette.highlight
+                                       : (groupedDelegate.hovered ? Qt.rgba(groupedDelegate.palette.button.r, groupedDelegate.palette.button.g, groupedDelegate.palette.button.b, 0.45) : "transparent")
+                            }
+
+                            contentItem: RowLayout {
+                                spacing: 8
+
+                                Item { Layout.preferredWidth: 8 + groupedDelegate.depth * 18 }
+
+                                Label {
+                                    Layout.preferredWidth: 12
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: groupedDelegate.isTreeNode && groupedDelegate.hasChildren
+                                    text: groupedDelegate.expanded ? "▾" : "▸"
+                                    color: groupedDelegate.highlighted
+                                           ? groupedDelegate.palette.highlightedText
+                                           : groupedDelegate.palette.text
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Item {
+                                    visible: !(groupedDelegate.isTreeNode && groupedDelegate.hasChildren)
+                                    Layout.preferredWidth: visible ? 12 : 0
+                                }
+
+                                Image {
+                                    Layout.preferredWidth: 20
+                                    Layout.preferredHeight: 20
+                                    Layout.alignment: Qt.AlignVCenter
+                                    source: groupedDelegate.iconSource
+                                    sourceSize.width: 20
+                                    sourceSize.height: 20
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: groupedDelegate.itemType === 0
+                                          ? (groupedDelegate.loading
+                                             ? qsTr("%1 — loading…").arg(groupedDelegate.title)
+                                             : qsTr("%1 (%2)").arg(groupedDelegate.title).arg(groupedDelegate.noteCount))
+                                          : groupedDelegate.title
+                                    font.bold: groupedDelegate.itemType === 0
+                                    color: groupedDelegate.highlighted
+                                           ? groupedDelegate.palette.highlightedText
+                                           : groupedDelegate.palette.text
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+
+                            Drag.active: noteDrag.active
+                            Drag.source: groupedDelegate
+                            Drag.keys: ["qtnote-note"]
+                            Drag.hotSpot.x: width / 2
+                            Drag.hotSpot.y: height / 2
+
+                            DragHandler {
+                                id: noteDrag
+                                target: null
+                                enabled: groupedDelegate.itemType === 1
+                            }
+
+                            DropArea {
+                                anchors.fill: parent
+                                enabled: groupedDelegate.itemType === 0
+                                keys: ["qtnote-note"]
+                                onEntered: function(drag) {
+                                    if (drag.source && drag.source.storageId !== groupedDelegate.storageId)
+                                        drag.accepted = true
+                                }
+                                onDropped: function(drop) {
+                                    if (!drop.source || drop.source.storageId === groupedDelegate.storageId)
+                                        return
+                                    if (root.workspace.currentEditor && !root.checkpointEditor())
+                                        return
+                                    if (root.workspace.moveNote(drop.source.storageId,
+                                                                drop.source.noteId,
+                                                                groupedDelegate.storageId)) {
+                                        drop.acceptProposedAction()
+                                    }
+                                }
+                            }
+
+                            TapHandler {
+                                acceptedButtons: Qt.LeftButton
+                                enabled: groupedDelegate.itemType === 1 && root.embeddedEditor
+                                onDoubleTapped: root.openStandalone(groupedDelegate.storageId,
+                                                                     groupedDelegate.noteId)
+                            }
+
+                            onClicked: {
+                                notesTree.selectionModel.setCurrentIndex(notesTree.index(row, column),
+                                                                         ItemSelectionModel.ClearAndSelect)
+                                if (itemType === 0) {
+                                    root.selectedStorageId = storageId
+                                    root.selectedNoteId = ""
+                                    root.selectedTitle = title
+                                    notesTree.toggleExpanded(row)
+                                } else {
+                                    root.selectNote(storageId, noteId, title)
+                                }
+                            }
+
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                onTapped: {
+                                    if (groupedDelegate.itemType === 1) {
+                                        root.showNoteMenu(groupedDelegate.storageId,
+                                                          groupedDelegate.noteId,
+                                                          groupedDelegate.title)
+                                    }
+                                }
                             }
                         }
                     }
@@ -333,7 +481,6 @@ Item {
 
                 sourceComponent: Component {
                     Item {
-                        id: editorWorkspace
                         property alias blockEditor: editorView
 
                         ColumnLayout {
@@ -380,8 +527,7 @@ Item {
                 Item { Layout.fillHeight: true }
                 Label {
                     Layout.alignment: Qt.AlignHCenter
-                    text: root.workspace.loading ? qsTr("Loading note…")
-                                                 : qsTr("Select a note to edit")
+                    text: root.workspace.loading ? qsTr("Loading note…") : qsTr("Select a note to edit")
                     color: palette.mid
                 }
                 BusyIndicator {
@@ -391,6 +537,29 @@ Item {
                 }
                 Item { Layout.fillHeight: true }
             }
+        }
+    }
+
+    Menu {
+        id: noteContextMenu
+
+        MenuItem {
+            text: qsTr("Open")
+            onTriggered: root.selectNote(root.selectedStorageId, root.selectedNoteId, root.selectedTitle)
+        }
+        MenuItem {
+            visible: root.embeddedEditor
+            text: qsTr("Open in separate window")
+            onTriggered: root.openStandalone(root.selectedStorageId, root.selectedNoteId)
+        }
+        MenuItem {
+            text: qsTr("Move…")
+            onTriggered: moveDialog.open()
+        }
+        MenuSeparator { }
+        MenuItem {
+            text: qsTr("Delete")
+            onTriggered: root.requestDelete(root.selectedStorageId, root.selectedNoteId, root.selectedTitle)
         }
     }
 
@@ -484,11 +653,12 @@ Item {
     }
 
     Connections {
-        target: root.workspace.notesModel
+        target: root.workspace.groupedNotesModel
         function onRowsInserted() {
             Qt.callLater(function() { notesTree.expandRecursively(-1, 1) })
         }
     }
+
     Connections {
         target: root.Window.window
         function onActiveFocusItemChanged() {
@@ -501,5 +671,4 @@ Item {
             })
         }
     }
-
 }

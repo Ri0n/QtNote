@@ -235,7 +235,7 @@ private:
     }
 };
 
-PluginManager::PluginManager(Main *parent) : QObject(parent), qtnote(parent), pluginHost(new PluginHost(this))
+PluginManager::PluginManager(Main *parent) : PluginListSource(parent), qtnote(parent), pluginHost(new PluginHost(this))
 {
     QSettings s;
 
@@ -491,6 +491,7 @@ void PluginManager::loadPlugins()
     foreach (PluginData::Ptr pd, regularPlugins) {
         initRegularPlugin(pd);
     }
+    emit pluginsReset();
 }
 
 bool PluginManager::ensureLoaded(PluginData::Ptr pd)
@@ -546,26 +547,84 @@ void PluginManager::deinitRegularPlugin(const PluginData::Ptr &pd)
 void PluginManager::setLoadPolicy(const QString &pluginId, PluginManager::LoadPolicy lp)
 {
     auto pd = plugins.value(pluginId);
-    if (!pd) {
+    if (!pd)
         return;
-    }
 
-    QSettings s;
+    QSettings settings;
     pd->loadPolicy         = lp;
     pd->loadPolicyExplicit = true;
-    s.beginGroup("plugins");
-    s.beginGroup(pluginId);
-    s.setValue("loadPolicy", (int)lp);
-    s.setValue("loadPolicyExplicit", true);
+    settings.beginGroup(QStringLiteral("plugins"));
+    settings.beginGroup(pluginId);
+    settings.setValue(QStringLiteral("loadPolicy"), int(lp));
+    settings.setValue(QStringLiteral("loadPolicyExplicit"), true);
 
-    if (!(pd->features & RegularPlugin)) {
-        return;
+    if (pd->features & RegularPlugin) {
+        if (lp == LP_Disabled)
+            deinitRegularPlugin(pd);
+        else
+            initRegularPlugin(pd);
     }
-    if (lp == LP_Disabled) {
-        deinitRegularPlugin(pd);
-    } else {
-        initRegularPlugin(pd);
+    emit pluginChanged(pluginId);
+}
+
+QStringList PluginManager::pluginIds() const { return pluginsIds(); }
+
+PluginListSource::Entry PluginManager::pluginEntry(const QString &pluginId) const
+{
+    Entry      entry;
+    const auto pd = plugins.value(pluginId);
+    if (!pd)
+        return entry;
+
+    entry.id           = pluginId;
+    entry.name         = pd->metadata.name;
+    entry.description  = pd->metadata.description;
+    entry.fileName     = pd->fileName;
+    entry.icon         = pd->metadata.icon;
+    entry.loadPolicy   = pd->loadPolicy;
+    entry.loadStatus   = pd->loadStatus;
+    entry.loaded       = isLoaded(pluginId);
+    entry.configurable = canOptionsDialog(pluginId);
+
+    quint32     version = pd->metadata.version;
+    QStringList versionParts;
+    while (version) {
+        versionParts.append(QString::number((version & 0xff000000) >> 24));
+        version <<= 8;
     }
+    if (versionParts.size() < 2)
+        versionParts.append(QStringLiteral("0"));
+    entry.versionText = versionParts.join(QLatin1Char('.'));
+
+    entry.tooltip = pd->metadata.description;
+    if (!entry.fileName.isEmpty())
+        entry.tooltip += QStringLiteral("<br/><br/>") + tr("<b>Filename:</b> %1").arg(entry.fileName);
+    const QString pluginTooltip = tooltip(pluginId);
+    if (!pluginTooltip.isEmpty())
+        entry.tooltip += QStringLiteral("<br/><br/>") + pluginTooltip;
+    return entry;
+}
+
+bool PluginManager::setPluginLoadPolicy(const QString &pluginId, LoadPolicy policy)
+{
+    if (!plugins.contains(pluginId))
+        return false;
+    setLoadPolicy(pluginId, policy);
+    return true;
+}
+
+bool PluginManager::setPluginOrder(const QStringList &pluginIds)
+{
+    if (pluginIds.size() != plugins.size()
+        || QSet<QString>(pluginIds.cbegin(), pluginIds.cend()).size() != plugins.size())
+        return false;
+    for (const auto &pluginId : pluginIds) {
+        if (!plugins.contains(pluginId))
+            return false;
+    }
+    QSettings().setValue(QStringLiteral("plugins-priority"), pluginIds);
+    emit pluginsReset();
+    return true;
 }
 
 QStringList PluginManager::pluginsIds() const { return QSettings().value("plugins-priority").toStringList(); }

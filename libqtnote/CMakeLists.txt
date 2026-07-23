@@ -43,7 +43,9 @@ if(NOT TARGET Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
 endif()
 
 set(qtnote_CORE_SRCS
+    bundledpluginregistry.cpp
     conflictresolver.cpp
+    corestorageregistry.cpp
     draftmanager.cpp
     filedraftstore.cpp
     fileremotecachestore.cpp
@@ -64,16 +66,23 @@ set(qtnote_CORE_SRCS
     notesmodel.cpp
     notessearchmodel.cpp
     notesworkspacecontroller.cpp
+    pluginlistmodel.cpp
+    recentnotesmodel.cpp
     notestorage.cpp
     notetransfercontroller.cpp
     ptfstorage.cpp
     secureenvelope.cpp
     securekeystore.cpp
+    storageiconimageprovider.cpp
     storagejob.cpp
+    storageprioritymodel.cpp
     utils.cpp
 )
 set(qtnote_CORE_HDRS
+    bundledplugininterface.h
+    bundledpluginregistry.h
     conflictresolver.h
+    corestorageregistry.h
     draftmanager.h
     draftstore.h
     filedraftstore.h
@@ -93,13 +102,18 @@ set(qtnote_CORE_HDRS
     notesmodel.h
     notessearchmodel.h
     notesworkspacecontroller.h
+    pluginlistmodel.h
+    pluginlistsource.h
+    recentnotesmodel.h
     notestorage.h
     notetransfercontroller.h
     ptfstorage.h
     remotecachestore.h
     secureenvelope.h
     securekeystore.h
+    storageiconimageprovider.h
     storagejob.h
+    storageprioritymodel.h
     utils.h
 )
 set(qtnote_CORE_UIS)

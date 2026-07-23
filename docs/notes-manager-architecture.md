@@ -14,7 +14,9 @@ flowchart TD
     NS[NoteStorage plugins] --> NM[NoteManager]
     NM --> MODEL[NotesModel]
     MODEL --> SEARCH[NotesSearchModel]
+    SEARCH --> RECENT[RecentNotesModel]
     SEARCH --> WC[NotesWorkspaceController]
+    RECENT --> WC
     WC --> PAGE[NotesManagerPage.qml]
     WC --> EDITOR[Current NoteEditor]
     EDITOR --> DRAFTS[DraftManager]
@@ -73,7 +75,7 @@ there is no `QDialog -> QSplitter -> NoteWidget -> QQuickWidget` nesting.
 
 This also means the first Quick renderer is not inserted into an already-visible
 QWidget hierarchy, avoiding the former splitter/native-window recreation path.
-Window geometry and navigation width are stored by the QML shell.
+Window geometry and navigation width are persisted by the C++ window adapter through `QSettings`.
 
 ## Android shell
 
@@ -131,8 +133,9 @@ remains independent, while the shared-library soname uses
 - Highlight body-search matches in the opened editor.
 - Coordinate deletion with another simultaneously dirty editor of the same
   logical note.
-- Replace temporary mobile plugin/storage models and special PTF registration.
-- Add touch-first long-press or overflow actions for move/delete on Android;
-  desktop currently exposes those commands through the row context menu.
+- Connect Android-compatible plugin runtimes to the explicit bundled factory
+  registry after separating them from desktop UI dependencies.
+- Add a touch-first move action. Delete is available both by swiping a recent
+  row and from the editor toolbar; desktop retains its context menu.
 - Move remaining find/print/pin/speech and plugin-specific actions out of the
   legacy QWidget shell before deleting `NoteEdit` and `NoteWidget`.
