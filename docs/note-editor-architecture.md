@@ -74,7 +74,8 @@ Markdown serialization, and media-manifest operations.
 
 `DesktopEditorPlatformBackend` contains the optional desktop-only services:
 spell checking, native image drag, file dialogs, image import, and Save As.
-Android passes `null` as `platformBackend`.
+Android passes `null` as `platformBackend` and uses Android-specific application
+services for Share, Export, launcher shortcuts, and opt-in speech recognition.
 
 `DesktopNoteEditorHost` is only a `QQuickWidget` host and a desktop event
 adapter. It owns no document or draft state. The desktop note manager does not
@@ -143,23 +144,40 @@ on its existing navigation page.
 | Editor toolbar | `EditorToolbar.qml` | Host | Host |
 | Notes list/search/workspace | Shared model/controller/QML | Pure Quick window | Mobile navigation shell |
 | Spell checking, native image drag and file dialogs | No | `DesktopEditorPlatformBackend` | No |
-| Window geometry, pinning, printing, speech and legacy plugins | No | `NoteWidget` temporarily | No |
+| Find in the structured document | `NoteBlockModel` / `NoteFindBar.qml` | Host shortcut | Overflow menu |
+| Async confirmation/information requests | `DialogService` / `DialogHost.qml` | Host integration pending | Mobile shell |
+| Export and Share | Shared note contents | Native file/print services | Android Share/document intents |
+| Pinning | Shared note identity | Desktop-note plugin and always-on-top flag | Pinned launcher shortcut |
+| Speech input | Provider contract | Desktop provider plugins | Opt-in Android service fallback |
+| Window geometry and temporary standalone chrome | No | `NoteWidget` / `NoteDialog` temporarily | No |
 | IME/background/system Back handling | No | No | Mobile shell |
+
+## Current migration status
+
+The hidden `NoteEdit : QTextEdit` compatibility editor and `TypeAheadFindBar`
+have been removed. Find is implemented directly by `NoteBlockModel` and the
+shared QML editor. Print and export construct a temporary `QTextDocument` when a
+renderable desktop document is required; they do not depend on a hidden editor.
+There is no user Save command: `NoteEditor` checkpoints drafts automatically,
+while Export and Share are explicit external-output actions.
+
+`NoteWidget` and `NoteDialog` still form the temporary desktop standalone host.
+They own no canonical document state, but they still adapt desktop print/export,
+speech-provider recording, sticky-note pinning, always-on-top state and window
+geometry around `DesktopNoteEditorHost`.
 
 ## Remaining migration
 
-1. Remove the legacy hidden `NoteEdit : QTextEdit` compatibility path after all
-   in-tree plugins use controller/highlighter APIs. Find/replace and print/export
-   must then operate on the structured editor or a temporary `QTextDocument`.
-2. Move the remaining standalone-window services out of `NoteWidget` and choose
-   the final desktop QML window shell.
-3. Migrate eligible plugin runtimes to the explicit Android bundled factory
-   registry. Mobile already uses the common plugin and storage list models.
-4. Agree and migrate the common settings API described in
-   `settings-api-plan.md`.
-5. Complete Android IME, process-death, rotation, device, and release-build
-   hardening.
+1. Build the final pure Quick standalone note window and move the remaining
+   desktop service commands behind QML-safe controllers.
+2. Remove `NoteWidget`, `NoteDialog`, their `.ui` files and the embedded
+   `QQuickWidget` standalone host after the pure Quick window owns the same
+   lifecycle and services.
+3. Connect the shared asynchronous `DialogService` to the desktop standalone
+   shell and migrate internal QWidget recovery/error dialogs, especially XMPP.
+4. Complete Android IME, shortcut, process-death, rotation, physical-device and
+   release-build hardening.
 
 Each migration step must move the existing implementation and immediately make
-both platforms use it. A parallel mobile implementation is not an acceptable
-intermediate endpoint.
+both platforms use it. A parallel mobile editor or lifecycle implementation is
+not an acceptable intermediate endpoint.

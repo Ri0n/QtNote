@@ -5,6 +5,10 @@ target_link_libraries(noteblockmodel_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::
 add_test(NAME noteblockmodel_test COMMAND noteblockmodel_test)
 set_tests_properties(noteblockmodel_test PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+add_executable(dialogservice_test dialogservice_test.cpp)
+target_link_libraries(dialogservice_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
+add_test(NAME dialogservice_test COMMAND dialogservice_test)
+
 add_executable(noteeditor_test noteeditor_test.cpp)
 target_link_libraries(noteeditor_test PRIVATE qtnote Qt${QT_VERSION_MAJOR}::Test)
 add_test(NAME noteeditor_test COMMAND noteeditor_test)

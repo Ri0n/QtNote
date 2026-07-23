@@ -46,10 +46,12 @@ set(qtnote_CORE_SRCS
     bundledpluginregistry.cpp
     conflictresolver.cpp
     corestorageregistry.cpp
+    dialogservice.cpp
     draftmanager.cpp
     filedraftstore.cpp
     fileremotecachestore.cpp
     filestorage.cpp
+    iconutils.cpp
     localdatakeystore.cpp
     localmediaimageprovider.cpp
     localmediastore.cpp
@@ -75,6 +77,7 @@ set(qtnote_CORE_SRCS
     securekeystore.cpp
     settingscontroller.cpp
     storageiconimageprovider.cpp
+    themediconimageprovider.cpp
     storagejob.cpp
     storageprioritymodel.cpp
     utils.cpp
@@ -84,6 +87,7 @@ set(qtnote_CORE_HDRS
     bundledpluginregistry.h
     conflictresolver.h
     corestorageregistry.h
+    dialogservice.h
     draftmanager.h
     draftstore.h
     filedraftstore.h
@@ -116,6 +120,7 @@ set(qtnote_CORE_HDRS
     settingsproviderinterface.h
     speechrecognitionprovider.h
     storageiconimageprovider.h
+    themediconimageprovider.h
     storagejob.h
     storageprioritymodel.h
     utils.h

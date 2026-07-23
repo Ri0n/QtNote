@@ -30,6 +30,9 @@ ListView {
     property var keyboardSelectionAnchorEditor: null
     property int keyboardSelectionAnchorPosition: 0
     property int editTransactionDepth: 0
+    property var currentFindResult: ({})
+    property string currentFindText: ""
+    signal findRequested()
     readonly property bool touchMode: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property real editorPointSize: typeof mobileApp !== "undefined"
                                             ? mobileApp.editorFontSize : Application.font.pointSize
@@ -53,6 +56,36 @@ ListView {
     boundsBehavior: touchMode ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
     activeFocusOnTab: true
     focus: true
+
+    function resetFind() {
+        currentFindResult = ({})
+        currentFindText = ""
+    }
+
+    function findNext(text, backwards) {
+        if (!blockModel || !text || text.length === 0)
+            return false
+        flushPendingEditorChanges()
+        if (currentFindText !== text) {
+            currentFindText = text
+            currentFindResult = ({})
+        }
+        const result = blockModel.findText(text, currentFindResult, Boolean(backwards), false)
+        if (!result || result.blockIndex === undefined)
+            return false
+        currentFindResult = result
+        positionViewAtIndex(Number(result.blockIndex), ListView.Contain)
+        return focusEditorAddress({
+            blockIndex: Number(result.blockIndex),
+            listItemIndex: Number(result.listItemIndex),
+            tableCellIndex: Number(result.tableCellIndex),
+            field: String(result.field),
+            cursorPosition: Number(result.start) + Number(result.length),
+            selectionStart: Number(result.start),
+            selectionEnd: Number(result.start) + Number(result.length),
+            atEnd: false
+        })
+    }
 
     function registerEditorBackendView() {
         if (editorBackend && typeof editorBackend.registerEditorView === "function")
@@ -1912,7 +1945,10 @@ ListView {
                 editorMouseArea.refreshPlainLinkHover(event.modifiers)
                 plainLinkHoverCanvas.requestPaint()
             }
-            if (event.matches(StandardKey.Undo) && root.editorBackend.undo()) {
+            if (event.matches(StandardKey.Find)) {
+                root.findRequested()
+                event.accepted = true
+            } else if (event.matches(StandardKey.Undo) && root.editorBackend.undo()) {
                 event.accepted = true
             } else if (event.matches(StandardKey.Redo) && root.editorBackend.redo()) {
                 event.accepted = true

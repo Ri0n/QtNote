@@ -215,6 +215,11 @@ last successful checkpoint. On Android, entering the background or an applicatio
 inactive state should request a checkpoint without marking the draft `Ready`;
 process termination then loses at most the uncheckpointed interval.
 
+A shell does not expose a manual Save command. Draft checkpointing is automatic
+and is also requested before Share, Export, navigation away, or orderly close.
+Share and Export copy content to an external destination; they do not replace the
+draft lifecycle or make a draft publishable.
+
 ## Multi-editor sessions
 
 Multiple `NoteEditor` instances in one process can share one draft UUID. The

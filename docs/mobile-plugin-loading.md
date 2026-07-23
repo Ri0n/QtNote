@@ -40,12 +40,16 @@ Desktop plugin libraries retain normal metadata.
 
 ## Current Android allow-list
 
-- Gemini speech recognition;
-- OpenAI Whisper speech recognition (disabled by default);
 - Nextcloud Notes storage.
 
-All three use the same runtime sources as desktop. PTF remains a core storage and
-is registered through `registerCoreStorages()` rather than the plugin registry.
+PTF remains a core storage and is registered through `registerCoreStorages()`
+rather than the plugin registry.
+
+Gemini and OpenAI Whisper are intentionally not linked into Android. Android
+voice input is an opt-in platform service, enabled in application settings and
+exposed by the shared toolbar only while enabled. The desktop speech-provider
+plugin contract remains available; a future Android-capable provider can be
+admitted explicitly without changing the platform fallback.
 
 ## Not yet admitted
 

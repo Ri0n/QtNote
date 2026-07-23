@@ -9,6 +9,7 @@ Page {
 
     required property var editor
     signal backRequested()
+    property double deleteRequestId: 0
 
     function checkpointEditor() {
         Qt.inputMethod.commit()
@@ -25,10 +26,13 @@ Page {
     }
 
     function requestDelete() {
-        if (mobileApp.askBeforeDelete)
-            deleteDialog.open()
-        else
+        if (!mobileApp.askBeforeDelete) {
             deleteEditor()
+            return
+        }
+        deleteRequestId = mobileApp.dialogs.confirm(
+                    qsTr("Delete note"), qsTr("Delete this note?"),
+                    qsTr("Delete"), qsTr("Cancel"), true)
     }
 
     function closeEditor() {
@@ -38,15 +42,49 @@ Page {
             backRequested()
     }
 
-    header: EditorToolbar {
-        editorBackend: root.editor
-        blockEditor: blockEditor
-        platformBackend: null
-        compact: true
-        showBackButton: true
-        showDeleteButton: true
-        onBackRequested: root.closeEditor()
-        onDeleteRequested: root.requestDelete()
+    function shareEditor() {
+        checkpointEditor()
+        mobileApp.shareCurrentNote()
+    }
+
+    function exportEditor() {
+        checkpointEditor()
+        mobileApp.exportCurrentNote()
+    }
+
+    header: Column {
+        width: root.width
+
+        EditorToolbar {
+            width: parent.width
+            editorBackend: root.editor
+            blockEditor: blockEditor
+            platformBackend: null
+            compact: true
+            showBackButton: true
+            showDeleteButton: true
+            showMobileActions: true
+            microphoneVisible: mobileApp.androidSpeechEnabled
+                               && mobileApp.androidSpeechAvailable
+            shortcutVisible: mobileApp.homeScreenShortcutAvailable
+                             && root.editor && root.editor.noteId.length > 0
+            onBackRequested: root.closeEditor()
+            onDeleteRequested: root.requestDelete()
+            onFindRequested: findBar.open()
+            onShareRequested: root.shareEditor()
+            onExportRequested: root.exportEditor()
+            onMicrophoneRequested: mobileApp.requestSpeechRecognition()
+            onAddToHomeScreenRequested: {
+                checkpointEditor()
+                mobileApp.addCurrentNoteToHomeScreen()
+            }
+        }
+
+        NoteFindBar {
+            id: findBar
+            width: parent.width
+            blockEditor: blockEditor
+        }
     }
 
     NoteBlockEditor {
@@ -56,6 +94,7 @@ Page {
         editorBackend: root.editor
         platformBackend: null
         onCountChanged: saveTimer.restart()
+        onFindRequested: findBar.open()
 
         Connections {
             target: blockEditor.blockModel
@@ -67,22 +106,23 @@ Page {
         Component.onCompleted: focusInitialEditor()
     }
 
-    Dialog {
-        id: deleteDialog
-        parent: root
-        x: (root.width - width) / 2
-        y: (root.height - height) / 2
-        modal: true
-        title: qsTr("Delete note")
-        standardButtons: Dialog.Yes | Dialog.No
-
-        Label {
-            width: Math.min(360, root.width - 48)
-            wrapMode: Text.WordWrap
-            text: qsTr("Delete this note?")
+    Connections {
+        target: mobileApp
+        function onSpeechRecognized(text) {
+            blockEditor.insertTextAtCursor(text)
+            saveTimer.restart()
         }
+    }
 
-        onAccepted: root.deleteEditor()
+    Connections {
+        target: mobileApp.dialogs
+        function onCompleted(requestId, accepted) {
+            if (requestId !== root.deleteRequestId)
+                return
+            root.deleteRequestId = 0
+            if (accepted)
+                root.deleteEditor()
+        }
     }
 
     Timer {

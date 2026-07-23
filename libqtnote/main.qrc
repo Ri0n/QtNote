@@ -18,8 +18,6 @@
         <file alias="download">images/download.svg</file>
         <file alias="microphone">images/microphone.svg</file>
         <file alias="pin">images/pin.svg</file>
-        <file alias="markdown">images/markdown.svg</file>
-        <file alias="txt">images/txt.svg</file>
     </qresource>
     <qresource prefix="/qml">
         <file alias="NoteBlockEditor.qml">qml/NoteBlockEditor.qml</file>
@@ -27,6 +25,8 @@
         <file alias="TableBlockBehavior.js">qml/TableBlockBehavior.js</file>
         <file alias="EditorContextMenu.qml">qml/EditorContextMenu.qml</file>
         <file alias="EditorToolbar.qml">qml/EditorToolbar.qml</file>
+        <file alias="DialogHost.qml">qml/DialogHost.qml</file>
+        <file alias="NoteFindBar.qml">qml/NoteFindBar.qml</file>
         <file alias="DesktopNoteEditor.qml">qml/DesktopNoteEditor.qml</file>
         <file alias="NotesManagerPage.qml">qml/NotesManagerPage.qml</file>
         <file alias="NotesManagerWindow.qml">qml/NotesManagerWindow.qml</file>

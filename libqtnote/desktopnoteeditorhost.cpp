@@ -4,6 +4,7 @@
 #include "localmediaimageprovider.h"
 #include "noteblockmodel.h"
 #include "noteeditor.h"
+#include "themediconimageprovider.h"
 
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -58,6 +59,7 @@ DesktopNoteEditorHost::DesktopNoteEditorHost(NoteEditor *editor, QWidget *parent
     quick_->setResizeMode(QQuickWidget::SizeRootObjectToView);
     quick_->setClearColor(palette().color(QPalette::Base));
     installLocalMediaImageProvider(quick_->engine());
+    installThemedIconImageProvider(quick_->engine());
     quick_->rootContext()->setContextProperty(QStringLiteral("noteBlockModel"), editor_->model());
     quick_->rootContext()->setContextProperty(QStringLiteral("noteEditor"), editor_);
     quick_->rootContext()->setContextProperty(QStringLiteral("desktopEditorPlatform"), platformBackend_);

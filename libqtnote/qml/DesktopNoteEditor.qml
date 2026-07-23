@@ -20,6 +20,7 @@ Item {
     function copyActiveSelection() { return editor.copyActiveSelection() }
     function cutActiveSelection() { return editor.cutActiveSelection() }
     function pasteClipboard() { return editor.pasteClipboard() }
+    function openFind() { findBar.open() }
 
     ColumnLayout {
         anchors.fill: parent
@@ -30,6 +31,13 @@ Item {
             editorBackend: noteEditor
             platformBackend: desktopEditorPlatform
             blockEditor: editor
+            onFindRequested: findBar.open()
+        }
+
+        NoteFindBar {
+            id: findBar
+            Layout.fillWidth: true
+            blockEditor: editor
         }
 
         NoteBlockEditor {
@@ -39,6 +47,7 @@ Item {
             blockModel: noteBlockModel
             editorBackend: noteEditor
             platformBackend: desktopEditorPlatform
+            onFindRequested: findBar.open()
         }
     }
 }
